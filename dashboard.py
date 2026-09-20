@@ -1,4 +1,4 @@
-import csv, json, os, threading
+import csv, json, os, secrets, threading
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -23,7 +23,7 @@ SESSION_COOKIE = 'session_token'
 # Every user must be logged in to see anything except these — the main
 # dashboard page and every /api/* route are members-only, per the "each
 # connected user gets their own login" requirement.
-PUBLIC_PATHS = {'/health', '/login', '/register', '/login/google'}
+PUBLIC_PATHS = {'/health', '/login', '/register', '/auth0/login', '/callback'}
 
 # Routes a logged-in user can always reach even once their trial/subscription
 # has expired — they still need to see their billing status, log out, or
@@ -831,7 +831,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .auth-switch a{color:var(--accent);text-decoration:none}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-faint);font-size:11.5px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
-#googleBtn{display:flex;justify-content:center;min-height:40px}
 </style>
 '''
 
@@ -840,15 +839,13 @@ LOGIN_HTML = r'''<!doctype html>
 <title>Giriş — A&amp;I Trading Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
   <h1>A&amp;I Trading Terminal</h1>
   <p class="sub">Devam etmek için giriş yapın</p>
   <div class="auth-error" id="err"></div>
-  <div id="googleBtn"></div>
-  <div class="auth-divider" id="googleDivider">veya</div>
+  __AUTH0_LOGIN_BLOCK__
   <form onsubmit="return doLogin(event)">
     <label>Kullanıcı adı</label>
     <input type="text" id="username" autocomplete="username" required>
@@ -859,7 +856,6 @@ LOGIN_HTML = r'''<!doctype html>
   <div class="auth-switch">Hesabınız yok mu? <a href="/register">Kayıt olun</a></div>
 </div></div>
 <script>
-const GOOGLE_CLIENT_ID = '__GOOGLE_CLIENT_ID__';
 async function doLogin(ev){
   ev.preventDefault();
   const btn=document.getElementById('btn'), err=document.getElementById('err');
@@ -876,30 +872,6 @@ async function doLogin(ev){
   btn.disabled=false; btn.textContent='Giriş Yap';
   return false;
 }
-async function handleGoogleResponse(resp){
-  const err=document.getElementById('err');
-  err.style.display='none';
-  try{
-    const r=await fetch('/login/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})});
-    const d=await r.json();
-    if(d.ok){ window.location='/'; return; }
-    err.textContent=d.error||'Google girişi başarısız'; err.style.display='block';
-  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
-}
-if(GOOGLE_CLIENT_ID && window.google){
-  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
-  google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'continue_with'});
-} else if(GOOGLE_CLIENT_ID){
-  window.addEventListener('load', function(){
-    if(window.google){
-      google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
-      google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'continue_with'});
-    }
-  });
-} else {
-  document.getElementById('googleBtn').style.display='none';
-  document.getElementById('googleDivider').style.display='none';
-}
 </script>
 </body></html>'''
 
@@ -908,15 +880,13 @@ REGISTER_HTML = r'''<!doctype html>
 <title>Kayıt Ol — A&amp;I Trading Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
   <h1>Hesap oluştur</h1>
   <p class="sub">A&amp;I Trading Terminal'e katılın — __TRIAL_DAYS__ gün ücretsiz deneme</p>
   <div class="auth-error" id="err"></div>
-  <div id="googleBtn"></div>
-  <div class="auth-divider" id="googleDivider">veya</div>
+  __AUTH0_LOGIN_BLOCK__
   <form onsubmit="return doRegister(event)">
     <label>Kullanıcı adı</label>
     <input type="text" id="username" autocomplete="username" required minlength="3" maxlength="32">
@@ -929,7 +899,6 @@ REGISTER_HTML = r'''<!doctype html>
   <div class="auth-switch">Zaten hesabınız var mı? <a href="/login">Giriş yapın</a></div>
 </div></div>
 <script>
-const GOOGLE_CLIENT_ID = '__GOOGLE_CLIENT_ID__';
 async function doRegister(ev){
   ev.preventDefault();
   const btn=document.getElementById('btn'), err=document.getElementById('err');
@@ -947,32 +916,15 @@ async function doRegister(ev){
   btn.disabled=false; btn.textContent='Kayıt Ol';
   return false;
 }
-async function handleGoogleResponse(resp){
-  const err=document.getElementById('err');
-  err.style.display='none';
-  try{
-    const r=await fetch('/login/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})});
-    const d=await r.json();
-    if(d.ok){ window.location='/'; return; }
-    err.textContent=d.error||'Google girişi başarısız'; err.style.display='block';
-  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
-}
-if(GOOGLE_CLIENT_ID && window.google){
-  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
-  google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'signup_with'});
-} else if(GOOGLE_CLIENT_ID){
-  window.addEventListener('load', function(){
-    if(window.google){
-      google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
-      google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'signup_with'});
-    }
-  });
-} else {
-  document.getElementById('googleBtn').style.display='none';
-  document.getElementById('googleDivider').style.display='none';
-}
 </script>
 </body></html>'''
+
+# Shown on /login and /register in place of __AUTH0_LOGIN_BLOCK__ when Auth0
+# is configured (auth.auth0_enabled()). It's a plain link, not a JS SDK —
+# clicking it starts the standard OAuth2 authorization-code redirect flow
+# handled by GET /auth0/login and GET /callback below.
+AUTH0_LOGIN_BLOCK = r'''<a href="/auth0/login" style="display:block;text-align:center;text-decoration:none;padding:11px;border-radius:8px;background:var(--accent);color:#1a1406;font-weight:700;font-size:13.5px;font-family:var(--font-d)">Auth0 ile devam et</a>
+  <div class="auth-divider">veya</div>'''
 
 TRIAL_EXPIRED_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1042,7 +994,7 @@ async function load(){
     <tr>
       <td>${u.username}${u.is_admin?' <span class="text-faint">(admin)</span>':''}</td>
       <td>${u.email||'—'}</td>
-      <td>${u.auth_provider==='google'?'Google':'Şifre'}</td>
+      <td>${u.auth_provider==='auth0'?'Auth0':'Şifre'}</td>
       <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
       <td>${badge(u.subscription_status)}</td>
       <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
@@ -1153,6 +1105,18 @@ class Handler(BaseHTTPRequestHandler):
         morsel = c.get(SESSION_COOKIE)
         return morsel.value if morsel else None
 
+    def _get_cookie(self, name):
+        raw = self.headers.get('Cookie')
+        if not raw:
+            return None
+        c = SimpleCookie()
+        try:
+            c.load(raw)
+        except Exception:
+            return None
+        morsel = c.get(name)
+        return morsel.value if morsel else None
+
     def _current_user(self):
         return auth.get_session_user(self._session_token())
 
@@ -1210,13 +1174,46 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/login':
             if self._current_user():
                 self._redirect('/'); return
-            html = LOGIN_HTML.replace('__GOOGLE_CLIENT_ID__', auth.GOOGLE_CLIENT_ID)
+            block = AUTH0_LOGIN_BLOCK if auth.auth0_enabled() else ''
+            html = LOGIN_HTML.replace('__AUTH0_LOGIN_BLOCK__', block)
             self._send_html(html); return
         if path=='/register':
             if self._current_user():
                 self._redirect('/'); return
-            html = REGISTER_HTML.replace('__GOOGLE_CLIENT_ID__', auth.GOOGLE_CLIENT_ID).replace('__TRIAL_DAYS__', str(auth.TRIAL_DAYS))
+            block = AUTH0_LOGIN_BLOCK if auth.auth0_enabled() else ''
+            html = REGISTER_HTML.replace('__AUTH0_LOGIN_BLOCK__', block).replace('__TRIAL_DAYS__', str(auth.TRIAL_DAYS))
             self._send_html(html); return
+
+        if path=='/auth0/login':
+            if not auth.auth0_enabled():
+                self._redirect('/login'); return
+            state = secrets.token_urlsafe(24)
+            url = auth.build_auth0_authorize_url(state)
+            self.send_response(302)
+            self.send_header('Location', url)
+            self.send_header('Set-Cookie', f'auth0_state={state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
+
+        if path=='/callback':
+            q = parse_qs(urlparse(self.path).query)
+            code = (q.get('code', [''])[0] or '')
+            state = (q.get('state', [''])[0] or '')
+            cookie_state = self._get_cookie('auth0_state')
+            if not code or not state or not cookie_state or state != cookie_state:
+                self._redirect('/login'); return
+            ok, username, err = auth.login_or_register_auth0(code)
+            if not ok:
+                self._redirect('/login'); return
+            token = auth.create_session(username)
+            self.send_response(302)
+            self.send_header('Location', '/')
+            self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
+            self.send_header('Set-Cookie', 'auth0_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
 
         # Everything else is members-only: the main dashboard page redirects
         # to /login, and every /api/* route (except /health) returns 401.
@@ -1346,21 +1343,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type','application/json; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
             self._clear_session_cookie()
-            self.end_headers()
-            self.wfile.write(body)
-            return
-
-        if path=='/login/google':
-            data=self._read_json_body()
-            ok, username, err = auth.login_or_register_google(data.get('credential', ''))
-            if not ok:
-                self._send_json({'ok': False, 'error': err}, status=401); return
-            token = auth.create_session(username)
-            body=json.dumps({'ok': True}).encode()
-            self.send_response(200)
-            self.send_header('Content-Type','application/json; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self._set_session_cookie(token)
             self.end_headers()
             self.wfile.write(body)
             return

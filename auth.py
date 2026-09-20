@@ -165,7 +165,7 @@ def authenticate(username, password):
     if not rec:
         return False, 'Kullanıcı adı veya şifre hatalı.'
     if not rec.get('password_hash'):
-        return False, 'Bu hesap Google ile oluşturuldu. Lütfen "Google ile devam et" ile giriş yapın.'
+        return False, 'Bu hesap "Auth0 ile devam et" ile oluşturuldu. Lütfen o seçenekle giriş yapın.'
     if not _verify_password(password, rec['salt'], rec['password_hash']):
         return False, 'Kullanıcı adı veya şifre hatalı.'
     return True, None
@@ -188,22 +188,65 @@ def _update_user(username, mutate_fn):
 
 
 # ---------------------------------------------------------------------------
-# Google sign-in ("Google ile devam et")
+# Auth0 sign-in ("Auth0 ile devam et")
 # ---------------------------------------------------------------------------
-# Verifies the ID token Google's Identity Services JS hands back to the
-# browser, using Google's own tokeninfo endpoint (no extra dependency needed
-# beyond `requests`, which is already used elsewhere in this codebase). If
-# the account doesn't exist yet, one is created on the fly — this is what
-# lets someone "sign up with their Google email" directly, no password.
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
-GOOGLE_TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo'
+# Standard server-side OAuth2 "Authorization Code" flow against an Auth0
+# tenant. Auth0 hosts the actual login screen (Universal Login) — including,
+# if you enable it in the Auth0 dashboard, a "Sign in with Google" button —
+# so this app never touches a Google/Facebook/etc. consent screen directly
+# and never sees the person's password for any of those. We only exchange
+# the one-time authorization code for tokens and read the verified profile
+# (email, sub) from Auth0's own /userinfo endpoint.
+AUTH0_DOMAIN = os.environ.get('AUTH0_DOMAIN', '').strip().rstrip('/').replace('https://', '').replace('http://', '')
+AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID', '').strip()
+AUTH0_CLIENT_SECRET = os.environ.get('AUTH0_CLIENT_SECRET', '').strip()
+AUTH0_CALLBACK_URL = os.environ.get('AUTH0_CALLBACK_URL', '').strip()  # e.g. https://www.herobot-ai.com/callback
 
 
-def _verify_google_id_token(id_token_str):
-    if not GOOGLE_CLIENT_ID or not id_token_str:
+def auth0_enabled():
+    return bool(AUTH0_DOMAIN and AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET and AUTH0_CALLBACK_URL)
+
+
+def build_auth0_authorize_url(state):
+    from urllib.parse import urlencode
+    params = {
+        'response_type': 'code',
+        'client_id': AUTH0_CLIENT_ID,
+        'redirect_uri': AUTH0_CALLBACK_URL,
+        'scope': 'openid profile email',
+        'state': state,
+    }
+    return f'https://{AUTH0_DOMAIN}/authorize?' + urlencode(params)
+
+
+def _exchange_auth0_code(code):
+    try:
+        r = requests.post(
+            f'https://{AUTH0_DOMAIN}/oauth/token',
+            json={
+                'grant_type': 'authorization_code',
+                'client_id': AUTH0_CLIENT_ID,
+                'client_secret': AUTH0_CLIENT_SECRET,
+                'code': code,
+                'redirect_uri': AUTH0_CALLBACK_URL,
+            },
+            timeout=10,
+        )
+    except requests.RequestException:
+        return None
+    if r.status_code != 200:
         return None
     try:
-        r = requests.get(GOOGLE_TOKENINFO_URL, params={'id_token': id_token_str}, timeout=10)
+        return r.json().get('access_token')
+    except Exception:
+        return None
+
+
+def _auth0_userinfo(access_token):
+    if not access_token:
+        return None
+    try:
+        r = requests.get(f'https://{AUTH0_DOMAIN}/userinfo', headers={'Authorization': f'Bearer {access_token}'}, timeout=10)
     except requests.RequestException:
         return None
     if r.status_code != 200:
@@ -212,32 +255,34 @@ def _verify_google_id_token(id_token_str):
         data = r.json()
     except Exception:
         return None
-    if data.get('aud') != GOOGLE_CLIENT_ID:
-        return None
-    if str(data.get('email_verified')).lower() != 'true':
-        return None
     email = (data.get('email') or '').strip()
     sub = (data.get('sub') or '').strip()
     if not email or not sub:
         return None
+    if data.get('email_verified') is False:
+        return None
     return {'email': email, 'sub': sub, 'name': data.get('name') or email}
 
 
-def login_or_register_google(id_token_str):
-    """Verifies a Google ID token and logs the user in, creating an account
-    on first sign-in. Returns (ok, username, error)."""
-    if not GOOGLE_CLIENT_ID:
-        return False, None, 'Sunucuda GOOGLE_CLIENT_ID tanımlı değil — Google ile giriş şu an kapalı.'
-    info = _verify_google_id_token(id_token_str)
+def login_or_register_auth0(code):
+    """Exchanges an Auth0 authorization code for the person's verified
+    profile and logs them in, creating an account on first sign-in. Returns
+    (ok, username, error)."""
+    if not auth0_enabled():
+        return False, None, 'Sunucuda Auth0 tanımlı değil — bu giriş yöntemi şu an kapalı.'
+    access_token = _exchange_auth0_code(code)
+    if not access_token:
+        return False, None, 'Auth0 girişi doğrulanamadı. Lütfen tekrar deneyin.'
+    info = _auth0_userinfo(access_token)
     if not info:
-        return False, None, 'Google girişi doğrulanamadı. Lütfen tekrar deneyin.'
+        return False, None, 'Auth0 profili okunamadı. Lütfen tekrar deneyin.'
     key = info['email'].lower()
     with _lock:
         users = _read_json(USERS_FILE, {})
         if key in users:
-            # Existing account (created via Google or otherwise) — just log in.
-            if users[key].get('google_sub') != info['sub']:
-                users[key]['google_sub'] = info['sub']
+            # Existing account (created via Auth0 or otherwise) — just log in.
+            if users[key].get('auth0_sub') != info['sub']:
+                users[key]['auth0_sub'] = info['sub']
                 _write_json(USERS_FILE, users)
             return True, users[key]['username'], None
         is_admin = _should_be_admin(key, users)
@@ -246,8 +291,9 @@ def login_or_register_google(id_token_str):
             'email': info['email'],
             'salt': None,
             'password_hash': None,
-            'auth_provider': 'google',
-            'google_sub': info['sub'],
+            'auth_provider': 'auth0',
+            'google_sub': None,
+            'auth0_sub': info['sub'],
             'created_at': datetime.now(timezone.utc).isoformat(),
             'binance_api_key_encrypted': None,
             'binance_api_secret_encrypted': None,
@@ -531,5 +577,5 @@ def get_account_status(username):
         'subscription_status': sub['status'],
         'trial_ends_at': sub['trial_ends_at'],
         'days_left': sub['days_left'],
-        'google_login_enabled': bool(GOOGLE_CLIENT_ID),
+        'auth0_login_enabled': auth0_enabled(),
     }
