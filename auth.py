@@ -95,9 +95,32 @@ def _verify_password(password, salt_hex, hash_hex):
 USERNAME_MIN, USERNAME_MAX = 3, 32
 PASSWORD_MIN = 8
 
+# ---------------------------------------------------------------------------
+# Subscription / trial / admin
+# ---------------------------------------------------------------------------
+TRIAL_DAYS = int(os.environ.get('TRIAL_DAYS', '7'))
+# Comma-separated list of usernames/emails (case-insensitive) that are always
+# admins, e.g. "aydonmez42@gmail.com,ops". The very first account ever
+# registered on a fresh install is also made admin automatically, so there is
+# always at least one admin without needing to set this env var up front.
+ADMIN_USERNAMES = {u.strip().lower() for u in os.environ.get('ADMIN_USERNAMES', '').split(',') if u.strip()}
+
 
 def _valid_username(u):
     return bool(u) and USERNAME_MIN <= len(u) <= USERNAME_MAX and all(c.isalnum() or c in '_.-' for c in u)
+
+
+def _should_be_admin(key, users_before):
+    return key in ADMIN_USERNAMES or len(users_before) == 0
+
+
+def _new_trial_fields():
+    now = datetime.now(timezone.utc)
+    trial_end = now.timestamp() + TRIAL_DAYS * 24 * 3600
+    return {
+        'trial_ends_at': datetime.fromtimestamp(trial_end, tz=timezone.utc).isoformat(),
+        'payment_status': 'trial',  # 'trial' | 'active' | 'expired' | 'inactive'
+    }
 
 
 def register_user(username, password, email=''):
@@ -113,11 +136,14 @@ def register_user(username, password, email=''):
         if key in users:
             return False, 'Bu kullanıcı adı zaten alınmış.'
         salt_hex, hash_hex = _hash_password(password)
+        is_admin = _should_be_admin(key, users)
         users[key] = {
             'username': username,
             'email': email,
             'salt': salt_hex,
             'password_hash': hash_hex,
+            'auth_provider': 'local',
+            'google_sub': None,
             'created_at': datetime.now(timezone.utc).isoformat(),
             'binance_api_key_encrypted': None,
             'binance_api_secret_encrypted': None,
@@ -126,6 +152,8 @@ def register_user(username, password, email=''):
             'binance_verify_error': None,
             'live_trading_enabled': False,
             'risk_ack_at': None,
+            'is_admin': is_admin,
+            **_new_trial_fields(),
         }
         _write_json(USERS_FILE, users)
     return True, None
@@ -136,6 +164,8 @@ def authenticate(username, password):
     rec = users.get((username or '').strip().lower())
     if not rec:
         return False, 'Kullanıcı adı veya şifre hatalı.'
+    if not rec.get('password_hash'):
+        return False, 'Bu hesap Google ile oluşturuldu. Lütfen "Google ile devam et" ile giriş yapın.'
     if not _verify_password(password, rec['salt'], rec['password_hash']):
         return False, 'Kullanıcı adı veya şifre hatalı.'
     return True, None
@@ -155,6 +185,158 @@ def _update_user(username, mutate_fn):
         mutate_fn(users[key])
         _write_json(USERS_FILE, users)
         return users[key]
+
+
+# ---------------------------------------------------------------------------
+# Google sign-in ("Google ile devam et")
+# ---------------------------------------------------------------------------
+# Verifies the ID token Google's Identity Services JS hands back to the
+# browser, using Google's own tokeninfo endpoint (no extra dependency needed
+# beyond `requests`, which is already used elsewhere in this codebase). If
+# the account doesn't exist yet, one is created on the fly — this is what
+# lets someone "sign up with their Google email" directly, no password.
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+GOOGLE_TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo'
+
+
+def _verify_google_id_token(id_token_str):
+    if not GOOGLE_CLIENT_ID or not id_token_str:
+        return None
+    try:
+        r = requests.get(GOOGLE_TOKENINFO_URL, params={'id_token': id_token_str}, timeout=10)
+    except requests.RequestException:
+        return None
+    if r.status_code != 200:
+        return None
+    try:
+        data = r.json()
+    except Exception:
+        return None
+    if data.get('aud') != GOOGLE_CLIENT_ID:
+        return None
+    if str(data.get('email_verified')).lower() != 'true':
+        return None
+    email = (data.get('email') or '').strip()
+    sub = (data.get('sub') or '').strip()
+    if not email or not sub:
+        return None
+    return {'email': email, 'sub': sub, 'name': data.get('name') or email}
+
+
+def login_or_register_google(id_token_str):
+    """Verifies a Google ID token and logs the user in, creating an account
+    on first sign-in. Returns (ok, username, error)."""
+    if not GOOGLE_CLIENT_ID:
+        return False, None, 'Sunucuda GOOGLE_CLIENT_ID tanımlı değil — Google ile giriş şu an kapalı.'
+    info = _verify_google_id_token(id_token_str)
+    if not info:
+        return False, None, 'Google girişi doğrulanamadı. Lütfen tekrar deneyin.'
+    key = info['email'].lower()
+    with _lock:
+        users = _read_json(USERS_FILE, {})
+        if key in users:
+            # Existing account (created via Google or otherwise) — just log in.
+            if users[key].get('google_sub') != info['sub']:
+                users[key]['google_sub'] = info['sub']
+                _write_json(USERS_FILE, users)
+            return True, users[key]['username'], None
+        is_admin = _should_be_admin(key, users)
+        users[key] = {
+            'username': info['email'],
+            'email': info['email'],
+            'salt': None,
+            'password_hash': None,
+            'auth_provider': 'google',
+            'google_sub': info['sub'],
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'binance_api_key_encrypted': None,
+            'binance_api_secret_encrypted': None,
+            'binance_key_masked': None,
+            'binance_verified_at': None,
+            'binance_verify_error': None,
+            'live_trading_enabled': False,
+            'risk_ack_at': None,
+            'is_admin': is_admin,
+            **_new_trial_fields(),
+        }
+        _write_json(USERS_FILE, users)
+    return True, info['email'], None
+
+
+# ---------------------------------------------------------------------------
+# Subscription status (trial / paid / expired) — payment collection itself is
+# manual for now (admin marks a user active after receiving payment outside
+# the app), this just tracks and enforces the resulting state.
+# ---------------------------------------------------------------------------
+
+def subscription_status(rec):
+    if not rec:
+        return {'status': 'expired', 'trial_ends_at': None, 'days_left': 0}
+    if rec.get('is_admin'):
+        return {'status': 'active', 'trial_ends_at': rec.get('trial_ends_at'), 'days_left': None}
+    if rec.get('payment_status') == 'active':
+        return {'status': 'active', 'trial_ends_at': rec.get('trial_ends_at'), 'days_left': None}
+    trial_ends_at = rec.get('trial_ends_at')
+    if trial_ends_at:
+        try:
+            ends = datetime.fromisoformat(trial_ends_at)
+            days_left = (ends - datetime.now(timezone.utc)).total_seconds() / 86400
+        except Exception:
+            days_left = -1
+    else:
+        days_left = -1
+    if days_left > 0:
+        return {'status': 'trial', 'trial_ends_at': trial_ends_at, 'days_left': round(days_left, 1)}
+    return {'status': 'expired', 'trial_ends_at': trial_ends_at, 'days_left': 0}
+
+
+def has_active_access(username):
+    rec = get_user(username)
+    return subscription_status(rec)['status'] in ('active', 'trial')
+
+
+def ack_risk(username):
+    _update_user(username, lambda u: u.update(risk_ack_at=datetime.now(timezone.utc).isoformat()))
+
+
+# ---------------------------------------------------------------------------
+# Admin — list users and manually flip payment status once you've confirmed
+# a bank transfer/payment outside the app.
+# ---------------------------------------------------------------------------
+
+def is_admin(username):
+    rec = get_user(username)
+    return bool(rec and rec.get('is_admin'))
+
+
+def list_users_admin():
+    users = _read_json(USERS_FILE, {})
+    out = []
+    for key, rec in users.items():
+        sub = subscription_status(rec)
+        out.append({
+            'username': rec.get('username'),
+            'email': rec.get('email'),
+            'auth_provider': rec.get('auth_provider', 'local'),
+            'created_at': rec.get('created_at'),
+            'is_admin': bool(rec.get('is_admin')),
+            'binance_connected': bool(rec.get('binance_api_key_encrypted')),
+            'binance_verified_at': rec.get('binance_verified_at'),
+            'payment_status': rec.get('payment_status'),
+            'subscription_status': sub['status'],
+            'trial_ends_at': sub['trial_ends_at'],
+            'days_left': sub['days_left'],
+        })
+    out.sort(key=lambda x: x.get('created_at') or '', reverse=True)
+    return out
+
+
+def set_payment_status(username, status):
+    if status not in ('trial', 'active', 'expired', 'inactive'):
+        return False, 'Geçersiz durum.'
+    if _update_user(username, lambda u: u.update(payment_status=status)) is None:
+        return False, 'Kullanıcı bulunamadı.'
+    return True, None
 
 
 # ---------------------------------------------------------------------------
@@ -222,10 +404,14 @@ def _mask_key(api_key):
     return f'{api_key[:4]}...{api_key[-4:]}'
 
 
-def save_binance_credentials(username, api_key, api_secret):
+def save_binance_credentials(username, api_key, api_secret, risk_ack=False):
     f = _fernet()
     if f is None:
         return False, 'Sunucuda CREDENTIAL_ENCRYPTION_KEY tanımlı değil — API anahtarları güvenle şifrelenemediği için kaydedilmedi.'
+    rec = get_user(username)
+    already_acked = bool(rec and rec.get('risk_ack_at'))
+    if not already_acked and not risk_ack:
+        return False, 'Devam etmeden önce risk onayı kutusunu işaretlemeniz gerekiyor.'
     api_key = (api_key or '').strip()
     api_secret = (api_secret or '').strip()
     if not api_key or not api_secret:
@@ -240,6 +426,8 @@ def save_binance_credentials(username, api_key, api_secret):
         u['binance_verified_at'] = None
         u['binance_verify_error'] = None
         u['live_trading_enabled'] = False  # re-verify required after any key change
+        if not u.get('risk_ack_at'):
+            u['risk_ack_at'] = datetime.now(timezone.utc).isoformat()
 
     if _update_user(username, m) is None:
         return False, 'Kullanıcı bulunamadı.'
@@ -327,13 +515,21 @@ def get_account_status(username):
     """Read-only snapshot for the dashboard's account panel — never includes
     the actual key or secret, only whether one is connected/verified."""
     rec = get_user(username) or {}
+    sub = subscription_status(rec)
     return {
         'username': rec.get('username'),
         'email': rec.get('email'),
+        'auth_provider': rec.get('auth_provider', 'local'),
         'binance_connected': bool(rec.get('binance_api_key_encrypted')),
         'binance_key_masked': rec.get('binance_key_masked'),
         'binance_verified_at': rec.get('binance_verified_at'),
         'binance_verify_error': rec.get('binance_verify_error'),
         'live_trading_enabled': bool(rec.get('live_trading_enabled')),
         'credential_encryption_ready': credential_encryption_ready(),
+        'risk_ack_at': rec.get('risk_ack_at'),
+        'is_admin': bool(rec.get('is_admin')),
+        'subscription_status': sub['status'],
+        'trial_ends_at': sub['trial_ends_at'],
+        'days_left': sub['days_left'],
+        'google_login_enabled': bool(GOOGLE_CLIENT_ID),
     }

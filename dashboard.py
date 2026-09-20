@@ -23,7 +23,15 @@ SESSION_COOKIE = 'session_token'
 # Every user must be logged in to see anything except these — the main
 # dashboard page and every /api/* route are members-only, per the "each
 # connected user gets their own login" requirement.
-PUBLIC_PATHS = {'/health', '/login', '/register'}
+PUBLIC_PATHS = {'/health', '/login', '/register', '/login/google'}
+
+# Routes a logged-in user can always reach even once their trial/subscription
+# has expired — they still need to see their billing status, log out, or
+# (for an admin) manage other users' subscriptions.
+ACCOUNT_ALWAYS_ALLOWED = {
+    '/api/account', '/api/account/connect-binance', '/api/account/disconnect-binance',
+    '/api/account/risk-ack', '/logout', '/admin', '/api/admin/users', '/api/admin/set-status',
+}
 
 HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -173,6 +181,10 @@ th.sort-active{color:var(--accent)}
 .badge-verified{color:var(--bull);font-weight:700}
 .badge-unverified{color:var(--text-dim)}
 .badge-error{color:var(--bear);font-weight:600}
+.badge-trial{color:var(--accent);font-weight:600}
+.badge-admin{color:var(--bull);font-weight:600}
+.risk-ack{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}
+.risk-ack input{width:auto!important;margin-top:2px}
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:380px}
 .auth-card h1{font-size:19px;margin:0 0 4px}
@@ -203,6 +215,7 @@ th.sort-active{color:var(--accent)}
     <span class="clock" id="clock">—:—:—</span>
     <span class="status-pill wait" id="status"><span class="dot"></span>Bağlanıyor</span>
     <span class="text-faint" id="whoami">__USERNAME__</span>
+    <a class="btn" id="adminLink" href="/admin" style="display:none;text-decoration:none">Yönetim</a>
     <button class="btn" onclick="logout()">Çıkış</button>
   </div>
 </header>
@@ -711,7 +724,12 @@ async function logout(){
 function renderAccount(a){
   const pill=document.getElementById('binanceStatusPill');
   const body=document.getElementById('accountBody');
-  document.getElementById('whoami').textContent=a.username?('👤 '+a.username):'';
+  let whoText=a.username?('👤 '+a.username):'';
+  if(a.is_admin){ whoText+=' <span class="badge-admin">(admin)</span>'; }
+  else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">Deneme: ${a.days_left} gün kaldı</span>`; }
+  else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">Deneme doldu</span>'; }
+  document.getElementById('whoami').innerHTML=whoText;
+  document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
   if(a.binance_connected){
     if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">Doğrulama hatası</span>'; }
     else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">Bağlı ve doğrulandı</span>'; }
@@ -726,6 +744,9 @@ function renderAccount(a){
   const maskedRow=a.binance_connected?`<div class="account-row">Kayıtlı anahtar: <b>${a.binance_key_masked}</b></div>`:'';
   const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">Son doğrulama: ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
     :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
+  const riskRow=a.risk_ack_at
+    ? `<div class="account-row text-faint">Risk onayı: ${a.risk_ack_at.replace('T',' ').slice(0,16)} tarihinde verildi</div>`
+    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> Bu botun kripto vadeli işlemlerde gerçek para ile emir açabileceğini, kayıp riski taşıdığını ve olası kayıplardan botun değil kendi sorumluluğumda olduğumu anladığımı ve kabul ettiğimi onaylıyorum.</label>`;
   body.innerHTML=`
     ${maskedRow}${verifyRow}
     <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
@@ -737,6 +758,7 @@ function renderAccount(a){
         <label>Binance API Secret</label>
         <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?'Değiştirmek için yeni secret girin':'Binance Futures API secret'}">
       </div>
+      ${riskRow}
       <div class="account-row">
         <button class="btn" type="submit" id="binSaveBtn">Kaydet ve Doğrula</button>
         ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">Bağlantıyı Kaldır</button>':''}
@@ -757,11 +779,14 @@ async function submitBinanceForm(ev){
   ev.preventDefault();
   const key=document.getElementById('binApiKey').value.trim();
   const secret=document.getElementById('binApiSecret').value.trim();
+  const riskEl=document.getElementById('riskAck');
+  const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
   if(!key||!secret){ alert('API key ve secret gerekli.'); return false; }
+  if(riskEl && !riskAck){ alert('Devam etmeden önce risk onayı kutusunu işaretlemelisiniz.'); return false; }
   const btn=document.getElementById('binSaveBtn');
   btn.disabled=true; btn.textContent='Kaydediliyor ve doğrulanıyor…';
   try{
-    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret})});
+    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
     const d=await r.json();
     if(!d.ok){ alert(d.error||'Kaydedilemedi'); }
   }catch(e){ alert('Bağlantı hatası'); }
@@ -804,6 +829,9 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .auth-error{background:var(--bear-bg);border:1px solid var(--bear-border);color:var(--bear);border-radius:8px;padding:9px 11px;font-size:12.5px;margin-bottom:14px;display:none}
 .auth-switch{text-align:center;margin-top:16px;font-size:12.5px;color:var(--text-dim)}
 .auth-switch a{color:var(--accent);text-decoration:none}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-faint);font-size:11.5px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+#googleBtn{display:flex;justify-content:center;min-height:40px}
 </style>
 '''
 
@@ -812,12 +840,15 @@ LOGIN_HTML = r'''<!doctype html>
 <title>Giriş — A&amp;I Trading Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
   <h1>A&amp;I Trading Terminal</h1>
   <p class="sub">Devam etmek için giriş yapın</p>
   <div class="auth-error" id="err"></div>
+  <div id="googleBtn"></div>
+  <div class="auth-divider" id="googleDivider">veya</div>
   <form onsubmit="return doLogin(event)">
     <label>Kullanıcı adı</label>
     <input type="text" id="username" autocomplete="username" required>
@@ -828,6 +859,7 @@ LOGIN_HTML = r'''<!doctype html>
   <div class="auth-switch">Hesabınız yok mu? <a href="/register">Kayıt olun</a></div>
 </div></div>
 <script>
+const GOOGLE_CLIENT_ID = '__GOOGLE_CLIENT_ID__';
 async function doLogin(ev){
   ev.preventDefault();
   const btn=document.getElementById('btn'), err=document.getElementById('err');
@@ -844,6 +876,30 @@ async function doLogin(ev){
   btn.disabled=false; btn.textContent='Giriş Yap';
   return false;
 }
+async function handleGoogleResponse(resp){
+  const err=document.getElementById('err');
+  err.style.display='none';
+  try{
+    const r=await fetch('/login/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})});
+    const d=await r.json();
+    if(d.ok){ window.location='/'; return; }
+    err.textContent=d.error||'Google girişi başarısız'; err.style.display='block';
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+}
+if(GOOGLE_CLIENT_ID && window.google){
+  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
+  google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'continue_with'});
+} else if(GOOGLE_CLIENT_ID){
+  window.addEventListener('load', function(){
+    if(window.google){
+      google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
+      google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'continue_with'});
+    }
+  });
+} else {
+  document.getElementById('googleBtn').style.display='none';
+  document.getElementById('googleDivider').style.display='none';
+}
 </script>
 </body></html>'''
 
@@ -852,12 +908,15 @@ REGISTER_HTML = r'''<!doctype html>
 <title>Kayıt Ol — A&amp;I Trading Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
   <h1>Hesap oluştur</h1>
-  <p class="sub">A&amp;I Trading Terminal'e katılın</p>
+  <p class="sub">A&amp;I Trading Terminal'e katılın — __TRIAL_DAYS__ gün ücretsiz deneme</p>
   <div class="auth-error" id="err"></div>
+  <div id="googleBtn"></div>
+  <div class="auth-divider" id="googleDivider">veya</div>
   <form onsubmit="return doRegister(event)">
     <label>Kullanıcı adı</label>
     <input type="text" id="username" autocomplete="username" required minlength="3" maxlength="32">
@@ -870,6 +929,7 @@ REGISTER_HTML = r'''<!doctype html>
   <div class="auth-switch">Zaten hesabınız var mı? <a href="/login">Giriş yapın</a></div>
 </div></div>
 <script>
+const GOOGLE_CLIENT_ID = '__GOOGLE_CLIENT_ID__';
 async function doRegister(ev){
   ev.preventDefault();
   const btn=document.getElementById('btn'), err=document.getElementById('err');
@@ -887,6 +947,121 @@ async function doRegister(ev){
   btn.disabled=false; btn.textContent='Kayıt Ol';
   return false;
 }
+async function handleGoogleResponse(resp){
+  const err=document.getElementById('err');
+  err.style.display='none';
+  try{
+    const r=await fetch('/login/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})});
+    const d=await r.json();
+    if(d.ok){ window.location='/'; return; }
+    err.textContent=d.error||'Google girişi başarısız'; err.style.display='block';
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+}
+if(GOOGLE_CLIENT_ID && window.google){
+  google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
+  google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'signup_with'});
+} else if(GOOGLE_CLIENT_ID){
+  window.addEventListener('load', function(){
+    if(window.google){
+      google.accounts.id.initialize({client_id: GOOGLE_CLIENT_ID, callback: handleGoogleResponse});
+      google.accounts.id.renderButton(document.getElementById('googleBtn'), {theme:'filled_black', size:'large', width:316, text:'signup_with'});
+    }
+  });
+} else {
+  document.getElementById('googleBtn').style.display='none';
+  document.getElementById('googleDivider').style.display='none';
+}
+</script>
+</body></html>'''
+
+TRIAL_EXPIRED_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deneme süresi doldu — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + r'''</head>
+<body>
+<div class="auth-page"><div class="auth-card">
+  <h1>Deneme süreniz doldu</h1>
+  <p class="sub">__USERNAME__ hesabınızın ücretsiz deneme süresi sona erdi. Kullanmaya devam etmek için aboneliğinizi aktive etmemiz gerekiyor.</p>
+  <div class="auth-notice" style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--text-dim);margin-bottom:16px">
+    Aboneliğinizi aktive etmek için lütfen bizimle iletişime geçin. Ödemeniz onaylandıktan sonra hesabınız birkaç dakika içinde tekrar aktif olacaktır.
+  </div>
+  <button class="primary" onclick="logout()">Çıkış Yap</button>
+</div></div>
+<script>
+async function logout(){ try{ await fetch('/logout',{method:'POST'}); }catch(e){} window.location='/login'; }
+</script>
+</body></html>'''
+
+_ADMIN_STYLE_EXTRA = r'''
+<style>
+.admin-wrap{max-width:1100px;margin:0 auto;padding:28px 20px}
+.admin-wrap h1{font-size:20px;margin:0 0 4px}
+.admin-wrap p.sub{color:var(--text-dim);font-size:12.5px;margin:0 0 20px}
+table.admin-table{width:100%;border-collapse:collapse;font-size:12.5px}
+table.admin-table th{text-align:left;color:var(--text-faint);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+table.admin-table td{padding:9px 10px;border-bottom:1px solid var(--border-soft)}
+table.admin-table select{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:var(--font-d);font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600}
+.badge-active{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-border)}
+.badge-trial{background:var(--accent-soft);color:var(--accent);border:1px solid var(--border)}
+.badge-expired{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
+.back-link{color:var(--accent);text-decoration:none;font-size:12.5px}
+.text-faint{color:var(--text-faint)}
+</style>
+'''
+
+ADMIN_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yönetim — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _ADMIN_STYLE_EXTRA + r'''</head>
+<body>
+<div class="admin-wrap">
+  <a class="back-link" href="/">← Dashboard'a dön</a>
+  <h1 style="margin-top:14px">Kullanıcılar</h1>
+  <p class="sub">Ödeme aldığınız kullanıcıyı "aktif" yapın; deneme süresi dolanlar otomatik olarak dashboard'a erişemez.</p>
+  <table class="admin-table" id="tbl">
+    <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>İşlem</th></tr></thead>
+    <tbody id="tbody"><tr><td colspan="7">Yükleniyor…</td></tr></tbody>
+  </table>
+</div>
+<script>
+function badge(status){
+  if(status==='active') return '<span class="badge badge-active">Aktif</span>';
+  if(status==='trial') return '<span class="badge badge-trial">Deneme</span>';
+  return '<span class="badge badge-expired">Süresi doldu</span>';
+}
+async function load(){
+  const r=await fetch('/api/admin/users',{cache:'no-store'});
+  if(r.status===403){ document.getElementById('tbody').innerHTML='<tr><td colspan="7">Bu sayfaya erişim yetkiniz yok.</td></tr>'; return; }
+  const d=await r.json();
+  const rows=d.users.map(u=>`
+    <tr>
+      <td>${u.username}${u.is_admin?' <span class="text-faint">(admin)</span>':''}</td>
+      <td>${u.email||'—'}</td>
+      <td>${u.auth_provider==='google'?'Google':'Şifre'}</td>
+      <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
+      <td>${badge(u.subscription_status)}</td>
+      <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
+      <td>
+        <select onchange="setStatus('${u.username}', this.value)">
+          <option value="trial" ${u.payment_status==='trial'?'selected':''}>Deneme</option>
+          <option value="active" ${u.payment_status==='active'?'selected':''}>Aktif (ödedi)</option>
+          <option value="expired" ${u.payment_status==='expired'?'selected':''}>Süresi doldu</option>
+          <option value="inactive" ${u.payment_status==='inactive'?'selected':''}>Pasif</option>
+        </select>
+      </td>
+    </tr>`).join('');
+  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="7">Henüz kullanıcı yok.</td></tr>';
+}
+async function setStatus(username, status){
+  await fetch('/api/admin/set-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,status})});
+  load();
+}
+load();
 </script>
 </body></html>'''
 
@@ -1035,11 +1210,13 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/login':
             if self._current_user():
                 self._redirect('/'); return
-            self._send_html(LOGIN_HTML); return
+            html = LOGIN_HTML.replace('__GOOGLE_CLIENT_ID__', auth.GOOGLE_CLIENT_ID)
+            self._send_html(html); return
         if path=='/register':
             if self._current_user():
                 self._redirect('/'); return
-            self._send_html(REGISTER_HTML); return
+            html = REGISTER_HTML.replace('__GOOGLE_CLIENT_ID__', auth.GOOGLE_CLIENT_ID).replace('__TRIAL_DAYS__', str(auth.TRIAL_DAYS))
+            self._send_html(html); return
 
         # Everything else is members-only: the main dashboard page redirects
         # to /login, and every /api/* route (except /health) returns 401.
@@ -1049,6 +1226,27 @@ class Handler(BaseHTTPRequestHandler):
                 if path.startswith('/api/'):
                     self._send_json({'error': 'login required'}, status=401); return
                 self._redirect('/login'); return
+
+            # Trial/subscription gate — an admin always passes (see
+            # auth.subscription_status), everyone else needs an active trial
+            # or a payment the admin has manually marked as received.
+            if path not in ACCOUNT_ALWAYS_ALLOWED and not auth.has_active_access(user):
+                if path.startswith('/api/'):
+                    self._send_json({'error': 'subscription required', 'subscription_status': 'expired'}, status=402); return
+                html = TRIAL_EXPIRED_HTML.replace('__USERNAME__', user)
+                self._send_html(html); return
+
+        if path=='/admin':
+            user = self._current_user()
+            if not auth.is_admin(user):
+                self._redirect('/'); return
+            self._send_html(ADMIN_HTML); return
+
+        if path=='/api/admin/users':
+            user = self._current_user()
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            self._send_json({'users': auth.list_users_admin()}); return
 
         if path=='/api/account':
             self._send_json(auth.get_account_status(self._current_user())); return
@@ -1152,16 +1350,36 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        if path=='/login/google':
+            data=self._read_json_body()
+            ok, username, err = auth.login_or_register_google(data.get('credential', ''))
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=401); return
+            token = auth.create_session(username)
+            body=json.dumps({'ok': True}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type','application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._set_session_cookie(token)
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         # Everything below requires a logged-in user.
         user = self._current_user()
         if not user:
             self._send_json({'error': 'login required'}, status=401); return
 
         if path=='/api/account/connect-binance':
+            # A trial-expired, non-paying user can still be logged in (to see
+            # billing status) but must not be able to (re)connect a live key.
+            if not auth.has_active_access(user):
+                self._send_json({'ok': False, 'error': 'Deneme süreniz doldu. Devam etmek için aboneliğinizi aktive etmemiz gerekiyor.'}, status=402); return
             data=self._read_json_body()
             api_key=(data.get('api_key') or '').strip()
             api_secret=(data.get('api_secret') or '').strip()
-            ok, err = auth.save_binance_credentials(user, api_key, api_secret)
+            risk_ack=bool(data.get('risk_ack'))
+            ok, err = auth.save_binance_credentials(user, api_key, api_secret, risk_ack=risk_ack)
             if ok:
                 ok2, err2 = auth.verify_binance_key(user)
                 if not ok2:
@@ -1171,6 +1389,17 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/account/disconnect-binance':
             auth.clear_binance_credentials(user)
             self._send_json({'ok': True}); return
+
+        if path=='/api/account/risk-ack':
+            auth.ack_risk(user)
+            self._send_json({'ok': True}); return
+
+        if path=='/api/admin/set-status':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            ok, err = auth.set_payment_status(data.get('username', ''), data.get('status', ''))
+            self._send_json({'ok': ok, 'error': err}); return
 
         self._send_json({'error': 'not found'}, status=404)
 
