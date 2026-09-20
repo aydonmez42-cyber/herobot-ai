@@ -923,7 +923,7 @@ async function doRegister(ev){
 # is configured (auth.auth0_enabled()). It's a plain link, not a JS SDK —
 # clicking it starts the standard OAuth2 authorization-code redirect flow
 # handled by GET /auth0/login and GET /callback below.
-AUTH0_LOGIN_BLOCK = r'''<a href="/auth0/login" style="display:block;text-align:center;text-decoration:none;padding:11px;border-radius:8px;background:var(--accent);color:#1a1406;font-weight:700;font-size:13.5px;font-family:var(--font-d)">Auth0 ile devam et</a>
+AUTH0_LOGIN_BLOCK = r'''<a href="/auth0/login" style="display:block;text-align:center;text-decoration:none;padding:11px;border-radius:8px;background:var(--accent);color:#1a1406;font-weight:700;font-size:13.5px;font-family:var(--font-d)">Google ile giriş yap</a>
   <div class="auth-divider">veya</div>'''
 
 TRIAL_EXPIRED_HTML = r'''<!doctype html>
@@ -994,7 +994,7 @@ async function load(){
     <tr>
       <td>${u.username}${u.is_admin?' <span class="text-faint">(admin)</span>':''}</td>
       <td>${u.email||'—'}</td>
-      <td>${u.auth_provider==='auth0'?'Auth0':'Şifre'}</td>
+      <td>${u.auth_provider==='auth0'?'Google':'Şifre'}</td>
       <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
       <td>${badge(u.subscription_status)}</td>
       <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
