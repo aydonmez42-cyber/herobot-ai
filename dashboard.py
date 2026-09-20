@@ -1121,10 +1121,10 @@ class Handler(BaseHTTPRequestHandler):
         return auth.get_session_user(self._session_token())
 
     def _set_session_cookie(self, token):
-        self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
+        self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
 
     def _clear_session_cookie(self):
-        self.send_header('Set-Cookie', f'{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0')
+        self.send_header('Set-Cookie', f'{SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0')
 
     def _send_json(self, obj, status=200, extra_headers=None):
         body = json.dumps(obj, ensure_ascii=False).encode()
@@ -1142,6 +1142,7 @@ class Handler(BaseHTTPRequestHandler):
         body = html.encode()
         self.send_response(status)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(body)))
         if extra_headers:
             for k, v in extra_headers:
@@ -1152,6 +1153,7 @@ class Handler(BaseHTTPRequestHandler):
     def _redirect(self, location):
         self.send_response(302)
         self.send_header('Location', location)
+        self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', '0')
         self.end_headers()
 
@@ -1191,7 +1193,7 @@ class Handler(BaseHTTPRequestHandler):
             url = auth.build_auth0_authorize_url(state)
             self.send_response(302)
             self.send_header('Location', url)
-            self.send_header('Set-Cookie', f'auth0_state={state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600')
+            self.send_header('Set-Cookie', f'auth0_state={state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600')
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
@@ -1209,8 +1211,8 @@ class Handler(BaseHTTPRequestHandler):
             token = auth.create_session(username)
             self.send_response(302)
             self.send_header('Location', '/')
-            self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
-            self.send_header('Set-Cookie', 'auth0_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0')
+            self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
+            self.send_header('Set-Cookie', 'auth0_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0')
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
@@ -1300,7 +1302,7 @@ class Handler(BaseHTTPRequestHandler):
             result=ai_analyst.run_now()
             body=json.dumps(result,ensure_ascii=False).encode(); self.send_response(200 if result.get('ok') else 400); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         html=HTML.replace('__USERNAME__', self._current_user() or '')
-        body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
+        body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
 
     # -- auth / account POST routes ---------------------------------------
     def do_POST(self):

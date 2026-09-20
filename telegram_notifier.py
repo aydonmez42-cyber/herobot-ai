@@ -69,7 +69,7 @@ def send_message(text: str) -> bool:
 def entry_message(p: dict) -> str:
     side_emoji = '🟢' if p['side'] == 'LONG' else '🔴'
     return (
-        f'{side_emoji} YENİ POZİSYON\n\n'
+        f'{side_emoji} TEST32 PAPER — YENİ POZİSYON\n\n'
         f'{p["side"]} {p["symbol"]}\n'
         f'Giriş: {p["entry_price"]:,.2f}\n'
         f'ATR: {p["atr"]:,.2f}\n'
@@ -84,7 +84,7 @@ def exit_message(t: dict) -> str:
     positive = float(t['net_pnl']) >= 0
     emoji = '✅' if positive else '❌'
     return (
-        f'{emoji} POZİSYON KAPANDI\n\n'
+        f'{emoji} TEST32 PAPER — POZİSYON KAPANDI\n\n'
         f'{t["side"]} {t["symbol"]}\n'
         f'Giriş: {float(t["entry_price"]):,.2f}\n'
         f'Çıkış: {float(t["exit_price"]):,.2f}\n'
@@ -120,7 +120,7 @@ def daily_report(state: dict, trades: list, report_date: str) -> str:
     equity = float(state.get('equity', start))
     pos = state.get('position')
     lines = [
-        '📊 GÜNLÜK RAPOR',
+        '📊 TEST32 PAPER — GÜNLÜK RAPOR',
         f'Rapor saati: 09:00 Europe/Istanbul | Gün: {previous_date}',
         '',
         f'Önceki gün: {len(day_trades)} işlem | {wins}W / {losses}L | P&L {day_pnl:+,.2f} $',
