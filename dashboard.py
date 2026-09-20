@@ -1,4 +1,5 @@
 import csv, json, os, threading
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -13,9 +14,16 @@ from state_store import (
     remove_from_watchlist as _remove_from_watchlist,
 )
 import ai_analyst
+import auth
 
 PORT = int(os.environ.get('PORT', '8080'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
+SESSION_COOKIE = 'session_token'
+
+# Every user must be logged in to see anything except these — the main
+# dashboard page and every /api/* route are members-only, per the "each
+# connected user gets their own login" requirement.
+PUBLIC_PATHS = {'/health', '/login', '/register'}
 
 HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -157,6 +165,25 @@ th.sort-active{color:var(--accent)}
 .row-clickable{cursor:pointer}
 .row-clickable:hover{background:var(--panel-2)}
 .row-selected{background:var(--panel-2)!important;box-shadow:inset 3px 0 0 var(--accent)}
+.account-form{display:flex;flex-direction:column;gap:10px;max-width:440px}
+.account-form label{font-size:11.5px;color:var(--text-faint)}
+.account-form input{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--font-m);width:100%}
+.account-notice{background:var(--accent-soft);border:1px solid #4a3d22;color:var(--accent);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px;line-height:1.55}
+.account-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.badge-verified{color:var(--bull);font-weight:700}
+.badge-unverified{color:var(--text-dim)}
+.badge-error{color:var(--bear);font-weight:600}
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:380px}
+.auth-card h1{font-size:19px;margin:0 0 4px}
+.auth-card p.sub{color:var(--text-dim);font-size:12.5px;margin:0 0 22px}
+.auth-card label{font-size:11.5px;color:var(--text-faint);display:block;margin-bottom:5px}
+.auth-card input{width:100%;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:var(--font-d);margin-bottom:14px}
+.auth-card button.primary{width:100%;background:var(--accent);color:#1a1406;border:none;border-radius:8px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-d)}
+.auth-card button.primary:disabled{opacity:.6;cursor:default}
+.auth-error{background:var(--bear-bg);border:1px solid var(--bear-border);color:var(--bear);border-radius:8px;padding:9px 11px;font-size:12.5px;margin-bottom:14px;display:none}
+.auth-switch{text-align:center;margin-top:16px;font-size:12.5px;color:var(--text-dim)}
+.auth-switch a{color:var(--accent);text-decoration:none}
 .page-footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:6px}
 
 @media(max-width:900px){.cols{grid-template-columns:1fr}.pos-grid{grid-template-columns:1fr 1fr}.chip-grid{grid-template-columns:1fr}}
@@ -175,6 +202,8 @@ th.sort-active{color:var(--accent)}
   <div class="topbar-right">
     <span class="clock" id="clock">—:—:—</span>
     <span class="status-pill wait" id="status"><span class="dot"></span>Bağlanıyor</span>
+    <span class="text-faint" id="whoami">__USERNAME__</span>
+    <button class="btn" onclick="logout()">Çıkış</button>
   </div>
 </header>
 
@@ -193,6 +222,13 @@ th.sort-active{color:var(--accent)}
   <div class="kpi"><div class="kpi-label">Profit factor</div><div class="kpi-value" id="pf">—</div><div class="kpi-sub" id="avg">—</div></div>
   <div class="kpi-divider"></div>
   <div class="kpi"><div class="kpi-label">Maks. drawdown</div><div class="kpi-value" id="dd">—</div><div class="kpi-sub" id="candle">—</div></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>Hesabım — Binance Bağlantım</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
+  <div class="position-body" id="accountBody">
+    <div class="pos-empty">Yükleniyor…</div>
+  </div>
 </section>
 
 <section class="panel">
@@ -666,7 +702,193 @@ async function runAiAnalysis(){
   btn.disabled=false; btn.textContent='Şimdi Analiz Et';
 }
 refreshAiAnalysis();setInterval(refreshAiAnalysis,60000);
+
+async function logout(){
+  try{ await fetch('/logout',{method:'POST',cache:'no-store'}); }catch(e){}
+  window.location='/login';
+}
+
+function renderAccount(a){
+  const pill=document.getElementById('binanceStatusPill');
+  const body=document.getElementById('accountBody');
+  document.getElementById('whoami').textContent=a.username?('👤 '+a.username):'';
+  if(a.binance_connected){
+    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">Doğrulama hatası</span>'; }
+    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">Bağlı ve doğrulandı</span>'; }
+    else{ pill.innerHTML='<span class="badge-unverified">Bağlı, doğrulanmadı</span>'; }
+  } else {
+    pill.innerHTML='<span class="badge-unverified">Bağlı değil</span>';
+  }
+  let notice='';
+  if(!a.credential_encryption_ready){
+    notice=`<div class="account-notice">⚠️ Sunucuda CREDENTIAL_ENCRYPTION_KEY tanımlı değil — API anahtarları güvenle şifrelenemediği için kaydedilemez. Lütfen yöneticinizle iletişime geçin.</div>`;
+  }
+  const maskedRow=a.binance_connected?`<div class="account-row">Kayıtlı anahtar: <b>${a.binance_key_masked}</b></div>`:'';
+  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">Son doğrulama: ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
+    :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
+  body.innerHTML=`
+    ${maskedRow}${verifyRow}
+    <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
+      <div>
+        <label>Binance API Key</label>
+        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?'Değiştirmek için yeni key girin':'Binance Futures API key'}">
+      </div>
+      <div>
+        <label>Binance API Secret</label>
+        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?'Değiştirmek için yeni secret girin':'Binance Futures API secret'}">
+      </div>
+      <div class="account-row">
+        <button class="btn" type="submit" id="binSaveBtn">Kaydet ve Doğrula</button>
+        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">Bağlantıyı Kaldır</button>':''}
+      </div>
+    </form>
+    ${notice}
+    <div class="account-notice">ℹ️ Bu anahtar şu an sadece salt-okunur şekilde doğrulanıyor (bakiye kontrolü). Bot bu anahtarla henüz <b>gerçek emir açmıyor</b> — canlı işlem motoru ayrı bir aşamada, ekstra güvenlik/onay adımlarıyla birlikte devreye alınacak.</div>
+  `;
+}
+
+async function refreshAccount(){
+  let d;
+  try{ const r=await fetch('/api/account',{cache:'no-store'}); if(r.status===401){window.location='/login';return;} d=await r.json(); }catch(e){ return; }
+  renderAccount(d);
+}
+
+async function submitBinanceForm(ev){
+  ev.preventDefault();
+  const key=document.getElementById('binApiKey').value.trim();
+  const secret=document.getElementById('binApiSecret').value.trim();
+  if(!key||!secret){ alert('API key ve secret gerekli.'); return false; }
+  const btn=document.getElementById('binSaveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor ve doğrulanıyor…';
+  try{
+    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'Kaydedilemedi'); }
+  }catch(e){ alert('Bağlantı hatası'); }
+  btn.disabled=false; btn.textContent='Kaydet ve Doğrula';
+  await refreshAccount();
+  return false;
+}
+
+async function disconnectBinance(){
+  if(!confirm('Binance bağlantısını kaldırmak istediğinize emin misiniz?')) return;
+  try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
+  await refreshAccount();
+}
+
+refreshAccount();
 </script></body></html>'''
+
+_AUTH_STYLE = r'''
+<style>
+:root{
+  --bg:#090c12; --bg-elev:#0d1119; --panel:#111623; --panel-2:#161c2c;
+  --border:#212a3d; --border-soft:#1a2233;
+  --text:#e7ecf6; --text-dim:#8b93a8; --text-faint:#565f74;
+  --accent:#d4a857; --accent-soft:#3a3120;
+  --bull:#3ecf8e; --bull-bg:#0f2419; --bull-border:#1e4531;
+  --bear:#f1596e; --bear-bg:#2a151b; --bear-border:#4a2530;
+  --font-d:'Space Grotesk','IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --font-m:'JetBrains Mono','IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-webkit-font-smoothing:antialiased}
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:380px}
+.auth-card h1{font-size:19px;margin:0 0 4px}
+.auth-card p.sub{color:var(--text-dim);font-size:12.5px;margin:0 0 22px}
+.auth-card label{font-size:11.5px;color:var(--text-faint);display:block;margin-bottom:5px}
+.auth-card input{width:100%;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13.5px;font-family:var(--font-d);margin-bottom:14px}
+.auth-card button.primary{width:100%;background:var(--accent);color:#1a1406;border:none;border-radius:8px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-d)}
+.auth-card button.primary:disabled{opacity:.6;cursor:default}
+.auth-error{background:var(--bear-bg);border:1px solid var(--bear-border);color:var(--bear);border-radius:8px;padding:9px 11px;font-size:12.5px;margin-bottom:14px;display:none}
+.auth-switch{text-align:center;margin-top:16px;font-size:12.5px;color:var(--text-dim)}
+.auth-switch a{color:var(--accent);text-decoration:none}
+</style>
+'''
+
+LOGIN_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giriş — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + r'''</head>
+<body>
+<div class="auth-page"><div class="auth-card">
+  <h1>A&amp;I Trading Terminal</h1>
+  <p class="sub">Devam etmek için giriş yapın</p>
+  <div class="auth-error" id="err"></div>
+  <form onsubmit="return doLogin(event)">
+    <label>Kullanıcı adı</label>
+    <input type="text" id="username" autocomplete="username" required>
+    <label>Şifre</label>
+    <input type="password" id="password" autocomplete="current-password" required>
+    <button class="primary" type="submit" id="btn">Giriş Yap</button>
+  </form>
+  <div class="auth-switch">Hesabınız yok mu? <a href="/register">Kayıt olun</a></div>
+</div></div>
+<script>
+async function doLogin(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('btn'), err=document.getElementById('err');
+  err.style.display='none'; btn.disabled=true; btn.textContent='Giriş yapılıyor…';
+  try{
+    const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      username:document.getElementById('username').value.trim(),
+      password:document.getElementById('password').value,
+    })});
+    const d=await r.json();
+    if(d.ok){ window.location='/'; return false; }
+    err.textContent=d.error||'Giriş başarısız'; err.style.display='block';
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+  btn.disabled=false; btn.textContent='Giriş Yap';
+  return false;
+}
+</script>
+</body></html>'''
+
+REGISTER_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kayıt Ol — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + r'''</head>
+<body>
+<div class="auth-page"><div class="auth-card">
+  <h1>Hesap oluştur</h1>
+  <p class="sub">A&amp;I Trading Terminal'e katılın</p>
+  <div class="auth-error" id="err"></div>
+  <form onsubmit="return doRegister(event)">
+    <label>Kullanıcı adı</label>
+    <input type="text" id="username" autocomplete="username" required minlength="3" maxlength="32">
+    <label>E-posta (opsiyonel)</label>
+    <input type="email" id="email" autocomplete="email">
+    <label>Şifre (en az 8 karakter)</label>
+    <input type="password" id="password" autocomplete="new-password" required minlength="8">
+    <button class="primary" type="submit" id="btn">Kayıt Ol</button>
+  </form>
+  <div class="auth-switch">Zaten hesabınız var mı? <a href="/login">Giriş yapın</a></div>
+</div></div>
+<script>
+async function doRegister(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('btn'), err=document.getElementById('err');
+  err.style.display='none'; btn.disabled=true; btn.textContent='Kayıt olunuyor…';
+  try{
+    const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      username:document.getElementById('username').value.trim(),
+      email:document.getElementById('email').value.trim(),
+      password:document.getElementById('password').value,
+    })});
+    const d=await r.json();
+    if(d.ok){ window.location='/'; return false; }
+    err.textContent=d.error||'Kayıt başarısız'; err.style.display='block';
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+  btn.disabled=false; btn.textContent='Kayıt Ol';
+  return false;
+}
+</script>
+</body></html>'''
 
 def read_state():
     try:
@@ -743,8 +965,94 @@ def watchlist_status():
 
 
 class Handler(BaseHTTPRequestHandler):
+    # -- session/auth helpers --------------------------------------------
+    def _session_token(self):
+        raw = self.headers.get('Cookie')
+        if not raw:
+            return None
+        c = SimpleCookie()
+        try:
+            c.load(raw)
+        except Exception:
+            return None
+        morsel = c.get(SESSION_COOKIE)
+        return morsel.value if morsel else None
+
+    def _current_user(self):
+        return auth.get_session_user(self._session_token())
+
+    def _set_session_cookie(self, token):
+        self.send_header('Set-Cookie', f'{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={auth.SESSION_TTL_SECONDS}')
+
+    def _clear_session_cookie(self):
+        self.send_header('Set-Cookie', f'{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0')
+
+    def _send_json(self, obj, status=200, extra_headers=None):
+        body = json.dumps(obj, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(body)))
+        if extra_headers:
+            for k, v in extra_headers:
+                self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_html(self, html, status=200, extra_headers=None):
+        body = html.encode()
+        self.send_response(status)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        if extra_headers:
+            for k, v in extra_headers:
+                self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header('Location', location)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
+    def _read_json_body(self):
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+        except (TypeError, ValueError):
+            length = 0
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            return json.loads(raw.decode('utf-8'))
+        except Exception:
+            return {}
+
     def do_GET(self):
         path=urlparse(self.path).path
+
+        if path=='/login':
+            if self._current_user():
+                self._redirect('/'); return
+            self._send_html(LOGIN_HTML); return
+        if path=='/register':
+            if self._current_user():
+                self._redirect('/'); return
+            self._send_html(REGISTER_HTML); return
+
+        # Everything else is members-only: the main dashboard page redirects
+        # to /login, and every /api/* route (except /health) returns 401.
+        if path not in PUBLIC_PATHS:
+            user = self._current_user()
+            if not user:
+                if path.startswith('/api/'):
+                    self._send_json({'error': 'login required'}, status=401); return
+                self._redirect('/login'); return
+
+        if path=='/api/account':
+            self._send_json(auth.get_account_status(self._current_user())); return
+
         if path=='/api/status':
             body=json.dumps(status(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/health':
@@ -796,7 +1104,76 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/ai-analysis/run':
             result=ai_analyst.run_now()
             body=json.dumps(result,ensure_ascii=False).encode(); self.send_response(200 if result.get('ok') else 400); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
-        body=HTML.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
+        html=HTML.replace('__USERNAME__', self._current_user() or '')
+        body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
+
+    # -- auth / account POST routes ---------------------------------------
+    def do_POST(self):
+        path=urlparse(self.path).path
+
+        if path=='/login':
+            data=self._read_json_body()
+            ok, err = auth.authenticate(data.get('username',''), data.get('password',''))
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=401); return
+            token = auth.create_session(data.get('username',''))
+            body=json.dumps({'ok': True}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type','application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._set_session_cookie(token)
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path=='/register':
+            data=self._read_json_body()
+            ok, err = auth.register_user(data.get('username',''), data.get('password',''), data.get('email',''))
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=400); return
+            token = auth.create_session(data.get('username',''))
+            body=json.dumps({'ok': True}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type','application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._set_session_cookie(token)
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path=='/logout':
+            auth.delete_session(self._session_token())
+            body=json.dumps({'ok': True}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type','application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self._clear_session_cookie()
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # Everything below requires a logged-in user.
+        user = self._current_user()
+        if not user:
+            self._send_json({'error': 'login required'}, status=401); return
+
+        if path=='/api/account/connect-binance':
+            data=self._read_json_body()
+            api_key=(data.get('api_key') or '').strip()
+            api_secret=(data.get('api_secret') or '').strip()
+            ok, err = auth.save_binance_credentials(user, api_key, api_secret)
+            if ok:
+                ok2, err2 = auth.verify_binance_key(user)
+                if not ok2:
+                    self._send_json({'ok': False, 'error': err2}); return
+            self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/account/disconnect-binance':
+            auth.clear_binance_credentials(user)
+            self._send_json({'ok': True}); return
+
+        self._send_json({'error': 'not found'}, status=404)
+
     def log_message(self,*args):return
 
 def start_dashboard():
