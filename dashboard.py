@@ -16,6 +16,7 @@ from state_store import (
 )
 import ai_analyst
 import auth
+import email_notifier
 import live_trading
 import telegram_link
 import telegram_notifier as tg_notifier
@@ -27,7 +28,7 @@ SESSION_COOKIE = 'session_token'
 # Every user must be logged in to see anything except these — the main
 # dashboard page and every /api/* route are members-only, per the "each
 # connected user gets their own login" requirement.
-PUBLIC_PATHS = {'/health', '/login', '/register', '/auth0/login', '/callback'}
+PUBLIC_PATHS = {'/health', '/login', '/register', '/auth0/login', '/callback', '/forgot-password', '/reset-password'}
 
 # Routes a logged-in user can always reach even once their trial/subscription
 # has expired — they still need to see their billing status, log out, or
@@ -162,7 +163,7 @@ LANDING_HTML = r'''<!doctype html>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">02</span>
         <h3 style="margin:0;font-size:18px;font-weight:700">Çoklu katman onaylar</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">EMA, Supertrend, ADX, RSI, CCI, Stoch RSI ve MACD aynı anda hizalanmadan pozisyon açılmaz. Tek indikatöre güvenilmez.</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Trend, Momentum, Hacim, Volatilite göstergeleri aynı anda hizalanmadan pozisyon açılmaz. Tek indikatöre güvenilmez.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">03</span>
@@ -180,39 +181,39 @@ LANDING_HTML = r'''<!doctype html>
     <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Sekiz göstergenin hizalanmasını bekleyen bir sistem</h2>
     <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Trend, momentum ve volatilite filtreleri birlikte çalışır. Piyasa yatay ya da aşırı uçtaysa sistem susmayı tercih eder — her mumda işlem açmaz.</p>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:14px 16px;background:#11161A;border:1px solid #1E252B;border-radius:10px">
-      <span style="font-size:13px;color:#7A8590;font-weight:600">Volatilite vetosu: ATRP 365 günlük yüzdelik dilimde &gt;%90 veya &lt;%10 ise yeni pozisyon açılmaz.</span>
+      <span style="font-size:13px;color:#7A8590;font-weight:600">Volatilite vetosu: piyasa aşırı sakin ya da aşırı oynak bir uçtaysa sistem yeni pozisyon açmaz.</span>
     </div>
   </div>
   <div class="grid2" style="flex:1">
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">TREND</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">EMA 50 / 100</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Üstel hareketli ortalama değerleri</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Uzun vadeli yön filtresi</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">YÖN</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend 10 / 7.8</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Trend teyidi</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">GÜÇ</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">ADX &gt; 25</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Gerçek trend / yatay piyasa ayrımı</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Ortalama Yön Endeksi</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Fiyat trendinin gücünün ölçümü — Gerçek trend / yatay piyasa ayrımı</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">MOMENTUM</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">RSI 55–72 / &lt;30</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">RSI hassas ayarları</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">LONG ve SHORT bantları ayrı</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">ONAY</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">CCI, Stoch RSI, MACD</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Momentum, Kanal hareketleri, Dip tepe tespitleri, Hareketli ortalamaların uzaklaşma ve yakınlaşmaları</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Çoklu filtre yanlış sinyali eler</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">RİSK</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">ATR SL / TP / Trailing</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Long 3.5/4 ATR · Short 1.35/3 ATR</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Volatilite Bazlı SL / TP / Trailing Stop</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Long · Short pozisyon çıkışları ve kar alım ve zarar kes seviyeleri</div>
     </div>
   </div>
 </div>
@@ -1434,6 +1435,96 @@ async function doRegister(ev){
 </script>
 </body></html>'''
 
+FORGOT_PASSWORD_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Şifremi unuttum — Herobot-ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + r'''</head>
+<body>
+<div class="auth-page"><div class="auth-card">
+  <h1>Şifremi unuttum</h1>
+  <p class="sub">Hesabınıza kayıtlı e-posta adresini girin, size bir sıfırlama bağlantısı gönderelim.</p>
+  <div class="auth-error" id="err"></div>
+  <div class="auth-error" id="ok" style="display:none;background:rgba(61,217,168,0.12);border-color:#23A57B;color:#3DD9A8"></div>
+  <form onsubmit="return doForgot(event)" id="form">
+    <label>E-posta</label>
+    <input type="email" id="email" autocomplete="email" required>
+    <button class="primary" type="submit" id="btn">Sıfırlama Bağlantısı Gönder</button>
+  </form>
+  <div class="auth-switch"><a href="/login">Girişe dön</a></div>
+</div></div>
+<script>
+async function doForgot(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('btn'), err=document.getElementById('err'), ok=document.getElementById('ok');
+  err.style.display='none'; ok.style.display='none'; btn.disabled=true; btn.textContent='Gönderiliyor…';
+  try{
+    const r=await fetch('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      email:document.getElementById('email').value.trim(),
+    })});
+    const d=await r.json();
+    document.getElementById('form').style.display='none';
+    ok.textContent='Eğer bu e-posta adresi kayıtlıysa, birazdan gelen kutunuza bir şifre sıfırlama bağlantısı ulaşacak.';
+    ok.style.display='block';
+    return false;
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+  btn.disabled=false; btn.textContent='Sıfırlama Bağlantısı Gönder';
+  return false;
+}
+</script>
+</body></html>'''
+
+RESET_PASSWORD_HTML = r'''<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Şifre sıfırla — Herobot-ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + r'''</head>
+<body>
+<div class="auth-page"><div class="auth-card">
+  <h1>Yeni şifre belirle</h1>
+  <p class="sub">Hesabınız için yeni bir şifre girin.</p>
+  <div class="auth-error" id="err"></div>
+  <div class="auth-error" id="ok" style="display:none;background:rgba(61,217,168,0.12);border-color:#23A57B;color:#3DD9A8"></div>
+  <form onsubmit="return doReset(event)" id="form">
+    <label>Yeni şifre (en az 8 karakter)</label>
+    <input type="password" id="password" autocomplete="new-password" required minlength="8">
+    <label>Yeni şifre (tekrar)</label>
+    <input type="password" id="password2" autocomplete="new-password" required minlength="8">
+    <button class="primary" type="submit" id="btn">Şifreyi Sıfırla</button>
+  </form>
+  <div class="auth-switch"><a href="/login">Girişe dön</a></div>
+</div></div>
+<script>
+function tokenFromUrl(){ return new URLSearchParams(window.location.search).get('token') || ''; }
+async function doReset(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('btn'), err=document.getElementById('err'), ok=document.getElementById('ok');
+  err.style.display='none'; ok.style.display='none';
+  const p1=document.getElementById('password').value, p2=document.getElementById('password2').value;
+  if(p1!==p2){ err.textContent='Şifreler eşleşmiyor'; err.style.display='block'; return false; }
+  const token=tokenFromUrl();
+  if(!token){ err.textContent='Geçersiz veya eksik bağlantı. Lütfen yeni bir sıfırlama bağlantısı isteyin.'; err.style.display='block'; return false; }
+  btn.disabled=true; btn.textContent='Kaydediliyor…';
+  try{
+    const r=await fetch('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,password:p1})});
+    const d=await r.json();
+    if(d.ok){
+      document.getElementById('form').style.display='none';
+      ok.textContent='Şifreniz güncellendi. Şimdi yeni şifrenizle giriş yapabilirsiniz.';
+      ok.style.display='block';
+      setTimeout(()=>{ window.location='/login'; }, 2000);
+      return false;
+    }
+    err.textContent=d.error||'Şifre sıfırlanamadı'; err.style.display='block';
+  }catch(e){ err.textContent='Bağlantı hatası'; err.style.display='block'; }
+  btn.disabled=false; btn.textContent='Şifreyi Sıfırla';
+  return false;
+}
+</script>
+</body></html>'''
+
 # Shown on /login and /register in place of __AUTH0_LOGIN_BLOCK__ when Auth0
 # is configured (auth.auth0_enabled()). It's a plain link, not a JS SDK —
 # clicking it starts the standard OAuth2 authorization-code redirect flow
@@ -1664,6 +1755,16 @@ class Handler(BaseHTTPRequestHandler):
     def _clear_session_cookie(self):
         self.send_header('Set-Cookie', f'{SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0')
 
+    def _base_url(self):
+        # Railway terminates TLS at its edge and forwards plain HTTP to the
+        # container, so the scheme has to come from X-Forwarded-Proto, not
+        # from how this process itself was reached.
+        proto = (self.headers.get('X-Forwarded-Proto', '') or '').split(',')[0].strip()
+        host = self.headers.get('Host', 'localhost')
+        if not proto:
+            proto = 'http' if host.startswith('localhost') or host.startswith('127.0.0.1') else 'https'
+        return f'{proto}://{host}'
+
     def _send_json(self, obj, status=200, extra_headers=None):
         body = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(status)
@@ -1747,6 +1848,15 @@ class Handler(BaseHTTPRequestHandler):
             block = AUTH0_LOGIN_BLOCK if auth.auth0_enabled() else ''
             html = REGISTER_HTML.replace('__AUTH0_LOGIN_BLOCK__', block).replace('__TRIAL_DAYS__', str(auth.TRIAL_DAYS))
             self._send_html(html); return
+
+        if path=='/forgot-password':
+            if self._current_user():
+                self._redirect('/'); return
+            self._send_html(FORGOT_PASSWORD_HTML); return
+        if path=='/reset-password':
+            if self._current_user():
+                self._redirect('/'); return
+            self._send_html(RESET_PASSWORD_HTML); return
 
         if path=='/auth0/login':
             if not auth.auth0_enabled():
@@ -2025,6 +2135,33 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+
+        if path=='/api/auth/forgot-password':
+            # Always answers {"ok": true} whether or not the email matches an
+            # account — telling a caller "no account with that email" would
+            # let anyone enumerate registered addresses. If it does match a
+            # local-password account, a single-use, 30-minute reset token is
+            # emailed to it; everything else (unknown email, Auth0-only
+            # account, email not configured) fails silently from the caller's
+            # point of view and is only visible in the server logs.
+            data=self._read_json_body()
+            email=(data.get('email') or '').strip()
+            username = auth.find_username_by_email(email)
+            if username:
+                token = auth.create_password_reset_token(username)
+                if token:
+                    reset_url = f'{self._base_url()}/reset-password?token={token}'
+                    ok, err = email_notifier.send_password_reset_email(email, reset_url)
+                    if not ok:
+                        print(f'[email] password reset e-postası gönderilemedi ({email}): {err}')
+            self._send_json({'ok': True}); return
+
+        if path=='/api/auth/reset-password':
+            data=self._read_json_body()
+            ok, err = auth.reset_password_with_token(data.get('token',''), data.get('password',''))
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=400); return
+            self._send_json({'ok': True}); return
 
         # Everything below requires a logged-in user.
         user = self._current_user()
