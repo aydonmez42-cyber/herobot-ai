@@ -1367,6 +1367,7 @@ LOGIN_HTML = r'''<!doctype html>
     <input type="password" id="password" autocomplete="current-password" required>
     <button class="primary" type="submit" id="btn">Giriş Yap</button>
   </form>
+  <div class="auth-switch" style="margin-top:4px"><a href="/forgot-password">Şifremi unuttum</a></div>
   <div class="auth-switch">Hesabınız yok mu? <a href="/register">Kayıt olun</a></div>
 </div></div>
 <script>
