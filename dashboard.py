@@ -1,4 +1,5 @@
 import csv, json, os, secrets, threading
+import requests
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -15,6 +16,9 @@ from state_store import (
 )
 import ai_analyst
 import auth
+import live_trading
+import telegram_link
+import telegram_notifier as tg_notifier
 
 PORT = int(os.environ.get('PORT', '8080'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
@@ -31,6 +35,9 @@ PUBLIC_PATHS = {'/health', '/login', '/register', '/auth0/login', '/callback'}
 ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account', '/api/account/connect-binance', '/api/account/disconnect-binance',
     '/api/account/risk-ack', '/logout', '/admin', '/api/admin/users', '/api/admin/set-status',
+    '/api/account/live-settings', '/api/account/live-toggle',
+    '/api/admin/kill-switch', '/api/admin/kill-switch/toggle',
+    '/api/account/telegram/link-code', '/api/account/telegram/unlink',
 }
 
 HTML = r'''<!doctype html>
@@ -184,6 +191,13 @@ th.sort-active{color:var(--accent)}
 .badge-trial{color:var(--accent);font-weight:600}
 .badge-admin{color:var(--bull);font-weight:600}
 .risk-ack{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}
+.live-panel{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
+.live-panel h4{margin:0 0 10px;font-size:13px}
+.live-danger{background:var(--bear-bg);border:1px solid var(--bear-border);color:var(--bear);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px;line-height:1.55}
+.badge-live-on{color:var(--bull);font-weight:700}
+.badge-live-off{color:var(--text-dim)}
+.badge-live-paused{color:var(--accent);font-weight:700}
+.tg-code{font-family:var(--font-m);font-size:20px;font-weight:700;letter-spacing:3px;background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:inline-block;margin:6px 0}
 .risk-ack input{width:auto!important;margin-top:2px}
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:380px}
@@ -241,6 +255,14 @@ th.sort-active{color:var(--accent)}
   <div class="panel-head"><h2>Hesabım — Binance Bağlantım</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
   <div class="position-body" id="accountBody">
     <div class="pos-empty">Yükleniyor…</div>
+  </div>
+  <div class="live-panel">
+    <h4>Canlı İşlem (Gerçek Para)</h4>
+    <div id="livePanelBody"><div class="pos-empty">Yükleniyor…</div></div>
+  </div>
+  <div class="live-panel">
+    <h4>Telegram Bildirimleri</h4>
+    <div id="telegramPanelBody"><div class="pos-empty">Yükleniyor…</div></div>
   </div>
 </section>
 
@@ -765,8 +787,163 @@ function renderAccount(a){
       </div>
     </form>
     ${notice}
-    <div class="account-notice">ℹ️ Bu anahtar şu an sadece salt-okunur şekilde doğrulanıyor (bakiye kontrolü). Bot bu anahtarla henüz <b>gerçek emir açmıyor</b> — canlı işlem motoru ayrı bir aşamada, ekstra güvenlik/onay adımlarıyla birlikte devreye alınacak.</div>
   `;
+  renderLivePanel(a);
+  renderTelegramPanel(a);
+}
+
+function renderLivePanel(a){
+  const box=document.getElementById('livePanelBody');
+  if(!box) return;
+  if(!a.binance_connected || !a.binance_verified_at){
+    box.innerHTML=`<div class="account-notice">Canlı (gerçek para) işlem açabilmek için önce yukarıdan Binance API anahtarınızı kaydedip doğrulatmanız gerekiyor.</div>`;
+    return;
+  }
+  const rt=a.live_runtime||{};
+  let statusLine;
+  if(a.global_kill_switch_active){
+    statusLine=`<span class="badge-live-paused">🛑 Yönetici tarafından tüm canlı işlemler geçici olarak durduruldu</span>`;
+  } else if(a.live_trading_enabled && rt.paused_today){
+    statusLine=`<span class="badge-live-paused">⏸ Günlük maksimum kayıp limitine ulaşıldı — bugün için yeni işlem açılmıyor</span>`;
+  } else if(a.live_trading_enabled){
+    statusLine=`<span class="badge-live-on">🟢 Canlı işlem AÇIK</span>`;
+  } else {
+    statusLine=`<span class="badge-live-off">Canlı işlem kapalı — bot sadece paper (deneme) modda çalışıyor</span>`;
+  }
+  const openPos=rt.open_position_count?`<div class="account-row text-faint">Açık canlı pozisyon: ${rt.open_position_count}</div>`:'';
+  const pnlRow=`<div class="account-row text-faint">Bugünkü tahmini gerçekleşmiş K/Z: ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
+  const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
+  box.innerHTML=`
+    <div class="account-row">${statusLine}</div>
+    ${openPos}${pnlRow}${errRow}
+    <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
+      <div>
+        <label>İşlem başına USD tutarı</label>
+        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="Örn. 100">
+      </div>
+      <div>
+        <label>Maksimum kaldıraç (1-${a.live_max_leverage_cap||10}x)</label>
+        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="Örn. 2">
+      </div>
+      <div>
+        <label>Günlük maksimum kayıp limiti (USD) — aşılırsa o gün otomatik durur</label>
+        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="Örn. 50">
+      </div>
+      <div>
+        <label>Maksimum açık pozisyon sayısı (1-${a.live_max_positions_cap||5})</label>
+        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="Örn. 1">
+      </div>
+      <div class="account-row">
+        <button class="btn" type="submit">Ayarları Kaydet</button>
+        ${a.live_trading_enabled
+          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">Canlı İşlemi Kapat</button>`
+          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">Canlı İşlemi AÇ (gerçek para)</button>`}
+      </div>
+    </form>
+    <div class="live-danger">⚠️ Canlı işlem açıldığında bot, kayıtlı Binance hesabınızda <b>gerçek parayla</b> emir açar/kapatır. Kayıplardan bot değil siz sorumlusunuz. Bu, yatırım tavsiyesi değildir; ilgili düzenlemelere (ör. SPK) uygunluk sizin sorumluluğunuzdadır.</div>
+  `;
+}
+
+async function submitLiveSettings(ev){
+  ev.preventDefault();
+  const body={
+    position_usd: document.getElementById('livePositionUsd').value,
+    max_leverage: document.getElementById('liveMaxLeverage').value,
+    daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
+    max_open_positions: document.getElementById('liveMaxPositions').value,
+  };
+  try{
+    const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'Kaydedilemedi'); }
+  }catch(e){ alert('Bağlantı hatası'); }
+  await refreshAccount();
+  return false;
+}
+
+async function toggleLiveTrading(enabled){
+  if(enabled && !confirm('Canlı işlemi açmak üzeresiniz. Bot bu andan itibaren Binance hesabınızda GERÇEK PARA ile emir açıp kapatacak. Kayıp riskini kabul ettiğinizi ve bu ayarları doğru girdiğinizi onaylıyor musunuz?')) return;
+  try{
+    const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'İşlem başarısız'); }
+  }catch(e){ alert('Bağlantı hatası'); }
+  await refreshAccount();
+}
+
+// Holds an in-progress link code across renderAccount() re-renders (the
+// polling below calls refreshAccount() every few seconds to notice the
+// moment the user sends /start, and that re-render must not wipe the code
+// that's still on screen).
+let _tgActiveCode=null; // {code, bot_username, obtainedAt, ttlSeconds}
+let _tgCodeTimer=null;
+
+function renderTelegramPanel(a){
+  const box=document.getElementById('telegramPanelBody');
+  if(!box) return;
+  if(!a.telegram_bot_enabled){
+    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
+    box.innerHTML=`<div class="account-notice">Sunucuda Telegram botu tanımlı değil.</div>`;
+    return;
+  }
+  if(a.telegram_linked){
+    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
+    _tgActiveCode=null;
+    box.innerHTML=`
+      <div class="account-row">🟢 Telegram bağlı${a.telegram_username?(' — @'+a.telegram_username):''}</div>
+      <div class="account-row text-faint">Canlı işlem giriş/çıkış bildirimleri, risk uyarıları ve günlük özet buraya gelecek.</div>
+      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">Bağlantıyı Kaldır</button></div>
+    `;
+    return;
+  }
+  if(_tgActiveCode){
+    renderTelegramCodeBox();
+    return;
+  }
+  box.innerHTML=`
+    <div class="account-row text-faint">Canlı işlem bildirimlerinizi kendi Telegram'ınızda almak için bağlanın.</div>
+    <div class="account-row"><button class="btn" type="button" id="tgLinkBtn" onclick="getTelegramLinkCode()">Bağlantı Kodu Al</button></div>
+  `;
+}
+
+function renderTelegramCodeBox(){
+  const box=document.getElementById('telegramPanelBody');
+  if(!box || !_tgActiveCode) return;
+  const {code, bot_username, obtainedAt, ttlSeconds}=_tgActiveCode;
+  const remaining=Math.max(0, ttlSeconds - Math.floor((Date.now()-obtainedAt)/1000));
+  const botLink=bot_username?`https://t.me/${bot_username}`:null;
+  box.innerHTML=`
+    <div class="account-notice">
+      1) Telegram'da ${botLink?`<a href="${botLink}" target="_blank" style="color:var(--accent)">@${bot_username}</a>`:'botumuzu'} açın.<br>
+      2) Şunu gönderin: <span class="tg-code">/start ${code}</span><br>
+      <span class="text-faint">Kod ${Math.floor(remaining/60)} dakika ${remaining%60} saniye içinde geçersiz olur.</span>
+    </div>`;
+}
+
+async function getTelegramLinkCode(){
+  const btn=document.getElementById('tgLinkBtn');
+  if(btn){ btn.disabled=true; }
+  try{
+    const r=await fetch('/api/account/telegram/link-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'Kod alınamadı'); if(btn) btn.disabled=false; return; }
+    _tgActiveCode={code:d.code, bot_username:d.bot_username, obtainedAt:Date.now(), ttlSeconds:d.expires_in_seconds||600};
+    renderTelegramCodeBox();
+    if(_tgCodeTimer) clearInterval(_tgCodeTimer);
+    _tgCodeTimer=setInterval(async ()=>{
+      if(!_tgActiveCode){ clearInterval(_tgCodeTimer); return; }
+      const remaining=_tgActiveCode.ttlSeconds - Math.floor((Date.now()-_tgActiveCode.obtainedAt)/1000);
+      if(remaining<=0){ clearInterval(_tgCodeTimer); _tgActiveCode=null; await refreshAccount(); return; }
+      await refreshAccount(); // re-renders; if /start already landed, telegram_linked flips to true
+    },4000);
+  }catch(e){ alert('Bağlantı hatası'); }
+  if(btn) btn.disabled=false;
+}
+
+async function unlinkTelegram(){
+  if(!confirm('Telegram bağlantısını kaldırmak istediğinize emin misiniz?')) return;
+  try{ await fetch('/api/account/telegram/unlink',{method:'POST',cache:'no-store'}); }catch(e){}
+  await refreshAccount();
 }
 
 async function refreshAccount(){
@@ -975,9 +1152,12 @@ ADMIN_HTML = r'''<!doctype html>
   <a class="back-link" href="/">← Dashboard'a dön</a>
   <h1 style="margin-top:14px">Kullanıcılar</h1>
   <p class="sub">Ödeme aldığınız kullanıcıyı "aktif" yapın; deneme süresi dolanlar otomatik olarak dashboard'a erişemez.</p>
+
+  <div id="killSwitchBox" class="account-notice" style="margin-bottom:16px">Yükleniyor…</div>
+
   <table class="admin-table" id="tbl">
-    <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>İşlem</th></tr></thead>
-    <tbody id="tbody"><tr><td colspan="7">Yükleniyor…</td></tr></tbody>
+    <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>Canlı işlem</th><th>İşlem</th></tr></thead>
+    <tbody id="tbody"><tr><td colspan="8">Yükleniyor…</td></tr></tbody>
   </table>
 </div>
 <script>
@@ -986,9 +1166,27 @@ function badge(status){
   if(status==='trial') return '<span class="badge badge-trial">Deneme</span>';
   return '<span class="badge badge-expired">Süresi doldu</span>';
 }
+async function loadKillSwitch(){
+  const r=await fetch('/api/admin/kill-switch',{cache:'no-store'});
+  if(r.status!==200) return;
+  const d=await r.json();
+  const box=document.getElementById('killSwitchBox');
+  if(d.active){
+    box.innerHTML=`🛑 <b>ACİL DURDURMA AKTİF</b> — tüm kullanıcılar için yeni canlı emir açılmıyor (${d.set_by?('kapatan: '+d.set_by+', '):''}${(d.set_at||'').replace('T',' ').slice(0,16)}).
+      <div style="margin-top:8px"><button class="btn" onclick="toggleKillSwitch(false)">Canlı işlemi tekrar aç</button></div>`;
+  } else {
+    box.innerHTML=`✅ Canlı işlem normal çalışıyor.
+      <div style="margin-top:8px"><button class="btn" onclick="toggleKillSwitch(true)" style="background:var(--bear);border-color:var(--bear-border)">🛑 TÜM canlı işlemleri acil durdur</button></div>`;
+  }
+}
+async function toggleKillSwitch(active){
+  if(active && !confirm('Bu, TÜM kullanıcıların yeni canlı (gerçek para) işlem açmasını hemen durduracak. Zaten açık olan pozisyonlar bot tarafından SL/TP ile yönetilmeye devam eder. Emin misiniz?')) return;
+  await fetch('/api/admin/kill-switch/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})});
+  loadKillSwitch();
+}
 async function load(){
   const r=await fetch('/api/admin/users',{cache:'no-store'});
-  if(r.status===403){ document.getElementById('tbody').innerHTML='<tr><td colspan="7">Bu sayfaya erişim yetkiniz yok.</td></tr>'; return; }
+  if(r.status===403){ document.getElementById('tbody').innerHTML='<tr><td colspan="8">Bu sayfaya erişim yetkiniz yok.</td></tr>'; return; }
   const d=await r.json();
   const rows=d.users.map(u=>`
     <tr>
@@ -998,6 +1196,7 @@ async function load(){
       <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
       <td>${badge(u.subscription_status)}</td>
       <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
+      <td>${u.live_trading_enabled?`<span class="badge badge-active">Açık</span> <span class="text-faint">(${u.live_position_usd||0} USD, ${u.live_max_leverage||1}x, max ${u.live_max_open_positions||1} pozisyon, limit ${u.live_daily_loss_limit_usd||0} USD)</span>`:'<span class="text-faint">Kapalı</span>'}</td>
       <td>
         <select onchange="setStatus('${u.username}', this.value)">
           <option value="trial" ${u.payment_status==='trial'?'selected':''}>Deneme</option>
@@ -1007,12 +1206,13 @@ async function load(){
         </select>
       </td>
     </tr>`).join('');
-  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="7">Henüz kullanıcı yok.</td></tr>';
+  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="8">Henüz kullanıcı yok.</td></tr>';
 }
 async function setStatus(username, status){
   await fetch('/api/admin/set-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,status})});
   load();
 }
+loadKillSwitch();
 load();
 </script>
 </body></html>'''
@@ -1248,7 +1448,51 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({'users': auth.list_users_admin()}); return
 
         if path=='/api/account':
-            self._send_json(auth.get_account_status(self._current_user())); return
+            user = self._current_user()
+            status = auth.get_account_status(user)
+            status['live_runtime'] = live_trading.get_runtime_status(user)
+            status['telegram_bot_username'] = tg_notifier.ensure_bot_username()
+            status['telegram_bot_enabled'] = tg_notifier.TELEGRAM_BOT_ENABLED
+            self._send_json(status); return
+
+        if path=='/api/admin/kill-switch':
+            user = self._current_user()
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            self._send_json(auth.get_global_kill_switch()); return
+
+        if path=='/api/admin/bist-debug':
+            # TEMPORARY diagnostic route — admin-only, read-only. Calls both
+            # XUTUM universe sources directly (bypassing the cache) and
+            # reports exactly what each one returned, so we can see why the
+            # scan is failing without needing shell/network access outside
+            # of Railway itself. Safe to remove once the scraper is fixed.
+            user = self._current_user()
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            import bist_xutum_universe as bxu
+            out = {}
+            try:
+                syms, src = bxu.fetch_from_tradingview()
+                out['tradingview'] = {'ok': True, 'count': len(syms), 'source': src, 'sample': syms[:15]}
+            except Exception as e:
+                out['tradingview'] = {'ok': False, 'error': str(e)}
+            try:
+                syms, src = bxu.fetch_cnbc_fallback()
+                out['cnbc'] = {'ok': True, 'count': len(syms), 'source': src, 'sample': syms[:15]}
+            except Exception as e:
+                out['cnbc'] = {'ok': False, 'error': str(e)}
+            try:
+                r = requests.post(bxu.TV_SCANNER_URL, json=bxu._tv_payload(), headers=bxu._headers(), timeout=20)
+                out['tradingview_raw'] = {'status': r.status_code, 'body_snippet': r.text[:800]}
+            except Exception as e:
+                out['tradingview_raw'] = {'error': str(e)}
+            try:
+                r2 = requests.get(bxu.CNBC_XUTUM_URL, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
+                out['cnbc_raw'] = {'status': r2.status_code, 'html_length': len(r2.text), 'body_snippet': r2.text[:1500]}
+            except Exception as e:
+                out['cnbc_raw'] = {'error': str(e)}
+            self._send_json(out); return
 
         if path=='/api/status':
             body=json.dumps(status(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
@@ -1378,12 +1622,53 @@ class Handler(BaseHTTPRequestHandler):
             auth.ack_risk(user)
             self._send_json({'ok': True}); return
 
+        if path=='/api/account/live-settings':
+            if not auth.has_active_access(user):
+                self._send_json({'ok': False, 'error': 'Deneme süreniz doldu. Devam etmek için aboneliğinizi aktive etmemiz gerekiyor.'}, status=402); return
+            data=self._read_json_body()
+            ok, err = auth.set_live_settings(
+                user, data.get('position_usd'), data.get('max_leverage'),
+                data.get('daily_loss_limit_usd'), data.get('max_open_positions'),
+            )
+            self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/account/live-toggle':
+            if not auth.has_active_access(user):
+                self._send_json({'ok': False, 'error': 'Deneme süreniz doldu. Devam etmek için aboneliğinizi aktive etmemiz gerekiyor.'}, status=402); return
+            data=self._read_json_body()
+            ok, err = auth.set_live_trading_enabled(user, bool(data.get('enabled')))
+            self._send_json({'ok': ok, 'error': err}); return
+
         if path=='/api/admin/set-status':
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
             data=self._read_json_body()
             ok, err = auth.set_payment_status(data.get('username', ''), data.get('status', ''))
             self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/admin/kill-switch/toggle':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            active=bool(data.get('active'))
+            auth.set_global_kill_switch(active, user)
+            try:
+                live_trading.notify_kill_switch_change(active, user)
+            except Exception as e:
+                print(f'LIVE | TELEGRAM KILL SWITCH NOTIFY ERROR | {type(e).__name__}: {e}', flush=True)
+            self._send_json({'ok': True, 'state': auth.get_global_kill_switch()}); return
+
+        if path=='/api/account/telegram/link-code':
+            code, err = auth.create_telegram_link_code(user)
+            self._send_json({
+                'ok': bool(code), 'error': err, 'code': code,
+                'bot_username': tg_notifier.ensure_bot_username(),
+                'expires_in_seconds': auth.LINK_CODE_TTL_SECONDS,
+            }); return
+
+        if path=='/api/account/telegram/unlink':
+            auth.unlink_telegram(user)
+            self._send_json({'ok': True}); return
 
         self._send_json({'error': 'not found'}, status=404)
 
@@ -1395,4 +1680,5 @@ def start_dashboard():
     threading.Thread(target=background_loop, daemon=True).start()
     threading.Thread(target=bist_background_loop, daemon=True).start()
     threading.Thread(target=us_background_loop, daemon=True).start()
+    threading.Thread(target=telegram_link.poll_loop, daemon=True).start()
     server.serve_forever()

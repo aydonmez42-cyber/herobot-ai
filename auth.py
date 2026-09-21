@@ -151,6 +151,12 @@ def register_user(username, password, email=''):
             'binance_verified_at': None,
             'binance_verify_error': None,
             'live_trading_enabled': False,
+            'live_position_usd': None,
+            'live_max_leverage': None,
+            'live_daily_loss_limit_usd': None,
+            'live_max_open_positions': None,
+            'telegram_chat_id': None,
+            'telegram_username': None,
             'risk_ack_at': None,
             'is_admin': is_admin,
             **_new_trial_fields(),
@@ -301,6 +307,12 @@ def login_or_register_auth0(code):
             'binance_verified_at': None,
             'binance_verify_error': None,
             'live_trading_enabled': False,
+            'live_position_usd': None,
+            'live_max_leverage': None,
+            'live_daily_loss_limit_usd': None,
+            'live_max_open_positions': None,
+            'telegram_chat_id': None,
+            'telegram_username': None,
             'risk_ack_at': None,
             'is_admin': is_admin,
             **_new_trial_fields(),
@@ -346,6 +358,192 @@ def ack_risk(username):
 
 
 # ---------------------------------------------------------------------------
+# PHASE 2 — live (real-money) trading settings, per-user toggle, and the
+# admin-controlled global emergency stop. Placing the actual order is done
+# by live_trading.py / binance_live.py; this section only stores and
+# validates the settings and answers "is this user currently eligible to
+# have new live orders placed for them".
+# ---------------------------------------------------------------------------
+LIVE_MAX_LEVERAGE_CAP = 10
+LIVE_MAX_POSITIONS_CAP = 5
+
+KILL_SWITCH_FILE = os.environ.get(
+    'KILL_SWITCH_FILE',
+    os.path.join(DATA_DIR, 'live_kill_switch.json') if DATA_DIR else 'live_kill_switch.json'
+)
+
+
+def set_live_settings(username, position_usd, max_leverage, daily_loss_limit_usd, max_open_positions):
+    try:
+        position_usd = float(position_usd)
+        max_leverage = int(max_leverage)
+        daily_loss_limit_usd = float(daily_loss_limit_usd)
+        max_open_positions = int(max_open_positions)
+    except (TypeError, ValueError):
+        return False, 'Geçersiz sayı değeri.'
+    if not (0 < position_usd <= 50000):
+        return False, 'Pozisyon büyüklüğü 0 ile 50.000 USD arasında olmalı.'
+    if not (1 <= max_leverage <= LIVE_MAX_LEVERAGE_CAP):
+        return False, f'Kaldıraç 1 ile {LIVE_MAX_LEVERAGE_CAP}x arasında olmalı.'
+    if not (0 < daily_loss_limit_usd <= 50000):
+        return False, 'Günlük maksimum kayıp limiti pozitif bir USD tutarı olmalı.'
+    if not (1 <= max_open_positions <= LIVE_MAX_POSITIONS_CAP):
+        return False, f'Maksimum açık pozisyon sayısı 1 ile {LIVE_MAX_POSITIONS_CAP} arasında olmalı.'
+
+    def m(u):
+        u['live_position_usd'] = position_usd
+        u['live_max_leverage'] = max_leverage
+        u['live_daily_loss_limit_usd'] = daily_loss_limit_usd
+        u['live_max_open_positions'] = max_open_positions
+
+    if _update_user(username, m) is None:
+        return False, 'Kullanıcı bulunamadı.'
+    return True, None
+
+
+def set_live_trading_enabled(username, enabled):
+    rec = get_user(username)
+    if not rec:
+        return False, 'Kullanıcı bulunamadı.'
+    if enabled:
+        if subscription_status(rec)['status'] not in ('active', 'trial'):
+            return False, 'Canlı işlem açmak için aktif bir aboneliğiniz olmalı.'
+        if not rec.get('binance_verified_at'):
+            return False, 'Önce Binance API anahtarınızı kaydedip doğrulamanız gerekiyor.'
+        if not rec.get('risk_ack_at'):
+            return False, 'Önce risk onayını vermeniz gerekiyor.'
+        if not (rec.get('live_position_usd') or 0) > 0:
+            return False, 'Önce pozisyon büyüklüğü (USD) ayarını kaydedin.'
+        if not (rec.get('live_daily_loss_limit_usd') or 0) > 0:
+            return False, 'Günlük maksimum kayıp limiti belirlemeden canlı işlem açamazsınız.'
+        if not (rec.get('live_max_leverage') or 0) > 0:
+            return False, 'Maksimum kaldıraç belirlemeden canlı işlem açamazsınız.'
+        if not (rec.get('live_max_open_positions') or 0) > 0:
+            return False, 'Maksimum açık pozisyon sayısı belirlemeden canlı işlem açamazsınız.'
+    _update_user(username, lambda u: u.update(live_trading_enabled=bool(enabled)))
+    return True, None
+
+
+def list_live_enabled_users():
+    """Users currently eligible for the live-trading supervisor to open NEW
+    positions for (existing open positions are managed regardless of this,
+    see live_trading.py). Never returns credentials."""
+    users = _read_json(USERS_FILE, {})
+    out = []
+    for rec in users.values():
+        if not rec.get('live_trading_enabled'):
+            continue
+        if not rec.get('binance_api_key_encrypted') or not rec.get('binance_verified_at'):
+            continue
+        if subscription_status(rec)['status'] not in ('active', 'trial'):
+            continue
+        out.append({
+            'username': rec.get('username'),
+            'live_position_usd': rec.get('live_position_usd'),
+            'live_max_leverage': rec.get('live_max_leverage'),
+            'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
+            'live_max_open_positions': rec.get('live_max_open_positions'),
+        })
+    return out
+
+
+def get_global_kill_switch():
+    data = _read_json(KILL_SWITCH_FILE, {})
+    return {
+        'active': bool(data.get('active', False)),
+        'set_by': data.get('set_by'),
+        'set_at': data.get('set_at'),
+    }
+
+
+def set_global_kill_switch(active, by_username):
+    with _lock:
+        _write_json(KILL_SWITCH_FILE, {
+            'active': bool(active),
+            'set_by': by_username,
+            'set_at': datetime.now(timezone.utc).isoformat(),
+        })
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Per-user Telegram linking — one shared bot (TELEGRAM_BOT_TOKEN), each user
+# links their own chat by requesting a short-lived one-time code here and
+# sending "/start <code>" to the bot (telegram_link.py's polling loop
+# consumes the code and calls consume_telegram_link_code below). Actually
+# sending messages is telegram_notifier.py's job; this module only stores
+# who is linked to which chat_id.
+# ---------------------------------------------------------------------------
+import string as _string
+
+LINK_CODES_FILE = os.environ.get(
+    'TELEGRAM_LINK_CODES_FILE',
+    os.path.join(DATA_DIR, 'telegram_link_codes.json') if DATA_DIR else 'telegram_link_codes.json'
+)
+LINK_CODE_TTL_SECONDS = 600  # 10 minutes
+
+
+def create_telegram_link_code(username):
+    rec = get_user(username)
+    if not rec:
+        return None, 'Kullanıcı bulunamadı.'
+    code = ''.join(secrets.choice(_string.ascii_uppercase + _string.digits) for _ in range(6))
+    now = time.time()
+    with _lock:
+        codes = _read_json(LINK_CODES_FILE, {})
+        codes = {c: v for c, v in codes.items() if v.get('expires_at', 0) > now}  # purge expired
+        codes[code] = {
+            'username': (username or '').strip().lower(),
+            'created_at': now,
+            'expires_at': now + LINK_CODE_TTL_SECONDS,
+        }
+        _write_json(LINK_CODES_FILE, codes)
+    return code, None
+
+
+def consume_telegram_link_code(code, chat_id, tg_username=None):
+    """Called by telegram_link.py when a '/start <code>' message arrives.
+    Returns the username on success, else None (bad/expired/already-used
+    code)."""
+    code = (code or '').strip().upper()
+    if not code:
+        return None
+    with _lock:
+        codes = _read_json(LINK_CODES_FILE, {})
+        entry = codes.pop(code, None)
+        _write_json(LINK_CODES_FILE, codes)
+    if not entry or entry.get('expires_at', 0) < time.time():
+        return None
+    username = entry['username']
+
+    def m(u):
+        u['telegram_chat_id'] = chat_id
+        u['telegram_username'] = tg_username
+
+    if _update_user(username, m) is None:
+        return None
+    return username
+
+
+def unlink_telegram(username):
+    _update_user(username, lambda u: u.update(telegram_chat_id=None, telegram_username=None))
+
+
+def get_telegram_chat_id(username):
+    rec = get_user(username)
+    return rec.get('telegram_chat_id') if rec else None
+
+
+def list_telegram_linked_users():
+    users = _read_json(USERS_FILE, {})
+    out = []
+    for rec in users.values():
+        if rec.get('telegram_chat_id'):
+            out.append({'username': rec.get('username'), 'chat_id': rec.get('telegram_chat_id')})
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Admin — list users and manually flip payment status once you've confirmed
 # a bank transfer/payment outside the app.
 # ---------------------------------------------------------------------------
@@ -372,6 +570,11 @@ def list_users_admin():
             'subscription_status': sub['status'],
             'trial_ends_at': sub['trial_ends_at'],
             'days_left': sub['days_left'],
+            'live_trading_enabled': bool(rec.get('live_trading_enabled')),
+            'live_position_usd': rec.get('live_position_usd'),
+            'live_max_leverage': rec.get('live_max_leverage'),
+            'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
+            'live_max_open_positions': rec.get('live_max_open_positions'),
         })
     out.sort(key=lambda x: x.get('created_at') or '', reverse=True)
     return out
@@ -571,6 +774,12 @@ def get_account_status(username):
         'binance_verified_at': rec.get('binance_verified_at'),
         'binance_verify_error': rec.get('binance_verify_error'),
         'live_trading_enabled': bool(rec.get('live_trading_enabled')),
+        'live_position_usd': rec.get('live_position_usd'),
+        'live_max_leverage': rec.get('live_max_leverage'),
+        'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
+        'live_max_open_positions': rec.get('live_max_open_positions'),
+        'live_max_leverage_cap': LIVE_MAX_LEVERAGE_CAP,
+        'live_max_positions_cap': LIVE_MAX_POSITIONS_CAP,
         'credential_encryption_ready': credential_encryption_ready(),
         'risk_ack_at': rec.get('risk_ack_at'),
         'is_admin': bool(rec.get('is_admin')),
@@ -578,4 +787,7 @@ def get_account_status(username):
         'trial_ends_at': sub['trial_ends_at'],
         'days_left': sub['days_left'],
         'auth0_login_enabled': auth0_enabled(),
+        'global_kill_switch_active': get_global_kill_switch()['active'],
+        'telegram_linked': bool(rec.get('telegram_chat_id')),
+        'telegram_username': rec.get('telegram_username'),
     }

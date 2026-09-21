@@ -12,6 +12,7 @@ from dashboard import start_dashboard
 from telegram_notifier import send_message, entry_message, exit_message, daily_report, verify_connection
 from state_store import load_state as _load_state, save_state, STATE_FILE, TRADES_FILE
 import ai_analyst
+import live_trading
 import threading
 
 POLL_SECONDS = int(os.environ.get('POLL_SECONDS', '30'))
@@ -81,6 +82,16 @@ def enter(state, position, price, signal_row, now):
     save_state(state)
     send_message(entry_message(state['position']))
     print(f"PAPER ENTRY | {side} {symbol} | price={price:.4f} | ATR={atr:.4f} | SL={sl:.4f} | TP={tp:.4f}", flush=True)
+    # PHASE 2 — mirror this exact signal as a real order for every user who
+    # has live trading turned on for their own Binance account. Always uses
+    # the single USDT-margined main symbol (cfg.SIGNAL_SYMBOL) for live,
+    # regardless of which contract (COIN-M/USD-M) the paper engine itself
+    # used for this side — see binance_live.py's module docstring for why.
+    # Wrapped so a live-trading failure can never break the paper engine.
+    try:
+        live_trading.on_entry_signal(cfg.SIGNAL_SYMBOL, side, price, source='eth_bot')
+    except Exception as e:
+        print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
 
 def exit_position(state, raw_price, reason, event_time):
@@ -105,6 +116,10 @@ def exit_position(state, raw_price, reason, event_time):
     send_message(exit_message(trade))
     state['position'] = None
     save_state(state)
+    try:
+        live_trading.on_exit_signal(cfg.SIGNAL_SYMBOL, side, price, reason, source='eth_bot')
+    except Exception as e:
+        print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
 
 def process_intrabar(state, long_candle, short_candle, now):
@@ -154,10 +169,14 @@ def process_intrabar(state, long_candle, short_candle, now):
     return False
 
 
-def enter_symbol(state, symbol, side, price, signal_row, now):
+def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=False):
     """Same entry logic as enter(), generalized to any watchlist symbol and
     sized in USD notional (cfg.WATCHLIST_POSITION_USD) instead of a fixed
-    coin quantity, since watchlist symbols can have wildly different prices."""
+    coin quantity, since watchlist symbols can have wildly different prices.
+
+    live_eligible=True only for Binance-tradable crypto watchlist symbols
+    (see run_watchlist_symbol); US-stock/BIST watchlist symbols are never
+    live-tradable through this bot and must never reach live_trading.py."""
     atr_val = float(signal_row['atr'])
     if side == 'LONG':
         sl = price - cfg.ATR_SL_MULTIPLIER * atr_val
@@ -179,9 +198,14 @@ def enter_symbol(state, symbol, side, price, signal_row, now):
     save_state(state)
     send_message(entry_message(pos))
     print(f"WATCHLIST ENTRY | {side} {symbol} | price={price:.6f} | ATR={atr_val:.6f} | SL={sl:.6f} | TP={tp:.6f}", flush=True)
+    if live_eligible:
+        try:
+            live_trading.on_entry_signal(symbol, side, price, source='watchlist')
+        except Exception as e:
+            print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
 
-def exit_symbol_position(state, symbol, raw_price, reason, event_time):
+def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_eligible=False):
     p = state['positions'][symbol]
     side = p['side']
     price = close_price(raw_price, side)
@@ -203,9 +227,14 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time):
     send_message(exit_message(trade))
     state['positions'].pop(symbol, None)
     save_state(state)
+    if live_eligible:
+        try:
+            live_trading.on_exit_signal(symbol, side, price, reason, source='watchlist')
+        except Exception as e:
+            print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
 
-def process_intrabar_symbol(state, symbol, candle, now):
+def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     p = state.get('positions', {}).get(symbol)
     if not p:
         return False
@@ -214,10 +243,10 @@ def process_intrabar_symbol(state, symbol, candle, now):
     if p['side'] == 'LONG':
         stop = p['trail_stop'] if p['trail_active'] and p['trail_stop'] is not None else p['sl']
         if low <= stop:
-            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now)
+            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TP and high >= p['tp']:
-            exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now)
+            exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TRAILING and high >= entry + cfg.ATR_TRAIL_ACTIVATION * atr_val:
             if not p['trail_active']:
@@ -230,10 +259,10 @@ def process_intrabar_symbol(state, symbol, candle, now):
     else:
         stop = p['trail_stop'] if p['trail_active'] and p['trail_stop'] is not None else p['sl']
         if high >= stop:
-            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now)
+            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TP and low <= p['tp']:
-            exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now)
+            exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TRAILING and low <= entry - cfg.ATR_TRAIL_ACTIVATION * atr_val:
             if not p['trail_active']:
@@ -295,7 +324,7 @@ def run_watchlist_symbol(state, symbol, now):
 
     # Manage an existing paper position first, on the live (still-forming) candle.
     if symbol in state.get('positions', {}):
-        process_intrabar_symbol(state, symbol, df.iloc[-1], now)
+        process_intrabar_symbol(state, symbol, df.iloc[-1], now, live_eligible=True)
 
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
@@ -306,10 +335,10 @@ def run_watchlist_symbol(state, symbol, now):
                 go_long = go_short = False
             if go_long and not go_short:
                 px = exec_price(float(df.iloc[-1]['open']), 'BUY')
-                enter_symbol(state, symbol, 'LONG', px, latest, now)
+                enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
             elif go_short and not go_long:
                 px = exec_price(float(df.iloc[-1]['open']), 'SELL')
-                enter_symbol(state, symbol, 'SHORT', px, latest, now)
+                enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
     save_state(state)
 
 
@@ -493,6 +522,14 @@ def main():
                     state['last_daily_report_date'] = report_date
                     save_state(state)
                     print(f'TELEGRAM | daily report sent | {report_date} 09:00 Europe/Istanbul', flush=True)
+            # Per-user LIVE trading daily reports (Telegram) — same 09:00
+            # Europe/Istanbul trigger as the shared report above, but sent
+            # individually to each linked user about their own real trades.
+            # Wrapped so a failure here can never affect the trading loop.
+            try:
+                live_trading.maybe_send_daily_reports(now)
+            except Exception as e:
+                print(f'LIVE | ERROR | daily report | {type(e).__name__}: {e}', flush=True)
             # AI Trade Analyst — read-only, gated internally (weekly + min new trades).
             # Never touches position/config state; wrapped so a failure here can never
             # affect the trading loop.
