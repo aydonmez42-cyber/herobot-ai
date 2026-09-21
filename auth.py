@@ -629,6 +629,93 @@ def delete_session(token):
 
 
 # ---------------------------------------------------------------------------
+# Password reset ("şifremi unuttum" -> emailed link -> new password)
+# ---------------------------------------------------------------------------
+RESET_TOKENS_FILE = os.environ.get('RESET_TOKENS_FILE', os.path.join(DATA_DIR, 'reset_tokens.json') if DATA_DIR else 'reset_tokens.json')
+RESET_TOKEN_TTL_SECONDS = int(os.environ.get('RESET_TOKEN_TTL_SECONDS', str(30 * 60)))  # 30 minutes
+
+
+def find_username_by_email(email):
+    """Local-password accounts only (Auth0-only accounts have no password to
+    reset here — they sign in with 'Google ile giriş yap' instead)."""
+    email = (email or '').strip().lower()
+    if not email:
+        return None
+    users = _read_json(USERS_FILE, {})
+    for key, rec in users.items():
+        if (rec.get('email') or '').strip().lower() == email and rec.get('password_hash'):
+            return rec.get('username') or key
+    return None
+
+
+def create_password_reset_token(username):
+    """Issues a single-use token for an existing local-password account.
+    Any previous unused tokens for this user are invalidated first, so an
+    old, possibly-leaked reset link stops working once a new one is issued."""
+    key = (username or '').strip().lower()
+    with _lock:
+        users = _read_json(USERS_FILE, {})
+        if key not in users or not users[key].get('password_hash'):
+            return None
+        tokens = _read_json(RESET_TOKENS_FILE, {})
+        tokens = {t: v for t, v in tokens.items() if v.get('username') != key}
+        token = secrets.token_urlsafe(32)
+        tokens[token] = {
+            'username': key,
+            'created_at': time.time(),
+            'expires_at': time.time() + RESET_TOKEN_TTL_SECONDS,
+        }
+        _write_json(RESET_TOKENS_FILE, tokens)
+    return token
+
+
+def get_reset_token_username(token):
+    """Returns the username for a valid, unexpired, unused reset token."""
+    if not token:
+        return None
+    tokens = _read_json(RESET_TOKENS_FILE, {})
+    rec = tokens.get(token)
+    if not rec:
+        return None
+    if time.time() > rec.get('expires_at', 0):
+        with _lock:
+            tokens = _read_json(RESET_TOKENS_FILE, {})
+            tokens.pop(token, None)
+            _write_json(RESET_TOKENS_FILE, tokens)
+        return None
+    return rec.get('username')
+
+
+def reset_password_with_token(token, new_password):
+    username = get_reset_token_username(token)
+    if not username:
+        return False, 'Bu bağlantının süresi dolmuş veya geçersiz. Lütfen yeni bir şifre sıfırlama bağlantısı isteyin.'
+    if not new_password or len(new_password) < PASSWORD_MIN:
+        return False, f'Şifre en az {PASSWORD_MIN} karakter olmalı.'
+    salt_hex, hash_hex = _hash_password(new_password)
+
+    def m(rec):
+        rec['salt'] = salt_hex
+        rec['password_hash'] = hash_hex
+    if _update_user(username, m) is None:
+        return False, 'Hesap bulunamadı.'
+
+    with _lock:
+        tokens = _read_json(RESET_TOKENS_FILE, {})
+        tokens.pop(token, None)
+        _write_json(RESET_TOKENS_FILE, tokens)
+
+    # Any existing sessions for this account are revoked so a stolen session
+    # cookie doesn't survive a password reset the account owner just did.
+    with _lock:
+        sessions = _read_json(SESSIONS_FILE, {})
+        sessions = {t: v for t, v in sessions.items() if v.get('username') != username}
+        _write_json(SESSIONS_FILE, sessions)
+
+    return True, None
+
+
+# ---------------------------------------------------------------------------
 # Binance credential encryption
 # ---------------------------------------------------------------------------
 
