@@ -1462,36 +1462,89 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(auth.get_global_kill_switch()); return
 
         if path=='/api/admin/bist-debug':
-            # TEMPORARY diagnostic route — admin-only, read-only. Calls both
-            # XUTUM universe sources directly (bypassing the cache) and
-            # reports exactly what each one returned, so we can see why the
-            # scan is failing without needing shell/network access outside
-            # of Railway itself. Safe to remove once the scraper is fixed.
+            # TEMPORARY diagnostic route — admin-only, read-only. Round 2:
+            # tries several candidate TradingView filter payloads and several
+            # candidate CNBC-E regex patterns directly against the live
+            # responses, and reports match counts for each, so we can find
+            # working ones without needing shell/network access outside of
+            # Railway. Safe to remove once the scraper is fixed for good.
             user = self._current_user()
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
+            import re as _re
             import bist_xutum_universe as bxu
             out = {}
-            try:
-                syms, src = bxu.fetch_from_tradingview()
-                out['tradingview'] = {'ok': True, 'count': len(syms), 'source': src, 'sample': syms[:15]}
-            except Exception as e:
-                out['tradingview'] = {'ok': False, 'error': str(e)}
-            try:
-                syms, src = bxu.fetch_cnbc_fallback()
-                out['cnbc'] = {'ok': True, 'count': len(syms), 'source': src, 'sample': syms[:15]}
-            except Exception as e:
-                out['cnbc'] = {'ok': False, 'error': str(e)}
-            try:
-                r = requests.post(bxu.TV_SCANNER_URL, json=bxu._tv_payload(), headers=bxu._headers(), timeout=20)
-                out['tradingview_raw'] = {'status': r.status_code, 'body_snippet': r.text[:800]}
-            except Exception as e:
-                out['tradingview_raw'] = {'error': str(e)}
+
+            # --- TradingView: try several payload variants -----------------
+            tv_variants = {
+                'original': bxu._tv_payload(),
+                'no_is_primary': {**bxu._tv_payload(), 'filter': [f for f in bxu._tv_payload()['filter'] if f.get('left') != 'is_primary']},
+                'no_typespecs': {**bxu._tv_payload(), 'filter': [f for f in bxu._tv_payload()['filter'] if f.get('left') != 'typespecs']},
+                'exchange_only': {
+                    'columns': ['name', 'description'],
+                    'filter': [{'left': 'exchange', 'operation': 'equal', 'right': 'BIST'}],
+                    'filterOR': [], 'ignore_unknown_fields': False,
+                    'options': {'lang': 'tr'}, 'price_conversion': {},
+                    'range': [0, 50], 'sort': {'sortBy': 'name', 'sortOrder': 'asc'},
+                    'symbols': {'query': {'types': []}, 'tickers': []}, 'markets': ['turkey'],
+                },
+                'no_filters_at_all': {
+                    'columns': ['name', 'description'], 'filter': [], 'filterOR': [],
+                    'ignore_unknown_fields': False, 'options': {'lang': 'tr'}, 'price_conversion': {},
+                    'range': [0, 50], 'sort': {'sortBy': 'name', 'sortOrder': 'asc'},
+                    'symbols': {'query': {'types': []}, 'tickers': []}, 'markets': ['turkey'],
+                },
+            }
+            out['tradingview_variants'] = {}
+            for label, payload in tv_variants.items():
+                try:
+                    r = requests.post(bxu.TV_SCANNER_URL, json=payload, headers=bxu._headers(), timeout=20)
+                    body = {}
+                    try:
+                        body = r.json()
+                    except Exception:
+                        pass
+                    out['tradingview_variants'][label] = {
+                        'status': r.status_code,
+                        'totalCount': body.get('totalCount'),
+                        'data_len': len(body.get('data') or []),
+                        'sample': (body.get('data') or [])[:3],
+                        'body_snippet': None if body else r.text[:300],
+                    }
+                except Exception as e:
+                    out['tradingview_variants'][label] = {'error': str(e)}
+
+            # --- CNBC-E: try several regex patterns + a real content excerpt
             try:
                 r2 = requests.get(bxu.CNBC_XUTUM_URL, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
-                out['cnbc_raw'] = {'status': r2.status_code, 'html_length': len(r2.text), 'body_snippet': r2.text[:1500]}
+                html = r2.text
+                out['cnbc_raw_status'] = r2.status_code
+                out['cnbc_html_length'] = len(html)
+                regex_variants = {
+                    'original_lower_dash': r'/borsa/hisseler/([a-z0-9]+)-',
+                    'any_case_dash': r'/borsa/hisseler/([a-zA-Z0-9]+)-',
+                    'no_trailing_dash': r'/borsa/hisseler/([a-zA-Z0-9]+)',
+                    'data_symbol_attr': r'data-symbol=["\']([A-Z0-9]+)["\']',
+                    'hisse_senedi_path': r'/borsa/hisse-senedi/([a-zA-Z0-9]+)',
+                    'symbol_in_table_cell': r'"symbol"\s*:\s*"([A-Z0-9]+)"',
+                }
+                out['cnbc_regex_matches'] = {}
+                for label, pattern in regex_variants.items():
+                    found = _re.findall(pattern, html)
+                    uniq = sorted(set(f.upper() for f in found))
+                    out['cnbc_regex_matches'][label] = {'count': len(uniq), 'sample': uniq[:15]}
+                # Grab a real excerpt around the first stock-table heading so we
+                # can see the actual current markup by eye.
+                idx = html.find('HİSSELERİ')
+                if idx == -1:
+                    idx = html.upper().find('BIST TUM')
+                if idx != -1:
+                    out['cnbc_table_excerpt'] = html[max(0, idx-200): idx+3000]
+                else:
+                    out['cnbc_table_excerpt'] = None
             except Exception as e:
-                out['cnbc_raw'] = {'error': str(e)}
+                out['cnbc_error'] = str(e)
+
             self._send_json(out); return
 
         if path=='/api/status':
