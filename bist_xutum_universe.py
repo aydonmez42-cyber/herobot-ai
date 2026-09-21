@@ -24,23 +24,26 @@ def _headers():
 
 
 def _tv_payload():
-    # BIST Tüm (XUTUM) is the all-shares universe. TradingView's Turkey
-    # screener is restricted to primary, common BIST stocks; this excludes
-    # certificates/warrants and other non-common instruments.
+    # BIST Tüm (XUTUM) is the all-shares universe. This used to also filter
+    # on is_primary/typespecs=common/type=stock to exclude certificates and
+    # warrants, but TradingView silently changed what values those fields
+    # accept — with those filters present the screener returns totalCount=0
+    # (not an error, just an empty match). Diagnosed 2026-09-21 via a live
+    # admin-only debug endpoint that tried several payload variants against
+    # the real API: 'exchange'=='BIST' alone (plus the 'markets': ['turkey']
+    # restriction below) reliably returns the full ~650-symbol BIST universe
+    # with clean common-stock rows, so that's all we filter on now. If this
+    # breaks again, re-run that comparison rather than guessing blind.
     return {
         'columns': ['name', 'description'],
         'filter': [
-            {'left': 'is_primary', 'operation': 'equal', 'right': True},
-            {'left': 'typespecs', 'operation': 'has', 'right': 'common'},
-            {'left': 'type', 'operation': 'equal', 'right': 'stock'},
             {'left': 'exchange', 'operation': 'equal', 'right': 'BIST'},
-            {'left': 'name', 'operation': 'nempty'},
         ],
         'filterOR': [],
         'ignore_unknown_fields': False,
-        'options': {'active_symbols_only': True, 'lang': 'tr'},
+        'options': {'lang': 'tr'},
         'price_conversion': {},
-        'range': [0, 1000],
+        'range': [0, 2000],
         'sort': {'sortBy': 'name', 'sortOrder': 'asc'},
         'symbols': {'query': {'types': []}, 'tickers': []},
         'markets': ['turkey'],
@@ -74,6 +77,12 @@ def fetch_from_tradingview():
 
 
 def fetch_cnbc_fallback():
+    # Confirmed 2026-09-21: CNBC-E's BIST-TUM page now only server-renders a
+    # short preview of the table (~10 rows); the rest loads client-side, so
+    # this regex-based fallback can never see the full ~650-symbol universe
+    # from a plain HTTP GET. It will keep raising below (by design — better
+    # to fail loudly than silently scan a partial/wrong universe). Kept as a
+    # fallback in case TradingView's API goes down entirely; not a full fix.
     r = requests.get(CNBC_XUTUM_URL, headers={'User-Agent': 'Mozilla/5.0'}, timeout=TIMEOUT)
     r.raise_for_status()
     # CNBC-E XUTUM page contains /borsa/hisseler/<symbol>-<slug> links.
