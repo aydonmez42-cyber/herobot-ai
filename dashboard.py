@@ -1371,6 +1371,23 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     def do_GET(self):
+        # Top-level safety net: an unhandled exception anywhere below used to
+        # crash the connection with NO response at all (the client/Railway's
+        # edge just sees a dropped connection -> "Application failed to
+        # respond", with nothing useful in the browser to diagnose from).
+        # Catching it here means a bug in one route can never again look
+        # like a full outage, and the real error is visible immediately.
+        try:
+            self._do_GET_inner()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            try:
+                self._send_json({'error': 'internal server error', 'detail': f'{type(e).__name__}: {e}'}, status=500)
+            except Exception:
+                pass
+
+    def _do_GET_inner(self):
         path=urlparse(self.path).path
 
         if path=='/login':
@@ -1448,12 +1465,18 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({'users': auth.list_users_admin()}); return
 
         if path=='/api/account':
+            # NOTE: deliberately not named `status` — this method also has an
+            # `/api/status` branch that calls the module-level status()
+            # function; Python's function-wide local scoping means a local
+            # variable named `status` anywhere in this method shadows that
+            # function for the ENTIRE method, which previously broke
+            # /api/status on every single call with UnboundLocalError.
             user = self._current_user()
-            status = auth.get_account_status(user)
-            status['live_runtime'] = live_trading.get_runtime_status(user)
-            status['telegram_bot_username'] = tg_notifier.ensure_bot_username()
-            status['telegram_bot_enabled'] = tg_notifier.TELEGRAM_BOT_ENABLED
-            self._send_json(status); return
+            acct = auth.get_account_status(user)
+            acct['live_runtime'] = live_trading.get_runtime_status(user)
+            acct['telegram_bot_username'] = tg_notifier.ensure_bot_username()
+            acct['telegram_bot_enabled'] = tg_notifier.TELEGRAM_BOT_ENABLED
+            self._send_json(acct); return
 
         if path=='/api/admin/kill-switch':
             user = self._current_user()
@@ -1603,6 +1626,18 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- auth / account POST routes ---------------------------------------
     def do_POST(self):
+        # Same safety net as do_GET — see the comment there.
+        try:
+            self._do_POST_inner()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            try:
+                self._send_json({'error': 'internal server error', 'detail': f'{type(e).__name__}: {e}'}, status=500)
+            except Exception:
+                pass
+
+    def _do_POST_inner(self):
         path=urlparse(self.path).path
 
         if path=='/login':
