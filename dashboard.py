@@ -40,6 +40,343 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/telegram/link-code', '/api/account/telegram/unlink',
 }
 
+LANDING_HTML = r'''<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Herobot-ai — Kripto, BIST ve ABD Hisseleri için Otomatik Strateji Motoru</title>
+<meta name="description" content="Herobot-ai; kripto vadeli işlemler, BIST ve ABD hisselerinde 4 saatlik teknik sinyalleri tarayan, ATR bazlı risk yönetimiyle çalışan bir strateji motorudur.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0A0D10;font-family:'Manrope',system-ui,sans-serif;color:#E9EDF0;}
+  a{color:#3DD9A8;text-decoration:none}
+  a:hover{color:#6CE6C0}
+  .disp{font-family:'Space Grotesk',system-ui,sans-serif}
+  ::selection{background:#3DD9A8;color:#08110D}
+  .wrap{max-width:1320px;margin:0 auto;padding-left:40px;padding-right:40px}
+  .btn{display:inline-block;padding:14px 28px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid transparent}
+  .btn-primary{background:#3DD9A8;color:#08110D}
+  .btn-primary:hover{background:#6CE6C0;color:#08110D}
+  .btn-ghost{border-color:#2A3238;color:#E9EDF0}
+  .btn-ghost:hover{border-color:#3DD9A8;color:#3DD9A8}
+  .card{background:#11161A;border:1px solid #1E252B;border-radius:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+  .grid6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+  .eyebrow{font-size:13px;font-weight:700;color:#3DD9A8;letter-spacing:1px;text-transform:uppercase}
+  .stats{display:flex;gap:64px;justify-content:center;flex-wrap:wrap}
+  nav .nav-links{display:flex;align-items:center;gap:40px}
+  nav .nav-links a{font-size:14px;font-weight:600;color:#B7C0C6}
+  @media (max-width:900px){
+    .grid3,.grid2,.grid4,.grid6{grid-template-columns:1fr}
+    .wrap{padding-left:22px;padding-right:22px}
+    nav .nav-links{display:none}
+    .hero-h1{font-size:38px!important}
+    .split{flex-direction:column}
+    .stats{gap:32px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav style="position:sticky;top:0;z-index:20;background:rgba(10,13,16,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #1B2126">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;padding:20px 0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,#3DD9A8,#1D8F6E);display:flex;align-items:center;justify-content:center">
+        <span class="disp" style="font-size:16px;font-weight:700;color:#08110D">H</span>
+      </div>
+      <span class="disp" style="font-size:19px;font-weight:700">Herobot-ai</span>
+    </div>
+    <div class="nav-links">
+      <a href="#strateji">Strateji</a>
+      <a href="#piyasalar">Piyasalar</a>
+      <a href="#guvenlik">Güvenlik</a>
+      <a href="/login">Panel</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-size:13px;font-weight:600;color:#7A8590" class="hide-sm">Paper mod · risksiz</span>
+      <a href="/register" class="btn btn-primary" style="padding:11px 22px;font-size:14px">Ücretsiz Dene</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<div style="position:relative;overflow:hidden">
+  <div style="position:absolute;top:-220px;left:50%;transform:translateX(-50%);width:900px;height:500px;background:radial-gradient(ellipse at center, rgba(61,217,168,0.16), transparent 70%);pointer-events:none"></div>
+  <div class="wrap" style="position:relative;padding:96px 0 88px 0;display:flex;flex-direction:column;align-items:center;text-align:center">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid #23A57B;border-radius:999px;background:rgba(61,217,168,0.08);margin-bottom:28px">
+      <div style="width:7px;height:7px;border-radius:50%;background:#3DD9A8"></div>
+      <span style="font-size:13px;font-weight:700;color:#3DD9A8">Kripto · BIST · ABD hisseleri — tek motor</span>
+    </div>
+    <h1 class="disp hero-h1" style="margin:0;font-size:60px;line-height:1.08;font-weight:700;max-width:920px;letter-spacing:-0.5px">
+      Duygu yok, panik yok.<br>Sadece <span style="color:#3DD9A8">disiplinli sinyal.</span>
+    </h1>
+    <p style="margin:26px 0 0 0;font-size:19px;line-height:1.6;color:#B7C0C6;max-width:640px;font-weight:500">
+      Herobot-ai, kripto vadeli işlemler, BIST ve ABD hisselerinde 4 saatlik teknik sinyalleri
+      7/24 tarayan, ATR bazlı risk yönetimiyle çalışan bir strateji motorudur.
+    </p>
+    <div style="display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;justify-content:center">
+      <a href="/register" class="btn btn-primary">Ücretsiz Dene</a>
+      <a href="#strateji" class="btn btn-ghost">Stratejiyi İncele</a>
+    </div>
+    <div class="stats" style="margin-top:72px;padding-top:36px;border-top:1px solid #1B2126;width:100%;max-width:760px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">3</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">piyasa, tek panel</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">~15dk</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">otomatik tarama sıklığı</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">8+</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">teknik onay katmanı</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">7/24</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">kesintisiz izleme</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NASIL ÇALIŞIR ===== -->
+<div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126">
+  <div class="wrap" style="padding:80px 0">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:48px">
+      <span class="eyebrow">Nasıl çalışır</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Üç adımda, baştan sona otomatik</h2>
+    </div>
+    <div class="grid3">
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
+        <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">01</span>
+        <h3 style="margin:0;font-size:18px;font-weight:700">Kapanmış mumu okur</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Sinyal yalnızca kapanmış 4 saatlik mumdan üretilir — anlık fiyat gürültüsüne asla güvenilmez, yarım kalan mum işleme girmez.</p>
+      </div>
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
+        <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">02</span>
+        <h3 style="margin:0;font-size:18px;font-weight:700">Çoklu katman onaylar</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">EMA, Supertrend, ADX, RSI, CCI, Stoch RSI ve MACD aynı anda hizalanmadan pozisyon açılmaz. Tek indikatöre güvenilmez.</p>
+      </div>
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
+        <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">03</span>
+        <h3 style="margin:0;font-size:18px;font-weight:700">ATR ile riski çizer</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Stop-loss, take-profit ve trailing stop sabit yüzde değil, o anki volatiliteye göre otomatik hesaplanır.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STRATEJİ MOTORU ===== -->
+<div class="wrap split" style="padding:88px 0;display:flex;gap:64px;align-items:flex-start" id="strateji">
+  <div style="flex:0 0 340px;display:flex;flex-direction:column;gap:18px">
+    <span class="eyebrow">Strateji motoru</span>
+    <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Sekiz göstergenin hizalanmasını bekleyen bir sistem</h2>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Trend, momentum ve volatilite filtreleri birlikte çalışır. Piyasa yatay ya da aşırı uçtaysa sistem susmayı tercih eder — her mumda işlem açmaz.</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:14px 16px;background:#11161A;border:1px solid #1E252B;border-radius:10px">
+      <span style="font-size:13px;color:#7A8590;font-weight:600">Volatilite vetosu: ATRP 365 günlük yüzdelik dilimde &gt;%90 veya &lt;%10 ise yeni pozisyon açılmaz.</span>
+    </div>
+  </div>
+  <div class="grid2" style="flex:1">
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">TREND</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">EMA 50 / 100</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Uzun vadeli yön filtresi</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">YÖN</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend 10 / 7.8</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Trend teyidi</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">GÜÇ</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">ADX &gt; 25</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Gerçek trend / yatay piyasa ayrımı</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">MOMENTUM</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">RSI 55–72 / &lt;30</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">LONG ve SHORT bantları ayrı</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">ONAY</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">CCI, Stoch RSI, MACD</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Çoklu filtre yanlış sinyali eler</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">RİSK</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">ATR SL / TP / Trailing</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Long 3.5/4 ATR · Short 1.35/3 ATR</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PİYASALAR ===== -->
+<div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126" id="piyasalar">
+  <div class="wrap" style="padding:84px 0">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:48px">
+      <span class="eyebrow">Kapsam</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Tek panel, üç piyasa</h2>
+      <p style="margin:14px 0 0 0;font-size:16px;color:#97A0A6;max-width:560px">Aynı strateji mantığı, üç farklı piyasada aynı disiplinle çalışır.</p>
+    </div>
+    <div class="grid3">
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
+        <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
+          <div style="width:18px;height:18px;border-radius:50%;border:3px solid #3DD9A8"></div>
+        </div>
+        <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">Kripto Vadeli İşlem</h3>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Binance Futures USDT-M perpetual sözleşmelerinin tamamı otomatik keşfedilir ve taranır.</p>
+      </div>
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
+        <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
+          <div style="width:18px;height:12px;border-bottom:3px solid #3DD9A8;border-left:3px solid #3DD9A8;border-right:3px solid #3DD9A8"></div>
+        </div>
+        <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">BIST Tüm</h3>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">BIST 100 + Tüm-100 evreninde, TradingView'in native 4 saatlik verisiyle sinyal taraması.</p>
+      </div>
+      <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
+        <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
+          <div style="width:18px;height:18px;border-radius:4px;border:3px solid #3DD9A8"></div>
+        </div>
+        <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">ABD Hisseleri</h3>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">NASDAQ, NYSE ve AMEX'te otomatik borsa tespiti ile geniş bir hisse evreni taranır.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI ANALYST + TELEGRAM ===== -->
+<div class="wrap grid2" style="padding:88px 0">
+  <div class="card" style="padding:36px;display:flex;flex-direction:column;gap:16px">
+    <span class="eyebrow">AI Trade Analyst</span>
+    <h3 class="disp" style="margin:0;font-size:22px;font-weight:700">Sistemin kendi geçmişini okuyan bir analist</h3>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:#97A0A6">Kapanan işlemler periyodik olarak yapay zekâ destekli bir analistin masasına düşer: kazanma oranı, profit factor, sebep bazlı kırılım. Salt okunur — stratejiye asla müdahale etmez, sadece aynayı tutar.</p>
+    <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+      <span style="padding:7px 13px;background:rgba(61,217,168,0.1);border:1px solid #23A57B;border-radius:999px;font-size:12.5px;font-weight:700;color:#3DD9A8">Salt okunur</span>
+      <span style="padding:7px 13px;background:rgba(61,217,168,0.1);border:1px solid #23A57B;border-radius:999px;font-size:12.5px;font-weight:700;color:#3DD9A8">Otomatik</span>
+    </div>
+  </div>
+  <div class="card" style="padding:36px;display:flex;flex-direction:column;gap:16px">
+    <span class="eyebrow">Telegram Bildirimleri</span>
+    <h3 class="disp" style="margin:0;font-size:22px;font-weight:700">Cebine gelen, spam olmayan bildirim</h3>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:#97A0A6">Yeni pozisyon açıldığında, kapandığında ve her sabah 09:00'da (Europe/Istanbul) günlük özet raporla anında haberdar olursun. Yeniden başlatmalar mesaj göndermez.</p>
+    <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+      <span style="padding:7px 13px;background:rgba(61,217,168,0.1);border:1px solid #23A57B;border-radius:999px;font-size:12.5px;font-weight:700;color:#3DD9A8">Açılış / kapanış</span>
+      <span style="padding:7px 13px;background:rgba(61,217,168,0.1);border:1px solid #23A57B;border-radius:999px;font-size:12.5px;font-weight:700;color:#3DD9A8">Günlük rapor</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GÜVENLİK ===== -->
+<div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126" id="guvenlik">
+  <div class="wrap" style="padding:84px 0">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:44px">
+      <span class="eyebrow">Risk kontrolleri</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Kurumsal seviye güvenlik rayları</h2>
+      <p style="margin:14px 0 0 0;font-size:16px;color:#97A0A6;max-width:620px">Paper modda sıfır risk; gerçek işleme geçenler için ise sıkı, kullanıcı bazlı sınırlar.</p>
+    </div>
+    <div class="grid4">
+      <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:20px">🔒</span>
+        <div style="font-size:15px;font-weight:700">Sabit pozisyon büyüklüğü</div>
+        <div style="font-size:13px;line-height:1.6;color:#7A8590">Bakiyenin rastgele yüzdesi değil, kullanıcı bazlı sabit USD tutarı</div>
+      </div>
+      <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:20px">🛑</span>
+        <div style="font-size:15px;font-weight:700">Günlük zarar limiti</div>
+        <div style="font-size:13px;line-height:1.6;color:#7A8590">Limit dolunca yeni pozisyon durur, açık olanlar yönetilmeye devam eder</div>
+      </div>
+      <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:20px">⚖️</span>
+        <div style="font-size:15px;font-weight:700">Kaldıraç tavanı</div>
+        <div style="font-size:13px;line-height:1.6;color:#7A8590">Kullanıcı bazlı sınır + sistem genelinde mutlak tavan</div>
+      </div>
+      <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:20px">⏻</span>
+        <div style="font-size:15px;font-weight:700">Acil durdurma anahtarı</div>
+        <div style="font-size:13px;line-height:1.6;color:#7A8590">Admin tek tıkla tüm kullanıcılar için yeni işlemleri durdurur</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PANEL ===== -->
+<div class="wrap split" style="padding:88px 0;display:flex;align-items:center;gap:64px">
+  <div style="flex:1;display:flex;flex-direction:column;gap:18px">
+    <span class="eyebrow">Canlı panel</span>
+    <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Tek ekranda pozisyon, sinyal ve tarayıcı</h2>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Web tabanlı panelden anlık pozisyon durumu, güncel sinyal ve tarayıcı sonuçları tek bakışta görülür. Deneme süresi, abonelik ve admin paneliyle çok kullanıcılı yapıya hazır.</p>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+      <a href="/register" class="btn btn-primary">Ücretsiz Dene</a>
+      <a href="/login" class="btn btn-ghost">Panele Giriş Yap</a>
+    </div>
+  </div>
+  <div style="flex:1;width:100%">
+    <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#3DD9A8"></div>
+          <span style="font-size:13px;font-weight:700;color:#3DD9A8">Bot aktif</span>
+        </div>
+        <span style="font-size:12px;color:#7A8590;font-weight:600">ETHUSD_PERP</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:16px;background:#0D1114;border-radius:10px;border:1px solid #1B2126;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:12px;color:#7A8590;font-weight:600">Açık Pozisyon</span>
+          <span style="font-size:16px;font-weight:700;color:#3DD9A8">LONG · 2664.52</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <span style="font-size:12px;color:#7A8590;font-weight:600">Equity</span>
+          <span style="font-size:16px;font-weight:700">9,997.93</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #1B2126">
+          <span style="font-size:13px;color:#97A0A6">RSI</span><span style="font-size:13px;font-weight:700">58.2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #1B2126">
+          <span style="font-size:13px;color:#97A0A6">ADX</span><span style="font-size:13px;font-weight:700">31.4</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 4px">
+          <span style="font-size:13px;color:#97A0A6">Supertrend</span><span style="font-size:13px;font-weight:700;color:#3DD9A8">Boğa</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div style="border-top:1px solid #1B2126">
+  <div class="wrap" style="padding:44px 0 52px 0;display:flex;flex-direction:column;gap:22px">
+    <div class="card" style="padding:18px 22px">
+      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem şu anda paper-trading (demo) modda çalışır; gerçek emir göndermez. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(160deg,#3DD9A8,#1D8F6E);display:flex;align-items:center;justify-content:center">
+          <span class="disp" style="font-size:12px;font-weight:700;color:#08110D">H</span>
+        </div>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">© Herobot-ai — kripto · BIST · ABD hisseleri strateji motoru</span>
+      </div>
+      <div style="display:flex;gap:24px">
+        <a href="#strateji" style="font-size:13px;color:#7A8590;font-weight:600">Strateji</a>
+        <a href="#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
+        <a href="#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+'''
+
 HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>A&amp;I Trading Terminal</title>
@@ -1389,6 +1726,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_GET_inner(self):
         path=urlparse(self.path).path
+
+        # Public marketing homepage: a logged-out visitor hitting "/" sees
+        # the Herobot-ai landing page instead of being bounced to /login.
+        # A logged-in user still falls through to the normal dashboard
+        # further down — this only intercepts the logged-out case.
+        if path=='/' and not self._current_user():
+            self._send_html(LANDING_HTML); return
 
         if path=='/login':
             if self._current_user():
