@@ -267,21 +267,32 @@ def run_now():
     """Manual trigger (dashboard's 'Şimdi Analiz Et' button). Ignores the
     interval/new-trade gating and always attempts a fresh analysis,
     persisting the result through state_store's lock-protected update_state
-    so it can't race with the main bot loop's own state writes."""
+    so it can't race with the main bot loop's own state writes.
+
+    On failure the error is ALSO persisted (as 'ai_analyst_last_error'),
+    separately from 'ai_analysis' (which only ever holds the last
+    *successful* report). Before this, a failed manual run vanished
+    silently — the button would spin and revert with the panel completely
+    unchanged, giving no indication anything had even been attempted."""
     from state_store import load_state as _ss_load, update_state as _ss_update
 
     starting_equity = _starting_equity()
     state = _ss_load(starting_equity)
     if not os.path.exists(TRADES_FILE):
-        return {'ok': False, 'error': 'Henüz kapanmış işlem yok'}
-    trades_df = pd.read_csv(TRADES_FILE)
-    now = datetime.now(timezone.utc)
-    result = run_analysis(state, trades_df, now=now, notify_telegram=True)
+        result = {'ok': False, 'error': 'Henüz kapanmış işlem yok'}
+    else:
+        trades_df = pd.read_csv(TRADES_FILE)
+        now = datetime.now(timezone.utc)
+        result = run_analysis(state, trades_df, now=now, notify_telegram=True)
 
     def m(s):
-        s['ai_analyst_last_run'] = {'at': now.isoformat(), 'total_trades': len(trades_df)}
+        s['ai_analyst_last_run'] = {'at': datetime.now(timezone.utc).isoformat(),
+                                     'total_trades': len(trades_df) if os.path.exists(TRADES_FILE) else 0}
         if result.get('ok'):
             s['ai_analysis'] = result
+            s['ai_analyst_last_error'] = None
+        else:
+            s['ai_analyst_last_error'] = {'at': datetime.now(timezone.utc).isoformat(), 'error': result.get('error')}
     _ss_update(m, starting_equity)
     return result
 
@@ -294,6 +305,7 @@ def get_status():
         'enabled': AI_ANALYST_ENABLED,
         'analysis': state.get('ai_analysis'),
         'last_run': state.get('ai_analyst_last_run'),
+        'last_error': state.get('ai_analyst_last_error'),
         'min_interval_hours': getattr(cfg, 'AI_ANALYST_MIN_INTERVAL_HOURS', 168),
         'min_new_trades': getattr(cfg, 'AI_ANALYST_MIN_NEW_TRADES', 3),
     }

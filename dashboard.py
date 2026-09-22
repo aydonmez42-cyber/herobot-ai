@@ -1063,7 +1063,14 @@ async function refreshAiAnalysis(){
   const body=document.getElementById('aiAnalysisBody');
   if(!d.enabled){ body.innerHTML='<div class="ai-disabled">AI Analist devre dışı — ANTHROPIC_API_KEY tanımlı değil.</div>'; return; }
   const a=d.analysis;
-  if(!a || !a.ok){ body.innerHTML='<div class="ai-disabled">Henüz bir analiz üretilmedi. '+(a&&a.error?('Son deneme: '+a.error):'"Şimdi Analiz Et" ile ilk raporu oluşturabilirsiniz.')+'</div>'; return; }
+  if(!a || !a.ok){
+    let msg='Henüz bir analiz üretilmedi. "Şimdi Analiz Et" ile ilk raporu oluşturabilirsiniz.';
+    if(d.last_error && d.last_error.error){
+      msg='Son deneme başarısız oldu ('+(d.last_error.at||'').replace('T',' ').slice(0,16)+'): '+d.last_error.error;
+    }
+    body.innerHTML='<div class="ai-disabled">'+msg.replace(/</g,'&lt;')+'</div>';
+    return;
+  }
   const meta=`<div class="ai-meta">${(a.generated_at||'').replace('T',' ').slice(0,16)} &middot; ${a.trades_analyzed} işlem incelendi (toplam ${a.total_trades_all_time})</div>`;
   body.innerHTML=meta+'<div>'+a.text.replace(/</g,'&lt;')+'</div>';
 }
