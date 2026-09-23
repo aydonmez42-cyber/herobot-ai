@@ -1,4 +1,5 @@
-import csv, json, os, secrets, threading
+import csv, json, os, secrets, threading, time
+from collections import defaultdict, deque
 import requests
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,6 +25,34 @@ import telegram_notifier as tg_notifier
 PORT = int(os.environ.get('PORT', '8080'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
 SESSION_COOKIE = 'session_token'
+
+# ---------------------------------------------------------------------------
+# Per-IP rate limiting for the auth-adjacent endpoints (login, register,
+# forgot/reset password) — the ones an attacker would hit for credential
+# stuffing, brute-forcing a password, or mail-bombing someone's inbox via
+# the reset-email flow. A simple in-memory sliding window is enough here:
+# this process is the single source of truth for these routes (one Railway
+# instance), so it needs no shared/external store, and a restart merely
+# resets everyone's counters rather than opening a security hole.
+# ---------------------------------------------------------------------------
+_rate_limit_lock = threading.Lock()
+_rate_limit_buckets = defaultdict(deque)  # (bucket, ip) -> deque[timestamp, ...]
+
+
+def _rate_limit_check(bucket, ip, limit, window_seconds):
+    """Returns True if this request is allowed (and records it), False if
+    the caller has exceeded `limit` requests in the trailing
+    `window_seconds` for this bucket+ip and should be rejected."""
+    now = time.time()
+    key = (bucket, ip)
+    with _rate_limit_lock:
+        dq = _rate_limit_buckets[key]
+        while dq and now - dq[0] > window_seconds:
+            dq.popleft()
+        if len(dq) >= limit:
+            return False
+        dq.append(now)
+        return True
 
 # Every user must be logged in to see anything except these — the main
 # dashboard page and every /api/* route are members-only, per the "each
@@ -1828,6 +1857,36 @@ class Handler(BaseHTTPRequestHandler):
             proto = 'http' if host.startswith('localhost') or host.startswith('127.0.0.1') else 'https'
         return f'{proto}://{host}'
 
+    def _client_ip(self):
+        # Railway's edge proxy forwards the real client IP in
+        # X-Forwarded-For (first entry = original client); without it every
+        # request would appear to come from Railway's own internal address,
+        # making per-IP rate limiting useless.
+        fwd = (self.headers.get('X-Forwarded-For', '') or '').split(',')[0].strip()
+        return fwd or (self.client_address[0] if self.client_address else 'unknown')
+
+    def _rate_limited(self, bucket, limit, window_seconds):
+        """True if this IP has exceeded `limit` requests to `bucket` in the
+        trailing `window_seconds` and the caller should send 429 and stop."""
+        return not _rate_limit_check(bucket, self._client_ip(), limit, window_seconds)
+
+    def _error_body(self, e):
+        # A raw exception message/type can leak internal details (file
+        # paths, library names, query fragments) to whoever triggered the
+        # 500 — including an attacker probing for weaknesses. The full
+        # traceback always goes to the server log either way; only an
+        # already-authenticated admin also gets it in the HTTP response,
+        # for convenient live debugging.
+        is_admin = False
+        try:
+            is_admin = auth.is_admin(self._current_user())
+        except Exception:
+            pass
+        body = {'error': 'internal server error'}
+        if is_admin:
+            body['detail'] = f'{type(e).__name__}: {e}'
+        return body
+
     def _send_json(self, obj, status=200, extra_headers=None):
         body = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(status)
@@ -1885,7 +1944,7 @@ class Handler(BaseHTTPRequestHandler):
             import traceback
             traceback.print_exc()
             try:
-                self._send_json({'error': 'internal server error', 'detail': f'{type(e).__name__}: {e}'}, status=500)
+                self._send_json(self._error_body(e), status=500)
             except Exception:
                 pass
 
@@ -2160,7 +2219,7 @@ class Handler(BaseHTTPRequestHandler):
             import traceback
             traceback.print_exc()
             try:
-                self._send_json({'error': 'internal server error', 'detail': f'{type(e).__name__}: {e}'}, status=500)
+                self._send_json(self._error_body(e), status=500)
             except Exception:
                 pass
 
@@ -2168,6 +2227,8 @@ class Handler(BaseHTTPRequestHandler):
         path=urlparse(self.path).path
 
         if path=='/login':
+            if self._rate_limited('login', limit=10, window_seconds=300):
+                self._send_json({'ok': False, 'error': 'Çok fazla giriş denemesi yapıldı. Lütfen birkaç dakika sonra tekrar deneyin.'}, status=429); return
             data=self._read_json_body()
             ok, err = auth.authenticate(data.get('username',''), data.get('password',''))
             if not ok:
@@ -2183,6 +2244,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path=='/register':
+            if self._rate_limited('register', limit=5, window_seconds=3600):
+                self._send_json({'ok': False, 'error': 'Çok fazla kayıt denemesi yapıldı. Lütfen daha sonra tekrar deneyin.'}, status=429); return
             data=self._read_json_body()
             ok, err = auth.register_user(data.get('username',''), data.get('password',''), data.get('email',''))
             if not ok:
@@ -2209,6 +2272,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path=='/api/auth/forgot-password':
+            if self._rate_limited('forgot-password', limit=5, window_seconds=3600):
+                # Same generic ok:true even when rate-limited — a 429 here
+                # would itself leak "this IP has already tried a valid
+                # email", so we quietly no-op instead of returning an error.
+                self._send_json({'ok': True}); return
             # Always answers {"ok": true} whether or not the email matches an
             # account — telling a caller "no account with that email" would
             # let anyone enumerate registered addresses. If it does match a
@@ -2229,6 +2297,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({'ok': True}); return
 
         if path=='/api/auth/reset-password':
+            if self._rate_limited('reset-password', limit=10, window_seconds=3600):
+                self._send_json({'ok': False, 'error': 'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.'}, status=429); return
             data=self._read_json_body()
             ok, err = auth.reset_password_with_token(data.get('token',''), data.get('password',''))
             if not ok:
