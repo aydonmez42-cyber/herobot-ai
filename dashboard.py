@@ -1,84 +1,41 @@
-
-Yaşar Dönmez (Milas Şb) <Yasar.Donmez@akbank.com>	23 Eylül 2026 11:36
-Alıcı: Ali Yaşar Dönmez <aydonmez42@gmail.com>
-Sınıflandırma: Akbank Kamuya Açık Veri İçerir & Kişisel Veri İçermez
-
- 
-
- 
-
 import csv, json, os, secrets, threading, time
-
 from collections import defaultdict, deque
-
 import requests
-
 from http.cookies import SimpleCookie
-
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-
 from urllib.parse import urlparse, parse_qs
 
- 
-
 import config as cfg
-
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
-
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
-
 from us_scanner import snapshot as us_scanner_snapshot, start_scan as us_scanner_start, background_loop as us_background_loop
-
 from state_store import (
 
     STATE_FILE, TRADES_FILE,
-
     load_state as _load_shared_state,
-
     add_to_watchlist as _add_to_watchlist,
-
     remove_from_watchlist as _remove_from_watchlist,
-
 )
-
 import ai_analyst
-
 import auth
-
 import email_notifier
-
 import live_trading
-
 import telegram_link
-
 import telegram_notifier as tg_notifier
 
- 
 
 PORT = int(os.environ.get('PORT', '8080'))
-
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
-
 SESSION_COOKIE = 'session_token'
 
- 
-
 # ---------------------------------------------------------------------------
-
 # Per-IP rate limiting for the auth-adjacent endpoints (login, register,
-
 # forgot/reset password) — the ones an attacker would hit for credential
-
 # stuffing, brute-forcing a password, or mail-bombing someone's inbox via
-
 # the reset-email flow. A simple in-memory sliding window is enough here:
-
 # this process is the single source of truth for these routes (one Railway
-
 # instance), so it needs no shared/external store, and a restart merely
-
 # resets everyone's counters rather than opening a security hole.
-
 # ---------------------------------------------------------------------------
 
 _rate_limit_lock = threading.Lock()
