@@ -39,6 +39,7 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/live-settings', '/api/account/live-toggle',
     '/api/admin/kill-switch', '/api/admin/kill-switch/toggle',
     '/api/account/telegram/link-code', '/api/account/telegram/unlink',
+    '/api/live/my-positions',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -605,6 +606,23 @@ th.sort-active{color:var(--accent)}
 </section>
 
 <section class="panel">
+  <div class="panel-head"><h2>Canlı İşlemlerim</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div class="table-scroll">
+    <table class="datatable">
+      <thead><tr><th>Sembol</th><th>Yön</th><th class="num">Miktar</th><th class="num">Giriş</th><th class="num">Güncel</th><th class="num">Unrealized P&amp;L</th><th>Kaldıraç</th><th>Açılış</th></tr></thead>
+      <tbody id="liveMineOpenRows"><tr><td colspan="8" class="empty">Yükleniyor…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-scroll" style="margin-top:14px">
+    <table class="datatable">
+      <thead><tr><th>Tarih</th><th>Yön</th><th>Sembol</th><th class="num">Giriş</th><th class="num">Çıkış</th><th class="num">P&amp;L</th><th>Neden</th></tr></thead>
+      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="footnote">Bu panel yalnızca <b>sizin</b> Binance hesabınızda gerçekleşen canlı işlemleri gösterir — yukarıdaki paper/demo panel ile veya başka kullanıcılarla karışmaz; sizden başka hiç kimse burayı göremez.</div>
+</section>
+
+<section class="panel">
   <div class="panel-head"><h2>Takip listesi</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
   <div class="table-scroll">
     <table class="datatable">
@@ -1056,6 +1074,29 @@ async function refresh(){
 }
 refresh();setInterval(refresh,5000);
 refreshWatchlist();setInterval(refreshWatchlist,10000);
+
+async function refreshMyLive(){
+  let d;
+  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  const open=d.open||[], closed=d.closed||[];
+  document.getElementById('liveMineCount').textContent = d.live_trading_enabled
+    ? `${open.length} açık pozisyon`
+    : 'Canlı işlem kapalı';
+
+  document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
+    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
+      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
+      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Şu an açık canlı pozisyonunuz yok.</td></tr>';
+
+  document.getElementById('liveMineClosedRows').innerHTML = closed.map(t=>{
+    return `<tr><td>${(t.exit_time||'—')}</td><td><span class="pill ${String(t.side).toLowerCase()}">${t.side}</span></td><td>${t.symbol}</td>`
+      +`<td class="num">${num(t.entry_price)}</td><td class="num">${num(t.exit_price)}</td>`
+      +`<td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td class="wrap-cell">${t.reason||''}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">Henüz kapanmış canlı işleminiz yok.</td></tr>';
+}
+refreshMyLive();setInterval(refreshMyLive,15000);
 
 async function refreshAiAnalysis(){
   let d;
@@ -2083,6 +2124,15 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/ai-analysis/run':
             result=ai_analyst.run_now()
             body=json.dumps(result,ensure_ascii=False).encode(); self.send_response(200 if result.get('ok') else 400); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path=='/api/live/my-positions':
+            # Scoped to the logged-in user's OWN live Binance positions/trades
+            # only — never the shared paper/demo panel and never another
+            # user's data (live_trading.get_my_live_summary() reads only the
+            # runtime record and trade-log rows keyed to this username).
+            user=self._current_user()
+            summary=live_trading.get_my_live_summary(user)
+            summary['live_trading_enabled']=bool((auth.get_user(user) or {}).get('live_trading_enabled'))
+            body=json.dumps(summary,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         html=HTML.replace('__USERNAME__', self._current_user() or '')
         body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
 

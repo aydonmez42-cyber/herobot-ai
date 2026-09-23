@@ -38,6 +38,10 @@ BINANCE_FAPI_URL = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com'
 _exchange_info_cache = {'data': None, 'ts': 0.0}
 _cache_lock = threading.Lock()
 
+_price_cache = {}  # symbol -> {'price': float, 'ts': float}
+_price_cache_lock = threading.Lock()
+PRICE_CACHE_SECONDS = 5
+
 
 def _signed_request(method, path, api_key, api_secret, params=None, timeout=15):
     params = dict(params or {})
@@ -54,6 +58,31 @@ def _signed_request(method, path, api_key, api_secret, params=None, timeout=15):
     if method == 'DELETE':
         return requests.delete(url, headers=headers, timeout=timeout)
     raise ValueError(f'unsupported method {method}')
+
+
+def get_mark_price(symbol):
+    """Public (unsigned) last-price lookup for a USD-M futures symbol, used
+    only to show a user their own live position's current unrealized P&L —
+    never to size or price an order (real fills always happen at Binance's
+    own live market price via the MARKET order itself). Cached for a few
+    seconds so a dashboard refreshing every few seconds across several open
+    positions doesn't hammer Binance's public endpoint. Returns None on any
+    failure — callers must fall back to the position's entry price rather
+    than showing a wrong number."""
+    now = time.time()
+    with _price_cache_lock:
+        cached = _price_cache.get(symbol)
+        if cached and now - cached['ts'] < PRICE_CACHE_SECONDS:
+            return cached['price']
+    try:
+        r = requests.get(f'{BINANCE_FAPI_URL}/fapi/v1/ticker/price', params={'symbol': symbol}, timeout=10)
+        r.raise_for_status()
+        price = float(r.json()['price'])
+    except Exception:
+        return None
+    with _price_cache_lock:
+        _price_cache[symbol] = {'price': price, 'ts': now}
+    return price
 
 
 def get_exchange_info(force=False):

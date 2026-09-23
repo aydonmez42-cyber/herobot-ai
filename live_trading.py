@@ -152,6 +152,60 @@ def get_runtime_status(username):
     }
 
 
+# ---------------------------------------------------------------------------
+# Per-user read-only views for the dashboard's "Canlı İşlemlerim" panel.
+# Deliberately separate from get_runtime_status()'s small account-panel
+# summary: this returns full position/trade detail, scoped to ONE user's
+# own data only — never another user's, and never the shared paper engine.
+# ---------------------------------------------------------------------------
+
+def get_user_open_positions_detailed(username):
+    with _lock:
+        runtime = _load_runtime()
+        rec = _get_user_runtime(runtime, username)
+        positions = dict(rec.get('positions', {}))
+        _save_runtime(runtime)
+    out = []
+    for symbol, p in positions.items():
+        entry = float(p.get('entry_price') or 0)
+        qty = float(p.get('qty') or 0)
+        side = p.get('side')
+        current = blive.get_mark_price(symbol)
+        if current is None:
+            current = entry  # public price lookup failed — show entry rather than a wrong number
+        unreal = (current - entry) * qty if side == 'LONG' else (entry - current) * qty
+        out.append({
+            'symbol': symbol, 'side': side, 'qty': qty, 'entry_price': entry,
+            'current_price': current, 'unrealized_pnl': unreal,
+            'leverage': p.get('leverage'), 'entry_time': p.get('entry_time'),
+        })
+    out.sort(key=lambda x: x.get('entry_time') or '', reverse=True)
+    return out
+
+
+def get_user_closed_trades(username, limit=20):
+    if not os.path.exists(LIVE_TRADES_FILE):
+        return []
+    rows = []
+    try:
+        with open(LIVE_TRADES_FILE, 'r', encoding='utf-8', newline='') as f:
+            for row in csv.DictReader(f):
+                if row.get('username') == username:
+                    rows.append(row)
+    except Exception:
+        return []
+    rows.sort(key=lambda r: r.get('exit_time') or '', reverse=True)
+    return rows[:limit]
+
+
+def get_my_live_summary(username):
+    """Everything the dashboard's per-user live panel needs in one call."""
+    return {
+        'open': get_user_open_positions_detailed(username),
+        'closed': get_user_closed_trades(username),
+    }
+
+
 def on_entry_signal(symbol, side, price, source='eth_bot'):
     """side: 'LONG' or 'SHORT'. Called right after the shared strategy opens
     a paper position, at that same signal price, so live orders mirror the
