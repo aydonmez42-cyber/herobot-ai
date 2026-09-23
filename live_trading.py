@@ -206,6 +206,73 @@ def get_my_live_summary(username):
     }
 
 
+def close_position_now(username, symbol):
+    """User-initiated manual close (the dashboard's 'Pozisyonu Şimdi Kapat'
+    button) — the one case where an open real position is closed WITHOUT
+    waiting for the shared strategy's own exit signal. Mirrors
+    on_exit_signal()'s bookkeeping exactly (same trade log, same realized
+    P&L / daily-loss-limit accounting, same Telegram message), but scoped to
+    one user's one symbol and called synchronously so the dashboard can show
+    success/failure immediately instead of finding out later. Deliberately
+    NOT gated by live_trading_enabled or the global kill switch, for the
+    same reason on_exit_signal isn't — closing a position down is always
+    allowed, only opening new ones is ever blocked."""
+    with _lock:
+        runtime = _load_runtime()
+        urec = _get_user_runtime(runtime, username)
+        pos = urec['positions'].get(symbol)
+        if not pos:
+            return False, 'Bu sembolde açık canlı pozisyonunuz yok.'
+        rec = auth.get_user(username)
+        if not rec:
+            return False, 'Hesap bulunamadı.'
+        api_key, api_secret = auth.get_decrypted_binance_credentials(username)
+        if not api_key or not api_secret:
+            return False, 'Binance anahtarınız okunamadı — lütfen Binance bağlantınızı kontrol edin.'
+
+        side = pos['side']
+        qty = pos['qty']
+        order_side = 'SELL' if side == 'LONG' else 'BUY'
+        ok, result = blive.place_market_order(api_key, api_secret, symbol, order_side, qty, reduce_only=True)
+        if not ok:
+            urec['last_error'] = result
+            _save_runtime(runtime)
+            print(f'LIVE | {username} | MANUAL CLOSE FAILED | {symbol} {side} | {result}', flush=True)
+            return False, f'Kapatma emri başarısız oldu: {result}'
+
+        fallback_price = blive.get_mark_price(symbol) or pos['entry_price']
+        fill_price = blive.fill_price_from_order(result, fallback_price)
+        entry_price = pos['entry_price']
+        gross = (fill_price - entry_price) * qty if side == 'LONG' else (entry_price - fill_price) * qty
+        urec['realized_pnl_usd'] += gross
+        if gross < 0:
+            urec['realized_loss_usd'] += gross
+        urec['positions'].pop(symbol, None)
+        _log_live_trade({
+            'username': username, 'side': side, 'symbol': symbol, 'qty': qty,
+            'entry_price': entry_price, 'exit_price': fill_price, 'pnl': gross,
+            'reason': 'manual_close_by_user', 'entry_time': pos.get('entry_time'),
+            'exit_time': datetime.now(timezone.utc).isoformat(), 'source': 'dashboard_manual',
+        })
+        daily_limit = float(rec.get('live_daily_loss_limit_usd') or 0)
+        just_paused = False
+        if daily_limit > 0 and urec['realized_loss_usd'] <= -abs(daily_limit) and not urec.get('paused_today'):
+            urec['paused_today'] = True
+            just_paused = True
+        urec['last_error'] = None
+        urec['last_error_notified'] = None
+        _save_runtime(runtime)
+
+    print(f'LIVE EXIT | {username} | {side} {symbol} | reason=manual_close_by_user | qty={qty} | price~{fill_price} | pnl~{gross:.2f}', flush=True)
+    _notify_user(username, tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, 'Kullanıcı panelden manuel kapattı'))
+    if just_paused:
+        _notify_user(username, tg.live_risk_alert(
+            f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {urec["realized_loss_usd"]:.2f} USD, limit: {daily_limit:.2f} USD).\n'
+            f'Yeni canlı işlem bugün (UTC) için durduruldu; yarın otomatik olarak tekrar açılacak.'
+        ))
+    return True, None
+
+
 def on_entry_signal(symbol, side, price, source='eth_bot'):
     """side: 'LONG' or 'SHORT'. Called right after the shared strategy opens
     a paper position, at that same signal price, so live orders mirror the

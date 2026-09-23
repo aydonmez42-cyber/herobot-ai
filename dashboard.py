@@ -499,6 +499,9 @@ th.sort-active{color:var(--accent)}
 .scanner-controls input,.scanner-controls select{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:12.5px;font-family:var(--font-d)}
 .btn{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-d)}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{border-color:#7a2a2a;color:#ff8080}
+.btn-danger:hover{border-color:#ff5c5c;color:#ff5c5c;background:rgba(255,92,92,0.08)}
+.btn:disabled{opacity:0.55;cursor:default}
 .scanner-status{color:var(--text-dim);font-size:12px;align-self:center;margin-left:2px}
 .scanner-summary{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;font-size:11.5px}
 .scanner-summary>span:first-child{color:var(--text-dim);align-self:center;margin-right:4px}
@@ -609,8 +612,8 @@ th.sort-active{color:var(--accent)}
   <div class="panel-head"><h2>Canlı İşlemlerim</h2><span class="text-faint" id="liveMineCount">—</span></div>
   <div class="table-scroll">
     <table class="datatable">
-      <thead><tr><th>Sembol</th><th>Yön</th><th class="num">Miktar</th><th class="num">Giriş</th><th class="num">Güncel</th><th class="num">Unrealized P&amp;L</th><th>Kaldıraç</th><th>Açılış</th></tr></thead>
-      <tbody id="liveMineOpenRows"><tr><td colspan="8" class="empty">Yükleniyor…</td></tr></tbody>
+      <thead><tr><th>Sembol</th><th>Yön</th><th class="num">Miktar</th><th class="num">Giriş</th><th class="num">Güncel</th><th class="num">Unrealized P&amp;L</th><th>Kaldıraç</th><th>Açılış</th><th></th></tr></thead>
+      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty">Yükleniyor…</td></tr></tbody>
     </table>
   </div>
   <div class="table-scroll" style="margin-top:14px">
@@ -1087,8 +1090,9 @@ async function refreshMyLive(){
     const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
     return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
       +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
-      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td></tr>`;
-  }).join('') || '<tr><td colspan="8" class="empty">Şu an açık canlı pozisyonunuz yok.</td></tr>';
+      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
+      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">Şimdi Kapat</button></td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="empty">Şu an açık canlı pozisyonunuz yok.</td></tr>';
 
   document.getElementById('liveMineClosedRows').innerHTML = closed.map(t=>{
     return `<tr><td>${(t.exit_time||'—')}</td><td><span class="pill ${String(t.side).toLowerCase()}">${t.side}</span></td><td>${t.symbol}</td>`
@@ -1097,6 +1101,17 @@ async function refreshMyLive(){
   }).join('') || '<tr><td colspan="7" class="empty">Henüz kapanmış canlı işleminiz yok.</td></tr>';
 }
 refreshMyLive();setInterval(refreshMyLive,15000);
+
+async function closeLivePosition(symbol,btn){
+  if(!confirm(`${symbol} pozisyonunu şimdi gerçek bir market emriyle kapatmak istediğinize emin misiniz? Bu işlem geri alınamaz.`)) return;
+  btn.disabled=true; btn.textContent='Kapatılıyor…';
+  try{
+    const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'Pozisyon kapatılamadı'); btn.disabled=false; btn.textContent='Şimdi Kapat'; return; }
+  }catch(e){ alert('Bağlantı hatası'); btn.disabled=false; btn.textContent='Şimdi Kapat'; return; }
+  await refreshMyLive();
+}
 
 async function refreshAiAnalysis(){
   let d;
@@ -2265,6 +2280,18 @@ class Handler(BaseHTTPRequestHandler):
             data=self._read_json_body()
             ok, err = auth.set_live_trading_enabled(user, bool(data.get('enabled')))
             self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/live/close-position':
+            # Deliberately NOT gated by has_active_access/trial status — a
+            # user closing their own already-open real position should never
+            # be blocked by a subscription check, same reasoning as
+            # live_trading.on_exit_signal not being gated by it either.
+            data=self._read_json_body()
+            symbol=(data.get('symbol') or '').strip().upper()
+            if not symbol:
+                self._send_json({'ok': False, 'error': 'Sembol gerekli'}, status=400); return
+            ok, err = live_trading.close_position_now(user, symbol)
+            self._send_json({'ok': ok, 'error': err}, status=200 if ok else 400); return
 
         if path=='/api/admin/set-status':
             if not auth.is_admin(user):
