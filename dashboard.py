@@ -128,6 +128,7 @@ LANDING_HTML = r'''<!doctype html>
       <a href="#strateji">Strateji</a>
       <a href="#piyasalar">Piyasalar</a>
       <a href="#guvenlik">Güvenlik</a>
+      <a href="/tanitim">Tanıtım</a>
       <a href="/login">Panel</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
@@ -382,12 +383,94 @@ LANDING_HTML = r'''<!doctype html>
   </div>
 </div>
 
-<!-- ===== TANITIM / MAKALE ===== -->
-<div class="wrap" style="padding:88px 0" id="tanitim">
+<!-- ===== FOOTER ===== -->
+<div style="border-top:1px solid #1B2126">
+  <div class="wrap" style="padding:44px 0 52px 0;display:flex;flex-direction:column;gap:22px">
+    <div class="card" style="padding:18px 22px">
+      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem şu anda paper-trading (demo) modda çalışır; gerçek emir göndermez. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(160deg,#3DD9A8,#1D8F6E);display:flex;align-items:center;justify-content:center">
+          <span class="disp" style="font-size:12px;font-weight:700;color:#08110D">H</span>
+        </div>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">© Herobot-ai — kripto · BIST · ABD hisseleri strateji motoru</span>
+      </div>
+      <div style="display:flex;gap:24px">
+        <a href="#strateji" style="font-size:13px;color:#7A8590;font-weight:600">Strateji</a>
+        <a href="#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
+        <a href="#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+'''
+
+TANITIM_HTML = r'''<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tanıtım — Herobot-ai</title>
+<meta name="description" content="HeroBot AI: kripto, BIST ve ABD hisselerinde duygusuz, disiplinli ve 7/24 çalışan bir strateji motoru.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0A0D10;font-family:'Manrope',system-ui,sans-serif;color:#E9EDF0;}
+  a{color:#3DD9A8;text-decoration:none}
+  a:hover{color:#6CE6C0}
+  .disp{font-family:'Space Grotesk',system-ui,sans-serif}
+  ::selection{background:#3DD9A8;color:#08110D}
+  .wrap{max-width:1320px;margin:0 auto;padding-left:40px;padding-right:40px}
+  .btn{display:inline-block;padding:14px 28px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid transparent}
+  .btn-primary{background:#3DD9A8;color:#08110D}
+  .btn-primary:hover{background:#6CE6C0;color:#08110D}
+  .card{background:#11161A;border:1px solid #1E252B;border-radius:14px}
+  .eyebrow{font-size:13px;font-weight:700;color:#3DD9A8;letter-spacing:1px;text-transform:uppercase}
+  nav .nav-links{display:flex;align-items:center;gap:40px}
+  nav .nav-links a{font-size:14px;font-weight:600;color:#B7C0C6}
+  nav .nav-links a.active{color:#3DD9A8}
+  @media (max-width:900px){
+    .wrap{padding-left:22px;padding-right:22px}
+    nav .nav-links{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav style="position:sticky;top:0;z-index:20;background:rgba(10,13,16,0.9);backdrop-filter:blur(10px);border-bottom:1px solid #1B2126">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;padding:20px 0">
+    <a href="/" style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,#3DD9A8,#1D8F6E);display:flex;align-items:center;justify-content:center">
+        <span class="disp" style="font-size:16px;font-weight:700;color:#08110D">H</span>
+      </div>
+      <span class="disp" style="font-size:19px;font-weight:700;color:#E9EDF0">Herobot-ai</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#strateji">Strateji</a>
+      <a href="/#piyasalar">Piyasalar</a>
+      <a href="/#guvenlik">Güvenlik</a>
+      <a href="/tanitim" class="active">Tanıtım</a>
+      <a href="/login">Panel</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="/register" class="btn btn-primary" style="padding:11px 22px;font-size:14px">Ücretsiz Dene</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== MAKALE ===== -->
+<div class="wrap" style="padding:64px 0 88px 0">
   <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:26px">
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px">
       <span class="eyebrow">Tanıtım</span>
-      <h2 class="disp" style="margin:0;font-size:34px;font-weight:700;line-height:1.25">Finansal Evrenin Yeni Hakimi: HeroBot AI ile Duygusuz ve Disiplinli Yatırımın Sırları</h2>
+      <h1 class="disp" style="margin:0;font-size:36px;font-weight:700;line-height:1.25">Finansal Evrenin Yeni Hakimi: HeroBot AI ile Duygusuz ve Disiplinli Yatırımın Sırları</h1>
     </div>
     <img src="/static/tanitim-infografik.png" alt="HeroBot AI özellik infografiği" style="width:100%;border-radius:14px;border:1px solid #1E252B;display:block">
     <div style="display:flex;flex-direction:column;gap:26px;font-size:15px;line-height:1.85;color:#B7C0C6">
@@ -476,9 +559,8 @@ LANDING_HTML = r'''<!doctype html>
         <span style="font-size:13px;color:#7A8590;font-weight:600">© Herobot-ai — kripto · BIST · ABD hisseleri strateji motoru</span>
       </div>
       <div style="display:flex;gap:24px">
-        <a href="#strateji" style="font-size:13px;color:#7A8590;font-weight:600">Strateji</a>
-        <a href="#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
-        <a href="#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
+        <a href="/" style="font-size:13px;color:#7A8590;font-weight:600">Anasayfa</a>
+        <a href="/tanitim" style="font-size:13px;color:#7A8590;font-weight:600">Tanıtım</a>
       </div>
     </div>
   </div>
@@ -2125,6 +2207,9 @@ class Handler(BaseHTTPRequestHandler):
         # further down — this only intercepts the logged-out case.
         if path=='/' and not self._current_user():
             self._send_html(LANDING_HTML); return
+
+        if path=='/tanitim':
+            self._send_html(TANITIM_HTML); return
 
         if path=='/login':
             if self._current_user():
