@@ -1569,6 +1569,7 @@ LOGIN_HTML = r'''<!doctype html>
   </form>
   <div class="auth-switch" style="margin-top:4px"><a href="/forgot-password">Şifremi unuttum</a></div>
   <div class="auth-switch">Hesabınız yok mu? <a href="/register">Kayıt olun</a></div>
+  <div class="auth-switch" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)"><a href="/">← Anasayfaya Dön</a></div>
 </div></div>
 <script>
 async function doLogin(ev){
