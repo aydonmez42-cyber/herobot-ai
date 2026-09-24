@@ -382,6 +382,22 @@ LANDING_HTML = r'''<!doctype html>
   </div>
 </div>
 
+<!-- ===== TANITIM VİDEOSU ===== -->
+<div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126">
+  <div class="wrap" style="padding:84px 0">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:40px">
+      <span class="eyebrow">Bizi tanıyın</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Herobot-ai'ı anlatan kısa video</h2>
+    </div>
+    <div class="card" style="max-width:900px;margin:0 auto;padding:10px;overflow:hidden">
+      <video controls preload="metadata" playsinline style="width:100%;display:block;border-radius:8px;background:#000">
+        <source src="/static/tanitim.mp4" type="video/mp4">
+        Tarayıcınız video oynatmayı desteklemiyor.
+      </video>
+    </div>
+  </div>
+</div>
+
 <!-- ===== FOOTER ===== -->
 <div style="border-top:1px solid #1B2126">
   <div class="wrap" style="padding:44px 0 52px 0;display:flex;flex-direction:column;gap:22px">
@@ -582,6 +598,10 @@ th.sort-active{color:var(--accent)}
 .auth-switch{text-align:center;margin-top:16px;font-size:12.5px;color:var(--text-dim)}
 .auth-switch a{color:var(--accent);text-decoration:none}
 .page-footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:6px}
+.tv-chart-empty{padding:60px 18px;text-align:center;color:var(--text-faint);font-size:13px}
+.tv-chart-frame{width:100%;height:560px;border:0;display:block}
+.tv-chart-frame.hidden{display:none}
+@media(max-width:640px){.tv-chart-frame{height:400px}}
 
 @media(max-width:900px){.cols{grid-template-columns:1fr}.pos-grid{grid-template-columns:1fr 1fr}.chip-grid{grid-template-columns:1fr}}
 @media(max-width:640px){.app{padding:12px}.kpistrip{flex-wrap:wrap}.kpi-divider{display:none}.kpi{min-width:45%}.topbar{flex-wrap:wrap}}
@@ -636,7 +656,7 @@ th.sort-active{color:var(--accent)}
 <section class="panel scanner-panel">
   <div class="panel-head scanner-tabs">
     <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')">Binance Futures</button>
-    <button class="tab" data-tab="bist" onclick="switchTab('bist')">XUTUM</button>
+    <button class="tab" data-tab="bist" onclick="switchTab('bist')">Borsa İstanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')">Wall Street</button>
     <div class="scanner-note" id="scannerNote">USDT-M perpetual &middot; 4H kapalı mum &middot; sinyal amaçlı, gerçek emir yok</div>
   </div>
@@ -679,7 +699,7 @@ th.sort-active{color:var(--accent)}
       <select id="bistSignalFilter" onchange="renderBistScanner()">
         <option value="ALL">Tüm sinyaller</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
       </select>
-      <button class="btn" onclick="startBistScanner(true)">XUTUM tara</button>
+      <button class="btn" onclick="startBistScanner(true)">Borsa İstanbul tara</button>
       <span class="scanner-status" id="bistScannerStatus">Hazırlanıyor…</span>
     </div>
     <div class="scanner-summary"><span id="bistCount">0 hisse</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
@@ -740,6 +760,12 @@ th.sort-active{color:var(--accent)}
   </div>
 </section>
 
+<section class="panel" id="tvChartPanel">
+  <div class="panel-head"><h2>TradingView Grafiği <span class="text-faint" id="tvChartSymbol">— sembol seçilmedi</span></h2></div>
+  <div id="tvChartEmpty" class="tv-chart-empty">Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.</div>
+  <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
+</section>
+
 <section class="panel">
   <div class="panel-head"><h2>Deneme İşlemleri</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
   <div class="table-scroll">
@@ -748,7 +774,7 @@ th.sort-active{color:var(--accent)}
       <tbody id="watchlistRows"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
     </table>
   </div>
-  <div class="footnote">Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $<span id="wlUsd">—</span> nominal). XUTUM sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.</div>
+  <div class="footnote">Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $<span id="wlUsd">—</span> nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.</div>
 </section>
 
 <section class="panel">
@@ -946,7 +972,21 @@ let watchlistSymbols=new Set();
 function addCell(symbol,market,signal){
   if(signal!=='LONG'&&signal!=='SHORT') return '<span class="text-faint">—</span>';
   if(watchlistSymbols.has(symbol)) return '<span class="added-tag">Eklendi ✓</span>';
-  return `<button class="add-btn" onclick="addToWatchlist('${symbol}','${market}','${signal}',this)">+ Ekle</button>`;
+  return `<button class="add-btn" onclick="event.stopPropagation();addToWatchlist('${symbol}','${market}','${signal}',this)">+ Ekle</button>`;
+}
+
+// TradingView "Advanced Chart" widget — TradingView's own free public embed
+// (no API key, no account needed; https://www.tradingview.com/widget/advanced-chart/).
+// Clicking any scanner row loads that symbol's live chart into the panel below.
+function openTvChart(tvSymbol,label){
+  document.getElementById('tvChartSymbol').textContent='— '+label;
+  const frame=document.getElementById('tvChartFrame');
+  frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
+    +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
+    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale=tr';
+  frame.classList.remove('hidden');
+  document.getElementById('tvChartEmpty').style.display='none';
+  document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function addToWatchlist(symbol,market,signal,btn){
   if(btn){btn.disabled=true;btn.textContent='Ekleniyor…';}
@@ -991,7 +1031,7 @@ function renderWatchlistTable(){
     }
     const added=(x.added_at||'').replace('T',' ').slice(0,16);
     const sel=selectedSymbol===x.symbol?' row-selected':'';
-    const marketLabel=x.market==='bist'?'XUTUM':x.market==='us_stock'?'ABD Hisse':'Binance';
+    const marketLabel=x.market==='bist'?'Borsa İstanbul':x.market==='us_stock'?'ABD Hisse':'Binance';
     return `<tr class="row-clickable${sel}" onclick="selectSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">Kaldır</button></td></tr>`;
   }).join('');
 
@@ -1040,7 +1080,7 @@ function renderScanner(){
   let f=document.getElementById('signalFilter')?.value||'ALL';
   let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'scanner');
-  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
+  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Binance Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
   document.getElementById('coinCount').textContent=rows.length+' coin';
   document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -1053,7 +1093,7 @@ function renderBistScanner(){
   let f=document.getElementById('bistSignalFilter')?.value||'ALL';
   let rows=bistScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'bist');
-  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
+  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa İstanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
   document.getElementById('bistCount').textContent=rows.length+' hisse';
   document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -1066,10 +1106,10 @@ attachSort('usScannerTable',()=>usScannerCache,renderUsScanner);
 async function refreshBistScanner(){
   let d=await bistScannerData();bistScannerCache=d;
   let st=d.status||'IDLE';let src=d.universe_source?` &middot; Evren: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`XUTUM taraması: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`Hazır &middot; Son 4H: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`Hata: ${d.last_error||'Bilinmeyen hata'}`:'Bekleniyor…';
+  let txt=st==='SCANNING'?`Borsa İstanbul taraması: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`Hazır &middot; Son 4H: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`Hata: ${d.last_error||'Bilinmeyen hata'}`:'Bekleniyor…';
   document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
 }
-async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent='XUTUM taraması başlatılıyor…';try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
+async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent='Borsa İstanbul taraması başlatılıyor…';try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
 refreshBistScanner();setInterval(refreshBistScanner,10000);
 
 async function usScannerData(){try{let r=await fetch('/api/us-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
@@ -1079,7 +1119,7 @@ function renderUsScanner(){
   let f=document.getElementById('usSignalFilter')?.value||'ALL';
   let rows=usScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'us');
-  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
+  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · ABD Hisse')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
   document.getElementById('usCount').textContent=rows.length+' hisse';
   document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -1914,6 +1954,63 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _serve_static(self, path):
+        """Serves a whitelisted file from the local static/ folder (marketing
+        assets — landing-page image/video). Supports HTTP Range requests
+        (Range: bytes=start-end) because browsers request video in chunks
+        for seeking/scrubbing; without this, <video> playback works but
+        the seek bar doesn't. Public — no auth required, same as the rest
+        of the logged-out landing page."""
+        name = path[len('/static/'):]
+        # No path traversal: only a bare filename from our fixed whitelist,
+        # never anything containing '/' or '..'.
+        allowed = {
+            'tanitim.mp4': 'video/mp4',
+            'hero-robot.png': 'image/png',
+        }
+        content_type = allowed.get(name)
+        if not content_type or '/' in name or '..' in name:
+            self.send_response(404); self.send_header('Content-Length', '0'); self.end_headers(); return
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', name)
+        try:
+            file_size = os.path.getsize(file_path)
+        except OSError:
+            self.send_response(404); self.send_header('Content-Length', '0'); self.end_headers(); return
+
+        start, end = 0, file_size - 1
+        status = 200
+        range_header = self.headers.get('Range')
+        if range_header and range_header.startswith('bytes='):
+            try:
+                rng = range_header.split('=', 1)[1].split('-')
+                if rng[0]:
+                    start = int(rng[0])
+                if len(rng) > 1 and rng[1]:
+                    end = int(rng[1])
+                end = min(end, file_size - 1)
+                if start > end or start < 0:
+                    raise ValueError
+                status = 206
+            except (ValueError, IndexError):
+                start, end, status = 0, file_size - 1, 200
+
+        length = end - start + 1
+        with open(file_path, 'rb') as f:
+            f.seek(start)
+            data = f.read(length)
+        self.send_response(status)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Cache-Control', 'public, max-age=86400')
+        self.send_header('Content-Length', str(len(data)))
+        if status == 206:
+            self.send_header('Content-Range', f'bytes {start}-{end}/{file_size}')
+        self.end_headers()
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # client aborted/seeked away mid-transfer — not an error
+
     def _redirect(self, location):
         self.send_response(302)
         self.send_header('Location', location)
@@ -1953,6 +2050,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_GET_inner(self):
         path=urlparse(self.path).path
+
+        if path.startswith('/static/'):
+            self._serve_static(path); return
 
         # Public marketing homepage: a logged-out visitor hitting "/" sees
         # the Herobot-ai landing page instead of being bounced to /login.
