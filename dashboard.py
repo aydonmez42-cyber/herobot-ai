@@ -604,6 +604,153 @@ TANITIM_HTML = r'''<!doctype html>
 </html>
 '''
 
+# Shared "Abonelik Sistemine Geç" / "Admin'e Soru Sor" / FAQ block — embedded
+# both in the main dashboard (HTML, under the account panel) and in the
+# trial-expired page (TRIAL_EXPIRED_HTML, where it's the main call to
+# action). __USERNAME__/__IBAN__/__IBAN_HOLDER__ are replaced the same way
+# __USERNAME__ already is elsewhere in these templates.
+ACCOUNT_EXTRAS_HTML = r'''
+<div class="stack-gap">
+  <div class="account-row">
+    <button class="btn" type="button" onclick="toggleBox('subscriptionBox')">💳 Abonelik Sistemine Geç</button>
+    <button class="btn" type="button" onclick="toggleBox('askAdminBox')">✉️ Admin'e Soru Sor</button>
+  </div>
+
+  <div id="subscriptionBox" style="display:none">
+    <div class="section-title" style="margin-top:14px">Abonelik Sistemine Geç</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0">Bir plan seçin, IBAN'a ödemeyi gönderin ve "Tutarı Gönderdim" butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.</p>
+    <div class="plan-choices">
+      <button type="button" class="plan-btn" id="planBtn_monthly" onclick="selectPlan('monthly')">
+        <span class="plan-name">Aylık Abonelik</span>
+        <span class="plan-price">50 USD</span>
+      </button>
+      <button type="button" class="plan-btn" id="planBtn_annual" onclick="selectPlan('annual')">
+        <span class="plan-name">Yıllık Abonelik</span>
+        <span class="plan-price">500 USD</span>
+      </button>
+    </div>
+    <div id="planIbanBox" style="display:none">
+      <div class="iban-box">
+        <div class="account-row text-faint">Seçilen plan: <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
+        <div class="account-row" style="margin-top:8px">IBAN:</div>
+        <div class="iban-num">__IBAN__</div>
+        <div class="account-row text-faint" style="margin-top:4px">Alıcı: __IBAN_HOLDER__</div>
+        <div class="account-row text-faint">Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.</div>
+        <div class="account-row" style="margin-top:10px">
+          <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()">Tutarı Gönderdim</button>
+        </div>
+        <div id="paySentMsg" style="margin-top:8px;font-size:12.5px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="askAdminBox" class="ask-box" style="display:none">
+    <div class="section-title" style="margin-top:14px">Admin'e Soru Sor</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 8px 0">Mesajınız herobotai.int@gmail.com adresine iletilecek.</p>
+    <textarea id="askAdminMsg" placeholder="Sorunuzu buraya yazın…"></textarea>
+    <div class="account-row" style="margin-top:8px">
+      <button class="btn btn-primary" type="button" id="askAdminBtn" onclick="submitAskAdmin()">Gönder</button>
+    </div>
+    <div id="askAdminResult" style="margin-top:8px;font-size:12.5px"></div>
+  </div>
+
+  <div>
+    <div class="section-title" style="margin-top:18px">FAQ — Sıkça Sorulan Sorular</div>
+    <div>
+      <details class="faq-item">
+        <summary>Bu bot gerçek parayla mı işlem yapıyor?</summary>
+        <p>Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp "Canlı İşlem" ayarını kendi panelinizden siz açmanız gerekir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Ücretsiz deneme süresi ne kadar ve dolunca ne olur?</summary>
+        <p>7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra "Tutarı Gönderdim" demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Abonelik nasıl ödeniyor, kartla ödeme var mı?</summary>
+        <p>Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Binance API anahtarımı vermek güvenli mi?</summary>
+        <p>Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında "para çekme" (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Hangi piyasalarda işlem yapılıyor?</summary>
+        <p>Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Sinyaller ne sıklıkla üretiliyor?</summary>
+        <p>Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Telegram bildirimlerini nasıl açarım?</summary>
+        <p>Panelde "Telegram Bağlantısı" bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?</summary>
+        <p>"Binance Gerçek Hesap" panelindeki ilgili pozisyonun yanındaki "Şimdi Kapat" butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Başka bir sorum var, kime ulaşabilirim?</summary>
+        <p>Yukarıdaki "Admin'e Soru Sor" butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.</p>
+      </details>
+    </div>
+  </div>
+</div>
+<script>
+function toggleBox(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none';
+}
+let _selectedPlan=null;
+function selectPlan(plan){
+  _selectedPlan=plan;
+  document.getElementById('planBtn_monthly').classList.toggle('selected', plan==='monthly');
+  document.getElementById('planBtn_annual').classList.toggle('selected', plan==='annual');
+  document.getElementById('planSelectedLabel').textContent = plan==='monthly' ? 'Aylık — 50 USD' : 'Yıllık — 500 USD';
+  document.getElementById('planIbanBox').style.display='block';
+  document.getElementById('paySentMsg').textContent='';
+  const btn=document.getElementById('paySentBtn');
+  btn.disabled=false; btn.textContent='Tutarı Gönderdim';
+}
+async function confirmPaymentSent(){
+  if(!_selectedPlan) return;
+  const btn=document.getElementById('paySentBtn');
+  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  try{
+    const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan})});
+    const d=await r.json();
+    document.getElementById('paySentMsg').innerHTML = d.ok
+      ? '<span style="color:var(--bull)">✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.</span>'
+      : '<span style="color:var(--bear)">'+(d.error||'Bir hata oluştu, lütfen tekrar deneyin.')+'</span>';
+  }catch(e){
+    document.getElementById('paySentMsg').innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+  }
+  btn.disabled=false; btn.textContent='Tekrar Bildir';
+}
+async function submitAskAdmin(){
+  const msg=(document.getElementById('askAdminMsg').value||'').trim();
+  const resultEl=document.getElementById('askAdminResult');
+  if(!msg){ resultEl.innerHTML='<span style="color:var(--bear)">Lütfen bir mesaj yazın.</span>'; return; }
+  const btn=document.getElementById('askAdminBtn');
+  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  try{
+    const r=await fetch('/api/account/ask-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const d=await r.json();
+    if(d.ok){
+      resultEl.innerHTML='<span style="color:var(--bull)">✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.</span>';
+      document.getElementById('askAdminMsg').value='';
+    } else {
+      resultEl.innerHTML='<span style="color:var(--bear)">'+(d.error||'Gönderilemedi, lütfen tekrar deneyin.')+'</span>';
+    }
+  }catch(e){
+    resultEl.innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+  }
+  btn.disabled=false; btn.textContent='Gönder';
+}
+</script>
+'''
+
 HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>A&amp;I Trading Terminal</title>
@@ -1433,6 +1580,7 @@ function renderAccount(a){
   else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">Deneme doldu</span>'; }
   document.getElementById('whoami').innerHTML=whoText;
   document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
+  const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||'(e-posta kayıtlı değil)';
   if(a.binance_connected){
     if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">Doğrulama hatası</span>'; }
     else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">Bağlı ve doğrulandı</span>'; }
@@ -1719,153 +1867,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 </style>
 '''
 
-# Shared "Abonelik Sistemine Geç" / "Admin'e Soru Sor" / FAQ block — embedded
-# both in the main dashboard (HTML, under the account panel) and in the
-# trial-expired page (TRIAL_EXPIRED_HTML, where it's the main call to
-# action). __USERNAME__/__IBAN__/__IBAN_HOLDER__ are replaced the same way
-# __USERNAME__ already is elsewhere in these templates.
-ACCOUNT_EXTRAS_HTML = r'''
-<div class="stack-gap">
-  <div class="account-row">
-    <button class="btn" type="button" onclick="toggleBox('subscriptionBox')">💳 Abonelik Sistemine Geç</button>
-    <button class="btn" type="button" onclick="toggleBox('askAdminBox')">✉️ Admin'e Soru Sor</button>
-  </div>
-
-  <div id="subscriptionBox" style="display:none">
-    <div class="section-title" style="margin-top:14px">Abonelik Sistemine Geç</div>
-    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0">Bir plan seçin, IBAN'a ödemeyi gönderin ve "Tutarı Gönderdim" butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.</p>
-    <div class="plan-choices">
-      <button type="button" class="plan-btn" id="planBtn_monthly" onclick="selectPlan('monthly')">
-        <span class="plan-name">Aylık Abonelik</span>
-        <span class="plan-price">50 USD</span>
-      </button>
-      <button type="button" class="plan-btn" id="planBtn_annual" onclick="selectPlan('annual')">
-        <span class="plan-name">Yıllık Abonelik</span>
-        <span class="plan-price">500 USD</span>
-      </button>
-    </div>
-    <div id="planIbanBox" style="display:none">
-      <div class="iban-box">
-        <div class="account-row text-faint">Seçilen plan: <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
-        <div class="account-row" style="margin-top:8px">IBAN:</div>
-        <div class="iban-num">__IBAN__</div>
-        <div class="account-row text-faint" style="margin-top:4px">Alıcı: __IBAN_HOLDER__</div>
-        <div class="account-row text-faint">Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.</div>
-        <div class="account-row" style="margin-top:10px">
-          <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()">Tutarı Gönderdim</button>
-        </div>
-        <div id="paySentMsg" style="margin-top:8px;font-size:12.5px"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="askAdminBox" class="ask-box" style="display:none">
-    <div class="section-title" style="margin-top:14px">Admin'e Soru Sor</div>
-    <p class="text-faint" style="font-size:12.5px;margin:0 0 8px 0">Mesajınız herobotai.int@gmail.com adresine iletilecek.</p>
-    <textarea id="askAdminMsg" placeholder="Sorunuzu buraya yazın…"></textarea>
-    <div class="account-row" style="margin-top:8px">
-      <button class="btn btn-primary" type="button" id="askAdminBtn" onclick="submitAskAdmin()">Gönder</button>
-    </div>
-    <div id="askAdminResult" style="margin-top:8px;font-size:12.5px"></div>
-  </div>
-
-  <div>
-    <div class="section-title" style="margin-top:18px">FAQ — Sıkça Sorulan Sorular</div>
-    <div>
-      <details class="faq-item">
-        <summary>Bu bot gerçek parayla mı işlem yapıyor?</summary>
-        <p>Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp "Canlı İşlem" ayarını kendi panelinizden siz açmanız gerekir.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Ücretsiz deneme süresi ne kadar ve dolunca ne olur?</summary>
-        <p>7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra "Tutarı Gönderdim" demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Abonelik nasıl ödeniyor, kartla ödeme var mı?</summary>
-        <p>Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Binance API anahtarımı vermek güvenli mi?</summary>
-        <p>Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında "para çekme" (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Hangi piyasalarda işlem yapılıyor?</summary>
-        <p>Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Sinyaller ne sıklıkla üretiliyor?</summary>
-        <p>Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Telegram bildirimlerini nasıl açarım?</summary>
-        <p>Panelde "Telegram Bağlantısı" bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?</summary>
-        <p>"Binance Gerçek Hesap" panelindeki ilgili pozisyonun yanındaki "Şimdi Kapat" butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Başka bir sorum var, kime ulaşabilirim?</summary>
-        <p>Yukarıdaki "Admin'e Soru Sor" butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.</p>
-      </details>
-    </div>
-  </div>
-</div>
-<script>
-function toggleBox(id){
-  const el=document.getElementById(id);
-  if(!el) return;
-  el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none';
-}
-let _selectedPlan=null;
-function selectPlan(plan){
-  _selectedPlan=plan;
-  document.getElementById('planBtn_monthly').classList.toggle('selected', plan==='monthly');
-  document.getElementById('planBtn_annual').classList.toggle('selected', plan==='annual');
-  document.getElementById('planSelectedLabel').textContent = plan==='monthly' ? 'Aylık — 50 USD' : 'Yıllık — 500 USD';
-  document.getElementById('planIbanBox').style.display='block';
-  document.getElementById('paySentMsg').textContent='';
-  const btn=document.getElementById('paySentBtn');
-  btn.disabled=false; btn.textContent='Tutarı Gönderdim';
-}
-async function confirmPaymentSent(){
-  if(!_selectedPlan) return;
-  const btn=document.getElementById('paySentBtn');
-  btn.disabled=true; btn.textContent='Gönderiliyor…';
-  try{
-    const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan})});
-    const d=await r.json();
-    document.getElementById('paySentMsg').innerHTML = d.ok
-      ? '<span style="color:var(--bull)">✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.</span>'
-      : '<span style="color:var(--bear)">'+(d.error||'Bir hata oluştu, lütfen tekrar deneyin.')+'</span>';
-  }catch(e){
-    document.getElementById('paySentMsg').innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
-  }
-  btn.disabled=false; btn.textContent='Tekrar Bildir';
-}
-async function submitAskAdmin(){
-  const msg=(document.getElementById('askAdminMsg').value||'').trim();
-  const resultEl=document.getElementById('askAdminResult');
-  if(!msg){ resultEl.innerHTML='<span style="color:var(--bear)">Lütfen bir mesaj yazın.</span>'; return; }
-  const btn=document.getElementById('askAdminBtn');
-  btn.disabled=true; btn.textContent='Gönderiliyor…';
-  try{
-    const r=await fetch('/api/account/ask-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
-    const d=await r.json();
-    if(d.ok){
-      resultEl.innerHTML='<span style="color:var(--bull)">✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.</span>';
-      document.getElementById('askAdminMsg').value='';
-    } else {
-      resultEl.innerHTML='<span style="color:var(--bear)">'+(d.error||'Gönderilemedi, lütfen tekrar deneyin.')+'</span>';
-    }
-  }catch(e){
-    resultEl.innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
-  }
-  btn.disabled=false; btn.textContent='Gönder';
-}
-</script>
-'''
-
 LOGIN_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Giriş — A&amp;I Trading Terminal</title>
@@ -2057,16 +2058,19 @@ TRIAL_EXPIRED_HTML = r'''<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 ''' + _AUTH_STYLE + r'''</head>
 <body>
-<div class="auth-page"><div class="auth-card">
+<div class="auth-page"><div class="auth-card wide">
   <h1>Deneme süreniz doldu</h1>
-  <p class="sub">__USERNAME__ hesabınızın ücretsiz deneme süresi sona erdi. Kullanmaya devam etmek için aboneliğinizi aktive etmemiz gerekiyor.</p>
-  <div class="auth-notice" style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--text-dim);margin-bottom:16px">
-    Aboneliğinizi aktive etmek için lütfen bizimle iletişime geçin. Ödemeniz onaylandıktan sonra hesabınız birkaç dakika içinde tekrar aktif olacaktır.
+  <p class="sub">__USERNAME__ hesabınızın ücretsiz deneme süresi sona erdi. Panele tekrar erişmek için aşağıdan aboneliğinizi aktive edebilir ya da bir sorunuz varsa admin'e yazabilirsiniz.</p>
+  ''' + ACCOUNT_EXTRAS_HTML + r'''
+  <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border)">
+    <button class="btn" onclick="logout()">Çıkış Yap</button>
   </div>
-  <button class="primary" onclick="logout()">Çıkış Yap</button>
 </div></div>
 <script>
 async function logout(){ try{ await fetch('/logout',{method:'POST'}); }catch(e){} window.location='/login'; }
+// On this page, subscribing is the primary action, so open it by default
+// instead of making the person click "Abonelik Sistemine Geç" first.
+document.getElementById('subscriptionBox').style.display='block';
 </script>
 </body></html>'''
 
@@ -2085,6 +2089,8 @@ table.admin-table select{background:var(--bg-elev);color:var(--text);border:1px 
 .badge-expired{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
 .back-link{color:var(--accent);text-decoration:none;font-size:12.5px}
 .text-faint{color:var(--text-faint)}
+.btn-danger{border-color:#7a2a2a;color:#ff8080}
+.btn-danger:hover{border-color:#ff5c5c;color:#ff5c5c;background:rgba(255,92,92,0.08)}
 </style>
 '''
 
@@ -2103,8 +2109,8 @@ ADMIN_HTML = r'''<!doctype html>
   <div id="killSwitchBox" class="account-notice" style="margin-bottom:16px">Yükleniyor…</div>
 
   <table class="admin-table" id="tbl">
-    <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>Canlı işlem</th><th>İşlem</th></tr></thead>
-    <tbody id="tbody"><tr><td colspan="8">Yükleniyor…</td></tr></tbody>
+    <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>Canlı işlem</th><th>Bekleyen ödeme</th><th>İşlem</th><th></th></tr></thead>
+    <tbody id="tbody"><tr><td colspan="10">Yükleniyor…</td></tr></tbody>
   </table>
 </div>
 <script>
@@ -2133,7 +2139,7 @@ async function toggleKillSwitch(active){
 }
 async function load(){
   const r=await fetch('/api/admin/users',{cache:'no-store'});
-  if(r.status===403){ document.getElementById('tbody').innerHTML='<tr><td colspan="8">Bu sayfaya erişim yetkiniz yok.</td></tr>'; return; }
+  if(r.status===403){ document.getElementById('tbody').innerHTML='<tr><td colspan="10">Bu sayfaya erişim yetkiniz yok.</td></tr>'; return; }
   const d=await r.json();
   const rows=d.users.map(u=>`
     <tr>
@@ -2144,6 +2150,7 @@ async function load(){
       <td>${badge(u.subscription_status)}</td>
       <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
       <td>${u.live_trading_enabled?`<span class="badge badge-active">Açık</span> <span class="text-faint">(${u.live_position_usd||0} USD, ${u.live_max_leverage||1}x, max ${u.live_max_open_positions||1} pozisyon, limit ${u.live_daily_loss_limit_usd||0} USD)</span>`:'<span class="text-faint">Kapalı</span>'}</td>
+      <td>${u.pending_plan?`<span class="badge badge-trial">${u.pending_plan==='monthly'?'Aylık':'Yıllık'} · ${u.pending_amount_usd} USD</span> <span class="text-faint">${(u.pending_requested_at||'').replace('T',' ').slice(0,16)}</span>`:'<span class="text-faint">—</span>'}</td>
       <td>
         <select onchange="setStatus('${u.username}', this.value)">
           <option value="trial" ${u.payment_status==='trial'?'selected':''}>Deneme</option>
@@ -2152,11 +2159,19 @@ async function load(){
           <option value="inactive" ${u.payment_status==='inactive'?'selected':''}>Pasif</option>
         </select>
       </td>
+      <td>${u.is_admin?'':`<button class="btn btn-danger" onclick="deleteUser('${u.username}')">Sil</button>`}</td>
     </tr>`).join('');
-  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="8">Henüz kullanıcı yok.</td></tr>';
+  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="10">Henüz kullanıcı yok.</td></tr>';
 }
 async function setStatus(username, status){
   await fetch('/api/admin/set-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,status})});
+  load();
+}
+async function deleteUser(username){
+  if(!confirm(`"${username}" kullanıcısını KALICI olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) return;
+  const r=await fetch('/api/admin/delete-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
+  const d=await r.json();
+  if(!d.ok){ alert(d.error||'Silinemedi.'); }
   load();
 }
 loadKillSwitch();
@@ -2697,7 +2712,8 @@ class Handler(BaseHTTPRequestHandler):
             summary=live_trading.get_my_live_summary(user)
             summary['live_trading_enabled']=bool((auth.get_user(user) or {}).get('live_trading_enabled'))
             body=json.dumps(summary,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
-        html=HTML.replace('__USERNAME__', self._current_user() or '')
+        html=(HTML.replace('__USERNAME__', self._current_user() or '')
+              .replace('__IBAN__', SUBSCRIPTION_IBAN).replace('__IBAN_HOLDER__', SUBSCRIPTION_IBAN_HOLDER))
         body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
 
     # -- auth / account POST routes ---------------------------------------
@@ -2926,6 +2942,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self,*args):return
 
+def trial_expiry_notify_loop():
+    """Checks every few minutes for users whose free trial just ran out and
+    emails the admin inbox once per user (auth.list_users_needing_trial_expiry_notice
+    only returns users not yet flagged, and we flag them right after sending
+    — see auth.mark_trial_expiry_notified — so this is safe to poll on a
+    short interval without spamming). Wrapped so a bad email config or a
+    transient error can never take the whole loop down."""
+    while True:
+        try:
+            for u in auth.list_users_needing_trial_expiry_notice():
+                username = u['username']
+                ok, err = email_notifier.send_trial_expired_notice(username, u.get('email'))
+                if not ok and err != 'not configured':
+                    print(f'[email] deneme süresi bildirimi gönderilemedi ({username}): {err}', flush=True)
+                # Mark as notified even if e-mail sending is unconfigured/failed —
+                # otherwise a persistently broken SMTP config would retry (and
+                # log) the same user forever. The admin panel's "Bekleyen ödeme"
+                # / "Durum" columns remain the source of truth regardless.
+                auth.mark_trial_expiry_notified(username)
+        except Exception as e:
+            print(f'[trial_expiry_notify_loop] {type(e).__name__}: {e}', flush=True)
+        time.sleep(1800)  # 30 dakika
+
 def start_dashboard():
     server=ThreadingHTTPServer(('0.0.0.0',PORT),Handler)
     print(f'DASHBOARD | http://0.0.0.0:{PORT} | PAPER ONLY + COIN SCANNER',flush=True)
@@ -2933,4 +2972,5 @@ def start_dashboard():
     threading.Thread(target=bist_background_loop, daemon=True).start()
     threading.Thread(target=us_background_loop, daemon=True).start()
     threading.Thread(target=telegram_link.poll_loop, daemon=True).start()
+    threading.Thread(target=trial_expiry_notify_loop, daemon=True).start()
     server.serve_forever()
