@@ -382,6 +382,70 @@ LANDING_HTML = r'''<!doctype html>
   </div>
 </div>
 
+<!-- ===== TANITIM / MAKALE ===== -->
+<div class="wrap" style="padding:88px 0" id="tanitim">
+  <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:26px">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px">
+      <span class="eyebrow">Tanıtım</span>
+      <h2 class="disp" style="margin:0;font-size:34px;font-weight:700;line-height:1.25">Finansal Evrenin Yeni Hakimi: HeroBot AI ile Duygusuz ve Disiplinli Yatırımın Sırları</h2>
+    </div>
+    <img src="/static/tanitim-infografik.png" alt="HeroBot AI özellik infografiği" style="width:100%;border-radius:14px;border:1px solid #1E252B;display:block">
+    <div style="display:flex;flex-direction:column;gap:26px;font-size:15px;line-height:1.85;color:#B7C0C6">
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">1. Giriş: Yatırımın Duygusal Yükünden Kurtulmak</h3>
+        <p style="margin:0">Finansal piyasalarda işlem yapmak, çoğu zaman bir veri savaşından ziyade bir irade savaşına dönüşür. Yatırımcılar; bilgi kirliliği, FOMO (fırsatı kaçırma korkusu) ve ani fiyat hareketlerinin tetiklediği panik ataklar arasında sıkışıp kalır. Açık konuşalım; bir ekranın başında mumların hareketine bakarak ter dökmek, strateji değil, modern bir işkence yöntemidir. İşte tam bu noktada, "Gölgelerin gücü adına değil, verinin gücü adına" diyerek sahneye HeroBot AI (He-Robot) çıkıyor. İnsan psikolojisinin o meşhur zayıflıklarını — açgözlülük, korku ve kararsızlık — devre dışı bırakan bu teknoloji, 7/24 çalışan disiplinli bir strateji motoru olarak karşımıza çıkıyor. HeroBot AI, piyasanın gürültüsünü susturup sadece rakamların fısıldadığı gerçeklere odaklanarak yatırım dünyasında kuralları yeniden yazıyor.</p>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">2. Sınırsız Kripto Likiditesi ve Küresel Hisse Piyasaları</h3>
+        <p style="margin:0 0 10px 0">Geleneksel yatırımcılar bir piyasadan diğerine geçerken platformlar arasında boğulurken, HeroBot AI tek bir panelden küresel bir hakimiyet alanı kuruyor. Bu sadece bir erişim kolaylığı değil, stratejik bir üstünlüktür:</p>
+        <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+          <li><b style="color:#E9EDF0">Kripto Paralar:</b> Binance Futures USDT-M altındaki tüm perpetual sözleşmelerin otomatik taranması.</li>
+          <li><b style="color:#E9EDF0">BIST (Borsa İstanbul):</b> BIST 100 ve Tüm-100 evreninin tamamı (TradingView native 4H verisiyle).</li>
+          <li><b style="color:#E9EDF0">ABD Hisseleri:</b> NASDAQ, NYSE ve AMEX borsalarında yer alan devasa hisse havuzu.</li>
+        </ul>
+        <p style="margin:0">Sistem, piyasa kapanışlarını beklemenizi gerektirmez; siz de beklemezsiniz. Yaklaşık 15 dakikada bir yapılan otomatik taramaların yanı sıra, kullanıcının tek bir tuşla tüm piyasayı o an süzgeçten geçirebileceği "Tümünü Tara" (Scan All) özelliği mevcuttur. Hızın para ettiği bir dünyada, bu anlık tarama kapasitesi sizi kalabalığın fersah fersah önüne geçirir.</p>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">3. Stratejinin Kalbi: Veri Odaklı ve Çok Katmanlı Onay Mekanizması</h3>
+        <p style="margin:0 0 10px 0">HeroBot AI'nın zekası, rastgele tahminlerden değil, çok katmanlı bir teknik analiz süzgecinden gelir. Sistem, bir işlemin onaylanması için adeta bir "senato onayı" bekler:</p>
+        <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+          <li><b style="color:#E9EDF0">Yön ve Trend Teyidi:</b> EMA (Hareketli Ortalamalar) ve Supertrend filtreleri ile ana yön belirlenir.</li>
+          <li><b style="color:#E9EDF0">Piyasa Karakteri:</b> ADX indikatörü ile piyasanın gerçek bir trendde mi yoksa sadece yatayda "patinaj mı" yaptığı ayırt edilir.</li>
+          <li><b style="color:#E9EDF0">Momentum ve Onay:</b> RSI, CCI, Stoch RSI ve MACD gibi indikatörler birer onay katmanı oluşturur.</li>
+        </ul>
+        <p style="margin:0">Sistemin en katı kurallarından biri, yalnızca kapanmış mumlardan sinyal üretilmesidir. Anlık fiyat iğnelerine ve piyasa gürültüsüne asla güvenmeyen bu yaklaşım, yatırımcıyı "fake" sinyallerden ve ani piyasa manipülasyonlarından korur.</p>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">4. Akıllı Risk Yönetimi: ATRP ile Piyasanın Nabzını Tutmak</h3>
+        <p style="margin:0">Çoğu algoritma, piyasanın ruhunu anlamadan sabit yüzdeli stop-loss seviyeleri kullanır. HeroBot AI ise ATR (Average True Range) bazlı dinamik bir risk yönetimi uygular. Ancak burada asıl otoriter dokunuş, ATRP (365 günlük volatilite veto filtresi) ile gelir. Eğer piyasa oynaklığı (ATRP), son 365 günlük yüzdelik dilimde aşırı uçlardaysa, sistem yeni pozisyon açmayı reddeder. Çünkü bazen en kârlı işlem, hiç açılmamış olandır. "Sistem 'sakin kalması gerektiğini bilir'." Piyasa rasyonel olmayan bir çılgınlığa kapıldığında, HeroBot AI soğukkanlılığını koruyarak sermayenizi emniyete alır.</p>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">5. Yapay Zeka Destekli Performans Analisti: Claude ile Tanışın</h3>
+        <p style="margin:0">Teknoloji dünyasının en zeki beyinlerinden biri olan Claude, HeroBot AI ekosisteminde sizin kişisel performans analistiniz olarak görev yapar. Kapanan her işlem grubu periyodik olarak Claude'un masasına düşer. Bu AI destekli analist; kazanma oranı ve kâr faktörü (profit factor) gibi verileri işleyerek size objektif bir "performans aynası" tutar. Claude sadece bir rapor sunmaz; yatırımcıyı kendi stratejik hatalarıyla yüzleştiren, duygusal önyargıları (bias) kıran bir disiplin aracıdır. Bir algoritmanın kendi geçmişini AI ile analiz etmesi, insan faktörünün girmesi muhtemel olan "şanslıydım" veya "piyasa kötüydü" gibi bahaneleri ortadan kaldıran vizyoner bir adımdır.</p>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">6. Kurumsal Seviye Güvenlik ve Şeffaflık</h3>
+        <p style="margin:0 0 10px 0">HeroBot AI, "önce güvenlik" diyen kurumsal bir disipline sahiptir:</p>
+        <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+          <li><b style="color:#E9EDF0">Paper (Demo) Modu:</b> Sistem şu anda demo modunda çalışmaktadır. Gerçek emir göndermez ve API anahtarı gerektirmez; böylece stratejiyi sıfır riskle, laboratuvar ortamında izleyebilirsiniz.</li>
+          <li><b style="color:#E9EDF0">Acil Durdurma Protokolü (Admin Stop Switch):</b> Kurumsal ciddiyetin bir kanıtı olarak, admin gerektiğinde tek bir tıkla tüm kullanıcılar için yeni işlemleri durdurabilir; bu, sistemin kontrol dışı kalmasını engelleyen en büyük sigortadır.</li>
+          <li><b style="color:#E9EDF0">Maksimum Zarar Limiti:</b> Günlük zarar limiti dolduğunda sistem yeni pozisyonları otomatik olarak durdurur.</li>
+          <li><b style="color:#E9EDF0">Uptime ve Hız:</b> %99.9 uptime garantisi ve 200ms ortalama yanıt süresi ile kesintisiz veri işleme.</li>
+          <li><b style="color:#E9EDF0">Sessiz Disiplin:</b> Telegram entegrasyonu ile sadece kritik anlarda bildirim alırsınız; spam yok, sadece stratejik bilgi var.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">7. Sonuç: Geleceğin Teknolojisi Bugün Burada mı?</h3>
+        <p style="margin:0">HeroBot AI, 50.000'den fazla aktif kullanıcının parçası olduğu bir vizyonla, yatırım süreçlerini "akıllı otomasyon" ve "AI destekli analiz" ile yeniden tanımlıyor. Bu sistem, sadece bir yazılım değil; finansal teknoloji dünyasındaki sınırsız olasılıkların bir temsilcisidir. Her ne kadar bu sistem şu an paper-trading modunda çalışsa ve geçmiş başarılar geleceğin garantisi olmasa da (çünkü finansın doğasında bu vardır), HeroBot AI bize bir şeyi kanıtlıyor: Geleceğin başarılı yatırımcısı, duygularıyla değil, kusursuz çalışan algoritmalarıyla hareket eden kişidir.</p>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:18px;font-weight:700;color:#E9EDF0;margin:10px 0 0 0;line-height:1.6">Yatırım kararlarınızda duygularınızı bir kenara bırakıp, stratejinin soğukkanlı disiplinine güvenmeye hazır mısınız?</p>
+    <div style="display:flex;justify-content:center;margin-top:6px">
+      <a href="/register" class="btn btn-primary">Ücretsiz Dene</a>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TANITIM VİDEOSU ===== -->
 <div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126">
   <div class="wrap" style="padding:84px 0">
@@ -1966,7 +2030,7 @@ class Handler(BaseHTTPRequestHandler):
         # never anything containing '/' or '..'.
         allowed = {
             'tanitim.mp4': 'video/mp4',
-            'hero-robot.png': 'image/png',
+            'tanitim-infografik.png': 'image/png',
         }
         content_type = allowed.get(name)
         if not content_type or '/' in name or '..' in name:
