@@ -26,6 +26,14 @@ PORT = int(os.environ.get('PORT', '8080'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
 SESSION_COOKIE = 'session_token'
 
+# "Abonelik Sistemine Geç" bank-transfer details, shown to users choosing a
+# plan. *** PLACEHOLDER *** — set SUBSCRIPTION_IBAN / SUBSCRIPTION_IBAN_HOLDER
+# to the real bank account before going live; a wrong/fake IBAN here would
+# send customers' money nowhere, so this is deliberately left as an obvious
+# placeholder rather than a guessed value.
+SUBSCRIPTION_IBAN = os.environ.get('SUBSCRIPTION_IBAN', 'TR00 0000 0000 0000 0000 0000 00 — GERÇEK IBAN BURAYA GİRİLMELİ')
+SUBSCRIPTION_IBAN_HOLDER = os.environ.get('SUBSCRIPTION_IBAN_HOLDER', 'Hesap sahibi adı buraya girilmeli')
+
 # ---------------------------------------------------------------------------
 # Per-IP rate limiting for the auth-adjacent endpoints (login, register,
 # forgot/reset password) — the ones an attacker would hit for credential
@@ -66,9 +74,13 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account', '/api/account/connect-binance', '/api/account/disconnect-binance',
     '/api/account/risk-ack', '/logout', '/admin', '/api/admin/users', '/api/admin/set-status',
     '/api/account/live-settings', '/api/account/live-toggle',
-    '/api/admin/kill-switch', '/api/admin/kill-switch/toggle',
+    '/api/admin/kill-switch', '/api/admin/kill-switch/toggle', '/api/admin/delete-user',
     '/api/account/telegram/link-code', '/api/account/telegram/unlink',
     '/api/live/my-positions',
+    # These two are the whole point of being reachable after a trial expires:
+    # an expired user still needs to be able to ask a question or tell the
+    # system they've paid.
+    '/api/account/ask-admin', '/api/account/subscription-request',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -103,13 +115,19 @@ LANDING_HTML = r'''<!doctype html>
   .stats{display:flex;gap:64px;justify-content:center;flex-wrap:wrap}
   nav .nav-links{display:flex;align-items:center;gap:40px}
   nav .nav-links a{font-size:14px;font-weight:600;color:#B7C0C6}
+  .nav-toggle{display:none;background:none;border:1px solid #2A3238;border-radius:8px;padding:9px 10px;cursor:pointer;flex-direction:column;justify-content:center;gap:4px}
+  .nav-toggle span{display:block;width:19px;height:2px;background:#E9EDF0;border-radius:2px}
   @media (max-width:900px){
     .grid3,.grid2,.grid4,.grid6{grid-template-columns:1fr}
     .wrap{padding-left:22px;padding-right:22px}
     nav .nav-links{display:none}
+    nav .nav-links.open{display:flex;flex-direction:column;align-items:stretch;gap:2px;position:absolute;top:100%;left:0;right:0;background:#0A0D10;border-bottom:1px solid #1B2126;padding:6px 22px 16px}
+    nav .nav-links.open a{padding:12px 0;border-bottom:1px solid #161B20}
+    .nav-toggle{display:flex}
     .hero-h1{font-size:38px!important}
     .split{flex-direction:column}
     .stats{gap:32px}
+    .hide-sm{display:none}
   }
 </style>
 </head>
@@ -124,7 +142,7 @@ LANDING_HTML = r'''<!doctype html>
       </div>
       <span class="disp" style="font-size:19px;font-weight:700">Herobot-ai</span>
     </div>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="#strateji">Strateji</a>
       <a href="#piyasalar">Piyasalar</a>
       <a href="#guvenlik">Güvenlik</a>
@@ -134,6 +152,9 @@ LANDING_HTML = r'''<!doctype html>
     <div style="display:flex;align-items:center;gap:14px">
       <span style="font-size:13px;font-weight:600;color:#7A8590" class="hide-sm">Paper mod · risksiz</span>
       <a href="/register" class="btn btn-primary" style="padding:11px 22px;font-size:14px">Ücretsiz Dene</a>
+      <button class="nav-toggle" onclick="document.getElementById('navLinks').classList.toggle('open')" aria-label="Menü">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
@@ -396,10 +417,12 @@ LANDING_HTML = r'''<!doctype html>
         </div>
         <span style="font-size:13px;color:#7A8590;font-weight:600">© Herobot-ai — kripto · BIST · ABD hisseleri strateji motoru</span>
       </div>
-      <div style="display:flex;gap:24px">
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
         <a href="#strateji" style="font-size:13px;color:#7A8590;font-weight:600">Strateji</a>
         <a href="#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
         <a href="#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
+        <a href="/tanitim" style="font-size:13px;color:#7A8590;font-weight:600">Tanıtım</a>
+        <a href="/login" style="font-size:13px;color:#7A8590;font-weight:600">Panel</a>
       </div>
     </div>
   </div>
@@ -435,9 +458,14 @@ TANITIM_HTML = r'''<!doctype html>
   nav .nav-links{display:flex;align-items:center;gap:40px}
   nav .nav-links a{font-size:14px;font-weight:600;color:#B7C0C6}
   nav .nav-links a.active{color:#3DD9A8}
+  .nav-toggle{display:none;background:none;border:1px solid #2A3238;border-radius:8px;padding:9px 10px;cursor:pointer;flex-direction:column;justify-content:center;gap:4px}
+  .nav-toggle span{display:block;width:19px;height:2px;background:#E9EDF0;border-radius:2px}
   @media (max-width:900px){
     .wrap{padding-left:22px;padding-right:22px}
     nav .nav-links{display:none}
+    nav .nav-links.open{display:flex;flex-direction:column;align-items:stretch;gap:2px;position:absolute;top:100%;left:0;right:0;background:#0A0D10;border-bottom:1px solid #1B2126;padding:6px 22px 16px}
+    nav .nav-links.open a{padding:12px 0;border-bottom:1px solid #161B20}
+    .nav-toggle{display:flex}
   }
 </style>
 </head>
@@ -452,7 +480,7 @@ TANITIM_HTML = r'''<!doctype html>
       </div>
       <span class="disp" style="font-size:19px;font-weight:700;color:#E9EDF0">Herobot-ai</span>
     </a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="/#strateji">Strateji</a>
       <a href="/#piyasalar">Piyasalar</a>
       <a href="/#guvenlik">Güvenlik</a>
@@ -461,6 +489,9 @@ TANITIM_HTML = r'''<!doctype html>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
       <a href="/register" class="btn btn-primary" style="padding:11px 22px;font-size:14px">Ücretsiz Dene</a>
+      <button class="nav-toggle" onclick="document.getElementById('navLinks').classList.toggle('open')" aria-label="Menü">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
@@ -558,9 +589,12 @@ TANITIM_HTML = r'''<!doctype html>
         </div>
         <span style="font-size:13px;color:#7A8590;font-weight:600">© Herobot-ai — kripto · BIST · ABD hisseleri strateji motoru</span>
       </div>
-      <div style="display:flex;gap:24px">
-        <a href="/" style="font-size:13px;color:#7A8590;font-weight:600">Anasayfa</a>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <a href="/#strateji" style="font-size:13px;color:#7A8590;font-weight:600">Strateji</a>
+        <a href="/#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
+        <a href="/#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
         <a href="/tanitim" style="font-size:13px;color:#7A8590;font-weight:600">Tanıtım</a>
+        <a href="/login" style="font-size:13px;color:#7A8590;font-weight:600">Panel</a>
       </div>
     </div>
   </div>
@@ -748,6 +782,25 @@ th.sort-active{color:var(--accent)}
 .tv-chart-frame{width:100%;height:560px;border:0;display:block}
 .tv-chart-frame.hidden{display:none}
 @media(max-width:640px){.tv-chart-frame{height:400px}}
+.stack-gap{display:flex;flex-direction:column;gap:10px}
+.section-title{font-size:15px;font-weight:700;margin:0 0 6px 0}
+.plan-choices{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.plan-btn{flex:1;min-width:140px;background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:left;color:var(--text);font-family:var(--font-d)}
+.plan-btn:hover{border-color:var(--accent)}
+.plan-btn.selected{border-color:var(--accent);background:var(--accent-soft)}
+.plan-btn .plan-name{font-size:13px;font-weight:600;color:var(--text-dim)}
+.plan-btn .plan-price{display:block;font-family:var(--font-m);font-size:18px;font-weight:700;color:var(--accent);margin-top:4px}
+.iban-box{background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:4px}
+.iban-box .iban-num{font-family:var(--font-m);font-size:15px;font-weight:700;letter-spacing:1px;word-break:break-all;color:var(--text)}
+.ask-box textarea{width:100%;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:var(--font-d);min-height:100px;resize:vertical;box-sizing:border-box}
+.faq-item{border-bottom:1px solid var(--border-soft);padding:10px 0}
+.faq-item:last-child{border-bottom:none}
+.faq-item summary{cursor:pointer;font-weight:600;font-size:13.5px;list-style:none}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::before{content:'+ ';color:var(--accent);font-weight:700}
+.faq-item[open] summary::before{content:'\2013 '}
+.faq-item p{margin:8px 0 0 0;font-size:13px;color:var(--text-dim);line-height:1.6}
+.link-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12.5px;padding:0;text-decoration:underline;font-family:var(--font-d)}
 
 @media(max-width:900px){.cols{grid-template-columns:1fr}.pos-grid{grid-template-columns:1fr 1fr}.chip-grid{grid-template-columns:1fr}}
 @media(max-width:640px){.app{padding:12px}.kpistrip{flex-wrap:wrap}.kpi-divider{display:none}.kpi{min-width:45%}.topbar{flex-wrap:wrap}}
@@ -786,6 +839,15 @@ th.sort-active{color:var(--accent)}
   <div class="kpi"><div class="kpi-label">Profit factor</div><div class="kpi-value" id="pf">—</div><div class="kpi-sub" id="avg">—</div></div>
   <div class="kpi-divider"></div>
   <div class="kpi"><div class="kpi-label">Maks. drawdown</div><div class="kpi-value" id="dd">—</div><div class="kpi-sub" id="candle">—</div></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>Hesabım</h2></div>
+  <div class="position-body">
+    <div class="account-row">👤 <b>__USERNAME__</b></div>
+    <div class="account-row text-faint">✉️ <span id="acctEmail">—</span></div>
+    <div style="margin-top:14px">''' + ACCOUNT_EXTRAS_HTML + r'''</div>
+  </div>
 </section>
 
 <section class="cols">
@@ -1627,7 +1689,181 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .auth-switch a{color:var(--accent);text-decoration:none}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-faint);font-size:11.5px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-card.wide{max-width:640px;text-align:left}
+.text-faint{color:var(--text-faint)}
+.account-notice{background:var(--accent-soft);border:1px solid #4a3d22;color:var(--accent);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px;line-height:1.55}
+.account-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.btn{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-d)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);color:#1a1406;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent);color:#1a1406;opacity:.9}
+.stack-gap{display:flex;flex-direction:column;gap:10px}
+.section-title{font-size:15px;font-weight:700;margin:0 0 6px 0}
+.plan-choices{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.plan-btn{flex:1;min-width:140px;background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:left;color:var(--text);font-family:var(--font-d)}
+.plan-btn:hover{border-color:var(--accent)}
+.plan-btn.selected{border-color:var(--accent);background:var(--accent-soft)}
+.plan-btn .plan-name{font-size:13px;font-weight:600;color:var(--text-dim)}
+.plan-btn .plan-price{display:block;font-family:var(--font-m);font-size:18px;font-weight:700;color:var(--accent);margin-top:4px}
+.iban-box{background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:4px}
+.iban-box .iban-num{font-family:var(--font-m);font-size:15px;font-weight:700;letter-spacing:1px;word-break:break-all;color:var(--text)}
+.ask-box textarea{width:100%;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:var(--font-d);min-height:100px;resize:vertical;box-sizing:border-box}
+.faq-item{border-bottom:1px solid var(--border-soft);padding:10px 0}
+.faq-item:last-child{border-bottom:none}
+.faq-item summary{cursor:pointer;font-weight:600;font-size:13.5px;list-style:none}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::before{content:'+ ';color:var(--accent);font-weight:700}
+.faq-item[open] summary::before{content:'\2013 '}
+.faq-item p{margin:8px 0 0 0;font-size:13px;color:var(--text-dim);line-height:1.6}
+.link-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12.5px;padding:0;text-decoration:underline;font-family:var(--font-d)}
 </style>
+'''
+
+# Shared "Abonelik Sistemine Geç" / "Admin'e Soru Sor" / FAQ block — embedded
+# both in the main dashboard (HTML, under the account panel) and in the
+# trial-expired page (TRIAL_EXPIRED_HTML, where it's the main call to
+# action). __USERNAME__/__IBAN__/__IBAN_HOLDER__ are replaced the same way
+# __USERNAME__ already is elsewhere in these templates.
+ACCOUNT_EXTRAS_HTML = r'''
+<div class="stack-gap">
+  <div class="account-row">
+    <button class="btn" type="button" onclick="toggleBox('subscriptionBox')">💳 Abonelik Sistemine Geç</button>
+    <button class="btn" type="button" onclick="toggleBox('askAdminBox')">✉️ Admin'e Soru Sor</button>
+  </div>
+
+  <div id="subscriptionBox" style="display:none">
+    <div class="section-title" style="margin-top:14px">Abonelik Sistemine Geç</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0">Bir plan seçin, IBAN'a ödemeyi gönderin ve "Tutarı Gönderdim" butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.</p>
+    <div class="plan-choices">
+      <button type="button" class="plan-btn" id="planBtn_monthly" onclick="selectPlan('monthly')">
+        <span class="plan-name">Aylık Abonelik</span>
+        <span class="plan-price">50 USD</span>
+      </button>
+      <button type="button" class="plan-btn" id="planBtn_annual" onclick="selectPlan('annual')">
+        <span class="plan-name">Yıllık Abonelik</span>
+        <span class="plan-price">500 USD</span>
+      </button>
+    </div>
+    <div id="planIbanBox" style="display:none">
+      <div class="iban-box">
+        <div class="account-row text-faint">Seçilen plan: <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
+        <div class="account-row" style="margin-top:8px">IBAN:</div>
+        <div class="iban-num">__IBAN__</div>
+        <div class="account-row text-faint" style="margin-top:4px">Alıcı: __IBAN_HOLDER__</div>
+        <div class="account-row text-faint">Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.</div>
+        <div class="account-row" style="margin-top:10px">
+          <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()">Tutarı Gönderdim</button>
+        </div>
+        <div id="paySentMsg" style="margin-top:8px;font-size:12.5px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="askAdminBox" class="ask-box" style="display:none">
+    <div class="section-title" style="margin-top:14px">Admin'e Soru Sor</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 8px 0">Mesajınız herobotai.int@gmail.com adresine iletilecek.</p>
+    <textarea id="askAdminMsg" placeholder="Sorunuzu buraya yazın…"></textarea>
+    <div class="account-row" style="margin-top:8px">
+      <button class="btn btn-primary" type="button" id="askAdminBtn" onclick="submitAskAdmin()">Gönder</button>
+    </div>
+    <div id="askAdminResult" style="margin-top:8px;font-size:12.5px"></div>
+  </div>
+
+  <div>
+    <div class="section-title" style="margin-top:18px">FAQ — Sıkça Sorulan Sorular</div>
+    <div>
+      <details class="faq-item">
+        <summary>Bu bot gerçek parayla mı işlem yapıyor?</summary>
+        <p>Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp "Canlı İşlem" ayarını kendi panelinizden siz açmanız gerekir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Ücretsiz deneme süresi ne kadar ve dolunca ne olur?</summary>
+        <p>7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra "Tutarı Gönderdim" demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Abonelik nasıl ödeniyor, kartla ödeme var mı?</summary>
+        <p>Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Binance API anahtarımı vermek güvenli mi?</summary>
+        <p>Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında "para çekme" (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Hangi piyasalarda işlem yapılıyor?</summary>
+        <p>Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Sinyaller ne sıklıkla üretiliyor?</summary>
+        <p>Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Telegram bildirimlerini nasıl açarım?</summary>
+        <p>Panelde "Telegram Bağlantısı" bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?</summary>
+        <p>"Binance Gerçek Hesap" panelindeki ilgili pozisyonun yanındaki "Şimdi Kapat" butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Başka bir sorum var, kime ulaşabilirim?</summary>
+        <p>Yukarıdaki "Admin'e Soru Sor" butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.</p>
+      </details>
+    </div>
+  </div>
+</div>
+<script>
+function toggleBox(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none';
+}
+let _selectedPlan=null;
+function selectPlan(plan){
+  _selectedPlan=plan;
+  document.getElementById('planBtn_monthly').classList.toggle('selected', plan==='monthly');
+  document.getElementById('planBtn_annual').classList.toggle('selected', plan==='annual');
+  document.getElementById('planSelectedLabel').textContent = plan==='monthly' ? 'Aylık — 50 USD' : 'Yıllık — 500 USD';
+  document.getElementById('planIbanBox').style.display='block';
+  document.getElementById('paySentMsg').textContent='';
+  const btn=document.getElementById('paySentBtn');
+  btn.disabled=false; btn.textContent='Tutarı Gönderdim';
+}
+async function confirmPaymentSent(){
+  if(!_selectedPlan) return;
+  const btn=document.getElementById('paySentBtn');
+  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  try{
+    const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan})});
+    const d=await r.json();
+    document.getElementById('paySentMsg').innerHTML = d.ok
+      ? '<span style="color:var(--bull)">✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.</span>'
+      : '<span style="color:var(--bear)">'+(d.error||'Bir hata oluştu, lütfen tekrar deneyin.')+'</span>';
+  }catch(e){
+    document.getElementById('paySentMsg').innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+  }
+  btn.disabled=false; btn.textContent='Tekrar Bildir';
+}
+async function submitAskAdmin(){
+  const msg=(document.getElementById('askAdminMsg').value||'').trim();
+  const resultEl=document.getElementById('askAdminResult');
+  if(!msg){ resultEl.innerHTML='<span style="color:var(--bear)">Lütfen bir mesaj yazın.</span>'; return; }
+  const btn=document.getElementById('askAdminBtn');
+  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  try{
+    const r=await fetch('/api/account/ask-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const d=await r.json();
+    if(d.ok){
+      resultEl.innerHTML='<span style="color:var(--bull)">✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.</span>';
+      document.getElementById('askAdminMsg').value='';
+    } else {
+      resultEl.innerHTML='<span style="color:var(--bear)">'+(d.error||'Gönderilemedi, lütfen tekrar deneyin.')+'</span>';
+    }
+  }catch(e){
+    resultEl.innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+  }
+  btn.disabled=false; btn.textContent='Gönder';
+}
+</script>
 '''
 
 LOGIN_HTML = r'''<!doctype html>
@@ -2279,7 +2515,8 @@ class Handler(BaseHTTPRequestHandler):
             if path not in ACCOUNT_ALWAYS_ALLOWED and not auth.has_active_access(user):
                 if path.startswith('/api/'):
                     self._send_json({'error': 'subscription required', 'subscription_status': 'expired'}, status=402); return
-                html = TRIAL_EXPIRED_HTML.replace('__USERNAME__', user)
+                html = (TRIAL_EXPIRED_HTML.replace('__USERNAME__', user)
+                        .replace('__IBAN__', SUBSCRIPTION_IBAN).replace('__IBAN_HOLDER__', SUBSCRIPTION_IBAN_HOLDER))
                 self._send_html(html); return
 
         if path=='/admin':
@@ -2621,6 +2858,44 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'forbidden'}, status=403); return
             data=self._read_json_body()
             ok, err = auth.set_payment_status(data.get('username', ''), data.get('status', ''))
+            self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/admin/delete-user':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            target=(data.get('username') or '').strip()
+            if not target:
+                self._send_json({'ok': False, 'error': 'Kullanıcı adı gerekli.'}, status=400); return
+            ok, err = auth.delete_user(target)
+            self._send_json({'ok': ok, 'error': err}, status=200 if ok else 400); return
+
+        if path=='/api/account/ask-admin':
+            message=(self._read_json_body().get('message') or '').strip()
+            if not message:
+                self._send_json({'ok': False, 'error': 'Lütfen bir soru/mesaj yazın.'}, status=400); return
+            if len(message) > 4000:
+                message = message[:4000]
+            acct = auth.get_account_status(user)
+            ok, err = email_notifier.send_admin_question(user, acct.get('email'), message)
+            if not ok and err == 'not configured':
+                self._send_json({'ok': False, 'error': 'Sunucuda e-posta gönderimi yapılandırılmamış. Lütfen doğrudan herobotai.int@gmail.com adresine yazın.'}, status=200); return
+            self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/account/subscription-request':
+            data=self._read_json_body()
+            plan=(data.get('plan') or '').strip().lower()
+            plans={'monthly': ('Aylık', 50), 'annual': ('Yıllık', 500)}
+            if plan not in plans:
+                self._send_json({'ok': False, 'error': 'Geçersiz plan.'}, status=400); return
+            plan_label, amount_usd = plans[plan]
+            auth.record_subscription_request(user, plan, amount_usd)
+            acct = auth.get_account_status(user)
+            ok, err = email_notifier.send_subscription_payment_notice(user, acct.get('email'), plan_label, amount_usd)
+            if not ok and err == 'not configured':
+                # The request is still recorded (visible in the admin panel)
+                # even if outbound e-mail isn't set up on this server.
+                self._send_json({'ok': True, 'error': None}); return
             self._send_json({'ok': ok, 'error': err}); return
 
         if path=='/api/admin/kill-switch/toggle':

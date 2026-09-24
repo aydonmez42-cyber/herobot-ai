@@ -120,6 +120,7 @@ def _new_trial_fields():
     return {
         'trial_ends_at': datetime.fromtimestamp(trial_end, tz=timezone.utc).isoformat(),
         'payment_status': 'trial',  # 'trial' | 'active' | 'expired' | 'inactive'
+        'trial_expiry_notified': False,  # has the admin already been emailed that this trial ran out?
     }
 
 
@@ -575,6 +576,9 @@ def list_users_admin():
             'live_max_leverage': rec.get('live_max_leverage'),
             'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
             'live_max_open_positions': rec.get('live_max_open_positions'),
+            'pending_plan': rec.get('pending_plan'),
+            'pending_amount_usd': rec.get('pending_amount_usd'),
+            'pending_requested_at': rec.get('pending_requested_at'),
         })
     out.sort(key=lambda x: x.get('created_at') or '', reverse=True)
     return out
@@ -586,6 +590,76 @@ def set_payment_status(username, status):
     if _update_user(username, lambda u: u.update(payment_status=status)) is None:
         return False, 'Kullanıcı bulunamadı.'
     return True, None
+
+
+def delete_user(username):
+    """Permanently deletes a user account and any of their active sessions.
+    Two safety rails, both refused outright rather than silently worked
+    around:
+      - an admin account can't be deleted through this (avoids an admin
+        locking themselves — or the only remaining admin — out);
+      - an account with live (real-money) trading currently enabled can't be
+        deleted either. The live-trading engine looks up `auth.get_user()`
+        on every cycle and simply skips anyone no longer found, so deleting
+        the account out from under an open real-money position would leave
+        it silently unmanaged (no more SL/TP) on the user's own Binance
+        account. The admin must turn live trading off (and confirm there's
+        no open position) before removing the account.
+    """
+    key = (username or '').strip().lower()
+    with _lock:
+        users = _read_json(USERS_FILE, {})
+        rec = users.get(key)
+        if not rec:
+            return False, 'Kullanıcı bulunamadı.'
+        if rec.get('is_admin'):
+            return False, 'Admin hesabı silinemez.'
+        if rec.get('live_trading_enabled'):
+            return False, 'Bu kullanıcının canlı (gerçek para) işlemi açık — önce canlı işlemi kapatıp açık pozisyon kalmadığından emin olun, sonra tekrar deneyin.'
+        del users[key]
+        _write_json(USERS_FILE, users)
+        sessions = _read_json(SESSIONS_FILE, {})
+        sessions = {t: s for t, s in sessions.items() if s.get('username') != key}
+        _write_json(SESSIONS_FILE, sessions)
+    return True, None
+
+
+# ---------------------------------------------------------------------------
+# Trial-expiry admin notice — the moment a non-admin user's trial runs out
+# (and they haven't been manually marked "active" by the admin), queue them
+# for a one-time email to the admin so a human can follow up. `notified` is
+# sticky so a user isn't re-emailed about every single page load after.
+# ---------------------------------------------------------------------------
+
+def list_users_needing_trial_expiry_notice():
+    users = _read_json(USERS_FILE, {})
+    out = []
+    for rec in users.values():
+        if rec.get('is_admin') or rec.get('trial_expiry_notified'):
+            continue
+        if subscription_status(rec)['status'] == 'expired':
+            out.append({'username': rec.get('username'), 'email': rec.get('email')})
+    return out
+
+
+def mark_trial_expiry_notified(username):
+    _update_user(username, lambda u: u.update(trial_expiry_notified=True))
+
+
+# ---------------------------------------------------------------------------
+# Subscription payment requests ("Tutarı gönderdim") — recorded here so the
+# admin panel shows a pending claim even if the notification email bounces
+# or lands in spam; the admin still confirms/rejects manually via
+# set_payment_status() once they've actually checked the bank account.
+# ---------------------------------------------------------------------------
+
+def record_subscription_request(username, plan, amount_usd):
+    rec = _update_user(username, lambda u: u.update(
+        pending_plan=plan,
+        pending_amount_usd=amount_usd,
+        pending_requested_at=datetime.now(timezone.utc).isoformat(),
+    ))
+    return rec is not None
 
 
 # ---------------------------------------------------------------------------
