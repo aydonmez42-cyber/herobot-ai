@@ -81,6 +81,9 @@ ACCOUNT_ALWAYS_ALLOWED = {
     # an expired user still needs to be able to ask a question or tell the
     # system they've paid.
     '/api/account/ask-admin', '/api/account/subscription-request',
+    # FAQ and backtest results are useful for a trial/expired user deciding
+    # whether to subscribe, so they stay reachable even after access lapses.
+    '/faq', '/backtest',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -654,47 +657,7 @@ ACCOUNT_EXTRAS_HTML = r'''
     <div id="askAdminResult" style="margin-top:8px;font-size:12.5px"></div>
   </div>
 
-  <div>
-    <div class="section-title" style="margin-top:18px" data-i18n="faq.title">FAQ — Frequently Asked Questions</div>
-    <div>
-      <details class="faq-item">
-        <summary data-i18n="faq.q1">Does this bot trade with real money?</summary>
-        <p data-i18n="faq.a1">By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on "Live Trading" yourself from your own panel.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q2">How long is the free trial and what happens when it ends?</summary>
-        <p data-i18n="faq.a2">7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click "I've Sent the Payment" — our team will verify it and activate your account.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q3">How is the subscription paid, is card payment available?</summary>
-        <p data-i18n="faq.a3">Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q4">Is it safe to give my Binance API key?</summary>
-        <p data-i18n="faq.a4">Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without "withdrawal" permission on the Binance side.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q5">Which markets are traded?</summary>
-        <p data-i18n="faq.a5">Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q6">How often are signals generated?</summary>
-        <p data-i18n="faq.a6">The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q7">How do I turn on Telegram notifications?</summary>
-        <p data-i18n="faq.a7">Just get a link code from the "Telegram Connection" section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q8">What should I do if I need to urgently close an open position?</summary>
-        <p data-i18n="faq.a8">You can use the "Close Now" button next to the relevant position in the "Binance Live Account" panel; this instantly sends a real market order and closes the position.</p>
-      </details>
-      <details class="faq-item">
-        <summary data-i18n="faq.q9">I have another question, who can I reach?</summary>
-        <p data-i18n="faq.a9">Just click the "Ask Admin" button above and write your message — it goes straight to the admin team.</p>
-      </details>
-    </div>
-  </div>
+
 </div>
 <script>
 function toggleBox(id){
@@ -793,6 +756,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .status-pill.wait{background:var(--accent-soft);border-color:#4a3d22;color:var(--accent)}
 .status-pill.err{background:var(--bear-bg);border-color:var(--bear-border);color:var(--bear)}
 @media (prefers-reduced-motion:no-preference){@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}}
+
+/* Top nav */
+.topnav{display:flex;gap:6px;align-items:center;padding:0 4px;margin-bottom:14px}
+.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;border:1px solid transparent}
+.topnav a:hover{color:var(--text)}
+.topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
 
 /* KPI strip */
 .kpistrip{display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px;gap:22px;overflow:auto}
@@ -981,6 +950,12 @@ th.sort-active{color:var(--accent)}
     <button class="btn" onclick="logout()" data-i18n="nav.logout">Logout</button>
   </div>
 </header>
+
+<nav class="topnav">
+  <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+</nav>
 
 <section class="kpistrip">
   <div class="kpi kpi-equity">
@@ -1206,6 +1181,9 @@ const translations = {
   "nav.admin": "Admin",
   "nav.logout": "Logout",
   "nav.language": "Language",
+  "nav.dashboard": "Dashboard",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
   "kpi.equity": "Current balance",
   "kpi.openPnl": "Open positions P&L",
   "kpi.openPnlSub": "All open positions",
@@ -1463,6 +1441,9 @@ const translations = {
   "nav.admin": "Yönetim",
   "nav.logout": "Çıkış",
   "nav.language": "Dil",
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.faq": "SSS",
   "kpi.equity": "Güncel bakiye",
   "kpi.openPnl": "Açık pozisyonlar P&L",
   "kpi.openPnlSub": "Tüm açık pozisyonlar",
@@ -1720,6 +1701,9 @@ const translations = {
   "nav.admin": "管理",
   "nav.logout": "退出登录",
   "nav.language": "语言",
+  "nav.dashboard": "仪表盘",
+  "nav.backtest": "回测",
+  "nav.faq": "常见问题",
   "kpi.equity": "当前余额",
   "kpi.openPnl": "持仓盈亏",
   "kpi.openPnlSub": "所有持仓",
@@ -1977,6 +1961,9 @@ const translations = {
   "nav.admin": "Verwaltung",
   "nav.logout": "Abmelden",
   "nav.language": "Sprache",
+  "nav.dashboard": "Übersicht",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
   "kpi.equity": "Aktueller Kontostand",
   "kpi.openPnl": "Offene Positionen P&L",
   "kpi.openPnlSub": "Alle offenen Positionen",
@@ -2234,6 +2221,9 @@ const translations = {
   "nav.admin": "Administration",
   "nav.logout": "Déconnexion",
   "nav.language": "Langue",
+  "nav.dashboard": "Tableau de bord",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
   "kpi.equity": "Solde actuel",
   "kpi.openPnl": "P&L positions ouvertes",
   "kpi.openPnlSub": "Toutes les positions ouvertes",
@@ -2491,6 +2481,9 @@ const translations = {
   "nav.admin": "Administración",
   "nav.logout": "Cerrar sesión",
   "nav.language": "Idioma",
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.faq": "Preguntas frecuentes",
   "kpi.equity": "Saldo actual",
   "kpi.openPnl": "P&L de posiciones abiertas",
   "kpi.openPnlSub": "Todas las posiciones abiertas",
@@ -3682,6 +3675,764 @@ document.getElementById('subscriptionBox').style.display='block';
 </script>
 </body></html>'''
 
+# Shared extra CSS for the standalone /faq and /backtest pages — reuses the
+# same color tokens as _AUTH_STYLE (already loaded before this) plus the
+# topbar/topnav/panel/kpistrip/datatable/callout classes those pages need,
+# copied from the main HTML dashboard's <style> block so the visual theme
+# matches exactly.
+_NAV_PAGE_STYLE_EXTRA = r'''
+<style>
+.app{max-width:1100px;margin:0 auto;padding:18px 22px 40px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 18px;background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-mark{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none}
+.brand-name{font-weight:700;font-size:17px;letter-spacing:.2px}
+.brand-sub{color:var(--text-dim);font-size:12.5px;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.lang-select{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-d)}
+.lang-select:hover{border-color:var(--accent);color:var(--accent)}
+.lang-select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.topnav{display:flex;gap:6px;align-items:center;padding:0 4px;margin-bottom:14px}
+.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;border:1px solid transparent}
+.topnav a:hover{color:var(--text)}
+.topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-head h2{font-size:14.5px;margin:0;font-weight:600}
+.position-body{padding:18px}
+.kpistrip{display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px;gap:22px;overflow:auto;flex-wrap:wrap}
+.kpi{display:flex;flex-direction:column;justify-content:center;min-width:130px;flex:1}
+.kpi-label{font-size:11.5px;color:var(--text-faint);margin-bottom:6px}
+.kpi-value{font-family:var(--font-m);font-size:22px;font-weight:700;letter-spacing:-.2px}
+.kpi-sub{font-size:12px;color:var(--text-dim);margin-top:4px;font-family:var(--font-m)}
+.kpi-divider{width:1px;background:var(--border-soft);flex:none}
+.pos{color:var(--bull)}.neg{color:var(--bear)}
+.table-scroll{overflow:auto}
+table.datatable{width:100%;border-collapse:collapse;font-size:12.5px}
+table.datatable th{position:sticky;top:0;background:var(--panel);text-align:left;padding:10px 12px;color:var(--text-faint);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.datatable td{padding:9px 12px;border-bottom:1px solid var(--border-soft);font-family:var(--font-m);white-space:nowrap}
+table.datatable tbody tr:hover{background:var(--panel-2)}
+.num{text-align:right}
+td.num{text-align:right}
+.callout{background:var(--accent-soft);border:1px solid #4a3d22;color:var(--accent);border-radius:10px;padding:14px 16px;font-size:12.5px;line-height:1.6;margin-bottom:14px}
+.callout ul{margin:6px 0 0 0;padding-left:18px}
+.callout li{margin:4px 0}
+.page-footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:6px}
+.section-sub{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 14px 0}
+@media(max-width:640px){.app{padding:12px}.topbar{flex-wrap:wrap}.kpistrip{flex-wrap:wrap}.kpi-divider{display:none}.kpi{min-width:45%}}
+</style>
+'''
+
+# Standalone FAQ page — the FAQ block used to live inside the account panel
+# (ACCOUNT_EXTRAS_HTML) but was moved here to its own route so it's easy to
+# link to and doesn't clutter the account panel. Reuses the exact same
+# faq.* translation keys/strings as the main HTML dashboard (copied
+# verbatim below) so wording stays identical between the two pages.
+FAQ_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FAQ — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="faq.title">FAQ — Frequently Asked Questions</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="faq.title">FAQ — Frequently Asked Questions</h2></div>
+  <div class="position-body">
+    <div>
+      <details class="faq-item">
+        <summary data-i18n="faq.q1">Does this bot trade with real money?</summary>
+        <p data-i18n="faq.a1">By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on "Live Trading" yourself from your own panel.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q2">How long is the free trial and what happens when it ends?</summary>
+        <p data-i18n="faq.a2">7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click "I've Sent the Payment" — our team will verify it and activate your account.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q3">How is the subscription paid, is card payment available?</summary>
+        <p data-i18n="faq.a3">Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q4">Is it safe to give my Binance API key?</summary>
+        <p data-i18n="faq.a4">Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without "withdrawal" permission on the Binance side.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q5">Which markets are traded?</summary>
+        <p data-i18n="faq.a5">Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q6">How often are signals generated?</summary>
+        <p data-i18n="faq.a6">The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q7">How do I turn on Telegram notifications?</summary>
+        <p data-i18n="faq.a7">Just get a link code from the "Telegram Connection" section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q8">What should I do if I need to urgently close an open position?</summary>
+        <p data-i18n="faq.a8">You can use the "Close Now" button next to the relevant position in the "Binance Live Account" panel; this instantly sends a real market order and closes the position.</p>
+      </details>
+      <details class="faq-item">
+        <summary data-i18n="faq.q9">I have another question, who can I reach?</summary>
+        <p data-i18n="faq.a9">Just click the "Ask Admin" button above and write your message — it goes straight to the admin team.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const translations = {
+  en: {
+    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "faq.title": "FAQ — Frequently Asked Questions",
+    "faq.backToDashboard": "← Dashboard",
+    "faq.q1": "Does this bot trade with real money?",
+    "faq.a1": "By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on “Live Trading” yourself from your own panel.",
+    "faq.q2": "How long is the free trial and what happens when it ends?",
+    "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click “I've Sent the Payment” — our team will verify it and activate your account.",
+    "faq.q3": "How is the subscription paid, is card payment available?",
+    "faq.a3": "Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
+    "faq.q4": "Is it safe to give my Binance API key?",
+    "faq.a4": "Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without “withdrawal” permission on the Binance side.",
+    "faq.q5": "Which markets are traded?",
+    "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.",
+    "faq.q6": "How often are signals generated?",
+    "faq.a6": "The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.",
+    "faq.q7": "How do I turn on Telegram notifications?",
+    "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
+    "faq.q8": "What should I do if I need to urgently close an open position?",
+    "faq.a8": "You can use the “Close Now” button next to the relevant position in the “Binance Live Account” panel; this instantly sends a real market order and closes the position.",
+    "faq.q9": "I have another question, who can I reach?",
+    "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
+  },
+  tr: {
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS",
+    "faq.title": "FAQ — Sıkça Sorulan Sorular",
+    "faq.backToDashboard": "← Panel",
+    "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
+    "faq.a1": "Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp “Canlı İşlem” ayarını kendi panelinizden siz açmanız gerekir.",
+    "faq.q2": "Ücretsiz deneme süresi ne kadar ve dolunca ne olur?",
+    "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
+    "faq.q3": "Abonelik nasıl ödeniyor, kartla ödeme var mı?",
+    "faq.a3": "Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
+    "faq.q4": "Binance API anahtarımı vermek güvenli mi?",
+    "faq.a4": "Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında “para çekme” (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.",
+    "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
+    "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.",
+    "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
+    "faq.a6": "Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.",
+    "faq.q7": "Telegram bildirimlerini nasıl açarım?",
+    "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
+    "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
+    "faq.a8": "“Binance Gerçek Hesap” panelindeki ilgili pozisyonun yanındaki “Şimdi Kapat” butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.",
+    "faq.q9": "Başka bir sorum var, kime ulaşabilirim?",
+    "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
+  },
+  zh: {
+    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题",
+    "faq.title": "常见问题（FAQ）",
+    "faq.backToDashboard": "← 仪表盘",
+    "faq.q1": "这个机器人会用真实资金交易吗？",
+    "faq.a1": "默认不会 — 系统默认运行在模拟/演示模式，不会下达任何真实订单。如需用真实资金交易，需要您自己在面板中绑定 Binance API 密钥并开启“实盘交易”。",
+    "faq.q2": "免费试用期多长，到期后会怎样？",
+    "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并向 IBAN 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
+    "faq.q3": "订阅费如何支付，支持刷卡吗？",
+    "faq.a3": "目前仅支持通过银行转账/EFT 向 IBAN 付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
+    "faq.q4": "提供我的 Binance API 密钥安全吗？",
+    "faq.a4": "您的密钥会在服务器上加密存储，仅用于代您开平订单。建议您在 Binance 上创建一个不带“提现”权限的 API 密钥。",
+    "faq.q5": "交易哪些市场？",
+    "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所以及美股（NASDAQ/NYSE/AMEX）— 均可在同一面板中扫描。",
+    "faq.q6": "信号多久生成一次？",
+    "faq.a6": "系统大约每 15 分钟自动扫描一次；信号仅基于已收盘的4小时K线生成，不会受瞬时价格噪声影响。",
+    "faq.q7": "如何开启Telegram通知？",
+    "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
+    "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
+    "faq.a8": "可在“Binance 实盘账户”面板中对应仓位旁点击“立即平仓”按钮；这将立即发送一笔真实市价单并平仓。",
+    "faq.q9": "我还有其他问题，应联系谁？",
+    "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
+  },
+  de: {
+    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "faq.title": "FAQ — Häufig gestellte Fragen",
+    "faq.backToDashboard": "← Übersicht",
+    "faq.q1": "Handelt dieser Bot mit echtem Geld?",
+    "faq.a1": "Standardmäßig nein — das System läuft im Paper-/Demo-Modus und sendet keine echten Orders. Um mit echtem Geld zu handeln, müssen Sie Ihren Binance-API-Schlüssel verbinden und „Live-Handel“ selbst in Ihrem Panel aktivieren.",
+    "faq.q2": "Wie lange läuft die kostenlose Testphase und was passiert danach?",
+    "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, zahlen an die IBAN und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
+    "faq.q3": "Wie wird das Abo bezahlt, gibt es Kartenzahlung?",
+    "faq.a3": "Derzeit werden Zahlungen per Banküberweisung/EFT an die IBAN entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
+    "faq.q4": "Ist es sicher, meinen Binance-API-Schlüssel anzugeben?",
+    "faq.a4": "Ihr Schlüssel wird verschlüsselt auf dem Server gespeichert und nur verwendet, um in Ihrem Namen Orders zu öffnen und zu schließen. Wir empfehlen, auf Binance-Seite einen API-Schlüssel ohne „Auszahlungs“-Berechtigung zu erstellen.",
+    "faq.q5": "An welchen Märkten wird gehandelt?",
+    "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul sowie US-Aktien (NASDAQ/NYSE/AMEX) — alle werden von einem einzigen Panel aus gescannt.",
+    "faq.q6": "Wie oft werden Signale generiert?",
+    "faq.a6": "Das System führt etwa alle 15 Minuten einen automatischen Scan durch; Signale werden nur aus geschlossenen 4-Stunden-Kerzen generiert, nicht aus kurzfristigem Preisrauschen.",
+    "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
+    "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
+    "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
+    "faq.a8": "Sie können die Schaltfläche „Jetzt schließen“ neben der betreffenden Position im Panel „Binance Live-Konto“ verwenden; dies sendet sofort eine echte Market-Order und schließt die Position.",
+    "faq.q9": "Ich habe eine andere Frage, an wen kann ich mich wenden?",
+    "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
+  },
+  fr: {
+    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "faq.title": "FAQ — Questions fréquentes",
+    "faq.backToDashboard": "← Tableau de bord",
+    "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
+    "faq.a1": "Par défaut, non — le système fonctionne en mode paper/démo et n'envoie jamais d'ordres réels. Pour trader avec de l'argent réel, vous devez connecter votre clé API Binance et activer vous-même le « Trading en direct » depuis votre panneau.",
+    "faq.q2": "Combien de temps dure l'essai gratuit et que se passe-t-il à la fin ?",
+    "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, payez l'IBAN, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
+    "faq.q3": "Comment l'abonnement est-il payé, le paiement par carte est-il disponible ?",
+    "faq.a3": "Actuellement, les paiements sont acceptés par virement bancaire/EFT vers l'IBAN. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
+    "faq.q4": "Est-il sûr de fournir ma clé API Binance ?",
+    "faq.a4": "Votre clé est stockée chiffrée sur le serveur et n'est utilisée que pour ouvrir et fermer des ordres en votre nom. Nous vous recommandons de créer une clé API sans autorisation de « retrait » côté Binance.",
+    "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
+    "faq.a5": "Binance Futures (contrats perpétuels crypto), Borsa Istanbul et actions américaines (NASDAQ/NYSE/AMEX) — tous scannés depuis un seul panneau.",
+    "faq.q6": "À quelle fréquence les signaux sont-ils générés ?",
+    "faq.a6": "Le système effectue un scan automatique environ toutes les 15 minutes ; les signaux ne sont générés qu'à partir de bougies de 4 heures clôturées, jamais du bruit de prix instantané.",
+    "faq.q7": "Comment activer les notifications Telegram ?",
+    "faq.a7": "Il suffit d'obtenir un code de liaison depuis la section « Connexion Telegram » du panneau et de démarrer le bot sur Telegram — les notifications d'ouverture/clôture et le résumé quotidien arrivent alors automatiquement.",
+    "faq.q8": "Que dois-je faire si je dois fermer d'urgence une position ouverte ?",
+    "faq.a8": "Vous pouvez utiliser le bouton « Fermer maintenant » à côté de la position concernée dans le panneau « Compte réel Binance » ; cela envoie instantanément un ordre au marché réel et ferme la position.",
+    "faq.q9": "J'ai une autre question, qui puis-je contacter ?",
+    "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
+  },
+  es: {
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes",
+    "faq.title": "Preguntas frecuentes",
+    "faq.backToDashboard": "← Panel",
+    "faq.q1": "¿Este bot opera con dinero real?",
+    "faq.a1": "Por defecto, no — el sistema funciona en modo paper/demo y nunca envía órdenes reales. Para operar con dinero real debes conectar tu clave API de Binance y activar tú mismo el “Trading en vivo” desde tu panel.",
+    "faq.q2": "¿Cuánto dura la prueba gratuita y qué pasa cuando termina?",
+    "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, paga al IBAN y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
+    "faq.q3": "¿Cómo se paga la suscripción, hay pago con tarjeta?",
+    "faq.a3": "Actualmente los pagos se aceptan mediante transferencia bancaria/EFT al IBAN. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
+    "faq.q4": "¿Es seguro proporcionar mi clave API de Binance?",
+    "faq.a4": "Tu clave se almacena cifrada en el servidor y solo se usa para abrir y cerrar órdenes en tu nombre. Recomendamos crear una clave API sin permiso de “retiro” en Binance.",
+    "faq.q5": "¿En qué mercados se opera?",
+    "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul y acciones de EE. UU. (NASDAQ/NYSE/AMEX) — todos escaneados desde un solo panel.",
+    "faq.q6": "¿Con qué frecuencia se generan las señales?",
+    "faq.a6": "El sistema realiza un escaneo automático aproximadamente cada 15 minutos; las señales solo se generan a partir de velas de 4 horas cerradas, no del ruido de precio instantáneo.",
+    "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
+    "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
+    "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
+    "faq.a8": "Puedes usar el botón “Cerrar ahora” junto a la posición correspondiente en el panel “Cuenta real de Binance”; esto envía al instante una orden de mercado real y cierra la posición.",
+    "faq.q9": "Tengo otra pregunta, ¿a quién puedo contactar?",
+    "faq.a9": "Simplemente haz clic en el botón “Preguntar al admin” de arriba y escribe tu mensaje — se enviará directamente al equipo de administración.",
+  },
+};
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+</script>
+</body></html>'''
+
+# Standalone Backtest results page — a static, one-time snapshot report of
+# two backtests the team already ran (ETH and BTC), hardcoded below. No
+# live data / JS fetch calls: the numbers are baked into the page.
+BACKTEST_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backtest — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="backtest.title">Backtest Results</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.title">Backtest Results</h2></div>
+  <div class="position-body">
+    <p class="section-sub" data-i18n="backtest.intro">This report replays the exact same entry/exit logic the live bot uses against historical data.</p>
+  </div>
+</section>
+
+<div class="section-title" data-i18n="backtest.ethTitle">ETH Results</div>
+<p class="section-sub" data-i18n="backtest.ethSubtitle">Fixed 1.0 ETH per trade, $10,000 starting capital · 2020-01-08 → 2026-09-21 (~6.7 years)</p>
+
+<section class="kpistrip">
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">311</div><div class="kpi-sub">206 W / 105 L</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">66.2%</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.50</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$7,206.65</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+72.1%</div><div class="kpi-sub">$10,000 → $17,207</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-7.1%</div></div>
+</section>
+
+<section class="cols" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="panel">
+    <div class="panel-head"><h2 data-i18n="backtest.bySide">By side</h2></div>
+    <div class="table-scroll"><table class="datatable">
+      <thead><tr><th data-i18n="backtest.colSide">Side</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colAvgTrade">Avg/trade</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill long">LONG</span></td><td class="num">233</td><td class="num pos">+$18.54</td><td class="num pos">+$4,319.62</td></tr>
+        <tr><td><span class="pill short">SHORT</span></td><td class="num">78</td><td class="num pos">+$37.01</td><td class="num pos">+$2,887.04</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2 data-i18n="backtest.byExitReason">By exit reason</h2></div>
+    <div class="table-scroll"><table class="datatable">
+      <thead><tr><th data-i18n="backtest.colExitReason">Exit reason</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
+      <tbody>
+        <tr><td>ATR_SL</td><td class="num">105</td><td class="num neg">-$14,441.27</td></tr>
+        <tr><td>ATR_TP</td><td class="num">78</td><td class="num pos">+$12,556.42</td></tr>
+        <tr><td>ATR_TRAILING_SL</td><td class="num">128</td><td class="num pos">+$9,091.50</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.byYear">By year (net PnL)</h2></div>
+  <div class="table-scroll"><table class="datatable">
+    <thead><tr><th data-i18n="backtest.colYear">Year</th><th class="num" data-i18n="backtest.colNetPnl">Net PnL</th><th class="num" data-i18n="backtest.colTrades">Trades</th></tr></thead>
+    <tbody>
+      <tr><td>2020</td><td class="num pos">+$382.92</td><td class="num">60</td></tr>
+      <tr><td>2021</td><td class="num pos">+$4,145.64</td><td class="num">46</td></tr>
+      <tr><td>2022</td><td class="num pos">+$330.16</td><td class="num">40</td></tr>
+      <tr><td>2023</td><td class="num pos">+$451.22</td><td class="num">46</td></tr>
+      <tr><td>2024</td><td class="num pos">+$818.97</td><td class="num">46</td></tr>
+      <tr><td>2025</td><td class="num pos">+$82.04</td><td class="num">40</td></tr>
+      <tr><td>2026<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear"> (partial, through Sept)</span></td><td class="num pos">+$995.71</td><td class="num">33</td></tr>
+    </tbody>
+  </table></div>
+  <div class="position-body" style="padding-top:0">
+    <p class="section-sub" style="margin:0">
+      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$105.09</b> &middot;
+      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$137.54</b> &middot;
+      <span data-i18n="backtest.largestWin">Largest win</span>: <b class="pos">$377.81</b> &middot;
+      <span data-i18n="backtest.largestLoss">Largest loss</span>: <b class="neg">-$564.46</b>
+    </p>
+  </div>
+</section>
+
+<div class="section-title" data-i18n="backtest.btcTitle">BTC Results</div>
+<p class="section-sub" data-i18n="backtest.btcSubtitle">$1,000 fixed USD notional per trade, $10,000 starting capital · 2019-10-24 → 2026-09-18 (~6.9 years)</p>
+
+<section class="kpistrip">
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">310</div><div class="kpi-sub">184 W / 126 L</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">59.4%</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.31</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$1,935.80</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+19.4%</div><div class="kpi-sub">$10,000 → $11,936</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-3.8%</div></div>
+</section>
+
+<section class="cols" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="panel">
+    <div class="panel-head"><h2 data-i18n="backtest.bySide">By side</h2></div>
+    <div class="table-scroll"><table class="datatable">
+      <thead><tr><th data-i18n="backtest.colSide">Side</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colAvgTrade">Avg/trade</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill long">LONG</span></td><td class="num">229</td><td class="num pos">+$6.11</td><td class="num pos">+$1,399.29</td></tr>
+        <tr><td><span class="pill short">SHORT</span></td><td class="num">81</td><td class="num pos">+$6.62</td><td class="num pos">+$536.51</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2 data-i18n="backtest.byExitReason">By exit reason</h2></div>
+    <div class="table-scroll"><table class="datatable">
+      <thead><tr><th data-i18n="backtest.colExitReason">Exit reason</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
+      <tbody>
+        <tr><td>ATR_SL</td><td class="num">126</td><td class="num neg">-$6,242.01</td></tr>
+        <tr><td>ATR_TP</td><td class="num">81</td><td class="num pos">+$5,331.68</td></tr>
+        <tr><td>ATR_TRAILING_SL</td><td class="num">103</td><td class="num pos">+$2,846.13</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.byYear">By year (net PnL)</h2></div>
+  <div class="table-scroll"><table class="datatable">
+    <thead><tr><th data-i18n="backtest.colYear">Year</th><th class="num" data-i18n="backtest.colNetPnl">Net PnL</th><th class="num" data-i18n="backtest.colTrades">Trades</th></tr></thead>
+    <tbody>
+      <tr><td>2019<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear2019"> (partial)</span></td><td class="num pos">+$37.48</td><td class="num">8</td></tr>
+      <tr><td>2020</td><td class="num pos">+$1,058.76</td><td class="num">60</td></tr>
+      <tr><td>2021</td><td class="num pos">+$36.01</td><td class="num">47</td></tr>
+      <tr><td>2022</td><td class="num pos">+$51.15</td><td class="num">34</td></tr>
+      <tr><td>2023</td><td class="num pos">+$403.76</td><td class="num">32</td></tr>
+      <tr><td>2024</td><td class="num pos">+$385.93</td><td class="num">51</td></tr>
+      <tr><td>2025<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.onlyLosingYear"> (only losing year)</span></td><td class="num neg">-$173.95</td><td class="num">43</td></tr>
+      <tr><td>2026<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear"> (partial, through Sept)</span></td><td class="num pos">+$136.67</td><td class="num">35</td></tr>
+    </tbody>
+  </table></div>
+  <div class="position-body" style="padding-top:0">
+    <p class="section-sub" style="margin:0">
+      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$44.44</b> &middot;
+      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$49.54</b> &middot;
+      <span data-i18n="backtest.largestWin">Largest win</span>: <b class="pos">$178.23</b> &middot;
+      <span data-i18n="backtest.largestLoss">Largest loss</span>: <b class="neg">-$201.88</b>
+    </p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.takeawayTitle">Comparative takeaway</h2></div>
+  <div class="position-body">
+    <p class="section-sub" style="margin:0" data-i18n="backtest.takeaway">The strategy performs meaningfully better on ETH than on BTC.</p>
+  </div>
+</section>
+
+<div class="callout">
+  <div style="font-weight:700;margin-bottom:4px" data-i18n="backtest.caveatsTitle">Caveats</div>
+  <ul>
+    <li data-i18n="backtest.caveat1">This backtest does not model perpetual futures funding-rate costs.</li>
+    <li data-i18n="backtest.caveat2">Position sizing is fixed and does not compound with account growth.</li>
+    <li data-i18n="backtest.caveat3">Every parameter was tuned against ETH's own historical data, which carries real overfitting risk.</li>
+  </ul>
+</div>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="backtest.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const translations = {
+  en: {
+    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "backtest.title": "Backtest Results",
+    "backtest.backToDashboard": "← Dashboard",
+    "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
+    "backtest.ethTitle": "ETH Results",
+    "backtest.ethSubtitle": "Fixed 1.0 ETH per trade, $10,000 starting capital · 2020-01-08 → 2026-09-21 (~6.7 years)",
+    "backtest.btcTitle": "BTC Results",
+    "backtest.btcSubtitle": "$1,000 fixed USD notional per trade, $10,000 starting capital · 2019-10-24 → 2026-09-18 (~6.9 years)",
+    "backtest.winRate": "Win rate",
+    "backtest.profitFactor": "Profit factor",
+    "backtest.netPnl": "Net PnL",
+    "backtest.returnLbl": "Return",
+    "backtest.maxDrawdown": "Max. drawdown",
+    "backtest.bySide": "By side",
+    "backtest.byExitReason": "By exit reason",
+    "backtest.byYear": "By year (net PnL)",
+    "backtest.colSide": "Side",
+    "backtest.colTrades": "Trades",
+    "backtest.colAvgTrade": "Avg/trade",
+    "backtest.colTotal": "Total",
+    "backtest.colExitReason": "Exit reason",
+    "backtest.colYear": "Year",
+    "backtest.colNetPnl": "Net PnL",
+    "backtest.avgWin": "Avg. win",
+    "backtest.avgLoss": "Avg. loss",
+    "backtest.largestWin": "Largest win",
+    "backtest.largestLoss": "Largest loss",
+    "backtest.partialYear": " (partial, through Sept)",
+    "backtest.partialYear2019": " (partial)",
+    "backtest.onlyLosingYear": " (only losing year)",
+    "backtest.takeawayTitle": "Comparative takeaway",
+    "backtest.takeaway": "The strategy performs meaningfully better on ETH than on BTC over the same ~7-year window: a higher win rate (66.2% vs 59.4%), a higher profit factor (1.50 vs 1.31), and roughly 3.7x the total return. This is expected — every parameter in the strategy's configuration (entry score thresholds, RSI/ADX/MACD/CCI/StochRSI levels, ATR multipliers) was iteratively tuned specifically against ETH; the same thresholds were then applied to BTC with zero BTC-specific tuning. Notably, BTC's 2021 result (+$36 across 47 trades) is weak despite 2021 being a strong BTC bull year — the strategy's stop-losses (ATR_SL) absorbed much of that year's gains during BTC's sharper intra-trend pullbacks. 2025 was BTC's only net-losing year in the backtest.",
+    "backtest.caveatsTitle": "Caveats",
+    "backtest.caveat1": "This backtest does not model perpetual futures funding-rate costs, which over a 6–7 year holding pattern in a real account would be a real, ongoing expense not reflected here.",
+    "backtest.caveat2": "Position sizing is fixed (1 ETH, or $1,000 notional) and does not compound with account growth — a compounding/percentage-of-equity sizing model would show different return figures.",
+    "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
+  },
+  tr: {
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS",
+    "backtest.title": "Backtest Sonuçları",
+    "backtest.backToDashboard": "← Panel",
+    "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
+    "backtest.ethTitle": "ETH Sonuçları",
+    "backtest.ethSubtitle": "İşlem başına sabit 1.0 ETH, 10.000 USD başlangıç sermayesi · 2020-01-08 → 2026-09-21 (~6.7 yıl)",
+    "backtest.btcTitle": "BTC Sonuçları",
+    "backtest.btcSubtitle": "İşlem başına sabit 1.000 USD nominal, 10.000 USD başlangıç sermayesi · 2019-10-24 → 2026-09-18 (~6.9 yıl)",
+    "backtest.winRate": "Kazanma oranı",
+    "backtest.profitFactor": "Kâr faktörü",
+    "backtest.netPnl": "Net K/Z",
+    "backtest.returnLbl": "Getiri",
+    "backtest.maxDrawdown": "Maks. düşüş",
+    "backtest.bySide": "Yöne göre",
+    "backtest.byExitReason": "Çıkış nedenine göre",
+    "backtest.byYear": "Yıla göre (net K/Z)",
+    "backtest.colSide": "Yön",
+    "backtest.colTrades": "İşlem",
+    "backtest.colAvgTrade": "Ort./işlem",
+    "backtest.colTotal": "Toplam",
+    "backtest.colExitReason": "Çıkış nedeni",
+    "backtest.colYear": "Yıl",
+    "backtest.colNetPnl": "Net K/Z",
+    "backtest.avgWin": "Ort. kazanç",
+    "backtest.avgLoss": "Ort. kayıp",
+    "backtest.largestWin": "En büyük kazanç",
+    "backtest.largestLoss": "En büyük kayıp",
+    "backtest.partialYear": " (kısmi, Eylül'e kadar)",
+    "backtest.partialYear2019": " (kısmi)",
+    "backtest.onlyLosingYear": " (tek zarar eden yıl)",
+    "backtest.takeawayTitle": "Karşılaştırmalı özet",
+    "backtest.takeaway": "Strateji, aynı ~7 yıllık dönemde ETH'de BTC'ye göre belirgin şekilde daha iyi performans gösteriyor: daha yüksek kazanma oranı (%66.2'ye karşı %59.4), daha yüksek kâr faktörü (1.50'ye karşı 1.31) ve yaklaşık 3.7 katı toplam getiri. Bu beklenen bir sonuç — stratejinin yapılandırmasındaki her parametre (giriş skor eşikleri, RSI/ADX/MACD/CCI/StochRSI seviyeleri, ATR çarpanları) özellikle ETH üzerinde tekrar tekrar ayarlandı; aynı eşikler BTC'ye BTC'ye özgü hiçbir ayar yapılmadan uygulandı. Özellikle, 2021 güçlü bir BTC boğa yılı olmasına rağmen BTC'nin 2021 sonucu (47 işlemde +$36) zayıf — stratejinin stop-loss'ları (ATR_SL) BTC'nin daha keskin trend içi geri çekilmeleri sırasında o yılın kazancının büyük kısmını emdi. 2025, backtest'te BTC'nin net zarar eden tek yılıydı.",
+    "backtest.caveatsTitle": "Uyarılar",
+    "backtest.caveat1": "Bu backtest, sürekli vadeli işlem fonlama oranı (funding rate) maliyetlerini modellemez; gerçek bir hesapta 6-7 yıllık bir tutma döneminde bu, burada yansıtılmayan gerçek ve sürekli bir maliyet olurdu.",
+    "backtest.caveat2": "Pozisyon boyutu sabittir (1 ETH veya 1.000 USD nominal) ve hesap büyümesiyle bileşik hale gelmez — bileşik/özkaynak yüzdesi tabanlı bir boyutlandırma modeli farklı getiri rakamları gösterirdi.",
+    "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
+  },
+  zh: {
+    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题",
+    "backtest.title": "回测结果",
+    "backtest.backToDashboard": "← 仪表盘",
+    "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
+    "backtest.ethTitle": "ETH 结果",
+    "backtest.ethSubtitle": "每笔交易固定 1.0 ETH，初始资金 10,000 美元 · 2020-01-08 → 2026-09-21（约6.7年）",
+    "backtest.btcTitle": "BTC 结果",
+    "backtest.btcSubtitle": "每笔交易固定名义金额 1,000 美元，初始资金 10,000 美元 · 2019-10-24 → 2026-09-18（约6.9年）",
+    "backtest.winRate": "胜率",
+    "backtest.profitFactor": "盈亏比（获利因子）",
+    "backtest.netPnl": "净盈亏",
+    "backtest.returnLbl": "回报率",
+    "backtest.maxDrawdown": "最大回撤",
+    "backtest.bySide": "按方向",
+    "backtest.byExitReason": "按平仓原因",
+    "backtest.byYear": "按年度（净盈亏）",
+    "backtest.colSide": "方向",
+    "backtest.colTrades": "交易数",
+    "backtest.colAvgTrade": "平均/笔",
+    "backtest.colTotal": "合计",
+    "backtest.colExitReason": "平仓原因",
+    "backtest.colYear": "年份",
+    "backtest.colNetPnl": "净盈亏",
+    "backtest.avgWin": "平均盈利",
+    "backtest.avgLoss": "平均亏损",
+    "backtest.largestWin": "最大单笔盈利",
+    "backtest.largestLoss": "最大单笔亏损",
+    "backtest.partialYear": "（截至9月，部分年份）",
+    "backtest.partialYear2019": "（部分年份）",
+    "backtest.onlyLosingYear": "（唯一亏损年份）",
+    "backtest.takeawayTitle": "对比结论",
+    "backtest.takeaway": "在相同的约7年窗口期内，该策略在 ETH 上的表现明显优于 BTC：更高的胜率（66.2% 对 59.4%）、更高的盈亏比（1.50 对 1.31），以及约3.7倍的总回报。这是符合预期的——策略配置中的每一个参数（入场评分阈值、RSI/ADX/MACD/CCI/StochRSI 水平、ATR 乘数）都是专门针对 ETH 反复调优的；同样的阈值被直接套用到 BTC 上，未针对 BTC 做任何专门调优。值得注意的是，尽管2021年是 BTC 的强牛市年份，但 BTC 在2021年的结果却很弱（47笔交易仅 +36美元）——策略的止损（ATR_SL）在 BTC 更剧烈的趋势内回撤中吞噬了当年的大部分收益。2025年是回测中 BTC 唯一净亏损的年份。",
+    "backtest.caveatsTitle": "注意事项",
+    "backtest.caveat1": "本次回测未对永续合约的资金费率成本进行建模；在真实账户中持仓6-7年，这将是一项未在此体现的真实、持续性支出。",
+    "backtest.caveat2": "仓位大小是固定的（1 ETH 或名义金额 1,000 美元），不会随账户增长而复利——采用复利/按权益百分比的仓位模型会得出不同的回报数字。",
+    "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
+  },
+  de: {
+    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "backtest.title": "Backtest-Ergebnisse",
+    "backtest.backToDashboard": "← Übersicht",
+    "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
+    "backtest.ethTitle": "ETH-Ergebnisse",
+    "backtest.ethSubtitle": "Fest 1,0 ETH pro Trade, 10.000 USD Startkapital · 2020-01-08 → 2026-09-21 (~6,7 Jahre)",
+    "backtest.btcTitle": "BTC-Ergebnisse",
+    "backtest.btcSubtitle": "Fest 1.000 USD Nominalwert pro Trade, 10.000 USD Startkapital · 2019-10-24 → 2026-09-18 (~6,9 Jahre)",
+    "backtest.winRate": "Trefferquote",
+    "backtest.profitFactor": "Profitfaktor",
+    "backtest.netPnl": "Netto-PnL",
+    "backtest.returnLbl": "Rendite",
+    "backtest.maxDrawdown": "Max. Drawdown",
+    "backtest.bySide": "Nach Richtung",
+    "backtest.byExitReason": "Nach Ausstiegsgrund",
+    "backtest.byYear": "Nach Jahr (Netto-PnL)",
+    "backtest.colSide": "Richtung",
+    "backtest.colTrades": "Trades",
+    "backtest.colAvgTrade": "Ø/Trade",
+    "backtest.colTotal": "Gesamt",
+    "backtest.colExitReason": "Ausstiegsgrund",
+    "backtest.colYear": "Jahr",
+    "backtest.colNetPnl": "Netto-PnL",
+    "backtest.avgWin": "Ø Gewinn",
+    "backtest.avgLoss": "Ø Verlust",
+    "backtest.largestWin": "Größter Gewinn",
+    "backtest.largestLoss": "Größter Verlust",
+    "backtest.partialYear": " (teilweise, bis September)",
+    "backtest.partialYear2019": " (teilweise)",
+    "backtest.onlyLosingYear": " (einziges Verlustjahr)",
+    "backtest.takeawayTitle": "Vergleichendes Fazit",
+    "backtest.takeaway": "Die Strategie schneidet im selben ~7-Jahres-Zeitraum bei ETH deutlich besser ab als bei BTC: höhere Trefferquote (66,2 % vs. 59,4 %), höherer Profitfaktor (1,50 vs. 1,31) und etwa das 3,7-fache der Gesamtrendite. Das ist zu erwarten — jeder Parameter in der Konfiguration der Strategie (Entry-Score-Schwellenwerte, RSI-/ADX-/MACD-/CCI-/StochRSI-Level, ATR-Multiplikatoren) wurde iterativ speziell für ETH optimiert; dieselben Schwellenwerte wurden dann ohne BTC-spezifische Anpassung auf BTC angewendet. Bemerkenswert: Das BTC-Ergebnis für 2021 (+36 USD bei 47 Trades) ist schwach, obwohl 2021 ein starkes BTC-Bullenjahr war — die Stop-Losses der Strategie (ATR_SL) haben einen Großteil der Jahresgewinne bei den schärferen Pullbacks innerhalb des BTC-Trends aufgezehrt. 2025 war im Backtest das einzige Jahr mit Nettoverlust für BTC.",
+    "backtest.caveatsTitle": "Einschränkungen",
+    "backtest.caveat1": "Dieser Backtest modelliert keine Funding-Rate-Kosten für Perpetual Futures, die über eine Haltedauer von 6–7 Jahren in einem echten Konto eine reale, fortlaufende Kostenposition wären, die hier nicht abgebildet ist.",
+    "backtest.caveat2": "Die Positionsgröße ist fest (1 ETH bzw. 1.000 USD Nominalwert) und wächst nicht mit dem Kontowachstum mit — ein Modell mit Zinseszins-/prozentualer Eigenkapitalgrößung würde andere Renditezahlen zeigen.",
+    "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
+  },
+  fr: {
+    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "backtest.title": "Résultats du backtest",
+    "backtest.backToDashboard": "← Tableau de bord",
+    "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
+    "backtest.ethTitle": "Résultats ETH",
+    "backtest.ethSubtitle": "1,0 ETH fixe par trade, capital de départ de 10 000 USD · 2020-01-08 → 2026-09-21 (~6,7 ans)",
+    "backtest.btcTitle": "Résultats BTC",
+    "backtest.btcSubtitle": "Notionnel fixe de 1 000 USD par trade, capital de départ de 10 000 USD · 2019-10-24 → 2026-09-18 (~6,9 ans)",
+    "backtest.winRate": "Taux de réussite",
+    "backtest.profitFactor": "Facteur de profit",
+    "backtest.netPnl": "PnL net",
+    "backtest.returnLbl": "Rendement",
+    "backtest.maxDrawdown": "Drawdown max.",
+    "backtest.bySide": "Par sens",
+    "backtest.byExitReason": "Par motif de sortie",
+    "backtest.byYear": "Par année (PnL net)",
+    "backtest.colSide": "Sens",
+    "backtest.colTrades": "Trades",
+    "backtest.colAvgTrade": "Moy./trade",
+    "backtest.colTotal": "Total",
+    "backtest.colExitReason": "Motif de sortie",
+    "backtest.colYear": "Année",
+    "backtest.colNetPnl": "PnL net",
+    "backtest.avgWin": "Gain moy.",
+    "backtest.avgLoss": "Perte moy.",
+    "backtest.largestWin": "Plus gros gain",
+    "backtest.largestLoss": "Plus grosse perte",
+    "backtest.partialYear": " (partielle, jusqu'en septembre)",
+    "backtest.partialYear2019": " (partielle)",
+    "backtest.onlyLosingYear": " (seule année perdante)",
+    "backtest.takeawayTitle": "Conclusion comparative",
+    "backtest.takeaway": "La stratégie est nettement plus performante sur ETH que sur BTC sur la même fenêtre d'environ 7 ans : taux de réussite plus élevé (66,2 % contre 59,4 %), facteur de profit plus élevé (1,50 contre 1,31), et environ 3,7 fois le rendement total. C'est attendu — chaque paramètre de la configuration de la stratégie (seuils de score d'entrée, niveaux RSI/ADX/MACD/CCI/StochRSI, multiplicateurs ATR) a été itérativement calibré spécifiquement sur ETH ; les mêmes seuils ont ensuite été appliqués à BTC sans aucun calibrage spécifique à BTC. Fait notable, le résultat de BTC en 2021 (+36 USD sur 47 trades) est faible malgré une forte année haussière pour BTC — les stop-loss de la stratégie (ATR_SL) ont absorbé une grande partie des gains de cette année-là lors des retracements plus marqués à l'intérieur de la tendance de BTC. 2025 a été la seule année nette négative pour BTC dans le backtest.",
+    "backtest.caveatsTitle": "Mises en garde",
+    "backtest.caveat1": "Ce backtest ne modélise pas les coûts de taux de financement (funding) des contrats perpétuels, qui, sur une période de détention de 6 à 7 ans sur un compte réel, représenteraient une dépense réelle et continue non reflétée ici.",
+    "backtest.caveat2": "La taille des positions est fixe (1 ETH, ou un notionnel de 1 000 USD) et ne se compose pas avec la croissance du compte — un modèle de dimensionnement à intérêts composés/pourcentage des capitaux propres donnerait des chiffres de rendement différents.",
+    "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
+  },
+  es: {
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes",
+    "backtest.title": "Resultados del backtest",
+    "backtest.backToDashboard": "← Panel",
+    "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
+    "backtest.ethTitle": "Resultados de ETH",
+    "backtest.ethSubtitle": "1,0 ETH fijo por operación, capital inicial de 10.000 USD · 2020-01-08 → 2026-09-21 (~6,7 años)",
+    "backtest.btcTitle": "Resultados de BTC",
+    "backtest.btcSubtitle": "Nocional fijo de 1.000 USD por operación, capital inicial de 10.000 USD · 2019-10-24 → 2026-09-18 (~6,9 años)",
+    "backtest.winRate": "Tasa de acierto",
+    "backtest.profitFactor": "Factor de beneficio",
+    "backtest.netPnl": "PnL neto",
+    "backtest.returnLbl": "Retorno",
+    "backtest.maxDrawdown": "Drawdown máx.",
+    "backtest.bySide": "Por lado",
+    "backtest.byExitReason": "Por motivo de salida",
+    "backtest.byYear": "Por año (PnL neto)",
+    "backtest.colSide": "Lado",
+    "backtest.colTrades": "Operaciones",
+    "backtest.colAvgTrade": "Prom./operación",
+    "backtest.colTotal": "Total",
+    "backtest.colExitReason": "Motivo de salida",
+    "backtest.colYear": "Año",
+    "backtest.colNetPnl": "PnL neto",
+    "backtest.avgWin": "Ganancia media",
+    "backtest.avgLoss": "Pérdida media",
+    "backtest.largestWin": "Mayor ganancia",
+    "backtest.largestLoss": "Mayor pérdida",
+    "backtest.partialYear": " (parcial, hasta septiembre)",
+    "backtest.partialYear2019": " (parcial)",
+    "backtest.onlyLosingYear": " (único año con pérdidas)",
+    "backtest.takeawayTitle": "Conclusión comparativa",
+    "backtest.takeaway": "La estrategia rinde notablemente mejor en ETH que en BTC durante la misma ventana de ~7 años: mayor tasa de acierto (66,2% frente a 59,4%), mayor factor de beneficio (1,50 frente a 1,31) y aproximadamente 3,7 veces el retorno total. Esto es esperable — cada parámetro de la configuración de la estrategia (umbrales de puntuación de entrada, niveles de RSI/ADX/MACD/CCI/StochRSI, multiplicadores de ATR) se ajustó de forma iterativa específicamente sobre ETH; los mismos umbrales se aplicaron luego a BTC sin ningún ajuste específico para BTC. Cabe destacar que el resultado de BTC en 2021 (+36 USD en 47 operaciones) es débil pese a que 2021 fue un año alcista fuerte para BTC — los stop-loss de la estrategia (ATR_SL) absorbieron gran parte de las ganancias de ese año durante las retrocesiones más pronunciadas dentro de la tendencia de BTC. 2025 fue el único año con pérdida neta para BTC en el backtest.",
+    "backtest.caveatsTitle": "Advertencias",
+    "backtest.caveat1": "Este backtest no modela los costes de la tasa de financiación (funding) de los futuros perpetuos, que en un periodo de mantenimiento de 6-7 años en una cuenta real supondrían un gasto real y continuo no reflejado aquí.",
+    "backtest.caveat2": "El tamaño de la posición es fijo (1 ETH, o un nocional de 1.000 USD) y no se compone con el crecimiento de la cuenta — un modelo de dimensionamiento compuesto/porcentaje del capital mostraría cifras de retorno diferentes.",
+    "backtest.caveat3": "Cada parámetro se ajustó con los datos históricos propios de ETH, lo que conlleva un riesgo real de sobreajuste (overfitting) — el rendimiento pasado, especialmente en un backtest cuyos parámetros se ajustaron a ese mismo histórico, no garantiza resultados futuros, y los resultados en vivo pueden diferir notablemente de lo mostrado aquí.",
+  },
+};
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+</script>
+</body></html>'''
+
 _ADMIN_STYLE_EXTRA = r'''
 <style>
 .admin-wrap{max-width:1100px;margin:0 auto;padding:28px 20px}
@@ -4147,6 +4898,12 @@ class Handler(BaseHTTPRequestHandler):
             if not auth.is_admin(user):
                 self._redirect('/'); return
             self._send_html(ADMIN_HTML); return
+
+        if path=='/faq':
+            self._send_html(FAQ_HTML); return
+
+        if path=='/backtest':
+            self._send_html(BACKTEST_HTML); return
 
         if path=='/api/admin/users':
             user = self._current_user()
