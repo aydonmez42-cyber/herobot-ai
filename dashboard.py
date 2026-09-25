@@ -612,32 +612,32 @@ TANITIM_HTML = r'''<!doctype html>
 ACCOUNT_EXTRAS_HTML = r'''
 <div class="stack-gap">
   <div class="account-row">
-    <button class="btn" type="button" onclick="toggleBox('subscriptionBox')">💳 Abonelik Sistemine Geç</button>
-    <button class="btn" type="button" onclick="toggleBox('askAdminBox')">✉️ Admin'e Soru Sor</button>
+    <button class="btn" type="button" onclick="toggleBox('subscriptionBox')" data-i18n="account.subscriptionBtn">💳 Switch to Subscription</button>
+    <button class="btn" type="button" onclick="toggleBox('askAdminBox')" data-i18n="account.askAdminBtn">✉️ Ask Admin</button>
   </div>
 
   <div id="subscriptionBox" style="display:none">
-    <div class="section-title" style="margin-top:14px">Abonelik Sistemine Geç</div>
-    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0">Bir plan seçin, IBAN'a ödemeyi gönderin ve "Tutarı Gönderdim" butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.</p>
+    <div class="section-title" style="margin-top:14px" data-i18n="subscription.title">Switch to Subscription</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0" data-i18n="subscription.desc">Choose a plan, send the payment to the IBAN below, and click "I've Sent the Payment" — our team will verify your payment and activate your account as soon as possible.</p>
     <div class="plan-choices">
       <button type="button" class="plan-btn" id="planBtn_monthly" onclick="selectPlan('monthly')">
-        <span class="plan-name">Aylık Abonelik</span>
-        <span class="plan-price">50 USD</span>
+        <span class="plan-name" data-i18n="subscription.planMonthlyName">Monthly Subscription</span>
+        <span class="plan-price" data-i18n="subscription.planMonthlyPrice">50 USD</span>
       </button>
       <button type="button" class="plan-btn" id="planBtn_annual" onclick="selectPlan('annual')">
-        <span class="plan-name">Yıllık Abonelik</span>
-        <span class="plan-price">500 USD</span>
+        <span class="plan-name" data-i18n="subscription.planAnnualName">Annual Subscription</span>
+        <span class="plan-price" data-i18n="subscription.planAnnualPrice">500 USD</span>
       </button>
     </div>
     <div id="planIbanBox" style="display:none">
       <div class="iban-box">
-        <div class="account-row text-faint">Seçilen plan: <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
-        <div class="account-row" style="margin-top:8px">IBAN:</div>
+        <div class="account-row text-faint"><span data-i18n="subscription.selectedPlanLabel">Selected plan:</span> <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
+        <div class="account-row" style="margin-top:8px" data-i18n="subscription.ibanLabel">IBAN:</div>
         <div class="iban-num">__IBAN__</div>
-        <div class="account-row text-faint" style="margin-top:4px">Alıcı: __IBAN_HOLDER__</div>
-        <div class="account-row text-faint">Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.</div>
+        <div class="account-row text-faint" style="margin-top:4px"><span data-i18n="subscription.recipientLabel">Recipient:</span> __IBAN_HOLDER__</div>
+        <div class="account-row text-faint" data-i18n="subscription.usernameNote" data-i18n-html="1">Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.</div>
         <div class="account-row" style="margin-top:10px">
-          <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()">Tutarı Gönderdim</button>
+          <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()" data-i18n="subscription.paySentBtn">I've Sent the Payment</button>
         </div>
         <div id="paySentMsg" style="margin-top:8px;font-size:12.5px"></div>
       </div>
@@ -645,53 +645,53 @@ ACCOUNT_EXTRAS_HTML = r'''
   </div>
 
   <div id="askAdminBox" class="ask-box" style="display:none">
-    <div class="section-title" style="margin-top:14px">Admin'e Soru Sor</div>
-    <p class="text-faint" style="font-size:12.5px;margin:0 0 8px 0">Mesajınız herobotai.int@gmail.com adresine iletilecek.</p>
-    <textarea id="askAdminMsg" placeholder="Sorunuzu buraya yazın…"></textarea>
+    <div class="section-title" style="margin-top:14px" data-i18n="askAdmin.title">Ask Admin</div>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 8px 0" data-i18n="askAdmin.desc">Your message will be sent to herobotai.int@gmail.com.</p>
+    <textarea id="askAdminMsg" placeholder="Type your question here…" data-i18n-placeholder="askAdmin.placeholder"></textarea>
     <div class="account-row" style="margin-top:8px">
-      <button class="btn btn-primary" type="button" id="askAdminBtn" onclick="submitAskAdmin()">Gönder</button>
+      <button class="btn btn-primary" type="button" id="askAdminBtn" onclick="submitAskAdmin()" data-i18n="askAdmin.sendBtn">Send</button>
     </div>
     <div id="askAdminResult" style="margin-top:8px;font-size:12.5px"></div>
   </div>
 
   <div>
-    <div class="section-title" style="margin-top:18px">FAQ — Sıkça Sorulan Sorular</div>
+    <div class="section-title" style="margin-top:18px" data-i18n="faq.title">FAQ — Frequently Asked Questions</div>
     <div>
       <details class="faq-item">
-        <summary>Bu bot gerçek parayla mı işlem yapıyor?</summary>
-        <p>Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp "Canlı İşlem" ayarını kendi panelinizden siz açmanız gerekir.</p>
+        <summary data-i18n="faq.q1">Does this bot trade with real money?</summary>
+        <p data-i18n="faq.a1">By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on "Live Trading" yourself from your own panel.</p>
       </details>
       <details class="faq-item">
-        <summary>Ücretsiz deneme süresi ne kadar ve dolunca ne olur?</summary>
-        <p>7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra "Tutarı Gönderdim" demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.</p>
+        <summary data-i18n="faq.q2">How long is the free trial and what happens when it ends?</summary>
+        <p data-i18n="faq.a2">7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click "I've Sent the Payment" — our team will verify it and activate your account.</p>
       </details>
       <details class="faq-item">
-        <summary>Abonelik nasıl ödeniyor, kartla ödeme var mı?</summary>
-        <p>Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.</p>
+        <summary data-i18n="faq.q3">How is the subscription paid, is card payment available?</summary>
+        <p data-i18n="faq.a3">Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.</p>
       </details>
       <details class="faq-item">
-        <summary>Binance API anahtarımı vermek güvenli mi?</summary>
-        <p>Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında "para çekme" (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.</p>
+        <summary data-i18n="faq.q4">Is it safe to give my Binance API key?</summary>
+        <p data-i18n="faq.a4">Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without "withdrawal" permission on the Binance side.</p>
       </details>
       <details class="faq-item">
-        <summary>Hangi piyasalarda işlem yapılıyor?</summary>
-        <p>Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.</p>
+        <summary data-i18n="faq.q5">Which markets are traded?</summary>
+        <p data-i18n="faq.a5">Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.</p>
       </details>
       <details class="faq-item">
-        <summary>Sinyaller ne sıklıkla üretiliyor?</summary>
-        <p>Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.</p>
+        <summary data-i18n="faq.q6">How often are signals generated?</summary>
+        <p data-i18n="faq.a6">The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.</p>
       </details>
       <details class="faq-item">
-        <summary>Telegram bildirimlerini nasıl açarım?</summary>
-        <p>Panelde "Telegram Bağlantısı" bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.</p>
+        <summary data-i18n="faq.q7">How do I turn on Telegram notifications?</summary>
+        <p data-i18n="faq.a7">Just get a link code from the "Telegram Connection" section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.</p>
       </details>
       <details class="faq-item">
-        <summary>Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?</summary>
-        <p>"Binance Gerçek Hesap" panelindeki ilgili pozisyonun yanındaki "Şimdi Kapat" butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.</p>
+        <summary data-i18n="faq.q8">What should I do if I need to urgently close an open position?</summary>
+        <p data-i18n="faq.a8">You can use the "Close Now" button next to the relevant position in the "Binance Live Account" panel; this instantly sends a real market order and closes the position.</p>
       </details>
       <details class="faq-item">
-        <summary>Başka bir sorum var, kime ulaşabilirim?</summary>
-        <p>Yukarıdaki "Admin'e Soru Sor" butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.</p>
+        <summary data-i18n="faq.q9">I have another question, who can I reach?</summary>
+        <p data-i18n="faq.a9">Just click the "Ask Admin" button above and write your message — it goes straight to the admin team.</p>
       </details>
     </div>
   </div>
@@ -707,52 +707,52 @@ function selectPlan(plan){
   _selectedPlan=plan;
   document.getElementById('planBtn_monthly').classList.toggle('selected', plan==='monthly');
   document.getElementById('planBtn_annual').classList.toggle('selected', plan==='annual');
-  document.getElementById('planSelectedLabel').textContent = plan==='monthly' ? 'Aylık — 50 USD' : 'Yıllık — 500 USD';
+  document.getElementById('planSelectedLabel').textContent = plan==='monthly' ? t('subscription.selectedMonthly') : t('subscription.selectedAnnual');
   document.getElementById('planIbanBox').style.display='block';
   document.getElementById('paySentMsg').textContent='';
   const btn=document.getElementById('paySentBtn');
-  btn.disabled=false; btn.textContent='Tutarı Gönderdim';
+  btn.disabled=false; btn.textContent=t('subscription.paySentBtn');
 }
 async function confirmPaymentSent(){
   if(!_selectedPlan) return;
   const btn=document.getElementById('paySentBtn');
-  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  btn.disabled=true; btn.textContent=t('subscription.sending');
   try{
     const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan})});
     const d=await r.json();
     document.getElementById('paySentMsg').innerHTML = d.ok
-      ? '<span style="color:var(--bull)">✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.</span>'
-      : '<span style="color:var(--bear)">'+(d.error||'Bir hata oluştu, lütfen tekrar deneyin.')+'</span>';
+      ? '<span style="color:var(--bull)">'+t('subscription.successMsg')+'</span>'
+      : '<span style="color:var(--bear)">'+(d.error||t('subscription.genericError'))+'</span>';
   }catch(e){
-    document.getElementById('paySentMsg').innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+    document.getElementById('paySentMsg').innerHTML='<span style="color:var(--bear)">'+t('subscription.connectionError')+'</span>';
   }
-  btn.disabled=false; btn.textContent='Tekrar Bildir';
+  btn.disabled=false; btn.textContent=t('subscription.resendBtn');
 }
 async function submitAskAdmin(){
   const msg=(document.getElementById('askAdminMsg').value||'').trim();
   const resultEl=document.getElementById('askAdminResult');
-  if(!msg){ resultEl.innerHTML='<span style="color:var(--bear)">Lütfen bir mesaj yazın.</span>'; return; }
+  if(!msg){ resultEl.innerHTML='<span style="color:var(--bear)">'+t('askAdmin.emptyMessage')+'</span>'; return; }
   const btn=document.getElementById('askAdminBtn');
-  btn.disabled=true; btn.textContent='Gönderiliyor…';
+  btn.disabled=true; btn.textContent=t('askAdmin.sending');
   try{
     const r=await fetch('/api/account/ask-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
     const d=await r.json();
     if(d.ok){
-      resultEl.innerHTML='<span style="color:var(--bull)">✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.</span>';
+      resultEl.innerHTML='<span style="color:var(--bull)">'+t('askAdmin.successMsg')+'</span>';
       document.getElementById('askAdminMsg').value='';
     } else {
-      resultEl.innerHTML='<span style="color:var(--bear)">'+(d.error||'Gönderilemedi, lütfen tekrar deneyin.')+'</span>';
+      resultEl.innerHTML='<span style="color:var(--bear)">'+(d.error||t('askAdmin.genericError'))+'</span>';
     }
   }catch(e){
-    resultEl.innerHTML='<span style="color:var(--bear)">Bağlantı hatası, lütfen tekrar deneyin.</span>';
+    resultEl.innerHTML='<span style="color:var(--bear)">'+t('askAdmin.connectionError')+'</span>';
   }
-  btn.disabled=false; btn.textContent='Gönder';
+  btn.disabled=false; btn.textContent=t('askAdmin.sendBtn');
 }
 </script>
 '''
 
 HTML = r'''<!doctype html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>A&amp;I Trading Terminal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -782,6 +782,9 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .brand-name{font-weight:700;font-size:17px;letter-spacing:.2px}
 .brand-sub{color:var(--text-dim);font-size:12.5px;margin-top:2px}
 .topbar-right{display:flex;align-items:center;gap:14px}
+.lang-select{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-d)}
+.lang-select:hover{border-color:var(--accent);color:var(--accent)}
+.lang-select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .clock{font-family:var(--font-m);color:var(--text-dim);font-size:13px;letter-spacing:.5px}
 .status-pill{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;background:var(--neu-bg);border:1px solid var(--neu-border);color:var(--text-dim)}
 .status-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
@@ -963,33 +966,41 @@ th.sort-active{color:var(--accent)}
     </div>
   </div>
   <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
     <span class="clock" id="clock">—:—:—</span>
-    <span class="status-pill wait" id="status"><span class="dot"></span>Bağlanıyor</span>
+    <span class="status-pill wait" id="status"><span class="dot"></span><span data-i18n="nav.connecting">Connecting</span></span>
     <span class="text-faint" id="whoami">__USERNAME__</span>
-    <a class="btn" id="adminLink" href="/admin" style="display:none;text-decoration:none">Yönetim</a>
-    <button class="btn" onclick="logout()">Çıkış</button>
+    <a class="btn" id="adminLink" href="/admin" style="display:none;text-decoration:none" data-i18n="nav.admin">Admin</a>
+    <button class="btn" onclick="logout()" data-i18n="nav.logout">Logout</button>
   </div>
 </header>
 
 <section class="kpistrip">
   <div class="kpi kpi-equity">
-    <div class="kpi-label">Güncel bakiye</div>
+    <div class="kpi-label" data-i18n="kpi.equity">Current balance</div>
     <div class="kpi-value" id="equity">—</div>
     <div class="kpi-sub" id="pnl">—</div>
     <svg class="sparkline" id="sparkline" viewBox="0 0 200 30" preserveAspectRatio="none"></svg>
   </div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label">Açık pozisyonlar P&amp;L</div><div class="kpi-value" id="openPnl">—</div><div class="kpi-sub" id="openPnlSub">—</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="kpi.openPnl">Open positions P&amp;L</div><div class="kpi-value" id="openPnl">—</div><div class="kpi-sub" id="openPnlSub">—</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label">İşlem &middot; kazanma oranı</div><div class="kpi-value" id="trades">—</div><div class="kpi-sub" id="winrate">—</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="kpi.trades">Trades &middot; win rate</div><div class="kpi-value" id="trades">—</div><div class="kpi-sub" id="winrate">—</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label">Profit factor</div><div class="kpi-value" id="pf">—</div><div class="kpi-sub" id="avg">—</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="kpi.profitFactor">Profit factor</div><div class="kpi-value" id="pf">—</div><div class="kpi-sub" id="avg">—</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label">Maks. drawdown</div><div class="kpi-value" id="dd">—</div><div class="kpi-sub" id="candle">—</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="kpi.maxDrawdown">Max. drawdown</div><div class="kpi-value" id="dd">—</div><div class="kpi-sub" id="candle">—</div></div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Hesabım</h2></div>
+  <div class="panel-head"><h2 data-i18n="account.title">My Account</h2></div>
   <div class="position-body">
     <div class="account-row">👤 <b>__USERNAME__</b></div>
     <div class="account-row text-faint">✉️ <span id="acctEmail">—</span></div>
@@ -999,199 +1010,1783 @@ th.sort-active{color:var(--accent)}
 
 <section class="cols">
   <div class="panel">
-    <div class="panel-head"><h2>Açık pozisyon <span class="text-faint" id="detailSymbol">— ETHUSDT</span></h2></div>
-    <div class="position-body" id="position">Yükleniyor…</div>
+    <div class="panel-head"><h2><span data-i18n="panel.openPosition">Open position</span> <span class="text-faint" id="detailSymbol">— ETHUSDT</span></h2></div>
+    <div class="position-body" id="position" data-i18n="panel.loading">Loading…</div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>Sinyal matrisi</h2></div>
+    <div class="panel-head"><h2 data-i18n="panel.signalMatrix">Signal matrix</h2></div>
     <div class="signal-body" id="signals">—</div>
   </div>
 </section>
 
 <section class="panel scanner-panel">
   <div class="panel-head scanner-tabs">
-    <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')">Binance Futures</button>
-    <button class="tab" data-tab="bist" onclick="switchTab('bist')">Borsa İstanbul</button>
-    <button class="tab" data-tab="us" onclick="switchTab('us')">Wall Street</button>
-    <div class="scanner-note" id="scannerNote">USDT-M perpetual &middot; 4H kapalı mum &middot; sinyal amaçlı, gerçek emir yok</div>
+    <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')" data-i18n="scanner.tabCrypto">Binance Futures</button>
+    <button class="tab" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
+    <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
+    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 4H closed candle &middot; for signal purposes only, no real orders</div>
   </div>
 
   <div class="tabpane active" id="tab-crypto">
     <div class="scanner-controls">
-      <input id="coinSearch" placeholder="Coin ara (örn. BTC)" oninput="renderScanner()">
+      <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
       <select id="signalFilter" onchange="renderScanner()">
-        <option value="ALL">Tüm sinyaller</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
       </select>
-      <button class="btn" onclick="startScanner(true)">Tümünü tara</button>
-      <span class="scanner-status" id="scannerStatus">Hazırlanıyor…</span>
+      <button class="btn" onclick="startScanner(true)" data-i18n="scanner.scanAll">Scan all</button>
+      <span class="scanner-status" id="scannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="coinCount">0 coin</span><span class="tag tag-long" id="longCount">LONG 0</span><span class="tag tag-short" id="shortCount">SHORT 0</span><span class="tag tag-flat" id="noCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long" id="longCount">LONG 0</span><span class="tag tag-short" id="shortCount">SHORT 0</span><span class="tag tag-flat" id="noCount">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="scannerTable">
         <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="scanner">Coin</th>
-          <th class="sortable num" data-key="price" data-tbl="scanner">Fiyat</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="scanner">24s %</th>
-          <th class="sortable num" data-key="volume" data-tbl="scanner">Hacim</th>
-          <th data-key="st">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="scanner">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="scanner">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="scanner">CCI</th>
-          <th>MACD</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="scanner">Sinyal</th>
-          <th>Açıklama</th>
-          <th>Ekle</th>
+          <th class="sortable" data-key="symbol" data-tbl="scanner" data-i18n="scanner.headerCoin">Coin</th>
+          <th class="sortable num" data-key="price" data-tbl="scanner" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="scanner" data-i18n="scanner.headerChange24h">24h %</th>
+          <th class="sortable num" data-key="volume" data-tbl="scanner" data-i18n="scanner.headerVolume">Volume</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="scanner" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="scanner" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="scanner" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="scanner" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="scannerRows"><tr><td colspan="13" class="empty">Tarama bekleniyor…</td></tr></tbody>
+        <tbody id="scannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
     <div class="scanner-controls">
-      <input id="bistSearch" placeholder="Hisse ara (örn. THYAO)" oninput="renderBistScanner()">
+      <input id="bistSearch" placeholder="Search stock (e.g. THYAO)" data-i18n-placeholder="scanner.stockSearchPlaceholderBist" oninput="renderBistScanner()">
       <select id="bistSignalFilter" onchange="renderBistScanner()">
-        <option value="ALL">Tüm sinyaller</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
       </select>
-      <button class="btn" onclick="startBistScanner(true)">Borsa İstanbul tara</button>
-      <span class="scanner-status" id="bistScannerStatus">Hazırlanıyor…</span>
+      <button class="btn" onclick="startBistScanner(true)" data-i18n="scanner.scanBist">Scan Borsa Istanbul</button>
+      <span class="scanner-status" id="bistScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="bistCount">0 hisse</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="bistCount">0 stocks</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="bistScannerTable">
         <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="bist">Hisse</th>
-          <th class="sortable num" data-key="price" data-tbl="bist">Fiyat</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="bist">Günlük %</th>
-          <th data-key="st">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="bist">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="bist">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="bist">CCI</th>
-          <th>MACD</th>
-          <th class="num">Stoch K/D</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="bist">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="bist">Sinyal</th>
-          <th>Açıklama</th>
-          <th>Ekle</th>
+          <th class="sortable" data-key="symbol" data-tbl="bist" data-i18n="scanner.headerStock">Stock</th>
+          <th class="sortable num" data-key="price" data-tbl="bist" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="bist" data-i18n="scanner.headerChangeDaily">Daily %</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="bist" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="bist" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="bist" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="bist" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="bist" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="bistScannerRows"><tr><td colspan="13" class="empty">Tarama bekleniyor…</td></tr></tbody>
+        <tbody id="bistScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
-    <div class="footnote">SHORT burada yalnızca stratejinin teknik sinyalidir; BIST spot piyasasında doğrudan açığa satış emri anlamına gelmez.</div>
+    <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
   </div>
 
   <div class="tabpane" id="tab-us">
     <div class="scanner-controls">
-      <input id="usSearch" placeholder="Hisse ara (örn. AAPL)" oninput="renderUsScanner()">
+      <input id="usSearch" placeholder="Search stock (e.g. AAPL)" data-i18n-placeholder="scanner.stockSearchPlaceholderUs" oninput="renderUsScanner()">
       <select id="usSignalFilter" onchange="renderUsScanner()">
-        <option value="ALL">Tüm sinyaller</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
       </select>
-      <button class="btn" onclick="startUsScanner(true)">S&amp;P500/Nasdaq-100 tara</button>
-      <span class="scanner-status" id="usScannerStatus">Hazırlanıyor…</span>
+      <button class="btn" onclick="startUsScanner(true)" data-i18n="scanner.scanUs">Scan S&amp;P500/Nasdaq-100</button>
+      <span class="scanner-status" id="usScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="usCount">0 hisse</span><span class="tag tag-long" id="usLongCount">LONG 0</span><span class="tag tag-short" id="usShortCount">SHORT 0</span><span class="tag tag-flat" id="usNoCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="usCount">0 stocks</span><span class="tag tag-long" id="usLongCount">LONG 0</span><span class="tag tag-short" id="usShortCount">SHORT 0</span><span class="tag tag-flat" id="usNoCount">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="usScannerTable">
         <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="us">Hisse</th>
-          <th class="sortable num" data-key="price" data-tbl="us">Fiyat</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="us">Günlük %</th>
-          <th data-key="st">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="us">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="us">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="us">CCI</th>
-          <th>MACD</th>
-          <th class="num">Stoch K/D</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="us">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="us">Sinyal</th>
-          <th>Açıklama</th>
-          <th>Ekle</th>
+          <th class="sortable" data-key="symbol" data-tbl="us" data-i18n="scanner.headerStock">Stock</th>
+          <th class="sortable num" data-key="price" data-tbl="us" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="us" data-i18n="scanner.headerChangeDaily">Daily %</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="us" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="us" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="us" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="us" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="us" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="usScannerRows"><tr><td colspan="13" class="empty">Tarama bekleniyor…</td></tr></tbody>
+        <tbody id="usScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
-    <div class="footnote">S&amp;P 500 + Nasdaq-100 evreni (statik liste, periyodik güncellenmeli). Takip listesine eklenen ABD hisseleri, kripto watchlist'i gibi bağımsız bir paper pozisyon açar; SHORT taraf ödünç/marj kısıtlarını modellemeyen saf bir simülasyondur.</div>
+    <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
   </div>
 </section>
 
 <section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2>TradingView Grafiği <span class="text-faint" id="tvChartSymbol">— sembol seçilmedi</span></h2></div>
-  <div id="tvChartEmpty" class="tv-chart-empty">Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.</div>
+  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2></div>
+  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
   <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Deneme İşlemleri</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
+  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
   <div class="table-scroll">
     <table class="datatable">
-      <thead><tr><th>Sembol</th><th>Piyasa</th><th>Yön / Sinyal</th><th class="num">Fiyat</th><th class="num">Unrealized P&amp;L</th><th>Eklenme</th><th></th></tr></thead>
-      <tbody id="watchlistRows"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="watchlist.headerMarket">Market</th><th data-i18n="watchlist.headerDirection">Direction / Signal</th><th class="num" data-i18n="watchlist.headerPrice">Price</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="watchlist.headerAdded">Added</th><th></th></tr></thead>
+      <tbody id="watchlistRows"><tr><td colspan="7" class="empty" data-i18n="watchlist.loading">Loading…</td></tr></tbody>
     </table>
   </div>
-  <div class="footnote">Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $<span id="wlUsd">—</span> nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.</div>
+  <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Binance Bağlantısı</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
+  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
   <div class="position-body" id="accountBody">
-    <div class="pos-empty">Yükleniyor…</div>
+    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
   </div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Telegram Bağlantısı</h2></div>
+  <div class="panel-head"><h2 data-i18n="panel.telegramConnection">Telegram Connection</h2></div>
   <div class="position-body">
-    <div id="telegramPanelBody"><div class="pos-empty">Yükleniyor…</div></div>
+    <div id="telegramPanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
   </div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Binance Gerçek Hesap</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
   <div class="live-panel" style="margin-top:0">
-    <h4>Canlı İşlem (Gerçek Para)</h4>
-    <div id="livePanelBody"><div class="pos-empty">Yükleniyor…</div></div>
+    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
+    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
   </div>
   <div class="table-scroll" style="margin-top:14px">
     <table class="datatable">
-      <thead><tr><th>Sembol</th><th>Yön</th><th class="num">Miktar</th><th class="num">Giriş</th><th class="num">Güncel</th><th class="num">Unrealized P&amp;L</th><th>Kaldıraç</th><th>Açılış</th><th></th></tr></thead>
-      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty">Yükleniyor…</td></tr></tbody>
+      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
+      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
   <div class="table-scroll" style="margin-top:14px">
     <table class="datatable">
-      <thead><tr><th>Tarih</th><th>Yön</th><th>Sembol</th><th class="num">Giriş</th><th class="num">Çıkış</th><th class="num">P&amp;L</th><th>Neden</th></tr></thead>
-      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
-  <div class="footnote">Bu panel yalnızca <b>sizin</b> Binance hesabınızda gerçekleşen canlı işlemleri gösterir — yukarıdaki paper/demo panel ile veya başka kullanıcılarla karışmaz; sizden başka hiç kimse burayı göremez.</div>
+  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>Son işlemler</h2></div>
+  <div class="panel-head"><h2 data-i18n="panel.recentTrades">Recent Trades</h2></div>
   <div class="table-scroll">
     <table class="datatable">
-      <thead><tr><th>Tarih</th><th>Yön</th><th>Sembol</th><th class="num">Giriş</th><th class="num">Çıkış</th><th class="num">P&amp;L</th><th>Neden</th></tr></thead>
-      <tbody id="history"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2>AI Trade Analisti</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()">Şimdi Analiz Et</button></div>
-  <div class="ai-body" id="aiAnalysisBody">Yükleniyor…</div>
+  <div class="panel-head"><h2 data-i18n="panel.aiAnalyst">AI Trade Analyst</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()" data-i18n="ai.runBtn">Analyze Now</button></div>
+  <div class="ai-body" id="aiAnalysisBody" data-i18n="panel.loading">Loading…</div>
 </section>
 
-<div class="page-footer">Otomatik yenileme: pozisyon 5 sn &middot; tarayıcılar 10 sn &middot; paper trading, gerçek emir yok.</div>
+<div class="page-footer" data-i18n="footer.autoRefresh">Auto-refresh: position 5s &middot; scanners 10s &middot; paper trading, no real orders.</div>
 </div>
 
 <script>
+const translations = {
+  en: {
+  "nav.connecting": "Connecting",
+  "nav.botActive": "Bot active",
+  "nav.standby": "Standby",
+  "nav.connectionError": "Connection error",
+  "nav.admin": "Admin",
+  "nav.logout": "Logout",
+  "nav.language": "Language",
+  "kpi.equity": "Current balance",
+  "kpi.openPnl": "Open positions P&L",
+  "kpi.openPnlSub": "All open positions",
+  "kpi.trades": "Trades · win rate",
+  "kpi.winRate": "Win rate",
+  "kpi.profitFactor": "Profit factor",
+  "kpi.avg": "Avg.",
+  "kpi.maxDrawdown": "Max. drawdown",
+  "kpi.lastCandle": "Last candle:",
+  "account.title": "My Account",
+  "account.subscriptionBtn": "💳 Switch to Subscription",
+  "account.askAdminBtn": "✉️ Ask Admin",
+  "account.emailNotRegistered": "(no email on file)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Trial: {n} days left",
+  "account.trialExpired": "Trial expired",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY is not configured on the server — API keys cannot be saved because they cannot be encrypted safely. Please contact your admin.",
+  "account.savedKeyLabel": "Saved key:",
+  "account.lastVerified": "Last verified:",
+  "account.riskAckGiven": "Risk acknowledgement given on",
+  "account.riskAckLabel": "I confirm and accept that this bot may place real-money orders on crypto futures, that it carries a risk of loss, and that any resulting losses are my own responsibility, not the bot's.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Enter a new key to change it",
+  "account.apiKeyPlaceholderNew": "Binance Futures API key",
+  "account.apiSecretPlaceholderChange": "Enter a new secret to change it",
+  "account.apiSecretPlaceholderNew": "Binance Futures API secret",
+  "account.saveVerifyBtn": "Save & Verify",
+  "account.savingVerifying": "Saving & verifying…",
+  "account.removeConnectionBtn": "Remove Connection",
+  "account.verifyError": "Verification error",
+  "account.verifiedConnected": "Connected and verified",
+  "account.connectedNotVerified": "Connected, not verified",
+  "account.notConnected": "Not connected",
+  "subscription.title": "Switch to Subscription",
+  "subscription.desc": "Choose a plan, send the payment to the IBAN below, and click “I've Sent the Payment” — our team will verify your payment and activate your account as soon as possible.",
+  "subscription.planMonthlyName": "Monthly Subscription",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Annual Subscription",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Selected plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Recipient:",
+  "subscription.usernameNote": "Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.",
+  "subscription.paySentBtn": "I've Sent the Payment",
+  "subscription.sending": "Sending…",
+  "subscription.resendBtn": "Notify Again",
+  "subscription.successMsg": "✓ Notification received — our team will activate your account once your payment is verified.",
+  "subscription.genericError": "Something went wrong, please try again.",
+  "subscription.connectionError": "Connection error, please try again.",
+  "subscription.selectedMonthly": "Monthly — 50 USD",
+  "subscription.selectedAnnual": "Annual — 500 USD",
+  "askAdmin.title": "Ask Admin",
+  "askAdmin.desc": "Your message will be sent to herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Type your question here…",
+  "askAdmin.sendBtn": "Send",
+  "askAdmin.sending": "Sending…",
+  "askAdmin.emptyMessage": "Please enter a message.",
+  "askAdmin.successMsg": "✓ Your message has been sent. We'll get back to you shortly.",
+  "askAdmin.genericError": "Could not send, please try again.",
+  "askAdmin.connectionError": "Connection error, please try again.",
+  "faq.title": "FAQ — Frequently Asked Questions",
+  "faq.q1": "Does this bot trade with real money?",
+  "faq.a1": "By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on “Live Trading” yourself from your own panel.",
+  "faq.q2": "How long is the free trial and what happens when it ends?",
+  "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click “I've Sent the Payment” — our team will verify it and activate your account.",
+  "faq.q3": "How is the subscription paid, is card payment available?",
+  "faq.a3": "Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
+  "faq.q4": "Is it safe to give my Binance API key?",
+  "faq.a4": "Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without “withdrawal” permission on the Binance side.",
+  "faq.q5": "Which markets are traded?",
+  "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.",
+  "faq.q6": "How often are signals generated?",
+  "faq.a6": "The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.",
+  "faq.q7": "How do I turn on Telegram notifications?",
+  "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
+  "faq.q8": "What should I do if I need to urgently close an open position?",
+  "faq.a8": "You can use the “Close Now” button next to the relevant position in the “Binance Live Account” panel; this instantly sends a real market order and closes the position.",
+  "faq.q9": "I have another question, who can I reach?",
+  "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
+  "panel.openPosition": "Open position",
+  "panel.loading": "Loading…",
+  "pos.noOpenPosition": "No open paper position. It will appear here once a signal is generated.",
+  "pos.entry": "Entry",
+  "pos.current": "Current",
+  "pos.unrealizedPnl": "Unrealized P&L",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "Current price",
+  "pos.trailingActive": "ACTIVE @",
+  "pos.trailingStandby": "standby",
+  "pos.trailingLabel": "Trailing:",
+  "pos.entryTimeLabel": "Entry time:",
+  "panel.signalMatrix": "Signal matrix",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "1D Volatility",
+  "signal.atrp1d": "1D ATRP %ile",
+  "signal.final": "Final signal",
+  "scanner.tabCrypto": "Binance Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M perpetual · 4H closed candle · for signal purposes only, no real orders",
+  "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
+  "scanner.allSignals": "All signals",
+  "scanner.scanAll": "Scan all",
+  "scanner.scanBist": "Scan Borsa Istanbul",
+  "scanner.scanUs": "Scan S&P500/Nasdaq-100",
+  "scanner.preparing": "Preparing…",
+  "scanner.waiting": "Waiting for scan…",
+  "scanner.noResults": "No results.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Stock",
+  "scanner.headerPrice": "Price",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "Daily %",
+  "scanner.headerVolume": "Volume",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Description",
+  "scanner.headerAdd": "Add",
+  "scanner.coinCountSuffix": "coins",
+  "scanner.stockCountSuffix": "stocks",
+  "scanner.bistFootnote": "SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.",
+  "scanner.usFootnote": "S&P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.",
+  "scanner.scanning": "Scanning",
+  "scanner.ready": "Ready",
+  "scanner.lastScan4h": "Last 4H scan",
+  "scanner.universe": "Universe",
+  "scanner.error": "Error",
+  "scanner.unknownError": "Unknown error",
+  "scanner.startingScan": "Starting scan…",
+  "scanner.startingUsScan": "Starting scan… (514 stocks, may take a few minutes)",
+  "scanner.startingBistScan": "Starting Borsa Istanbul scan…",
+  "tvChart.title": "TradingView Chart",
+  "tvChart.noSymbol": "— no symbol selected",
+  "tvChart.emptyMessage": "Click a row in the scan tables above to view that symbol's TradingView chart here.",
+  "panel.paperTrades": "Paper Trades",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerMarket": "Market",
+  "watchlist.headerDirection": "Direction / Signal",
+  "watchlist.headerPrice": "Price",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Added",
+  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $",
+  "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
+  "watchlist.loading": "Loading…",
+  "watchlist.empty": "Watchlist is empty. Click “+ Add” on any symbol showing LONG/SHORT in the scanner to have the bot watch/paper-trade it.",
+  "watchlist.mainEngine": "Main engine",
+  "watchlist.noPosition": "no position",
+  "watchlist.watched": "watched",
+  "watchlist.removeBtn": "Remove",
+  "watchlist.addBtn": "+ Add",
+  "watchlist.adding": "Adding…",
+  "watchlist.added": "Added ✓",
+  "watchlist.symbolRemoved": "This symbol may have been removed from the watchlist.",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "US Stock",
+  "panel.binanceConnection": "Binance Connection",
+  "panel.telegramConnection": "Telegram Connection",
+  "panel.liveAccount": "Binance Live Account",
+  "liveAccount.title": "Live Trading (Real Money)",
+  "liveAccount.openPositionsSuffix": "open positions",
+  "liveAccount.liveOff": "Live trading is off",
+  "liveAccount.footnote": "This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.",
+  "panel.recentTrades": "Recent Trades",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerSymbol": "Symbol",
+  "history.headerEntry": "Entry",
+  "history.headerExit": "Exit",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Reason",
+  "history.noClosedTrades": "No closed trades yet.",
+  "history.noClosedLiveTrades": "You have no closed live trades yet.",
+  "liveOpen.headerQty": "Qty",
+  "liveOpen.headerCurrent": "Current",
+  "liveOpen.headerLeverage": "Leverage",
+  "liveOpen.headerOpened": "Opened",
+  "liveOpen.noOpenPositions": "You have no open live positions right now.",
+  "liveOpen.closeNowBtn": "Close Now",
+  "liveOpen.closing": "Closing…",
+  "panel.aiAnalyst": "AI Trade Analyst",
+  "ai.runBtn": "Analyze Now",
+  "ai.running": "Analyzing…",
+  "ai.disabled": "AI Analyst is disabled — ANTHROPIC_API_KEY is not set.",
+  "ai.noAnalysisYet": "No analysis generated yet. Click “Analyze Now” to create the first report.",
+  "ai.lastAttemptFailed": "Last attempt failed",
+  "ai.tradesAnalyzedPrefix": "trades analyzed (total",
+  "footer.autoRefresh": "Auto-refresh: position 5s · scanners 10s · paper trading, no real orders.",
+  "live.needConnectFirst": "You need to save and verify your Binance API key above before you can start live (real money) trading.",
+  "live.killSwitch": "🛑 All live trading has been temporarily stopped by the admin",
+  "live.pausedToday": "⏸ Daily max loss limit reached — no new trades will open today",
+  "live.on": "🟢 Live trading is ON",
+  "live.off": "Live trading is off — the bot is running in paper (demo) mode only",
+  "live.openPositionCount": "Open live positions:",
+  "live.todayRealizedPnl": "Today's estimated realized P&L:",
+  "live.positionUsdLabel": "USD amount per trade",
+  "live.positionUsdPlaceholder": "e.g. 100",
+  "live.maxLeverageLabel": "Max leverage (1-{n}x)",
+  "live.maxLeveragePlaceholder": "e.g. 2",
+  "live.dailyLossLimitLabel": "Daily max loss limit (USD) — trading stops automatically for the day if exceeded",
+  "live.dailyLossLimitPlaceholder": "e.g. 50",
+  "live.maxPositionsLabel": "Max open positions (1-{n})",
+  "live.maxPositionsPlaceholder": "e.g. 1",
+  "live.saveSettingsBtn": "Save Settings",
+  "live.turnOffBtn": "Turn Off Live Trading",
+  "live.turnOnBtn": "Turn ON Live Trading (real money)",
+  "live.dangerText": "⚠️ Once live trading is turned on, the bot opens/closes orders using <b>real money</b> on your registered Binance account. You — not the bot — are responsible for any losses. This is not investment advice; compliance with applicable regulations is your own responsibility.",
+  "live.toggleOnConfirm": "You are about to turn on live trading. From this moment the bot will open and close orders with REAL MONEY on your Binance account. Do you confirm that you accept the risk of loss and that these settings are correct?",
+  "telegram.notEnabled": "Telegram bot is not configured on the server.",
+  "telegram.linked": "🟢 Telegram connected",
+  "telegram.notificationsDesc": "Live trade open/close notifications, risk alerts, and the daily summary will arrive here.",
+  "telegram.removeConnectionBtn": "Remove Connection",
+  "telegram.notLinkedDesc": "Connect to receive your live trade notifications on your own Telegram.",
+  "telegram.getCodeBtn": "Get Link Code",
+  "telegram.step1": "1) Open",
+  "telegram.step1Fallback": "our bot",
+  "telegram.step1End": "on Telegram.",
+  "telegram.step2": "2) Send this:",
+  "telegram.codeExpiresPrefix": "Code expires in",
+  "telegram.minutes": "min",
+  "telegram.seconds": "sec",
+  "telegram.unlinkConfirm": "Are you sure you want to remove the Telegram connection?",
+  "alert.apiKeySecretRequired": "API key and secret are required.",
+  "alert.riskAckRequired": "You must check the risk acknowledgement box before continuing.",
+  "alert.saveFailedGeneric": "Could not save",
+  "alert.connectionError": "Connection error",
+  "alert.notAdded": "Could not add",
+  "alert.codeNotObtained": "Could not get code",
+  "alert.disconnectBinanceConfirm": "Are you sure you want to remove the Binance connection?",
+  "alert.closePositionConfirmPrefix": "Are you sure you want to close the",
+  "alert.closePositionConfirmSuffix": "position now with a real market order? This cannot be undone.",
+  "alert.closePositionFailed": "Could not close position",
+  "alert.actionFailed": "Action failed"
+},
+  tr: {
+  "nav.connecting": "Bağlanıyor",
+  "nav.botActive": "Bot aktif",
+  "nav.standby": "Beklemede",
+  "nav.connectionError": "Bağlantı hatası",
+  "nav.admin": "Yönetim",
+  "nav.logout": "Çıkış",
+  "nav.language": "Dil",
+  "kpi.equity": "Güncel bakiye",
+  "kpi.openPnl": "Açık pozisyonlar P&L",
+  "kpi.openPnlSub": "Tüm açık pozisyonlar",
+  "kpi.trades": "İşlem · kazanma oranı",
+  "kpi.winRate": "Win rate",
+  "kpi.profitFactor": "Profit factor",
+  "kpi.avg": "Ort.",
+  "kpi.maxDrawdown": "Maks. drawdown",
+  "kpi.lastCandle": "Son mum:",
+  "account.title": "Hesabım",
+  "account.subscriptionBtn": "💳 Abonelik Sistemine Geç",
+  "account.askAdminBtn": "✉️ Admin'e Soru Sor",
+  "account.emailNotRegistered": "(e-posta kayıtlı değil)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Deneme: {n} gün kaldı",
+  "account.trialExpired": "Deneme doldu",
+  "account.credentialWarning": "⚠️ Sunucuda CREDENTIAL_ENCRYPTION_KEY tanımlı değil — API anahtarları güvenle şifrelenemediği için kaydedilemez. Lütfen yöneticinizle iletişime geçin.",
+  "account.savedKeyLabel": "Kayıtlı anahtar:",
+  "account.lastVerified": "Son doğrulama:",
+  "account.riskAckGiven": "Risk onayı tarihi",
+  "account.riskAckLabel": "Bu botun kripto vadeli işlemlerde gerçek para ile emir açabileceğini, kayıp riski taşıdığını ve olası kayıplardan botun değil kendi sorumluluğumda olduğumu anladığımı ve kabul ettiğimi onaylıyorum.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Değiştirmek için yeni key girin",
+  "account.apiKeyPlaceholderNew": "Binance Futures API key",
+  "account.apiSecretPlaceholderChange": "Değiştirmek için yeni secret girin",
+  "account.apiSecretPlaceholderNew": "Binance Futures API secret",
+  "account.saveVerifyBtn": "Kaydet ve Doğrula",
+  "account.savingVerifying": "Kaydediliyor ve doğrulanıyor…",
+  "account.removeConnectionBtn": "Bağlantıyı Kaldır",
+  "account.verifyError": "Doğrulama hatası",
+  "account.verifiedConnected": "Bağlı ve doğrulandı",
+  "account.connectedNotVerified": "Bağlı, doğrulanmadı",
+  "account.notConnected": "Bağlı değil",
+  "subscription.title": "Abonelik Sistemine Geç",
+  "subscription.desc": "Bir plan seçin, IBAN'a ödemeyi gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
+  "subscription.planMonthlyName": "Aylık Abonelik",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Yıllık Abonelik",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Seçilen plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Alıcı:",
+  "subscription.usernameNote": "Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.",
+  "subscription.paySentBtn": "Tutarı Gönderdim",
+  "subscription.sending": "Gönderiliyor…",
+  "subscription.resendBtn": "Tekrar Bildir",
+  "subscription.successMsg": "✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.",
+  "subscription.genericError": "Bir hata oluştu, lütfen tekrar deneyin.",
+  "subscription.connectionError": "Bağlantı hatası, lütfen tekrar deneyin.",
+  "subscription.selectedMonthly": "Aylık — 50 USD",
+  "subscription.selectedAnnual": "Yıllık — 500 USD",
+  "askAdmin.title": "Admin'e Soru Sor",
+  "askAdmin.desc": "Mesajınız herobotai.int@gmail.com adresine iletilecek.",
+  "askAdmin.placeholder": "Sorunuzu buraya yazın…",
+  "askAdmin.sendBtn": "Gönder",
+  "askAdmin.sending": "Gönderiliyor…",
+  "askAdmin.emptyMessage": "Lütfen bir mesaj yazın.",
+  "askAdmin.successMsg": "✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.",
+  "askAdmin.genericError": "Gönderilemedi, lütfen tekrar deneyin.",
+  "askAdmin.connectionError": "Bağlantı hatası, lütfen tekrar deneyin.",
+  "faq.title": "FAQ — Sıkça Sorulan Sorular",
+  "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
+  "faq.a1": "Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp “Canlı İşlem” ayarını kendi panelinizden siz açmanız gerekir.",
+  "faq.q2": "Ücretsiz deneme süresi ne kadar ve dolunca ne olur?",
+  "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
+  "faq.q3": "Abonelik nasıl ödeniyor, kartla ödeme var mı?",
+  "faq.a3": "Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
+  "faq.q4": "Binance API anahtarımı vermek güvenli mi?",
+  "faq.a4": "Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında “para çekme” (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.",
+  "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
+  "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.",
+  "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
+  "faq.a6": "Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.",
+  "faq.q7": "Telegram bildirimlerini nasıl açarım?",
+  "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
+  "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
+  "faq.a8": "“Binance Gerçek Hesap” panelindeki ilgili pozisyonun yanındaki “Şimdi Kapat” butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.",
+  "faq.q9": "Başka bir sorum var, kime ulaşabilirim?",
+  "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
+  "panel.openPosition": "Açık pozisyon",
+  "panel.loading": "Yükleniyor…",
+  "pos.noOpenPosition": "Açık paper pozisyon yok. Sinyal oluştuğunda burada görünecek.",
+  "pos.entry": "Giriş",
+  "pos.current": "Güncel",
+  "pos.unrealizedPnl": "Unrealized P&L",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "Güncel fiyat",
+  "pos.trailingActive": "AKTİF @",
+  "pos.trailingStandby": "beklemede",
+  "pos.trailingLabel": "Trailing:",
+  "pos.entryTimeLabel": "Giriş zamanı:",
+  "panel.signalMatrix": "Sinyal matrisi",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "1D Volatilite",
+  "signal.atrp1d": "1D ATRP %ile",
+  "signal.final": "Son sinyal",
+  "scanner.tabCrypto": "Binance Futures",
+  "scanner.tabBist": "Borsa İstanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M perpetual · 4H kapalı mum · sinyal amaçlı, gerçek emir yok",
+  "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
+  "scanner.allSignals": "Tüm sinyaller",
+  "scanner.scanAll": "Tümünü tara",
+  "scanner.scanBist": "Borsa İstanbul tara",
+  "scanner.scanUs": "S&P500/Nasdaq-100 tara",
+  "scanner.preparing": "Hazırlanıyor…",
+  "scanner.waiting": "Tarama bekleniyor…",
+  "scanner.noResults": "Sonuç yok.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Hisse",
+  "scanner.headerPrice": "Fiyat",
+  "scanner.headerChange24h": "24s %",
+  "scanner.headerChangeDaily": "Günlük %",
+  "scanner.headerVolume": "Hacim",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Sinyal",
+  "scanner.headerReason": "Açıklama",
+  "scanner.headerAdd": "Ekle",
+  "scanner.coinCountSuffix": "coin",
+  "scanner.stockCountSuffix": "hisse",
+  "scanner.bistFootnote": "SHORT burada yalnızca stratejinin teknik sinyalidir; BIST spot piyasasında doğrudan açığa satış emri anlamına gelmez.",
+  "scanner.usFootnote": "S&P 500 + Nasdaq-100 evreni (statik liste, periyodik güncellenmeli). Takip listesine eklenen ABD hisseleri, kripto watchlist'i gibi bağımsız bir paper pozisyon açar; SHORT taraf ödünç/marj kısıtlarını modellemeyen saf bir simülasyondur.",
+  "scanner.scanning": "Tarama yapılıyor",
+  "scanner.ready": "Hazır",
+  "scanner.lastScan4h": "Son 4H tarama",
+  "scanner.universe": "Evren",
+  "scanner.error": "Hata",
+  "scanner.unknownError": "Bilinmeyen hata",
+  "scanner.startingScan": "Tarama başlatılıyor…",
+  "scanner.startingUsScan": "Tarama başlatılıyor… (514 hisse, birkaç dakika sürebilir)",
+  "scanner.startingBistScan": "Borsa İstanbul taraması başlatılıyor…",
+  "tvChart.title": "TradingView Grafiği",
+  "tvChart.noSymbol": "— sembol seçilmedi",
+  "tvChart.emptyMessage": "Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.",
+  "panel.paperTrades": "Deneme İşlemleri",
+  "watchlist.headerSymbol": "Sembol",
+  "watchlist.headerMarket": "Piyasa",
+  "watchlist.headerDirection": "Yön / Sinyal",
+  "watchlist.headerPrice": "Fiyat",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Eklenme",
+  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
+  "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
+  "watchlist.loading": "Yükleniyor…",
+  "watchlist.empty": "Takip listesi boş. Tarayıcıda LONG/SHORT veren bir sembole “+ Ekle” diyerek botun izlemesini/paper trade etmesini sağlayabilirsin.",
+  "watchlist.mainEngine": "Ana motor",
+  "watchlist.noPosition": "pozisyon yok",
+  "watchlist.watched": "izleniyor",
+  "watchlist.removeBtn": "Kaldır",
+  "watchlist.addBtn": "+ Ekle",
+  "watchlist.adding": "Ekleniyor…",
+  "watchlist.added": "Eklendi ✓",
+  "watchlist.symbolRemoved": "Bu sembol takip listesinden kaldırılmış olabilir.",
+  "market.binance": "Binance",
+  "market.bist": "Borsa İstanbul",
+  "market.usStock": "ABD Hisse",
+  "panel.binanceConnection": "Binance Bağlantısı",
+  "panel.telegramConnection": "Telegram Bağlantısı",
+  "panel.liveAccount": "Binance Gerçek Hesap",
+  "liveAccount.title": "Canlı İşlem (Gerçek Para)",
+  "liveAccount.openPositionsSuffix": "açık pozisyon",
+  "liveAccount.liveOff": "Canlı işlem kapalı",
+  "liveAccount.footnote": "Bu panel yalnızca <b>sizin</b> Binance hesabınızda gerçekleşen canlı işlemleri gösterir — yukarıdaki paper/demo panel ile veya başka kullanıcılarla karışmaz; sizden başka hiç kimse burayı göremez.",
+  "panel.recentTrades": "Son işlemler",
+  "history.headerDate": "Tarih",
+  "history.headerDirection": "Yön",
+  "history.headerSymbol": "Sembol",
+  "history.headerEntry": "Giriş",
+  "history.headerExit": "Çıkış",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Neden",
+  "history.noClosedTrades": "Henüz kapanmış işlem yok.",
+  "history.noClosedLiveTrades": "Henüz kapanmış canlı işleminiz yok.",
+  "liveOpen.headerQty": "Miktar",
+  "liveOpen.headerCurrent": "Güncel",
+  "liveOpen.headerLeverage": "Kaldıraç",
+  "liveOpen.headerOpened": "Açılış",
+  "liveOpen.noOpenPositions": "Şu an açık canlı pozisyonunuz yok.",
+  "liveOpen.closeNowBtn": "Şimdi Kapat",
+  "liveOpen.closing": "Kapatılıyor…",
+  "panel.aiAnalyst": "AI Trade Analisti",
+  "ai.runBtn": "Şimdi Analiz Et",
+  "ai.running": "Analiz ediliyor…",
+  "ai.disabled": "AI Analist devre dışı — ANTHROPIC_API_KEY tanımlı değil.",
+  "ai.noAnalysisYet": "Henüz bir analiz üretilmedi. “Şimdi Analiz Et” ile ilk raporu oluşturabilirsiniz.",
+  "ai.lastAttemptFailed": "Son deneme başarısız oldu",
+  "ai.tradesAnalyzedPrefix": "işlem incelendi (toplam",
+  "footer.autoRefresh": "Otomatik yenileme: pozisyon 5 sn · tarayıcılar 10 sn · paper trading, gerçek emir yok.",
+  "live.needConnectFirst": "Canlı (gerçek para) işlem açabilmek için önce yukarıdan Binance API anahtarınızı kaydedip doğrulatmanız gerekiyor.",
+  "live.killSwitch": "🛑 Yönetici tarafından tüm canlı işlemler geçici olarak durduruldu",
+  "live.pausedToday": "⏸ Günlük maksimum kayıp limitine ulaşıldı — bugün için yeni işlem açılmıyor",
+  "live.on": "🟢 Canlı işlem AÇIK",
+  "live.off": "Canlı işlem kapalı — bot sadece paper (deneme) modda çalışıyor",
+  "live.openPositionCount": "Açık canlı pozisyon:",
+  "live.todayRealizedPnl": "Bugünkü tahmini gerçekleşmiş K/Z:",
+  "live.positionUsdLabel": "İşlem başına USD tutarı",
+  "live.positionUsdPlaceholder": "Örn. 100",
+  "live.maxLeverageLabel": "Maksimum kaldıraç (1-{n}x)",
+  "live.maxLeveragePlaceholder": "Örn. 2",
+  "live.dailyLossLimitLabel": "Günlük maksimum kayıp limiti (USD) — aşılırsa o gün otomatik durur",
+  "live.dailyLossLimitPlaceholder": "Örn. 50",
+  "live.maxPositionsLabel": "Maksimum açık pozisyon sayısı (1-{n})",
+  "live.maxPositionsPlaceholder": "Örn. 1",
+  "live.saveSettingsBtn": "Ayarları Kaydet",
+  "live.turnOffBtn": "Canlı İşlemi Kapat",
+  "live.turnOnBtn": "Canlı İşlemi AÇ (gerçek para)",
+  "live.dangerText": "⚠️ Canlı işlem açıldığında bot, kayıtlı Binance hesabınızda <b>gerçek parayla</b> emir açar/kapatır. Kayıplardan bot değil siz sorumlusunuz. Bu, yatırım tavsiyesi değildir; ilgili düzenlemelere uygunluk sizin sorumluluğunuzdadır.",
+  "live.toggleOnConfirm": "Canlı işlemi açmak üzeresiniz. Bot bu andan itibaren Binance hesabınızda GERÇEK PARA ile emir açıp kapatacak. Kayıp riskini kabul ettiğinizi ve bu ayarları doğru girdiğinizi onaylıyor musunuz?",
+  "telegram.notEnabled": "Sunucuda Telegram botu tanımlı değil.",
+  "telegram.linked": "🟢 Telegram bağlı",
+  "telegram.notificationsDesc": "Canlı işlem giriş/çıkış bildirimleri, risk uyarıları ve günlük özet buraya gelecek.",
+  "telegram.removeConnectionBtn": "Bağlantıyı Kaldır",
+  "telegram.notLinkedDesc": "Canlı işlem bildirimlerinizi kendi Telegram'ınızda almak için bağlanın.",
+  "telegram.getCodeBtn": "Bağlantı Kodu Al",
+  "telegram.step1": "1) Telegram'da",
+  "telegram.step1Fallback": "botumuzu",
+  "telegram.step1End": "açın.",
+  "telegram.step2": "2) Şunu gönderin:",
+  "telegram.codeExpiresPrefix": "Kod",
+  "telegram.minutes": "dakika",
+  "telegram.seconds": "saniye içinde geçersiz olur.",
+  "telegram.unlinkConfirm": "Telegram bağlantısını kaldırmak istediğinize emin misiniz?",
+  "alert.apiKeySecretRequired": "API key ve secret gerekli.",
+  "alert.riskAckRequired": "Devam etmeden önce risk onayı kutusunu işaretlemelisiniz.",
+  "alert.saveFailedGeneric": "Kaydedilemedi",
+  "alert.connectionError": "Bağlantı hatası",
+  "alert.notAdded": "Eklenemedi",
+  "alert.codeNotObtained": "Kod alınamadı",
+  "alert.disconnectBinanceConfirm": "Binance bağlantısını kaldırmak istediğinize emin misiniz?",
+  "alert.closePositionConfirmPrefix": "",
+  "alert.closePositionConfirmSuffix": "pozisyonunu şimdi gerçek bir market emriyle kapatmak istediğinize emin misiniz? Bu işlem geri alınamaz.",
+  "alert.closePositionFailed": "Pozisyon kapatılamadı",
+  "alert.actionFailed": "İşlem başarısız"
+},
+  zh: {
+  "nav.connecting": "连接中",
+  "nav.botActive": "机器人运行中",
+  "nav.standby": "待机",
+  "nav.connectionError": "连接错误",
+  "nav.admin": "管理",
+  "nav.logout": "退出登录",
+  "nav.language": "语言",
+  "kpi.equity": "当前余额",
+  "kpi.openPnl": "持仓盈亏",
+  "kpi.openPnlSub": "所有持仓",
+  "kpi.trades": "交易次数 · 胜率",
+  "kpi.winRate": "胜率",
+  "kpi.profitFactor": "盈亏比",
+  "kpi.avg": "平均",
+  "kpi.maxDrawdown": "最大回撤",
+  "kpi.lastCandle": "最新K线：",
+  "account.title": "我的账户",
+  "account.subscriptionBtn": "💳 升级为订阅",
+  "account.askAdminBtn": "✉️ 联系管理员",
+  "account.emailNotRegistered": "（未登记邮箱）",
+  "account.admin": "（管理员）",
+  "account.trialDaysLeft": "试用：剩余 {n} 天",
+  "account.trialExpired": "试用已到期",
+  "account.credentialWarning": "⚠️ 服务器未配置 CREDENTIAL_ENCRYPTION_KEY — 无法安全加密，API 密钥无法保存。请联系您的管理员。",
+  "account.savedKeyLabel": "已保存的密钥：",
+  "account.lastVerified": "上次验证时间：",
+  "account.riskAckGiven": "风险确认时间",
+  "account.riskAckLabel": "我确认并接受：此机器人可能在加密货币期货交易中下单真实资金，存在亏损风险，任何损失由我自己承担，而非机器人责任。",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "输入新密钥以更换",
+  "account.apiKeyPlaceholderNew": "Binance 合约 API Key",
+  "account.apiSecretPlaceholderChange": "输入新 Secret 以更换",
+  "account.apiSecretPlaceholderNew": "Binance 合约 API Secret",
+  "account.saveVerifyBtn": "保存并验证",
+  "account.savingVerifying": "正在保存并验证…",
+  "account.removeConnectionBtn": "解除连接",
+  "account.verifyError": "验证错误",
+  "account.verifiedConnected": "已连接并已验证",
+  "account.connectedNotVerified": "已连接，尚未验证",
+  "account.notConnected": "未连接",
+  "subscription.title": "升级为订阅",
+  "subscription.desc": "选择一个套餐，将款项汇入下面的 IBAN，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
+  "subscription.planMonthlyName": "月订阅",
+  "subscription.planMonthlyPrice": "50 美元",
+  "subscription.planAnnualName": "年订阅",
+  "subscription.planAnnualPrice": "500 美元",
+  "subscription.selectedPlanLabel": "已选套餐：",
+  "subscription.ibanLabel": "IBAN：",
+  "subscription.recipientLabel": "收款人：",
+  "subscription.usernameNote": "在付款备注中填写您的用户名（<b>__USERNAME__</b>）可加快审核。",
+  "subscription.paySentBtn": "我已付款",
+  "subscription.sending": "发送中…",
+  "subscription.resendBtn": "再次通知",
+  "subscription.successMsg": "✓ 已收到通知 — 核实付款后团队将激活您的账户。",
+  "subscription.genericError": "发生错误，请重试。",
+  "subscription.connectionError": "连接错误，请重试。",
+  "subscription.selectedMonthly": "月度 — 50 美元",
+  "subscription.selectedAnnual": "年度 — 500 美元",
+  "askAdmin.title": "联系管理员",
+  "askAdmin.desc": "您的消息将发送到 herobotai.int@gmail.com。",
+  "askAdmin.placeholder": "在此输入您的问题…",
+  "askAdmin.sendBtn": "发送",
+  "askAdmin.sending": "发送中…",
+  "askAdmin.emptyMessage": "请输入消息内容。",
+  "askAdmin.successMsg": "✓ 您的消息已发送，我们将尽快回复。",
+  "askAdmin.genericError": "发送失败，请重试。",
+  "askAdmin.connectionError": "连接错误，请重试。",
+  "faq.title": "常见问题（FAQ）",
+  "faq.q1": "这个机器人会用真实资金交易吗？",
+  "faq.a1": "默认不会 — 系统默认运行在模拟/演示模式，不会下达任何真实订单。如需用真实资金交易，需要您自己在面板中绑定 Binance API 密钥并开启“实盘交易”。",
+  "faq.q2": "免费试用期多长，到期后会怎样？",
+  "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并向 IBAN 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
+  "faq.q3": "订阅费如何支付，支持刷卡吗？",
+  "faq.a3": "目前仅支持通过银行转账/EFT 向 IBAN 付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
+  "faq.q4": "提供我的 Binance API 密钥安全吗？",
+  "faq.a4": "您的密钥会在服务器上加密存储，仅用于代您开平订单。建议您在 Binance 上创建一个不带“提现”权限的 API 密钥。",
+  "faq.q5": "交易哪些市场？",
+  "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所以及美股（NASDAQ/NYSE/AMEX）— 均可在同一面板中扫描。",
+  "faq.q6": "信号多久生成一次？",
+  "faq.a6": "系统大约每 15 分钟自动扫描一次；信号仅基于已收盘的4小时K线生成，不会受瞬时价格噪声影响。",
+  "faq.q7": "如何开启Telegram通知？",
+  "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
+  "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
+  "faq.a8": "可在“Binance 实盘账户”面板中对应仓位旁点击“立即平仓”按钮；这将立即发送一笔真实市价单并平仓。",
+  "faq.q9": "我还有其他问题，应联系谁？",
+  "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
+  "panel.openPosition": "持仓",
+  "panel.loading": "加载中…",
+  "pos.noOpenPosition": "当前无模拟持仓。信号生成后将在此显示。",
+  "pos.entry": "入场价",
+  "pos.current": "当前价",
+  "pos.unrealizedPnl": "未实现盈亏",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "当前价格",
+  "pos.trailingActive": "已启用 @",
+  "pos.trailingStandby": "未启用",
+  "pos.trailingLabel": "移动止损：",
+  "pos.entryTimeLabel": "入场时间：",
+  "panel.signalMatrix": "信号矩阵",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "日波动率",
+  "signal.atrp1d": "日ATRP百分位",
+  "signal.final": "最终信号",
+  "scanner.tabCrypto": "Binance 合约",
+  "scanner.tabBist": "伊斯坦布尔交易所",
+  "scanner.tabUs": "美股",
+  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 仅供信号参考，无真实订单",
+  "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
+  "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
+  "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
+  "scanner.allSignals": "全部信号",
+  "scanner.scanAll": "扫描全部",
+  "scanner.scanBist": "扫描伊斯坦布尔交易所",
+  "scanner.scanUs": "扫描 S&P500/纳斯达克100",
+  "scanner.preparing": "准备中…",
+  "scanner.waiting": "等待扫描…",
+  "scanner.noResults": "无结果。",
+  "scanner.headerCoin": "币种",
+  "scanner.headerStock": "股票",
+  "scanner.headerPrice": "价格",
+  "scanner.headerChange24h": "24小时涨跌%",
+  "scanner.headerChangeDaily": "日涨跌%",
+  "scanner.headerVolume": "成交量",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP百分位",
+  "scanner.headerSignal": "信号",
+  "scanner.headerReason": "说明",
+  "scanner.headerAdd": "添加",
+  "scanner.coinCountSuffix": "个币种",
+  "scanner.stockCountSuffix": "只股票",
+  "scanner.bistFootnote": "此处的 SHORT 仅为策略的技术信号；并不意味着在 BIST 现货市场直接下达卖空订单。",
+  "scanner.usFootnote": "S&P 500 + 纳斯达克100 股票池（静态列表，应定期更新）。添加到自选列表的美股会像加密自选列表一样开立独立的模拟仓位；SHORT 仅为纯模拟，不考虑借券/保证金限制。",
+  "scanner.scanning": "正在扫描",
+  "scanner.ready": "已就绪",
+  "scanner.lastScan4h": "上次 4H 扫描",
+  "scanner.universe": "标的范围",
+  "scanner.error": "错误",
+  "scanner.unknownError": "未知错误",
+  "scanner.startingScan": "正在启动扫描…",
+  "scanner.startingUsScan": "正在启动扫描…（514 只股票，可能需要几分钟）",
+  "scanner.startingBistScan": "正在启动伊斯坦布尔交易所扫描…",
+  "tvChart.title": "TradingView 图表",
+  "tvChart.noSymbol": "— 未选择交易对",
+  "tvChart.emptyMessage": "点击上方扫描表格中的一行，即可在此处查看该交易对的 TradingView 图表。",
+  "panel.paperTrades": "模拟交易",
+  "watchlist.headerSymbol": "交易对",
+  "watchlist.headerMarket": "市场",
+  "watchlist.headerDirection": "方向 / 信号",
+  "watchlist.headerPrice": "价格",
+  "watchlist.headerUnrealizedPnl": "未实现盈亏",
+  "watchlist.headerAdded": "添加时间",
+  "watchlist.footnotePrefix": "点击一行即可在下方查看该交易对的仓位及信号详情。加密交易对会以相同策略开立独立的模拟仓位（仓位规模：$",
+  "watchlist.footnoteSuffix": " 名义本金）。伊斯坦布尔交易对仅用于信号跟踪，不会开立真实/模拟订单。",
+  "watchlist.loading": "加载中…",
+  "watchlist.empty": "自选列表为空。在扫描列表中对显示 LONG/SHORT 的交易对点击“+ 添加”，即可让机器人对其进行跟踪/模拟交易。",
+  "watchlist.mainEngine": "主引擎",
+  "watchlist.noPosition": "无仓位",
+  "watchlist.watched": "跟踪中",
+  "watchlist.removeBtn": "移除",
+  "watchlist.addBtn": "+ 添加",
+  "watchlist.adding": "添加中…",
+  "watchlist.added": "已添加 ✓",
+  "watchlist.symbolRemoved": "该交易对可能已从自选列表中移除。",
+  "market.binance": "Binance",
+  "market.bist": "伊斯坦布尔交易所",
+  "market.usStock": "美股",
+  "panel.binanceConnection": "Binance 连接",
+  "panel.telegramConnection": "Telegram 连接",
+  "panel.liveAccount": "Binance 实盘账户",
+  "liveAccount.title": "实盘交易（真实资金）",
+  "liveAccount.openPositionsSuffix": "个持仓",
+  "liveAccount.liveOff": "实盘交易已关闭",
+  "liveAccount.footnote": "此面板仅显示 <b>您自己</b> Binance 账户中的实盘交易 — 不会与上方的模拟面板或其他用户混淆；除了您本人之外，任何人都无法查看此处。",
+  "panel.recentTrades": "最近交易",
+  "history.headerDate": "日期",
+  "history.headerDirection": "方向",
+  "history.headerSymbol": "交易对",
+  "history.headerEntry": "入场价",
+  "history.headerExit": "出场价",
+  "history.headerPnl": "盈亏",
+  "history.headerReason": "原因",
+  "history.noClosedTrades": "暂无已平仓交易。",
+  "history.noClosedLiveTrades": "暂无已平仓的实盘交易。",
+  "liveOpen.headerQty": "数量",
+  "liveOpen.headerCurrent": "当前价",
+  "liveOpen.headerLeverage": "杠杆",
+  "liveOpen.headerOpened": "开仓时间",
+  "liveOpen.noOpenPositions": "您当前没有开启的实盘仓位。",
+  "liveOpen.closeNowBtn": "立即平仓",
+  "liveOpen.closing": "平仓中…",
+  "panel.aiAnalyst": "AI 交易分析师",
+  "ai.runBtn": "立即分析",
+  "ai.running": "分析中…",
+  "ai.disabled": "AI 分析师已禁用 — 未设置 ANTHROPIC_API_KEY。",
+  "ai.noAnalysisYet": "尚未生成分析。点击“立即分析”生成第一份报告。",
+  "ai.lastAttemptFailed": "上次尝试失败",
+  "ai.tradesAnalyzedPrefix": "笔交易已分析（共计",
+  "footer.autoRefresh": "自动刷新：仓位 5 秒 · 扫描器 10 秒 · 模拟交易，无真实订单。",
+  "live.needConnectFirst": "您需要先在上方保存并验证 Binance API 密钥，才能开始实盘（真实资金）交易。",
+  "live.killSwitch": "🛑 管理员已暂时停止所有实盘交易",
+  "live.pausedToday": "⏸ 已达到每日最大亏损限额 — 今日不会开启新交易",
+  "live.on": "🟢 实盘交易已开启",
+  "live.off": "实盘交易已关闭 — 机器人仅在模拟（演示）模式下运行",
+  "live.openPositionCount": "实盘持仓数：",
+  "live.todayRealizedPnl": "今日预估已实现盈亏：",
+  "live.positionUsdLabel": "每笔交易金额（美元）",
+  "live.positionUsdPlaceholder": "例如 100",
+  "live.maxLeverageLabel": "最大杠杆倍数（1-{n}倍）",
+  "live.maxLeveragePlaceholder": "例如 2",
+  "live.dailyLossLimitLabel": "每日最大亏损限额（美元）— 超过则当日自动停止交易",
+  "live.dailyLossLimitPlaceholder": "例如 50",
+  "live.maxPositionsLabel": "最大持仓数（1-{n}）",
+  "live.maxPositionsPlaceholder": "例如 1",
+  "live.saveSettingsBtn": "保存设置",
+  "live.turnOffBtn": "关闭实盘交易",
+  "live.turnOnBtn": "开启实盘交易（真实资金）",
+  "live.dangerText": "⚠️ 开启实盘交易后，机器人将在您绑定的 Binance 账户上用<b>真实资金</b>开平订单。任何亏损由您本人而非机器人承担。本工具不构成投资建议；遵守相关监管规定为您自己的责任。",
+  "live.toggleOnConfirm": "您即将开启实盘交易。从此刻起，机器人将在您的 Binance 账户上用真实资金开平订单。您确认接受亏损风险且以上设置正确吗？",
+  "telegram.notEnabled": "服务器未配置 Telegram 机器人。",
+  "telegram.linked": "🟢 Telegram 已连接",
+  "telegram.notificationsDesc": "实盘开/平仓通知、风险提醒以及每日汇总将发送至此。",
+  "telegram.removeConnectionBtn": "解除连接",
+  "telegram.notLinkedDesc": "连接后可在您自己的 Telegram 中接收实盘交易通知。",
+  "telegram.getCodeBtn": "获取绑定代码",
+  "telegram.step1": "1) 在 Telegram 中打开",
+  "telegram.step1Fallback": "我们的机器人",
+  "telegram.step1End": "。",
+  "telegram.step2": "2) 发送以下内容：",
+  "telegram.codeExpiresPrefix": "验证码将在",
+  "telegram.minutes": "分",
+  "telegram.seconds": "秒后失效。",
+  "telegram.unlinkConfirm": "确定要解除 Telegram 连接吗？",
+  "alert.apiKeySecretRequired": "需要填写 API Key 和 Secret。",
+  "alert.riskAckRequired": "继续之前请勾选风险确认框。",
+  "alert.saveFailedGeneric": "保存失败",
+  "alert.connectionError": "连接错误",
+  "alert.notAdded": "添加失败",
+  "alert.codeNotObtained": "无法获取验证码",
+  "alert.disconnectBinanceConfirm": "确定要解除 Binance 连接吗？",
+  "alert.closePositionConfirmPrefix": "确定要立即以真实市价单平仓",
+  "alert.closePositionConfirmSuffix": "吗？此操作不可撤销。",
+  "alert.closePositionFailed": "平仓失败",
+  "alert.actionFailed": "操作失败"
+},
+  de: {
+  "nav.connecting": "Verbindung wird hergestellt",
+  "nav.botActive": "Bot aktiv",
+  "nav.standby": "Standby",
+  "nav.connectionError": "Verbindungsfehler",
+  "nav.admin": "Verwaltung",
+  "nav.logout": "Abmelden",
+  "nav.language": "Sprache",
+  "kpi.equity": "Aktueller Kontostand",
+  "kpi.openPnl": "Offene Positionen P&L",
+  "kpi.openPnlSub": "Alle offenen Positionen",
+  "kpi.trades": "Trades · Trefferquote",
+  "kpi.winRate": "Trefferquote",
+  "kpi.profitFactor": "Profit-Faktor",
+  "kpi.avg": "Durchschn.",
+  "kpi.maxDrawdown": "Max. Drawdown",
+  "kpi.lastCandle": "Letzte Kerze:",
+  "account.title": "Mein Konto",
+  "account.subscriptionBtn": "💳 Zum Abo wechseln",
+  "account.askAdminBtn": "✉️ Admin fragen",
+  "account.emailNotRegistered": "(keine E-Mail hinterlegt)",
+  "account.admin": "(Admin)",
+  "account.trialDaysLeft": "Testphase: noch {n} Tage",
+  "account.trialExpired": "Testphase abgelaufen",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY ist auf dem Server nicht konfiguriert — API-Schlüssel können nicht sicher verschlüsselt und daher nicht gespeichert werden. Bitte wenden Sie sich an Ihren Administrator.",
+  "account.savedKeyLabel": "Gespeicherter Schlüssel:",
+  "account.lastVerified": "Zuletzt verifiziert:",
+  "account.riskAckGiven": "Risikobestätigung erteilt am",
+  "account.riskAckLabel": "Ich bestätige und akzeptiere, dass dieser Bot Orders mit echtem Geld im Krypto-Futures-Handel platzieren kann, dass dies ein Verlustrisiko birgt und dass ich selbst — nicht der Bot — für etwaige Verluste verantwortlich bin.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Neuen Key eingeben, um ihn zu ändern",
+  "account.apiKeyPlaceholderNew": "Binance Futures API Key",
+  "account.apiSecretPlaceholderChange": "Neues Secret eingeben, um es zu ändern",
+  "account.apiSecretPlaceholderNew": "Binance Futures API Secret",
+  "account.saveVerifyBtn": "Speichern & Verifizieren",
+  "account.savingVerifying": "Wird gespeichert & verifiziert…",
+  "account.removeConnectionBtn": "Verbindung entfernen",
+  "account.verifyError": "Verifizierungsfehler",
+  "account.verifiedConnected": "Verbunden und verifiziert",
+  "account.connectedNotVerified": "Verbunden, nicht verifiziert",
+  "account.notConnected": "Nicht verbunden",
+  "subscription.title": "Zum Abo wechseln",
+  "subscription.desc": "Wählen Sie einen Plan, überweisen Sie den Betrag an die untenstehende IBAN und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
+  "subscription.planMonthlyName": "Monatsabo",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Jahresabo",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Gewählter Plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Empfänger:",
+  "subscription.usernameNote": "Wenn Sie Ihren Benutzernamen (<b>__USERNAME__</b>) im Verwendungszweck angeben, beschleunigt das die Prüfung.",
+  "subscription.paySentBtn": "Betrag überwiesen",
+  "subscription.sending": "Wird gesendet…",
+  "subscription.resendBtn": "Erneut melden",
+  "subscription.successMsg": "✓ Meldung erhalten — unser Team aktiviert Ihr Konto, sobald die Zahlung bestätigt ist.",
+  "subscription.genericError": "Etwas ist schiefgelaufen, bitte versuchen Sie es erneut.",
+  "subscription.connectionError": "Verbindungsfehler, bitte versuchen Sie es erneut.",
+  "subscription.selectedMonthly": "Monatlich — 50 USD",
+  "subscription.selectedAnnual": "Jährlich — 500 USD",
+  "askAdmin.title": "Admin fragen",
+  "askAdmin.desc": "Ihre Nachricht wird an herobotai.int@gmail.com gesendet.",
+  "askAdmin.placeholder": "Schreiben Sie hier Ihre Frage…",
+  "askAdmin.sendBtn": "Senden",
+  "askAdmin.sending": "Wird gesendet…",
+  "askAdmin.emptyMessage": "Bitte geben Sie eine Nachricht ein.",
+  "askAdmin.successMsg": "✓ Ihre Nachricht wurde gesendet. Wir melden uns in Kürze bei Ihnen.",
+  "askAdmin.genericError": "Konnte nicht gesendet werden, bitte versuchen Sie es erneut.",
+  "askAdmin.connectionError": "Verbindungsfehler, bitte versuchen Sie es erneut.",
+  "faq.title": "FAQ — Häufig gestellte Fragen",
+  "faq.q1": "Handelt dieser Bot mit echtem Geld?",
+  "faq.a1": "Standardmäßig nein — das System läuft im Paper-/Demo-Modus und sendet keine echten Orders. Um mit echtem Geld zu handeln, müssen Sie Ihren Binance-API-Schlüssel verbinden und „Live-Handel“ selbst in Ihrem Panel aktivieren.",
+  "faq.q2": "Wie lange läuft die kostenlose Testphase und was passiert danach?",
+  "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, zahlen an die IBAN und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
+  "faq.q3": "Wie wird das Abo bezahlt, gibt es Kartenzahlung?",
+  "faq.a3": "Derzeit werden Zahlungen per Banküberweisung/EFT an die IBAN entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
+  "faq.q4": "Ist es sicher, meinen Binance-API-Schlüssel anzugeben?",
+  "faq.a4": "Ihr Schlüssel wird verschlüsselt auf dem Server gespeichert und nur verwendet, um in Ihrem Namen Orders zu öffnen und zu schließen. Wir empfehlen, auf Binance-Seite einen API-Schlüssel ohne „Auszahlungs“-Berechtigung zu erstellen.",
+  "faq.q5": "An welchen Märkten wird gehandelt?",
+  "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul sowie US-Aktien (NASDAQ/NYSE/AMEX) — alle werden von einem einzigen Panel aus gescannt.",
+  "faq.q6": "Wie oft werden Signale generiert?",
+  "faq.a6": "Das System führt etwa alle 15 Minuten einen automatischen Scan durch; Signale werden nur aus geschlossenen 4-Stunden-Kerzen generiert, nicht aus kurzfristigem Preisrauschen.",
+  "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
+  "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
+  "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
+  "faq.a8": "Sie können die Schaltfläche „Jetzt schließen“ neben der betreffenden Position im Panel „Binance Live-Konto“ verwenden; dies sendet sofort eine echte Market-Order und schließt die Position.",
+  "faq.q9": "Ich habe eine andere Frage, an wen kann ich mich wenden?",
+  "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
+  "panel.openPosition": "Offene Position",
+  "panel.loading": "Wird geladen…",
+  "pos.noOpenPosition": "Keine offene Paper-Position. Erscheint hier, sobald ein Signal generiert wird.",
+  "pos.entry": "Einstieg",
+  "pos.current": "Aktuell",
+  "pos.unrealizedPnl": "Unrealized P&L",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "Aktueller Preis",
+  "pos.trailingActive": "AKTIV @",
+  "pos.trailingStandby": "inaktiv",
+  "pos.trailingLabel": "Trailing:",
+  "pos.entryTimeLabel": "Einstiegszeit:",
+  "panel.signalMatrix": "Signalmatrix",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "1T-Volatilität",
+  "signal.atrp1d": "1T ATRP-Perzentil",
+  "signal.final": "Finales Signal",
+  "scanner.tabCrypto": "Binance Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M Perpetual · geschlossene 4H-Kerze · nur zu Signalzwecken, keine echten Orders",
+  "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
+  "scanner.allSignals": "Alle Signale",
+  "scanner.scanAll": "Alle scannen",
+  "scanner.scanBist": "Borsa Istanbul scannen",
+  "scanner.scanUs": "S&P500/Nasdaq-100 scannen",
+  "scanner.preparing": "Wird vorbereitet…",
+  "scanner.waiting": "Warte auf Scan…",
+  "scanner.noResults": "Keine Ergebnisse.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Aktie",
+  "scanner.headerPrice": "Preis",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "Tages-%",
+  "scanner.headerVolume": "Volumen",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP-Perzentil",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Beschreibung",
+  "scanner.headerAdd": "Hinzufügen",
+  "scanner.coinCountSuffix": "Coins",
+  "scanner.stockCountSuffix": "Aktien",
+  "scanner.bistFootnote": "SHORT ist hier nur das technische Signal der Strategie; es bedeutet keine direkte Leerverkaufsorder am BIST-Kassamarkt.",
+  "scanner.usFootnote": "S&P-500- + Nasdaq-100-Universum (statische Liste, sollte regelmäßig aktualisiert werden). Zur Watchlist hinzugefügte US-Aktien eröffnen wie die Krypto-Watchlist eine unabhängige Paper-Position; die SHORT-Seite ist eine reine Simulation ohne Modellierung von Leih-/Margin-Beschränkungen.",
+  "scanner.scanning": "Scan läuft",
+  "scanner.ready": "Bereit",
+  "scanner.lastScan4h": "Letzter 4H-Scan",
+  "scanner.universe": "Universum",
+  "scanner.error": "Fehler",
+  "scanner.unknownError": "Unbekannter Fehler",
+  "scanner.startingScan": "Scan wird gestartet…",
+  "scanner.startingUsScan": "Scan wird gestartet… (514 Aktien, kann einige Minuten dauern)",
+  "scanner.startingBistScan": "Borsa-Istanbul-Scan wird gestartet…",
+  "tvChart.title": "TradingView-Chart",
+  "tvChart.noSymbol": "— kein Symbol ausgewählt",
+  "tvChart.emptyMessage": "Klicken Sie auf eine Zeile in den obigen Scan-Tabellen, um hier den TradingView-Chart dieses Symbols anzuzeigen.",
+  "panel.paperTrades": "Paper-Trades",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerMarket": "Markt",
+  "watchlist.headerDirection": "Richtung / Signal",
+  "watchlist.headerPrice": "Preis",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Hinzugefügt",
+  "watchlist.footnotePrefix": "Klicken Sie auf eine Zeile, um unten die Positions- und Signaldetails dieses Symbols zu sehen. Krypto-Symbole eröffnen mit derselben Strategie eine unabhängige Paper-Position (Größe: $",
+  "watchlist.footnoteSuffix": " nominal). Borsa-Istanbul-Symbole dienen nur der Signalbeobachtung; es wird keine echte/Paper-Order eröffnet.",
+  "watchlist.loading": "Wird geladen…",
+  "watchlist.empty": "Die Watchlist ist leer. Klicken Sie bei einem Symbol mit LONG/SHORT im Scanner auf „+ Hinzufügen“, damit der Bot es beobachtet/als Paper-Trade führt.",
+  "watchlist.mainEngine": "Haupt-Engine",
+  "watchlist.noPosition": "keine Position",
+  "watchlist.watched": "beobachtet",
+  "watchlist.removeBtn": "Entfernen",
+  "watchlist.addBtn": "+ Hinzufügen",
+  "watchlist.adding": "Wird hinzugefügt…",
+  "watchlist.added": "Hinzugefügt ✓",
+  "watchlist.symbolRemoved": "Dieses Symbol wurde möglicherweise von der Watchlist entfernt.",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "US-Aktie",
+  "panel.binanceConnection": "Binance-Verbindung",
+  "panel.telegramConnection": "Telegram-Verbindung",
+  "panel.liveAccount": "Binance Live-Konto",
+  "liveAccount.title": "Live-Handel (Echtgeld)",
+  "liveAccount.openPositionsSuffix": "offene Positionen",
+  "liveAccount.liveOff": "Live-Handel ist deaktiviert",
+  "liveAccount.footnote": "Dieses Panel zeigt ausschließlich Live-Trades auf <b>Ihrem eigenen</b> Binance-Konto — es wird nie mit dem obigen Paper-/Demo-Panel oder mit anderen Nutzern vermischt; niemand außer Ihnen kann dies sehen.",
+  "panel.recentTrades": "Letzte Trades",
+  "history.headerDate": "Datum",
+  "history.headerDirection": "Richtung",
+  "history.headerSymbol": "Symbol",
+  "history.headerEntry": "Einstieg",
+  "history.headerExit": "Ausstieg",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Grund",
+  "history.noClosedTrades": "Noch keine geschlossenen Trades.",
+  "history.noClosedLiveTrades": "Sie haben noch keine geschlossenen Live-Trades.",
+  "liveOpen.headerQty": "Menge",
+  "liveOpen.headerCurrent": "Aktuell",
+  "liveOpen.headerLeverage": "Hebel",
+  "liveOpen.headerOpened": "Eröffnet",
+  "liveOpen.noOpenPositions": "Sie haben derzeit keine offenen Live-Positionen.",
+  "liveOpen.closeNowBtn": "Jetzt schließen",
+  "liveOpen.closing": "Wird geschlossen…",
+  "panel.aiAnalyst": "KI-Trade-Analyst",
+  "ai.runBtn": "Jetzt analysieren",
+  "ai.running": "Wird analysiert…",
+  "ai.disabled": "KI-Analyst ist deaktiviert — ANTHROPIC_API_KEY ist nicht gesetzt.",
+  "ai.noAnalysisYet": "Noch keine Analyse erstellt. Klicken Sie auf „Jetzt analysieren“, um den ersten Bericht zu erstellen.",
+  "ai.lastAttemptFailed": "Letzter Versuch fehlgeschlagen",
+  "ai.tradesAnalyzedPrefix": "Trades analysiert (insgesamt",
+  "footer.autoRefresh": "Auto-Aktualisierung: Position 5 s · Scanner 10 s · Paper-Trading, keine echten Orders.",
+  "live.needConnectFirst": "Sie müssen zuerst oben Ihren Binance-API-Schlüssel speichern und verifizieren, bevor Sie den Live-Handel (Echtgeld) starten können.",
+  "live.killSwitch": "🛑 Der gesamte Live-Handel wurde vom Administrator vorübergehend gestoppt",
+  "live.pausedToday": "⏸ Tägliches Verlustlimit erreicht — heute werden keine neuen Trades eröffnet",
+  "live.on": "🟢 Live-Handel ist AN",
+  "live.off": "Live-Handel ist deaktiviert — der Bot läuft nur im Paper-(Demo-)Modus",
+  "live.openPositionCount": "Offene Live-Positionen:",
+  "live.todayRealizedPnl": "Heutiger geschätzter realisierter G/V:",
+  "live.positionUsdLabel": "USD-Betrag pro Trade",
+  "live.positionUsdPlaceholder": "z. B. 100",
+  "live.maxLeverageLabel": "Max. Hebel (1-{n}x)",
+  "live.maxLeveragePlaceholder": "z. B. 2",
+  "live.dailyLossLimitLabel": "Tägliches Verlustlimit (USD) — der Handel stoppt automatisch für den Tag, wenn überschritten",
+  "live.dailyLossLimitPlaceholder": "z. B. 50",
+  "live.maxPositionsLabel": "Max. offene Positionen (1-{n})",
+  "live.maxPositionsPlaceholder": "z. B. 1",
+  "live.saveSettingsBtn": "Einstellungen speichern",
+  "live.turnOffBtn": "Live-Handel ausschalten",
+  "live.turnOnBtn": "Live-Handel EINSCHALTEN (Echtgeld)",
+  "live.dangerText": "⚠️ Sobald der Live-Handel aktiviert ist, eröffnet/schließt der Bot Orders mit <b>echtem Geld</b> auf Ihrem registrierten Binance-Konto. Sie — nicht der Bot — sind für etwaige Verluste verantwortlich. Dies ist keine Anlageberatung; die Einhaltung geltender Vorschriften liegt in Ihrer eigenen Verantwortung.",
+  "live.toggleOnConfirm": "Sie sind dabei, den Live-Handel zu aktivieren. Ab sofort eröffnet und schließt der Bot Orders mit ECHTEM GELD auf Ihrem Binance-Konto. Bestätigen Sie, dass Sie das Verlustrisiko akzeptieren und diese Einstellungen korrekt sind?",
+  "telegram.notEnabled": "Der Telegram-Bot ist auf dem Server nicht konfiguriert.",
+  "telegram.linked": "🟢 Telegram verbunden",
+  "telegram.notificationsDesc": "Benachrichtigungen über Live-Trade-Eröffnungen/-Schließungen, Risikowarnungen und die tägliche Zusammenfassung erscheinen hier.",
+  "telegram.removeConnectionBtn": "Verbindung entfernen",
+  "telegram.notLinkedDesc": "Verbinden Sie sich, um Ihre Live-Trade-Benachrichtigungen in Ihrem eigenen Telegram zu erhalten.",
+  "telegram.getCodeBtn": "Verknüpfungscode erhalten",
+  "telegram.step1": "1) Öffnen Sie",
+  "telegram.step1Fallback": "unseren Bot",
+  "telegram.step1End": "in Telegram.",
+  "telegram.step2": "2) Senden Sie Folgendes:",
+  "telegram.codeExpiresPrefix": "Der Code läuft in",
+  "telegram.minutes": "Min.",
+  "telegram.seconds": "Sek. ab.",
+  "telegram.unlinkConfirm": "Sind Sie sicher, dass Sie die Telegram-Verbindung entfernen möchten?",
+  "alert.apiKeySecretRequired": "API-Key und Secret sind erforderlich.",
+  "alert.riskAckRequired": "Sie müssen die Risikobestätigung ankreuzen, bevor Sie fortfahren können.",
+  "alert.saveFailedGeneric": "Konnte nicht gespeichert werden",
+  "alert.connectionError": "Verbindungsfehler",
+  "alert.notAdded": "Konnte nicht hinzugefügt werden",
+  "alert.codeNotObtained": "Code konnte nicht abgerufen werden",
+  "alert.disconnectBinanceConfirm": "Sind Sie sicher, dass Sie die Binance-Verbindung entfernen möchten?",
+  "alert.closePositionConfirmPrefix": "Sind Sie sicher, dass Sie die Position",
+  "alert.closePositionConfirmSuffix": "jetzt mit einer echten Market-Order schließen möchten? Dies kann nicht rückgängig gemacht werden.",
+  "alert.closePositionFailed": "Position konnte nicht geschlossen werden",
+  "alert.actionFailed": "Aktion fehlgeschlagen"
+},
+  fr: {
+  "nav.connecting": "Connexion en cours",
+  "nav.botActive": "Bot actif",
+  "nav.standby": "En attente",
+  "nav.connectionError": "Erreur de connexion",
+  "nav.admin": "Administration",
+  "nav.logout": "Déconnexion",
+  "nav.language": "Langue",
+  "kpi.equity": "Solde actuel",
+  "kpi.openPnl": "P&L positions ouvertes",
+  "kpi.openPnlSub": "Toutes les positions ouvertes",
+  "kpi.trades": "Trades · taux de réussite",
+  "kpi.winRate": "Taux de réussite",
+  "kpi.profitFactor": "Facteur de profit",
+  "kpi.avg": "Moy.",
+  "kpi.maxDrawdown": "Drawdown max.",
+  "kpi.lastCandle": "Dernière bougie :",
+  "account.title": "Mon compte",
+  "account.subscriptionBtn": "💳 Passer à l'abonnement",
+  "account.askAdminBtn": "✉️ Contacter l'admin",
+  "account.emailNotRegistered": "(aucun e-mail enregistré)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Essai : {n} jours restants",
+  "account.trialExpired": "Essai expiré",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY n'est pas configuré sur le serveur — les clés API ne peuvent pas être enregistrées car elles ne peuvent pas être chiffrées en toute sécurité. Veuillez contacter votre administrateur.",
+  "account.savedKeyLabel": "Clé enregistrée :",
+  "account.lastVerified": "Dernière vérification :",
+  "account.riskAckGiven": "Confirmation du risque donnée le",
+  "account.riskAckLabel": "Je confirme et accepte que ce bot puisse placer des ordres en argent réel sur des contrats à terme crypto, que cela comporte un risque de perte, et que je suis seul responsable — et non le bot — de toute perte éventuelle.",
+  "account.apiKeyLabel": "Clé API Binance",
+  "account.apiSecretLabel": "Secret API Binance",
+  "account.apiKeyPlaceholderChange": "Entrez une nouvelle clé pour la modifier",
+  "account.apiKeyPlaceholderNew": "Clé API Binance Futures",
+  "account.apiSecretPlaceholderChange": "Entrez un nouveau secret pour le modifier",
+  "account.apiSecretPlaceholderNew": "Secret API Binance Futures",
+  "account.saveVerifyBtn": "Enregistrer et vérifier",
+  "account.savingVerifying": "Enregistrement et vérification…",
+  "account.removeConnectionBtn": "Supprimer la connexion",
+  "account.verifyError": "Erreur de vérification",
+  "account.verifiedConnected": "Connecté et vérifié",
+  "account.connectedNotVerified": "Connecté, non vérifié",
+  "account.notConnected": "Non connecté",
+  "subscription.title": "Passer à l'abonnement",
+  "subscription.desc": "Choisissez un plan, envoyez le paiement à l'IBAN ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
+  "subscription.planMonthlyName": "Abonnement mensuel",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Abonnement annuel",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Plan sélectionné :",
+  "subscription.ibanLabel": "IBAN :",
+  "subscription.recipientLabel": "Bénéficiaire :",
+  "subscription.usernameNote": "Indiquer votre nom d'utilisateur (<b>__USERNAME__</b>) dans le motif du virement accélère la vérification.",
+  "subscription.paySentBtn": "J'ai envoyé le paiement",
+  "subscription.sending": "Envoi en cours…",
+  "subscription.resendBtn": "Notifier à nouveau",
+  "subscription.successMsg": "✓ Notification reçue — notre équipe activera votre compte dès que votre paiement sera vérifié.",
+  "subscription.genericError": "Une erreur s'est produite, veuillez réessayer.",
+  "subscription.connectionError": "Erreur de connexion, veuillez réessayer.",
+  "subscription.selectedMonthly": "Mensuel — 50 USD",
+  "subscription.selectedAnnual": "Annuel — 500 USD",
+  "askAdmin.title": "Contacter l'admin",
+  "askAdmin.desc": "Votre message sera envoyé à herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Écrivez votre question ici…",
+  "askAdmin.sendBtn": "Envoyer",
+  "askAdmin.sending": "Envoi en cours…",
+  "askAdmin.emptyMessage": "Veuillez saisir un message.",
+  "askAdmin.successMsg": "✓ Votre message a été envoyé. Nous vous répondrons sous peu.",
+  "askAdmin.genericError": "Envoi impossible, veuillez réessayer.",
+  "askAdmin.connectionError": "Erreur de connexion, veuillez réessayer.",
+  "faq.title": "FAQ — Questions fréquentes",
+  "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
+  "faq.a1": "Par défaut, non — le système fonctionne en mode paper/démo et n'envoie jamais d'ordres réels. Pour trader avec de l'argent réel, vous devez connecter votre clé API Binance et activer vous-même le « Trading en direct » depuis votre panneau.",
+  "faq.q2": "Combien de temps dure l'essai gratuit et que se passe-t-il à la fin ?",
+  "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, payez l'IBAN, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
+  "faq.q3": "Comment l'abonnement est-il payé, le paiement par carte est-il disponible ?",
+  "faq.a3": "Actuellement, les paiements sont acceptés par virement bancaire/EFT vers l'IBAN. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
+  "faq.q4": "Est-il sûr de fournir ma clé API Binance ?",
+  "faq.a4": "Votre clé est stockée chiffrée sur le serveur et n'est utilisée que pour ouvrir et fermer des ordres en votre nom. Nous vous recommandons de créer une clé API sans autorisation de « retrait » côté Binance.",
+  "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
+  "faq.a5": "Binance Futures (contrats perpétuels crypto), Borsa Istanbul et actions américaines (NASDAQ/NYSE/AMEX) — tous scannés depuis un seul panneau.",
+  "faq.q6": "À quelle fréquence les signaux sont-ils générés ?",
+  "faq.a6": "Le système effectue un scan automatique environ toutes les 15 minutes ; les signaux ne sont générés qu'à partir de bougies de 4 heures clôturées, jamais du bruit de prix instantané.",
+  "faq.q7": "Comment activer les notifications Telegram ?",
+  "faq.a7": "Il suffit d'obtenir un code de liaison depuis la section « Connexion Telegram » du panneau et de démarrer le bot sur Telegram — les notifications d'ouverture/clôture et le résumé quotidien arrivent alors automatiquement.",
+  "faq.q8": "Que dois-je faire si je dois fermer d'urgence une position ouverte ?",
+  "faq.a8": "Vous pouvez utiliser le bouton « Fermer maintenant » à côté de la position concernée dans le panneau « Compte réel Binance » ; cela envoie instantanément un ordre au marché réel et ferme la position.",
+  "faq.q9": "J'ai une autre question, qui puis-je contacter ?",
+  "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
+  "panel.openPosition": "Position ouverte",
+  "panel.loading": "Chargement…",
+  "pos.noOpenPosition": "Aucune position paper ouverte. Elle apparaîtra ici dès qu'un signal sera généré.",
+  "pos.entry": "Entrée",
+  "pos.current": "Actuel",
+  "pos.unrealizedPnl": "P&L latent",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "Prix actuel",
+  "pos.trailingActive": "ACTIF @",
+  "pos.trailingStandby": "en attente",
+  "pos.trailingLabel": "Trailing :",
+  "pos.entryTimeLabel": "Heure d'entrée :",
+  "panel.signalMatrix": "Matrice de signaux",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "Volatilité 1J",
+  "signal.atrp1d": "ATRP %ile 1J",
+  "signal.final": "Signal final",
+  "scanner.tabCrypto": "Binance Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "Perpétuel USDT-M · bougie 4H clôturée · à titre de signal uniquement, aucun ordre réel",
+  "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
+  "scanner.allSignals": "Tous les signaux",
+  "scanner.scanAll": "Tout scanner",
+  "scanner.scanBist": "Scanner Borsa Istanbul",
+  "scanner.scanUs": "Scanner S&P500/Nasdaq-100",
+  "scanner.preparing": "Préparation…",
+  "scanner.waiting": "En attente du scan…",
+  "scanner.noResults": "Aucun résultat.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Action",
+  "scanner.headerPrice": "Prix",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "% quotidien",
+  "scanner.headerVolume": "Volume",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Description",
+  "scanner.headerAdd": "Ajouter",
+  "scanner.coinCountSuffix": "coins",
+  "scanner.stockCountSuffix": "actions",
+  "scanner.bistFootnote": "SHORT n'indique ici que le signal technique de la stratégie ; cela ne signifie pas un ordre de vente à découvert direct sur le marché au comptant BIST.",
+  "scanner.usFootnote": "Univers S&P 500 + Nasdaq-100 (liste statique, à mettre à jour périodiquement). Les actions américaines ajoutées à la watchlist ouvrent une position paper indépendante, comme la watchlist crypto ; le côté SHORT est une simulation pure qui ne modélise pas les contraintes d'emprunt/marge.",
+  "scanner.scanning": "Analyse en cours",
+  "scanner.ready": "Prêt",
+  "scanner.lastScan4h": "Dernier scan 4H",
+  "scanner.universe": "Univers",
+  "scanner.error": "Erreur",
+  "scanner.unknownError": "Erreur inconnue",
+  "scanner.startingScan": "Démarrage du scan…",
+  "scanner.startingUsScan": "Démarrage du scan… (514 actions, peut prendre quelques minutes)",
+  "scanner.startingBistScan": "Démarrage du scan Borsa Istanbul…",
+  "tvChart.title": "Graphique TradingView",
+  "tvChart.noSymbol": "— aucun symbole sélectionné",
+  "tvChart.emptyMessage": "Cliquez sur une ligne dans les tableaux de scan ci-dessus pour afficher ici le graphique TradingView de ce symbole.",
+  "panel.paperTrades": "Trades paper",
+  "watchlist.headerSymbol": "Symbole",
+  "watchlist.headerMarket": "Marché",
+  "watchlist.headerDirection": "Direction / Signal",
+  "watchlist.headerPrice": "Prix",
+  "watchlist.headerUnrealizedPnl": "P&L latent",
+  "watchlist.headerAdded": "Ajouté",
+  "watchlist.footnotePrefix": "Cliquez sur une ligne pour afficher ci-dessous le détail de la position et du signal de ce symbole. Les symboles crypto ouvrent une position paper indépendante avec la même stratégie (taille : $",
+  "watchlist.footnoteSuffix": " nominal). Les symboles Borsa Istanbul servent uniquement au suivi du signal ; aucun ordre réel/paper n'est ouvert.",
+  "watchlist.loading": "Chargement…",
+  "watchlist.empty": "La watchlist est vide. Cliquez sur « + Ajouter » sur un symbole affichant LONG/SHORT dans le scanner pour que le bot le suive/le trade en paper.",
+  "watchlist.mainEngine": "Moteur principal",
+  "watchlist.noPosition": "pas de position",
+  "watchlist.watched": "suivi",
+  "watchlist.removeBtn": "Retirer",
+  "watchlist.addBtn": "+ Ajouter",
+  "watchlist.adding": "Ajout en cours…",
+  "watchlist.added": "Ajouté ✓",
+  "watchlist.symbolRemoved": "Ce symbole a peut-être été retiré de la watchlist.",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "Action US",
+  "panel.binanceConnection": "Connexion Binance",
+  "panel.telegramConnection": "Connexion Telegram",
+  "panel.liveAccount": "Compte réel Binance",
+  "liveAccount.title": "Trading en direct (argent réel)",
+  "liveAccount.openPositionsSuffix": "positions ouvertes",
+  "liveAccount.liveOff": "Trading en direct désactivé",
+  "liveAccount.footnote": "Ce panneau n'affiche que les trades en direct sur <b>votre propre</b> compte Binance — jamais mélangés avec le panneau paper/démo ci-dessus ni avec d'autres utilisateurs ; personne d'autre que vous ne peut voir cela.",
+  "panel.recentTrades": "Trades récents",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerSymbol": "Symbole",
+  "history.headerEntry": "Entrée",
+  "history.headerExit": "Sortie",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Raison",
+  "history.noClosedTrades": "Aucun trade clôturé pour le moment.",
+  "history.noClosedLiveTrades": "Vous n'avez encore aucun trade en direct clôturé.",
+  "liveOpen.headerQty": "Quantité",
+  "liveOpen.headerCurrent": "Actuel",
+  "liveOpen.headerLeverage": "Levier",
+  "liveOpen.headerOpened": "Ouvert le",
+  "liveOpen.noOpenPositions": "Vous n'avez actuellement aucune position en direct ouverte.",
+  "liveOpen.closeNowBtn": "Fermer maintenant",
+  "liveOpen.closing": "Fermeture en cours…",
+  "panel.aiAnalyst": "Analyste IA de trading",
+  "ai.runBtn": "Analyser maintenant",
+  "ai.running": "Analyse en cours…",
+  "ai.disabled": "L'analyste IA est désactivé — ANTHROPIC_API_KEY n'est pas défini.",
+  "ai.noAnalysisYet": "Aucune analyse générée pour le moment. Cliquez sur « Analyser maintenant » pour créer le premier rapport.",
+  "ai.lastAttemptFailed": "La dernière tentative a échoué",
+  "ai.tradesAnalyzedPrefix": "trades analysés (total",
+  "footer.autoRefresh": "Actualisation automatique : position 5 s · scanners 10 s · trading paper, aucun ordre réel.",
+  "live.needConnectFirst": "Vous devez d'abord enregistrer et vérifier votre clé API Binance ci-dessus avant de pouvoir démarrer le trading en direct (argent réel).",
+  "live.killSwitch": "🛑 Tout le trading en direct a été temporairement arrêté par l'administrateur",
+  "live.pausedToday": "⏸ Limite quotidienne de perte maximale atteinte — aucun nouveau trade ne sera ouvert aujourd'hui",
+  "live.on": "🟢 Trading en direct ACTIVÉ",
+  "live.off": "Trading en direct désactivé — le bot fonctionne uniquement en mode paper (démo)",
+  "live.openPositionCount": "Positions en direct ouvertes :",
+  "live.todayRealizedPnl": "P&L réalisé estimé du jour :",
+  "live.positionUsdLabel": "Montant en USD par trade",
+  "live.positionUsdPlaceholder": "ex. 100",
+  "live.maxLeverageLabel": "Levier max. (1-{n}x)",
+  "live.maxLeveragePlaceholder": "ex. 2",
+  "live.dailyLossLimitLabel": "Limite quotidienne de perte maximale (USD) — le trading s'arrête automatiquement pour la journée si dépassée",
+  "live.dailyLossLimitPlaceholder": "ex. 50",
+  "live.maxPositionsLabel": "Nombre max. de positions ouvertes (1-{n})",
+  "live.maxPositionsPlaceholder": "ex. 1",
+  "live.saveSettingsBtn": "Enregistrer les paramètres",
+  "live.turnOffBtn": "Désactiver le trading en direct",
+  "live.turnOnBtn": "ACTIVER le trading en direct (argent réel)",
+  "live.dangerText": "⚠️ Une fois le trading en direct activé, le bot ouvre/ferme des ordres avec de l'<b>argent réel</b> sur votre compte Binance enregistré. C'est vous — et non le bot — qui êtes responsable des pertes éventuelles. Ceci ne constitue pas un conseil en investissement ; la conformité avec la réglementation applicable est de votre seule responsabilité.",
+  "live.toggleOnConfirm": "Vous êtes sur le point d'activer le trading en direct. À partir de maintenant, le bot ouvrira et fermera des ordres avec de l'ARGENT RÉEL sur votre compte Binance. Confirmez-vous accepter le risque de perte et que ces paramètres sont corrects ?",
+  "telegram.notEnabled": "Le bot Telegram n'est pas configuré sur le serveur.",
+  "telegram.linked": "🟢 Telegram connecté",
+  "telegram.notificationsDesc": "Les notifications d'ouverture/clôture de trades en direct, les alertes de risque et le résumé quotidien arriveront ici.",
+  "telegram.removeConnectionBtn": "Supprimer la connexion",
+  "telegram.notLinkedDesc": "Connectez-vous pour recevoir vos notifications de trading en direct sur votre propre Telegram.",
+  "telegram.getCodeBtn": "Obtenir le code de liaison",
+  "telegram.step1": "1) Ouvrez",
+  "telegram.step1Fallback": "notre bot",
+  "telegram.step1End": "sur Telegram.",
+  "telegram.step2": "2) Envoyez ceci :",
+  "telegram.codeExpiresPrefix": "Le code expire dans",
+  "telegram.minutes": "min",
+  "telegram.seconds": "sec.",
+  "telegram.unlinkConfirm": "Êtes-vous sûr de vouloir supprimer la connexion Telegram ?",
+  "alert.apiKeySecretRequired": "La clé API et le secret sont requis.",
+  "alert.riskAckRequired": "Vous devez cocher la case de confirmation du risque avant de continuer.",
+  "alert.saveFailedGeneric": "Enregistrement impossible",
+  "alert.connectionError": "Erreur de connexion",
+  "alert.notAdded": "Ajout impossible",
+  "alert.codeNotObtained": "Impossible d'obtenir le code",
+  "alert.disconnectBinanceConfirm": "Êtes-vous sûr de vouloir supprimer la connexion Binance ?",
+  "alert.closePositionConfirmPrefix": "Êtes-vous sûr de vouloir fermer la position",
+  "alert.closePositionConfirmSuffix": "maintenant avec un ordre au marché réel ? Cette action est irréversible.",
+  "alert.closePositionFailed": "Impossible de fermer la position",
+  "alert.actionFailed": "Échec de l'opération"
+},
+  es: {
+  "nav.connecting": "Conectando",
+  "nav.botActive": "Bot activo",
+  "nav.standby": "En espera",
+  "nav.connectionError": "Error de conexión",
+  "nav.admin": "Administración",
+  "nav.logout": "Cerrar sesión",
+  "nav.language": "Idioma",
+  "kpi.equity": "Saldo actual",
+  "kpi.openPnl": "P&L de posiciones abiertas",
+  "kpi.openPnlSub": "Todas las posiciones abiertas",
+  "kpi.trades": "Operaciones · tasa de acierto",
+  "kpi.winRate": "Tasa de acierto",
+  "kpi.profitFactor": "Factor de beneficio",
+  "kpi.avg": "Prom.",
+  "kpi.maxDrawdown": "Drawdown máx.",
+  "kpi.lastCandle": "Última vela:",
+  "account.title": "Mi cuenta",
+  "account.subscriptionBtn": "💳 Cambiar a suscripción",
+  "account.askAdminBtn": "✉️ Preguntar al admin",
+  "account.emailNotRegistered": "(sin correo registrado)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Prueba: quedan {n} días",
+  "account.trialExpired": "Prueba caducada",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY no está configurada en el servidor — las claves API no se pueden guardar porque no se pueden cifrar de forma segura. Por favor, contáctate con tu administrador.",
+  "account.savedKeyLabel": "Clave guardada:",
+  "account.lastVerified": "Última verificación:",
+  "account.riskAckGiven": "Confirmación de riesgo otorgada el",
+  "account.riskAckLabel": "Confirmo y acepto que este bot puede abrir órdenes con dinero real en futuros de criptomonedas, que esto conlleva riesgo de pérdida, y que cualquier pérdida resultante es responsabilidad mía, no del bot.",
+  "account.apiKeyLabel": "Clave API de Binance",
+  "account.apiSecretLabel": "Secreto API de Binance",
+  "account.apiKeyPlaceholderChange": "Introduce una nueva clave para cambiarla",
+  "account.apiKeyPlaceholderNew": "Clave API de Binance Futures",
+  "account.apiSecretPlaceholderChange": "Introduce un nuevo secreto para cambiarlo",
+  "account.apiSecretPlaceholderNew": "Secreto API de Binance Futures",
+  "account.saveVerifyBtn": "Guardar y verificar",
+  "account.savingVerifying": "Guardando y verificando…",
+  "account.removeConnectionBtn": "Eliminar conexión",
+  "account.verifyError": "Error de verificación",
+  "account.verifiedConnected": "Conectado y verificado",
+  "account.connectedNotVerified": "Conectado, sin verificar",
+  "account.notConnected": "No conectado",
+  "subscription.title": "Cambiar a suscripción",
+  "subscription.desc": "Elige un plan, envía el pago al IBAN de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
+  "subscription.planMonthlyName": "Suscripción mensual",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Suscripción anual",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Plan seleccionado:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Beneficiario:",
+  "subscription.usernameNote": "Incluir tu nombre de usuario (<b>__USERNAME__</b>) en el concepto del pago agiliza la verificación.",
+  "subscription.paySentBtn": "He enviado el pago",
+  "subscription.sending": "Enviando…",
+  "subscription.resendBtn": "Notificar de nuevo",
+  "subscription.successMsg": "✓ Notificación recibida — nuestro equipo activará tu cuenta en cuanto se verifique tu pago.",
+  "subscription.genericError": "Algo salió mal, inténtalo de nuevo.",
+  "subscription.connectionError": "Error de conexión, inténtalo de nuevo.",
+  "subscription.selectedMonthly": "Mensual — 50 USD",
+  "subscription.selectedAnnual": "Anual — 500 USD",
+  "askAdmin.title": "Preguntar al admin",
+  "askAdmin.desc": "Tu mensaje se enviará a herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Escribe tu pregunta aquí…",
+  "askAdmin.sendBtn": "Enviar",
+  "askAdmin.sending": "Enviando…",
+  "askAdmin.emptyMessage": "Por favor, escribe un mensaje.",
+  "askAdmin.successMsg": "✓ Tu mensaje ha sido enviado. Te responderemos en breve.",
+  "askAdmin.genericError": "No se pudo enviar, inténtalo de nuevo.",
+  "askAdmin.connectionError": "Error de conexión, inténtalo de nuevo.",
+  "faq.title": "Preguntas frecuentes",
+  "faq.q1": "¿Este bot opera con dinero real?",
+  "faq.a1": "Por defecto, no — el sistema funciona en modo paper/demo y nunca envía órdenes reales. Para operar con dinero real debes conectar tu clave API de Binance y activar tú mismo el “Trading en vivo” desde tu panel.",
+  "faq.q2": "¿Cuánto dura la prueba gratuita y qué pasa cuando termina?",
+  "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, paga al IBAN y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
+  "faq.q3": "¿Cómo se paga la suscripción, hay pago con tarjeta?",
+  "faq.a3": "Actualmente los pagos se aceptan mediante transferencia bancaria/EFT al IBAN. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
+  "faq.q4": "¿Es seguro proporcionar mi clave API de Binance?",
+  "faq.a4": "Tu clave se almacena cifrada en el servidor y solo se usa para abrir y cerrar órdenes en tu nombre. Recomendamos crear una clave API sin permiso de “retiro” en Binance.",
+  "faq.q5": "¿En qué mercados se opera?",
+  "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul y acciones de EE. UU. (NASDAQ/NYSE/AMEX) — todos escaneados desde un solo panel.",
+  "faq.q6": "¿Con qué frecuencia se generan las señales?",
+  "faq.a6": "El sistema realiza un escaneo automático aproximadamente cada 15 minutos; las señales solo se generan a partir de velas de 4 horas cerradas, no del ruido de precio instantáneo.",
+  "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
+  "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
+  "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
+  "faq.a8": "Puedes usar el botón “Cerrar ahora” junto a la posición correspondiente en el panel “Cuenta real de Binance”; esto envía al instante una orden de mercado real y cierra la posición.",
+  "faq.q9": "Tengo otra pregunta, ¿a quién puedo contactar?",
+  "faq.a9": "Simplemente haz clic en el botón “Preguntar al admin” de arriba y escribe tu mensaje — se enviará directamente al equipo de administración.",
+  "panel.openPosition": "Posición abierta",
+  "panel.loading": "Cargando…",
+  "pos.noOpenPosition": "No hay posición paper abierta. Aparecerá aquí en cuanto se genere una señal.",
+  "pos.entry": "Entrada",
+  "pos.current": "Actual",
+  "pos.unrealizedPnl": "P&L no realizado",
+  "pos.atr": "ATR",
+  "pos.currentPriceTitle": "Precio actual",
+  "pos.trailingActive": "ACTIVO @",
+  "pos.trailingStandby": "inactivo",
+  "pos.trailingLabel": "Trailing:",
+  "pos.entryTimeLabel": "Hora de entrada:",
+  "panel.signalMatrix": "Matriz de señales",
+  "signal.ema": "EMA 50 / 100",
+  "signal.supertrend": "Supertrend",
+  "signal.adx": "ADX",
+  "signal.rsi": "RSI",
+  "signal.cci": "CCI",
+  "signal.stochRsi": "Stoch RSI",
+  "signal.macd": "MACD",
+  "signal.volatility1d": "Volatilidad 1D",
+  "signal.atrp1d": "ATRP %il 1D",
+  "signal.final": "Señal final",
+  "scanner.tabCrypto": "Binance Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "Perpetuo USDT-M · vela 4H cerrada · solo con fines de señal, sin órdenes reales",
+  "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
+  "scanner.allSignals": "Todas las señales",
+  "scanner.scanAll": "Escanear todo",
+  "scanner.scanBist": "Escanear Borsa Istanbul",
+  "scanner.scanUs": "Escanear S&P500/Nasdaq-100",
+  "scanner.preparing": "Preparando…",
+  "scanner.waiting": "Esperando escaneo…",
+  "scanner.noResults": "Sin resultados.",
+  "scanner.headerCoin": "Moneda",
+  "scanner.headerStock": "Acción",
+  "scanner.headerPrice": "Precio",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "% diario",
+  "scanner.headerVolume": "Volumen",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %il",
+  "scanner.headerSignal": "Señal",
+  "scanner.headerReason": "Descripción",
+  "scanner.headerAdd": "Añadir",
+  "scanner.coinCountSuffix": "monedas",
+  "scanner.stockCountSuffix": "acciones",
+  "scanner.bistFootnote": "SHORT aquí es solo la señal técnica de la estrategia; no implica una orden de venta en corto directa en el mercado spot de BIST.",
+  "scanner.usFootnote": "Universo S&P 500 + Nasdaq-100 (lista estática, debe actualizarse periódicamente). Las acciones de EE. UU. añadidas a la watchlist abren una posición paper independiente igual que la watchlist cripto; el lado SHORT es una simulación pura que no modela restricciones de préstamo/margen.",
+  "scanner.scanning": "Escaneando",
+  "scanner.ready": "Listo",
+  "scanner.lastScan4h": "Último escaneo 4H",
+  "scanner.universe": "Universo",
+  "scanner.error": "Error",
+  "scanner.unknownError": "Error desconocido",
+  "scanner.startingScan": "Iniciando escaneo…",
+  "scanner.startingUsScan": "Iniciando escaneo… (514 acciones, puede tardar unos minutos)",
+  "scanner.startingBistScan": "Iniciando escaneo de Borsa Istanbul…",
+  "tvChart.title": "Gráfico de TradingView",
+  "tvChart.noSymbol": "— ningún símbolo seleccionado",
+  "tvChart.emptyMessage": "Haz clic en una fila de las tablas de escaneo de arriba para ver aquí el gráfico de TradingView de ese símbolo.",
+  "panel.paperTrades": "Operaciones de prueba",
+  "watchlist.headerSymbol": "Símbolo",
+  "watchlist.headerMarket": "Mercado",
+  "watchlist.headerDirection": "Dirección / Señal",
+  "watchlist.headerPrice": "Precio",
+  "watchlist.headerUnrealizedPnl": "P&L no realizado",
+  "watchlist.headerAdded": "Añadido",
+  "watchlist.footnotePrefix": "Haz clic en una fila para ver abajo el detalle de posición y señal de ese símbolo. Los símbolos cripto abren una posición paper independiente con la misma estrategia (tamaño: $",
+  "watchlist.footnoteSuffix": " nominal). Los símbolos de Borsa Istanbul son solo de seguimiento de señal; no se abre ninguna orden real/paper.",
+  "watchlist.loading": "Cargando…",
+  "watchlist.empty": "La watchlist está vacía. Haz clic en “+ Añadir” en cualquier símbolo que muestre LONG/SHORT en el escaneo para que el bot lo siga/opere en modo paper.",
+  "watchlist.mainEngine": "Motor principal",
+  "watchlist.noPosition": "sin posición",
+  "watchlist.watched": "en seguimiento",
+  "watchlist.removeBtn": "Quitar",
+  "watchlist.addBtn": "+ Añadir",
+  "watchlist.adding": "Añadiendo…",
+  "watchlist.added": "Añadido ✓",
+  "watchlist.symbolRemoved": "Es posible que este símbolo se haya eliminado de la watchlist.",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "Acción EE. UU.",
+  "panel.binanceConnection": "Conexión con Binance",
+  "panel.telegramConnection": "Conexión con Telegram",
+  "panel.liveAccount": "Cuenta real de Binance",
+  "liveAccount.title": "Trading en vivo (dinero real)",
+  "liveAccount.openPositionsSuffix": "posiciones abiertas",
+  "liveAccount.liveOff": "Trading en vivo desactivado",
+  "liveAccount.footnote": "Este panel solo muestra operaciones en vivo en <b>tu propia</b> cuenta de Binance — nunca se mezcla con el panel paper/demo de arriba ni con otros usuarios; nadie más que tú puede verlo.",
+  "panel.recentTrades": "Operaciones recientes",
+  "history.headerDate": "Fecha",
+  "history.headerDirection": "Dirección",
+  "history.headerSymbol": "Símbolo",
+  "history.headerEntry": "Entrada",
+  "history.headerExit": "Salida",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Motivo",
+  "history.noClosedTrades": "Aún no hay operaciones cerradas.",
+  "history.noClosedLiveTrades": "Aún no tienes operaciones en vivo cerradas.",
+  "liveOpen.headerQty": "Cantidad",
+  "liveOpen.headerCurrent": "Actual",
+  "liveOpen.headerLeverage": "Apalancamiento",
+  "liveOpen.headerOpened": "Apertura",
+  "liveOpen.noOpenPositions": "Ahora mismo no tienes posiciones en vivo abiertas.",
+  "liveOpen.closeNowBtn": "Cerrar ahora",
+  "liveOpen.closing": "Cerrando…",
+  "panel.aiAnalyst": "Analista de trading con IA",
+  "ai.runBtn": "Analizar ahora",
+  "ai.running": "Analizando…",
+  "ai.disabled": "El analista de IA está desactivado — ANTHROPIC_API_KEY no está definida.",
+  "ai.noAnalysisYet": "Aún no se ha generado ningún análisis. Haz clic en “Analizar ahora” para crear el primer informe.",
+  "ai.lastAttemptFailed": "El último intento falló",
+  "ai.tradesAnalyzedPrefix": "operaciones analizadas (total",
+  "footer.autoRefresh": "Actualización automática: posición 5 s · escaneos 10 s · trading de prueba, sin órdenes reales.",
+  "live.needConnectFirst": "Primero debes guardar y verificar tu clave API de Binance arriba antes de poder iniciar el trading en vivo (dinero real).",
+  "live.killSwitch": "🛑 El administrador ha detenido temporalmente todo el trading en vivo",
+  "live.pausedToday": "⏸ Se alcanzó el límite diario de pérdida máxima — hoy no se abrirán nuevas operaciones",
+  "live.on": "🟢 Trading en vivo ACTIVADO",
+  "live.off": "Trading en vivo desactivado — el bot solo funciona en modo paper (demo)",
+  "live.openPositionCount": "Posiciones en vivo abiertas:",
+  "live.todayRealizedPnl": "P&L realizado estimado de hoy:",
+  "live.positionUsdLabel": "Importe en USD por operación",
+  "live.positionUsdPlaceholder": "ej. 100",
+  "live.maxLeverageLabel": "Apalancamiento máx. (1-{n}x)",
+  "live.maxLeveragePlaceholder": "ej. 2",
+  "live.dailyLossLimitLabel": "Límite diario de pérdida máxima (USD) — el trading se detiene automáticamente ese día si se supera",
+  "live.dailyLossLimitPlaceholder": "ej. 50",
+  "live.maxPositionsLabel": "Número máx. de posiciones abiertas (1-{n})",
+  "live.maxPositionsPlaceholder": "ej. 1",
+  "live.saveSettingsBtn": "Guardar configuración",
+  "live.turnOffBtn": "Desactivar trading en vivo",
+  "live.turnOnBtn": "ACTIVAR trading en vivo (dinero real)",
+  "live.dangerText": "⚠️ Una vez activado el trading en vivo, el bot abre/cierra órdenes con <b>dinero real</b> en tu cuenta de Binance registrada. Tú — no el bot — eres responsable de cualquier pérdida. Esto no es asesoramiento de inversión; el cumplimiento de la normativa aplicable es tu propia responsabilidad.",
+  "live.toggleOnConfirm": "Estás a punto de activar el trading en vivo. A partir de este momento, el bot abrirá y cerrará órdenes con DINERO REAL en tu cuenta de Binance. ¿Confirmas que aceptas el riesgo de pérdida y que esta configuración es correcta?",
+  "telegram.notEnabled": "El bot de Telegram no está configurado en el servidor.",
+  "telegram.linked": "🟢 Telegram conectado",
+  "telegram.notificationsDesc": "Aquí llegarán las notificaciones de apertura/cierre de operaciones en vivo, las alertas de riesgo y el resumen diario.",
+  "telegram.removeConnectionBtn": "Eliminar conexión",
+  "telegram.notLinkedDesc": "Conéctate para recibir tus notificaciones de trading en vivo en tu propio Telegram.",
+  "telegram.getCodeBtn": "Obtener código de enlace",
+  "telegram.step1": "1) Abre",
+  "telegram.step1Fallback": "nuestro bot",
+  "telegram.step1End": "en Telegram.",
+  "telegram.step2": "2) Envía esto:",
+  "telegram.codeExpiresPrefix": "El código caduca en",
+  "telegram.minutes": "min",
+  "telegram.seconds": "seg.",
+  "telegram.unlinkConfirm": "¿Seguro que quieres eliminar la conexión con Telegram?",
+  "alert.apiKeySecretRequired": "Se requieren la clave API y el secreto.",
+  "alert.riskAckRequired": "Debes marcar la casilla de confirmación de riesgo antes de continuar.",
+  "alert.saveFailedGeneric": "No se pudo guardar",
+  "alert.connectionError": "Error de conexión",
+  "alert.notAdded": "No se pudo añadir",
+  "alert.codeNotObtained": "No se pudo obtener el código",
+  "alert.disconnectBinanceConfirm": "¿Seguro que quieres eliminar la conexión con Binance?",
+  "alert.closePositionConfirmPrefix": "¿Seguro que quieres cerrar la posición",
+  "alert.closePositionConfirmSuffix": "ahora con una orden de mercado real? Esta acción no se puede deshacer.",
+  "alert.closePositionFailed": "No se pudo cerrar la posición",
+  "alert.actionFailed": "La acción falló"
+}
+};
+// ---- i18n ----
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    el.setAttribute('title', trGet(lang, el.getAttribute('data-i18n-title')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+  refreshDynamicTexts();
+}
+function refreshDynamicTexts(){
+  try{ if(statusCache) render(statusCache); else renderWatchlistTable(); }catch(e){}
+  try{ renderScanner(); }catch(e){}
+  try{ renderBistScanner(); }catch(e){}
+  try{ renderUsScanner(); }catch(e){}
+  try{ if(accountCache) renderAccount(accountCache); }catch(e){}
+  try{ if(aiAnalysisCache) renderAiAnalysis(aiAnalysisCache); }catch(e){}
+  try{ if(liveMineCache) renderMyLive(liveMineCache); }catch(e){}
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+
 const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 // live clock
-function tickClock(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('tr-TR',{hour12:false});}
+function tickClock(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString(currentLang||'en-US',{hour12:false});}
 tickClock();setInterval(tickClock,1000);
 
 function chipClass(v){
@@ -1220,7 +2815,7 @@ function drawSparkline(values){
 
 function renderPositionCard(posEl,p){
   if(!p){
-    posEl.innerHTML='<div class="pos-top"><span class="side-tag" style="background:var(--neu-bg);color:var(--text-dim);border:1px solid var(--border-soft)">FLAT</span></div><div class="pos-empty">Açık paper pozisyon yok. Sinyal oluştuğunda burada görünecek.</div>';
+    posEl.innerHTML='<div class="pos-top"><span class="side-tag" style="background:var(--neu-bg);color:var(--text-dim);border:1px solid var(--border-soft)">FLAT</span></div><div class="pos-empty">'+t('pos.noOpenPosition')+'</div>';
     return;
   }
   const sideCls=p.side==='LONG'?'long':'short';
@@ -1232,10 +2827,10 @@ function renderPositionCard(posEl,p){
   posEl.innerHTML=`
     <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span></div>
     <div class="pos-grid">
-      <div><div class="kpi-label">Giriş</div><div class="val">${num(entry)}</div></div>
-      <div><div class="kpi-label">Güncel</div><div class="val">${num(cur)}</div></div>
-      <div><div class="kpi-label">Unrealized P&amp;L</div><div class="val ${cls(pnl)}">${money(pnl)}</div></div>
-      <div><div class="kpi-label">ATR</div><div class="val">${num(p.atr)}</div></div>
+      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${num(entry)}</div></div>
+      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${num(cur)}</div></div>
+      <div><div class="kpi-label">${t('pos.unrealizedPnl')}</div><div class="val ${cls(pnl)}">${money(pnl)}</div></div>
+      <div><div class="kpi-label">${t('pos.atr')}</div><div class="val">${num(p.atr)}</div></div>
     </div>
     <div class="bar-wrap">
       <div class="bar-labels"><span>SL ${num(stop)}</span><span>TP ${num(tp)}</span></div>
@@ -1243,18 +2838,18 @@ function renderPositionCard(posEl,p){
         <div class="bar-fill" style="left:0%;right:0%"></div>
         <div class="bar-dot sl" style="left:${pct(stop)}%"></div>
         <div class="bar-dot tp" style="left:${pct(tp)}%"></div>
-        <div class="bar-dot cur" style="left:${pct(cur)}%" title="Güncel fiyat"></div>
+        <div class="bar-dot cur" style="left:${pct(cur)}%" title="${t('pos.currentPriceTitle')}"></div>
       </div>
     </div>
-    <div class="pos-foot">Trailing: ${p.trail_active?('AKTİF @ '+num(p.trail_stop)):'beklemede'} &middot; Giriş zamanı: ${p.entry_time}</div>`;
+    <div class="pos-foot">${t('pos.trailingLabel')} ${p.trail_active?(t('pos.trailingActive')+' '+num(p.trail_stop)):t('pos.trailingStandby')} &middot; ${t('pos.entryTimeLabel')} ${p.entry_time}</div>`;
 }
 function renderSignalCard(sigEl,s){
   s=s||{};
-  const rows=[['EMA 50 / 100',s.ema],['Supertrend',s.supertrend],['ADX',s.adx],['RSI',s.rsi],['CCI',s.cci],['Stoch RSI',s.stoch],['MACD',s.macd],['1D Volatilite',s.volatility],['1D ATRP %ile',s.atrp_percentile_1d]];
+  const rows=[[t('signal.ema'),s.ema],[t('signal.supertrend'),s.supertrend],[t('signal.adx'),s.adx],[t('signal.rsi'),s.rsi],[t('signal.cci'),s.cci],[t('signal.stochRsi'),s.stoch],[t('signal.macd'),s.macd],[t('signal.volatility1d'),s.volatility],[t('signal.atrp1d'),s.atrp_percentile_1d]];
   sigEl.innerHTML=
     '<div class="chip-grid">'+
     rows.map(r=>`<div class="chip"><span class="chip-label">${r[0]}</span><span class="chip-value ${chipClass(r[1])}">${r[1]??'—'}</span></div>`).join('')+
-    `<div class="chip final"><span class="chip-label">Son sinyal</span><span class="chip-value ${chipClass(s.final)}">${s.final??'—'}</span></div>`+
+    `<div class="chip final"><span class="chip-label">${t('signal.final')}</span><span class="chip-value ${chipClass(s.final)}">${s.final??'—'}</span></div>`+
     '</div>';
 }
 
@@ -1273,14 +2868,14 @@ function renderDetail(){
   const sigEl=document.getElementById('signals');
   document.getElementById('detailSymbol').textContent='— '+selectedSymbol;
   if(selectedSymbol==='ETHUSDT'){
-    if(!statusCache){posEl.innerHTML='Yükleniyor…';sigEl.innerHTML='—';return;}
+    if(!statusCache){posEl.innerHTML=t('panel.loading');sigEl.innerHTML='—';return;}
     renderPositionCard(posEl,statusCache.position);
     renderSignalCard(sigEl,statusCache.signals);
     return;
   }
   const item=(watchlistCache.items||[]).find(x=>x.symbol===selectedSymbol);
   if(!item){
-    posEl.innerHTML='<div class="pos-empty">Bu sembol takip listesinden kaldırılmış olabilir.</div>';
+    posEl.innerHTML='<div class="pos-empty">'+t('watchlist.symbolRemoved')+'</div>';
     sigEl.innerHTML='—';
     return;
   }
@@ -1291,25 +2886,25 @@ function renderDetail(){
 function render(d){
   statusCache=d;
   const st=document.getElementById('status');
-  if(d.bot_alive){st.className='status-pill live';st.innerHTML='<span class="dot"></span>Bot aktif';}
-  else{st.className='status-pill wait';st.innerHTML='<span class="dot"></span>Beklemede';}
+  if(d.bot_alive){st.className='status-pill live';st.innerHTML='<span class="dot"></span>'+t('nav.botActive');}
+  else{st.className='status-pill wait';st.innerHTML='<span class="dot"></span>'+t('nav.standby');}
 
   document.getElementById('equity').textContent=money(d.equity);
   document.getElementById('pnl').innerHTML=`<span class="${cls(d.net_pnl)}">${money(d.net_pnl)}</span> &middot; ${Number(d.return_pct||0).toFixed(2)}%`;
   document.getElementById('openPnl').innerHTML=`<span class="${cls(d.total_open_pnl)}">${money(d.total_open_pnl)}</span>`;
-  document.getElementById('openPnlSub').textContent='Tüm açık pozisyonlar';
+  document.getElementById('openPnlSub').textContent=t('kpi.openPnlSub');
   document.getElementById('trades').textContent=d.stats.trades;
-  document.getElementById('winrate').textContent='Win rate '+d.stats.win_rate.toFixed(2)+'%';
+  document.getElementById('winrate').textContent=t('kpi.winRate')+' '+d.stats.win_rate.toFixed(2)+'%';
   document.getElementById('pf').textContent=d.stats.profit_factor.toFixed(3);
-  document.getElementById('avg').textContent='Ort. '+money(d.stats.avg_trade);
+  document.getElementById('avg').textContent=t('kpi.avg')+' '+money(d.stats.avg_trade);
   document.getElementById('dd').textContent=d.stats.max_drawdown.toFixed(2)+'%';
-  document.getElementById('candle').textContent='Son mum: '+(d.last_closed_time||'—');
+  document.getElementById('candle').textContent=t('kpi.lastCandle')+' '+(d.last_closed_time||'—');
 
   const eqSeries=(d.history||[]).slice().reverse().map(t=>Number(t.equity_after)).filter(v=>!isNaN(v));
   if(eqSeries.length<2 && d.equity!=null) eqSeries.push(Number(d.equity));
   drawSparkline(eqSeries);
 
-  document.getElementById('history').innerHTML=(d.history||[]).map(t=>`<tr><td>${t.exit_time||'—'}</td><td><span class="pill ${String(t.side).toLowerCase()}">${t.side}</span></td><td>${t.symbol}</td><td class="num">${num(t.entry_price)}</td><td class="num">${num(t.exit_price)}</td><td class="num ${cls(t.net_pnl)}"><b>${money(t.net_pnl)}</b></td><td class="wrap-cell">${t.reason||''}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Henüz kapanmış işlem yok.</td></tr>';
+  document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
 
   renderWatchlistTable();
   if(selectedSymbol==='ETHUSDT') renderDetail();
@@ -1326,8 +2921,8 @@ function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return 
 let watchlistSymbols=new Set();
 function addCell(symbol,market,signal){
   if(signal!=='LONG'&&signal!=='SHORT') return '<span class="text-faint">—</span>';
-  if(watchlistSymbols.has(symbol)) return '<span class="added-tag">Eklendi ✓</span>';
-  return `<button class="add-btn" onclick="event.stopPropagation();addToWatchlist('${symbol}','${market}','${signal}',this)">+ Ekle</button>`;
+  if(watchlistSymbols.has(symbol)) return '<span class="added-tag">'+t('watchlist.added')+'</span>';
+  return `<button class="add-btn" onclick="event.stopPropagation();addToWatchlist('${symbol}','${market}','${signal}',this)">${t('watchlist.addBtn')}</button>`;
 }
 
 // TradingView "Advanced Chart" widget — TradingView's own free public embed
@@ -1338,18 +2933,18 @@ function openTvChart(tvSymbol,label){
   const frame=document.getElementById('tvChartFrame');
   frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
     +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
-    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale=tr';
+    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale='+encodeURIComponent(currentLang||'en');
   frame.classList.remove('hidden');
   document.getElementById('tvChartEmpty').style.display='none';
   document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function addToWatchlist(symbol,market,signal,btn){
-  if(btn){btn.disabled=true;btn.textContent='Ekleniyor…';}
+  if(btn){btn.disabled=true;btn.textContent=t('watchlist.adding');}
   try{
     const r=await fetch(`/api/watchlist/add?symbol=${encodeURIComponent(symbol)}&market=${market}&signal=${encodeURIComponent(signal)}`,{cache:'no-store'});
     const d=await r.json();
-    if(!d.ok && btn){btn.disabled=false;btn.textContent='+ Ekle';alert(d.error||'Eklenemedi');}
-  }catch(e){ if(btn){btn.disabled=false;btn.textContent='+ Ekle';} }
+    if(!d.ok && btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');alert(d.error||t('alert.notAdded'));}
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');} }
   await refreshWatchlist();
 }
 async function removeFromWatchlist(symbol){
@@ -1369,9 +2964,9 @@ function renderWatchlistTable(){
   if(statusCache){
     const p=statusCache.position;
     const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
-    const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">pozisyon yok</span>';
+    const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
     const sel=selectedSymbol==='ETHUSDT'?' row-selected':'';
-    rowsHtml+=`<tr class="row-clickable${sel}" onclick="selectSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>Binance</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">Ana motor</td><td></td></tr>`;
+    rowsHtml+=`<tr class="row-clickable${sel}" onclick="selectSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td></td></tr>`;
   }
 
   rowsHtml+=items.map(x=>{
@@ -1382,15 +2977,15 @@ function renderWatchlistTable(){
       pnlCell=`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`;
     } else {
       sideCell=sigPill(x.current_signal||'NO SIGNAL');
-      pnlCell=x.market==='bist'?'<span class="text-faint">izleniyor</span>':'<span class="text-faint">pozisyon yok</span>';
+      pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
     }
     const added=(x.added_at||'').replace('T',' ').slice(0,16);
     const sel=selectedSymbol===x.symbol?' row-selected':'';
-    const marketLabel=x.market==='bist'?'Borsa İstanbul':x.market==='us_stock'?'ABD Hisse':'Binance';
-    return `<tr class="row-clickable${sel}" onclick="selectSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">Kaldır</button></td></tr>`;
+    const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
+    return `<tr class="row-clickable${sel}" onclick="selectSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
   }).join('');
 
-  document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">Takip listesi boş. Tarayıcıda LONG/SHORT veren bir sembole "+ Ekle" diyerek botun izlemesini/paper trade etmesini sağlayabilirsin.</td></tr>';
+  document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
 }
 
 async function refreshWatchlist(){
@@ -1435,8 +3030,8 @@ function renderScanner(){
   let f=document.getElementById('signalFilter')?.value||'ALL';
   let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'scanner');
-  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Binance Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
-  document.getElementById('coinCount').textContent=rows.length+' coin';
+  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Binance Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
   document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
   document.getElementById('noCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
@@ -1448,8 +3043,8 @@ function renderBistScanner(){
   let f=document.getElementById('bistSignalFilter')?.value||'ALL';
   let rows=bistScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'bist');
-  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa İstanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
-  document.getElementById('bistCount').textContent=rows.length+' hisse';
+  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('bistCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
   document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
   document.getElementById('bistNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
@@ -1460,11 +3055,11 @@ attachSort('usScannerTable',()=>usScannerCache,renderUsScanner);
 
 async function refreshBistScanner(){
   let d=await bistScannerData();bistScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; Evren: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`Borsa İstanbul taraması: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`Hazır &middot; Son 4H: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`Hata: ${d.last_error||'Bilinmeyen hata'}`:'Bekleniyor…';
+  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.tabBist')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
 }
-async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent='Borsa İstanbul taraması başlatılıyor…';try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
+async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent=t('scanner.startingBistScan');try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
 refreshBistScanner();setInterval(refreshBistScanner,10000);
 
 async function usScannerData(){try{let r=await fetch('/api/us-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
@@ -1474,95 +3069,105 @@ function renderUsScanner(){
   let f=document.getElementById('usSignalFilter')?.value||'ALL';
   let rows=usScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'us');
-  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · ABD Hisse')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||'<tr><td colspan="13" class="empty">Sonuç yok.</td></tr>';
-  document.getElementById('usCount').textContent=rows.length+' hisse';
+  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('usCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
   document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
   document.getElementById('usNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
 }
 async function refreshUsScanner(){
   let d=await usScannerData();usScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; Evren: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`Tarama: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`Hazır &middot; Son 4H: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`Hata: ${d.last_error||'Bilinmeyen hata'}`:'Bekleniyor…';
+  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('usScannerStatus').textContent=txt;renderUsScanner();
 }
-async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent='Tarama başlatılıyor… (514 hisse, birkaç dakika sürebilir)';try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
+async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent=t('scanner.startingUsScan');try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
 refreshUsScanner();setInterval(refreshUsScanner,10000);
 
 async function refreshScanner(){
   let d=await scannerData();scannerCache=d;
   let st=d.status||'IDLE';
-  let txt=st==='SCANNING'?`Tarama yapılıyor: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`Hazır &middot; Son 4H tarama: ${d.last_scan_candle||'—'}`:st==='ERROR'?`Hata: ${d.last_error||'Bilinmeyen hata'}`:'Bekleniyor…';
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('scannerStatus').textContent=txt;renderScanner();
 }
-async function startScanner(force=false){document.getElementById('scannerStatus').textContent='Tarama başlatılıyor…';try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
+async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
 refreshScanner();setInterval(refreshScanner,10000);
 
 async function refresh(){
   try{let r=await fetch('/api/status',{cache:'no-store'});let d=await r.json();render(d)}
-  catch(e){const st=document.getElementById('status');st.className='status-pill err';st.innerHTML='<span class="dot"></span>Bağlantı hatası';}
+  catch(e){const st=document.getElementById('status');st.className='status-pill err';st.innerHTML='<span class="dot"></span>'+t('nav.connectionError');}
 }
 refresh();setInterval(refresh,5000);
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
-async function refreshMyLive(){
-  let d;
-  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+let liveMineCache=null;
+function renderMyLive(d){
+  liveMineCache=d;
   const open=d.open||[], closed=d.closed||[];
   document.getElementById('liveMineCount').textContent = d.live_trading_enabled
-    ? `${open.length} açık pozisyon`
-    : 'Canlı işlem kapalı';
+    ? `${open.length} ${t('liveAccount.openPositionsSuffix')}`
+    : t('liveAccount.liveOff');
 
   document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
     const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
     return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
       +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
       +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
-      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">Şimdi Kapat</button></td></tr>`;
-  }).join('') || '<tr><td colspan="9" class="empty">Şu an açık canlı pozisyonunuz yok.</td></tr>';
+      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
+  }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
 
-  document.getElementById('liveMineClosedRows').innerHTML = closed.map(t=>{
-    return `<tr><td>${(t.exit_time||'—')}</td><td><span class="pill ${String(t.side).toLowerCase()}">${t.side}</span></td><td>${t.symbol}</td>`
-      +`<td class="num">${num(t.entry_price)}</td><td class="num">${num(t.exit_price)}</td>`
-      +`<td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td class="wrap-cell">${t.reason||''}</td></tr>`;
-  }).join('') || '<tr><td colspan="7" class="empty">Henüz kapanmış canlı işleminiz yok.</td></tr>';
+  document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
+    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
+      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
+      +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
+}
+async function refreshMyLive(){
+  let d;
+  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderMyLive(d);
 }
 refreshMyLive();setInterval(refreshMyLive,15000);
 
 async function closeLivePosition(symbol,btn){
-  if(!confirm(`${symbol} pozisyonunu şimdi gerçek bir market emriyle kapatmak istediğinize emin misiniz? Bu işlem geri alınamaz.`)) return;
-  btn.disabled=true; btn.textContent='Kapatılıyor…';
+  if(!confirm(`${t('alert.closePositionConfirmPrefix')} ${symbol} ${t('alert.closePositionConfirmSuffix')}`)) return;
+  btn.disabled=true; btn.textContent=t('liveOpen.closing');
   try{
     const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
     const d=await r.json();
-    if(!d.ok){ alert(d.error||'Pozisyon kapatılamadı'); btn.disabled=false; btn.textContent='Şimdi Kapat'; return; }
-  }catch(e){ alert('Bağlantı hatası'); btn.disabled=false; btn.textContent='Şimdi Kapat'; return; }
+    if(!d.ok){ alert(d.error||t('alert.closePositionFailed')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
+  }catch(e){ alert(t('alert.connectionError')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
   await refreshMyLive();
 }
 
-async function refreshAiAnalysis(){
-  let d;
-  try{ const r=await fetch('/api/ai-analysis',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+let aiAnalysisCache=null;
+function renderAiAnalysis(d){
+  aiAnalysisCache=d;
   const body=document.getElementById('aiAnalysisBody');
-  if(!d.enabled){ body.innerHTML='<div class="ai-disabled">AI Analist devre dışı — ANTHROPIC_API_KEY tanımlı değil.</div>'; return; }
+  if(!d.enabled){ body.innerHTML='<div class="ai-disabled">'+t('ai.disabled')+'</div>'; return; }
   const a=d.analysis;
   if(!a || !a.ok){
-    let msg='Henüz bir analiz üretilmedi. "Şimdi Analiz Et" ile ilk raporu oluşturabilirsiniz.';
+    let msg=t('ai.noAnalysisYet');
     if(d.last_error && d.last_error.error){
-      msg='Son deneme başarısız oldu ('+(d.last_error.at||'').replace('T',' ').slice(0,16)+'): '+d.last_error.error;
+      msg=t('ai.lastAttemptFailed')+' ('+(d.last_error.at||'').replace('T',' ').slice(0,16)+'): '+d.last_error.error;
     }
     body.innerHTML='<div class="ai-disabled">'+msg.replace(/</g,'&lt;')+'</div>';
     return;
   }
-  const meta=`<div class="ai-meta">${(a.generated_at||'').replace('T',' ').slice(0,16)} &middot; ${a.trades_analyzed} işlem incelendi (toplam ${a.total_trades_all_time})</div>`;
+  const meta=`<div class="ai-meta">${(a.generated_at||'').replace('T',' ').slice(0,16)} &middot; ${a.trades_analyzed} ${t('ai.tradesAnalyzedPrefix')} ${a.total_trades_all_time})</div>`;
   body.innerHTML=meta+'<div>'+a.text.replace(/</g,'&lt;')+'</div>';
+}
+async function refreshAiAnalysis(){
+  let d;
+  try{ const r=await fetch('/api/ai-analysis',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderAiAnalysis(d);
 }
 async function runAiAnalysis(){
   const btn=document.getElementById('aiRunBtn');
-  btn.disabled=true; btn.textContent='Analiz ediliyor…';
+  btn.disabled=true; btn.textContent=t('ai.running');
   try{ await fetch('/api/ai-analysis/run',{cache:'no-store'}); }catch(e){}
   await refreshAiAnalysis();
-  btn.disabled=false; btn.textContent='Şimdi Analiz Et';
+  btn.disabled=false; btn.textContent=t('ai.runBtn');
 }
 refreshAiAnalysis();setInterval(refreshAiAnalysis,60000);
 
@@ -1571,48 +3176,50 @@ async function logout(){
   window.location='/login';
 }
 
+let accountCache=null;
 function renderAccount(a){
+  accountCache=a;
   const pill=document.getElementById('binanceStatusPill');
   const body=document.getElementById('accountBody');
   let whoText=a.username?('👤 '+a.username):'';
-  if(a.is_admin){ whoText+=' <span class="badge-admin">(admin)</span>'; }
-  else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">Deneme: ${a.days_left} gün kaldı</span>`; }
-  else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">Deneme doldu</span>'; }
+  if(a.is_admin){ whoText+=' <span class="badge-admin">'+t('account.admin')+'</span>'; }
+  else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">${t('account.trialDaysLeft').replace('{n}',a.days_left)}</span>`; }
+  else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">'+t('account.trialExpired')+'</span>'; }
   document.getElementById('whoami').innerHTML=whoText;
   document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
-  const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||'(e-posta kayıtlı değil)';
+  const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||t('account.emailNotRegistered');
   if(a.binance_connected){
-    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">Doğrulama hatası</span>'; }
-    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">Bağlı ve doğrulandı</span>'; }
-    else{ pill.innerHTML='<span class="badge-unverified">Bağlı, doğrulanmadı</span>'; }
+    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">'+t('account.verifyError')+'</span>'; }
+    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">'+t('account.verifiedConnected')+'</span>'; }
+    else{ pill.innerHTML='<span class="badge-unverified">'+t('account.connectedNotVerified')+'</span>'; }
   } else {
-    pill.innerHTML='<span class="badge-unverified">Bağlı değil</span>';
+    pill.innerHTML='<span class="badge-unverified">'+t('account.notConnected')+'</span>';
   }
   let notice='';
   if(!a.credential_encryption_ready){
-    notice=`<div class="account-notice">⚠️ Sunucuda CREDENTIAL_ENCRYPTION_KEY tanımlı değil — API anahtarları güvenle şifrelenemediği için kaydedilemez. Lütfen yöneticinizle iletişime geçin.</div>`;
+    notice=`<div class="account-notice">${t('account.credentialWarning')}</div>`;
   }
-  const maskedRow=a.binance_connected?`<div class="account-row">Kayıtlı anahtar: <b>${a.binance_key_masked}</b></div>`:'';
-  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">Son doğrulama: ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
+  const maskedRow=a.binance_connected?`<div class="account-row">${t('account.savedKeyLabel')} <b>${a.binance_key_masked}</b></div>`:'';
+  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">${t('account.lastVerified')} ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
     :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
   const riskRow=a.risk_ack_at
-    ? `<div class="account-row text-faint">Risk onayı: ${a.risk_ack_at.replace('T',' ').slice(0,16)} tarihinde verildi</div>`
-    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> Bu botun kripto vadeli işlemlerde gerçek para ile emir açabileceğini, kayıp riski taşıdığını ve olası kayıplardan botun değil kendi sorumluluğumda olduğumu anladığımı ve kabul ettiğimi onaylıyorum.</label>`;
+    ? `<div class="account-row text-faint">${t('account.riskAckGiven')}: ${a.risk_ack_at.replace('T',' ').slice(0,16)}</div>`
+    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> ${t('account.riskAckLabel')}</label>`;
   body.innerHTML=`
     ${maskedRow}${verifyRow}
     <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
       <div>
-        <label>Binance API Key</label>
-        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?'Değiştirmek için yeni key girin':'Binance Futures API key'}">
+        <label>${t('account.apiKeyLabel')}</label>
+        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?t('account.apiKeyPlaceholderChange'):t('account.apiKeyPlaceholderNew')}">
       </div>
       <div>
-        <label>Binance API Secret</label>
-        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?'Değiştirmek için yeni secret girin':'Binance Futures API secret'}">
+        <label>${t('account.apiSecretLabel')}</label>
+        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?t('account.apiSecretPlaceholderChange'):t('account.apiSecretPlaceholderNew')}">
       </div>
       ${riskRow}
       <div class="account-row">
-        <button class="btn" type="submit" id="binSaveBtn">Kaydet ve Doğrula</button>
-        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">Bağlantıyı Kaldır</button>':''}
+        <button class="btn" type="submit" id="binSaveBtn">${t('account.saveVerifyBtn')}</button>
+        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
       </div>
     </form>
     ${notice}
@@ -1625,51 +3232,51 @@ function renderLivePanel(a){
   const box=document.getElementById('livePanelBody');
   if(!box) return;
   if(!a.binance_connected || !a.binance_verified_at){
-    box.innerHTML=`<div class="account-notice">Canlı (gerçek para) işlem açabilmek için önce yukarıdan Binance API anahtarınızı kaydedip doğrulatmanız gerekiyor.</div>`;
+    box.innerHTML=`<div class="account-notice">${t('live.needConnectFirst')}</div>`;
     return;
   }
   const rt=a.live_runtime||{};
   let statusLine;
   if(a.global_kill_switch_active){
-    statusLine=`<span class="badge-live-paused">🛑 Yönetici tarafından tüm canlı işlemler geçici olarak durduruldu</span>`;
+    statusLine=`<span class="badge-live-paused">${t('live.killSwitch')}</span>`;
   } else if(a.live_trading_enabled && rt.paused_today){
-    statusLine=`<span class="badge-live-paused">⏸ Günlük maksimum kayıp limitine ulaşıldı — bugün için yeni işlem açılmıyor</span>`;
+    statusLine=`<span class="badge-live-paused">${t('live.pausedToday')}</span>`;
   } else if(a.live_trading_enabled){
-    statusLine=`<span class="badge-live-on">🟢 Canlı işlem AÇIK</span>`;
+    statusLine=`<span class="badge-live-on">${t('live.on')}</span>`;
   } else {
-    statusLine=`<span class="badge-live-off">Canlı işlem kapalı — bot sadece paper (deneme) modda çalışıyor</span>`;
+    statusLine=`<span class="badge-live-off">${t('live.off')}</span>`;
   }
-  const openPos=rt.open_position_count?`<div class="account-row text-faint">Açık canlı pozisyon: ${rt.open_position_count}</div>`:'';
-  const pnlRow=`<div class="account-row text-faint">Bugünkü tahmini gerçekleşmiş K/Z: ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
+  const openPos=rt.open_position_count?`<div class="account-row text-faint">${t('live.openPositionCount')} ${rt.open_position_count}</div>`:'';
+  const pnlRow=`<div class="account-row text-faint">${t('live.todayRealizedPnl')} ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
   const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
   box.innerHTML=`
     <div class="account-row">${statusLine}</div>
     ${openPos}${pnlRow}${errRow}
     <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
       <div>
-        <label>İşlem başına USD tutarı</label>
-        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="Örn. 100">
+        <label>${t('live.positionUsdLabel')}</label>
+        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
       </div>
       <div>
-        <label>Maksimum kaldıraç (1-${a.live_max_leverage_cap||10}x)</label>
-        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="Örn. 2">
+        <label>${t('live.maxLeverageLabel').replace('{n}',a.live_max_leverage_cap||10)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="${t('live.maxLeveragePlaceholder')}">
       </div>
       <div>
-        <label>Günlük maksimum kayıp limiti (USD) — aşılırsa o gün otomatik durur</label>
-        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="Örn. 50">
+        <label>${t('live.dailyLossLimitLabel')}</label>
+        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
       </div>
       <div>
-        <label>Maksimum açık pozisyon sayısı (1-${a.live_max_positions_cap||5})</label>
-        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="Örn. 1">
+        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
       </div>
       <div class="account-row">
-        <button class="btn" type="submit">Ayarları Kaydet</button>
+        <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
         ${a.live_trading_enabled
-          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">Canlı İşlemi Kapat</button>`
-          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">Canlı İşlemi AÇ (gerçek para)</button>`}
+          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">${t('live.turnOffBtn')}</button>`
+          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">${t('live.turnOnBtn')}</button>`}
       </div>
     </form>
-    <div class="live-danger">⚠️ Canlı işlem açıldığında bot, kayıtlı Binance hesabınızda <b>gerçek parayla</b> emir açar/kapatır. Kayıplardan bot değil siz sorumlusunuz. Bu, yatırım tavsiyesi değildir; ilgili düzenlemelere (ör. SPK) uygunluk sizin sorumluluğunuzdadır.</div>
+    <div class="live-danger">${t('live.dangerText')}</div>
   `;
 }
 
@@ -1684,19 +3291,19 @@ async function submitLiveSettings(ev){
   try{
     const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    if(!d.ok){ alert(d.error||'Kaydedilemedi'); }
-  }catch(e){ alert('Bağlantı hatası'); }
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
   await refreshAccount();
   return false;
 }
 
 async function toggleLiveTrading(enabled){
-  if(enabled && !confirm('Canlı işlemi açmak üzeresiniz. Bot bu andan itibaren Binance hesabınızda GERÇEK PARA ile emir açıp kapatacak. Kayıp riskini kabul ettiğinizi ve bu ayarları doğru girdiğinizi onaylıyor musunuz?')) return;
+  if(enabled && !confirm(t('live.toggleOnConfirm'))) return;
   try{
     const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
     const d=await r.json();
-    if(!d.ok){ alert(d.error||'İşlem başarısız'); }
-  }catch(e){ alert('Bağlantı hatası'); }
+    if(!d.ok){ alert(d.error||t('alert.actionFailed')); }
+  }catch(e){ alert(t('alert.connectionError')); }
   await refreshAccount();
 }
 
@@ -1712,16 +3319,16 @@ function renderTelegramPanel(a){
   if(!box) return;
   if(!a.telegram_bot_enabled){
     if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
-    box.innerHTML=`<div class="account-notice">Sunucuda Telegram botu tanımlı değil.</div>`;
+    box.innerHTML=`<div class="account-notice">${t('telegram.notEnabled')}</div>`;
     return;
   }
   if(a.telegram_linked){
     if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
     _tgActiveCode=null;
     box.innerHTML=`
-      <div class="account-row">🟢 Telegram bağlı${a.telegram_username?(' — @'+a.telegram_username):''}</div>
-      <div class="account-row text-faint">Canlı işlem giriş/çıkış bildirimleri, risk uyarıları ve günlük özet buraya gelecek.</div>
-      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">Bağlantıyı Kaldır</button></div>
+      <div class="account-row">${t('telegram.linked')}${a.telegram_username?(' — @'+a.telegram_username):''}</div>
+      <div class="account-row text-faint">${t('telegram.notificationsDesc')}</div>
+      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">${t('telegram.removeConnectionBtn')}</button></div>
     `;
     return;
   }
@@ -1730,8 +3337,8 @@ function renderTelegramPanel(a){
     return;
   }
   box.innerHTML=`
-    <div class="account-row text-faint">Canlı işlem bildirimlerinizi kendi Telegram'ınızda almak için bağlanın.</div>
-    <div class="account-row"><button class="btn" type="button" id="tgLinkBtn" onclick="getTelegramLinkCode()">Bağlantı Kodu Al</button></div>
+    <div class="account-row text-faint">${t('telegram.notLinkedDesc')}</div>
+    <div class="account-row"><button class="btn" type="button" id="tgLinkBtn" onclick="getTelegramLinkCode()">${t('telegram.getCodeBtn')}</button></div>
   `;
 }
 
@@ -1743,9 +3350,9 @@ function renderTelegramCodeBox(){
   const botLink=bot_username?`https://t.me/${bot_username}`:null;
   box.innerHTML=`
     <div class="account-notice">
-      1) Telegram'da ${botLink?`<a href="${botLink}" target="_blank" style="color:var(--accent)">@${bot_username}</a>`:'botumuzu'} açın.<br>
-      2) Şunu gönderin: <span class="tg-code">/start ${code}</span><br>
-      <span class="text-faint">Kod ${Math.floor(remaining/60)} dakika ${remaining%60} saniye içinde geçersiz olur.</span>
+      ${t('telegram.step1')} ${botLink?`<a href="${botLink}" target="_blank" style="color:var(--accent)">@${bot_username}</a>`:t('telegram.step1Fallback')} ${t('telegram.step1End')}<br>
+      ${t('telegram.step2')} <span class="tg-code">/start ${code}</span><br>
+      <span class="text-faint">${t('telegram.codeExpiresPrefix')} ${Math.floor(remaining/60)} ${t('telegram.minutes')} ${remaining%60} ${t('telegram.seconds')}</span>
     </div>`;
 }
 
@@ -1755,7 +3362,7 @@ async function getTelegramLinkCode(){
   try{
     const r=await fetch('/api/account/telegram/link-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     const d=await r.json();
-    if(!d.ok){ alert(d.error||'Kod alınamadı'); if(btn) btn.disabled=false; return; }
+    if(!d.ok){ alert(d.error||t('alert.codeNotObtained')); if(btn) btn.disabled=false; return; }
     _tgActiveCode={code:d.code, bot_username:d.bot_username, obtainedAt:Date.now(), ttlSeconds:d.expires_in_seconds||600};
     renderTelegramCodeBox();
     if(_tgCodeTimer) clearInterval(_tgCodeTimer);
@@ -1765,12 +3372,12 @@ async function getTelegramLinkCode(){
       if(remaining<=0){ clearInterval(_tgCodeTimer); _tgActiveCode=null; await refreshAccount(); return; }
       await refreshAccount(); // re-renders; if /start already landed, telegram_linked flips to true
     },4000);
-  }catch(e){ alert('Bağlantı hatası'); }
+  }catch(e){ alert(t('alert.connectionError')); }
   if(btn) btn.disabled=false;
 }
 
 async function unlinkTelegram(){
-  if(!confirm('Telegram bağlantısını kaldırmak istediğinize emin misiniz?')) return;
+  if(!confirm(t('telegram.unlinkConfirm'))) return;
   try{ await fetch('/api/account/telegram/unlink',{method:'POST',cache:'no-store'}); }catch(e){}
   await refreshAccount();
 }
@@ -1787,26 +3394,27 @@ async function submitBinanceForm(ev){
   const secret=document.getElementById('binApiSecret').value.trim();
   const riskEl=document.getElementById('riskAck');
   const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
-  if(!key||!secret){ alert('API key ve secret gerekli.'); return false; }
-  if(riskEl && !riskAck){ alert('Devam etmeden önce risk onayı kutusunu işaretlemelisiniz.'); return false; }
+  if(!key||!secret){ alert(t('alert.apiKeySecretRequired')); return false; }
+  if(riskEl && !riskAck){ alert(t('alert.riskAckRequired')); return false; }
   const btn=document.getElementById('binSaveBtn');
-  btn.disabled=true; btn.textContent='Kaydediliyor ve doğrulanıyor…';
+  btn.disabled=true; btn.textContent=t('account.savingVerifying');
   try{
     const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
     const d=await r.json();
-    if(!d.ok){ alert(d.error||'Kaydedilemedi'); }
-  }catch(e){ alert('Bağlantı hatası'); }
-  btn.disabled=false; btn.textContent='Kaydet ve Doğrula';
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  btn.disabled=false; btn.textContent=t('account.saveVerifyBtn');
   await refreshAccount();
   return false;
 }
 
 async function disconnectBinance(){
-  if(!confirm('Binance bağlantısını kaldırmak istediğinize emin misiniz?')) return;
+  if(!confirm(t('alert.disconnectBinanceConfirm'))) return;
   try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
   await refreshAccount();
 }
 
+applyTranslation(_initialLang);
 refreshAccount();
 </script></body></html>'''
 
