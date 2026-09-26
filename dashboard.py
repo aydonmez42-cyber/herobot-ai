@@ -4025,20 +4025,20 @@ BACKTEST_HTML = r'''<!doctype html>
 </section>
 
 <div class="section-title" data-i18n="backtest.ethTitle">ETH Results</div>
-<p class="section-sub" data-i18n="backtest.ethSubtitle">Fixed 1.0 ETH per trade, $10,000 starting capital · 2020-01-08 → 2026-09-21 (~6.7 years)</p>
+<p class="section-sub" data-i18n="backtest.ethSubtitle">Fixed 1.0 ETH per trade, $10,000 starting capital · 2016-07-02 → 2026-09-26 (~10.2 years)</p>
 
 <section class="kpistrip">
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">311</div><div class="kpi-sub">206 W / 105 L</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">453</div><div class="kpi-sub">297 W / 156 L</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">66.2%</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">65.6%</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.50</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.49</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$7,206.65</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$7,965.89</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+72.1%</div><div class="kpi-sub">$10,000 → $17,207</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+79.7%</div><div class="kpi-sub">$10,000 → $17,966</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-7.1%</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-6.7%</div></div>
 </section>
 
 <section class="panel">
@@ -4049,15 +4049,15 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="table-scroll"><table class="datatable">
     <thead><tr>
       <th></th>
-      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">311</div></th>
+      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">453</div></th>
       <th class="num"><div data-i18n="backtest.colLast24">Last 24 months</div><div class="text-faint" style="font-weight:400;font-size:10px">87</div></th>
       <th class="num"><div data-i18n="backtest.colLast12">Last 12 months</div><div class="text-faint" style="font-weight:400;font-size:10px">39</div></th>
     </tr></thead>
     <tbody>
-      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">66.2%</td><td class="num pos">60.9%</td><td class="num pos">64.1%</td></tr>
-      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.50</td><td class="num pos">1.10</td><td class="num pos">1.37</td></tr>
-      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$7,206.65</td><td class="num pos">+$637.74</td><td class="num pos">+$777.55</td></tr>
-      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+72.1%</td><td class="num pos">+6.4%</td><td class="num pos">+7.8%</td></tr>
+      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">65.6%</td><td class="num pos">60.9%</td><td class="num pos">64.1%</td></tr>
+      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.49</td><td class="num pos">1.10</td><td class="num pos">1.37</td></tr>
+      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$7,965.89</td><td class="num pos">+$637.74</td><td class="num pos">+$777.55</td></tr>
+      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+79.7%</td><td class="num pos">+6.4%</td><td class="num pos">+7.8%</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -4068,8 +4068,8 @@ BACKTEST_HTML = r'''<!doctype html>
     <div class="table-scroll"><table class="datatable">
       <thead><tr><th data-i18n="backtest.colSide">Side</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colAvgTrade">Avg/trade</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
       <tbody>
-        <tr><td><span class="pill long">LONG</span></td><td class="num">233</td><td class="num pos">+$18.54</td><td class="num pos">+$4,319.62</td></tr>
-        <tr><td><span class="pill short">SHORT</span></td><td class="num">78</td><td class="num pos">+$37.01</td><td class="num pos">+$2,887.04</td></tr>
+        <tr><td><span class="pill long">LONG</span></td><td class="num">320</td><td class="num pos">+$14.71</td><td class="num pos">+$4,706.86</td></tr>
+        <tr><td><span class="pill short">SHORT</span></td><td class="num">133</td><td class="num pos">+$24.51</td><td class="num pos">+$3,260.13</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -4078,9 +4078,9 @@ BACKTEST_HTML = r'''<!doctype html>
     <div class="table-scroll"><table class="datatable">
       <thead><tr><th data-i18n="backtest.colExitReason">Exit reason</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
       <tbody>
-        <tr><td>ATR_SL</td><td class="num">105</td><td class="num neg">-$14,441.27</td></tr>
-        <tr><td>ATR_TP</td><td class="num">78</td><td class="num pos">+$12,556.42</td></tr>
-        <tr><td>ATR_TRAILING_SL</td><td class="num">128</td><td class="num pos">+$9,091.50</td></tr>
+        <tr><td>ATR_SL</td><td class="num">156</td><td class="num neg">-$16,191.41</td></tr>
+        <tr><td>ATR_TP</td><td class="num">127</td><td class="num pos">+$14,154.29</td></tr>
+        <tr><td>ATR_TRAILING_SL</td><td class="num">170</td><td class="num pos">+$10,004.10</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -4091,7 +4091,11 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="table-scroll"><table class="datatable">
     <thead><tr><th data-i18n="backtest.colYear">Year</th><th class="num" data-i18n="backtest.colNetPnl">Net PnL</th><th class="num" data-i18n="backtest.colTrades">Trades</th></tr></thead>
     <tbody>
-      <tr><td>2020</td><td class="num pos">+$382.92</td><td class="num">60</td></tr>
+      <tr><td>2016<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear2019"> (partial)</span></td><td class="num neg">-$1.68</td><td class="num">16</td></tr>
+      <tr><td>2017</td><td class="num pos">+$282.11</td><td class="num">46</td></tr>
+      <tr><td>2018</td><td class="num pos">+$400.07</td><td class="num">51</td></tr>
+      <tr><td>2019</td><td class="num pos">+$76.78</td><td class="num">28</td></tr>
+      <tr><td>2020</td><td class="num pos">+$385.97</td><td class="num">61</td></tr>
       <tr><td>2021</td><td class="num pos">+$4,145.64</td><td class="num">46</td></tr>
       <tr><td>2022</td><td class="num pos">+$330.16</td><td class="num">40</td></tr>
       <tr><td>2023</td><td class="num pos">+$451.22</td><td class="num">46</td></tr>
@@ -4102,8 +4106,8 @@ BACKTEST_HTML = r'''<!doctype html>
   </table></div>
   <div class="position-body" style="padding-top:0">
     <p class="section-sub" style="margin:0">
-      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$105.09</b> &middot;
-      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$137.54</b> &middot;
+      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$81.34</b> &middot;
+      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$103.79</b> &middot;
       <span data-i18n="backtest.largestWin">Largest win</span>: <b class="pos">$377.81</b> &middot;
       <span data-i18n="backtest.largestLoss">Largest loss</span>: <b class="neg">-$564.46</b>
     </p>
@@ -4111,18 +4115,18 @@ BACKTEST_HTML = r'''<!doctype html>
 </section>
 
 <div class="section-title" data-i18n="backtest.btcTitle">BTC Results</div>
-<p class="section-sub" data-i18n="backtest.btcSubtitle">$1,000 fixed USD notional per trade, $10,000 starting capital · 2019-10-24 → 2026-09-18 (~6.9 years)</p>
+<p class="section-sub" data-i18n="backtest.btcSubtitle">$1,000 fixed USD notional per trade, $10,000 starting capital · 2016-02-12 → 2026-09-26 (~10.6 years)</p>
 
 <section class="kpistrip">
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">310</div><div class="kpi-sub">184 W / 126 L</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.colTrades">Trades</div><div class="kpi-value">485</div><div class="kpi-sub">296 W / 189 L</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">59.4%</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.winRate">Win rate</div><div class="kpi-value pos">61.0%</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.31</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.profitFactor">Profit factor</div><div class="kpi-value pos">1.38</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$1,935.80</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.netPnl">Net PnL</div><div class="kpi-value pos">+$3,908.72</div></div>
   <div class="kpi-divider"></div>
-  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+19.4%</div><div class="kpi-sub">$10,000 → $11,936</div></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+39.1%</div><div class="kpi-sub">$10,000 → $13,909</div></div>
   <div class="kpi-divider"></div>
   <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-3.8%</div></div>
 </section>
@@ -4135,15 +4139,15 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="table-scroll"><table class="datatable">
     <thead><tr>
       <th></th>
-      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">310</div></th>
+      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">485</div></th>
       <th class="num"><div data-i18n="backtest.colLast24">Last 24 months</div><div class="text-faint" style="font-weight:400;font-size:10px">93</div></th>
       <th class="num"><div data-i18n="backtest.colLast12">Last 12 months</div><div class="text-faint" style="font-weight:400;font-size:10px">43</div></th>
     </tr></thead>
     <tbody>
-      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">59.4%</td><td class="num pos">58.1%</td><td class="num pos">62.8%</td></tr>
-      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.31</td><td class="num pos">1.16</td><td class="num pos">1.35</td></tr>
-      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$1,935.80</td><td class="num pos">+$230.60</td><td class="num pos">+$207.29</td></tr>
-      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+19.4%</td><td class="num pos">+2.3%</td><td class="num pos">+2.1%</td></tr>
+      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">61.0%</td><td class="num pos">58.1%</td><td class="num pos">62.8%</td></tr>
+      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.38</td><td class="num pos">1.16</td><td class="num pos">1.35</td></tr>
+      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$3,908.72</td><td class="num pos">+$230.60</td><td class="num pos">+$207.29</td></tr>
+      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+39.1%</td><td class="num pos">+2.3%</td><td class="num pos">+2.1%</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -4154,8 +4158,8 @@ BACKTEST_HTML = r'''<!doctype html>
     <div class="table-scroll"><table class="datatable">
       <thead><tr><th data-i18n="backtest.colSide">Side</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colAvgTrade">Avg/trade</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
       <tbody>
-        <tr><td><span class="pill long">LONG</span></td><td class="num">229</td><td class="num pos">+$6.11</td><td class="num pos">+$1,399.29</td></tr>
-        <tr><td><span class="pill short">SHORT</span></td><td class="num">81</td><td class="num pos">+$6.62</td><td class="num pos">+$536.51</td></tr>
+        <tr><td><span class="pill long">LONG</span></td><td class="num">365</td><td class="num pos">+$8.57</td><td class="num pos">+$3,128.39</td></tr>
+        <tr><td><span class="pill short">SHORT</span></td><td class="num">120</td><td class="num pos">+$6.50</td><td class="num pos">+$780.34</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -4164,9 +4168,9 @@ BACKTEST_HTML = r'''<!doctype html>
     <div class="table-scroll"><table class="datatable">
       <thead><tr><th data-i18n="backtest.colExitReason">Exit reason</th><th class="num" data-i18n="backtest.colTrades">Trades</th><th class="num" data-i18n="backtest.colTotal">Total</th></tr></thead>
       <tbody>
-        <tr><td>ATR_SL</td><td class="num">126</td><td class="num neg">-$6,242.01</td></tr>
-        <tr><td>ATR_TP</td><td class="num">81</td><td class="num pos">+$5,331.68</td></tr>
-        <tr><td>ATR_TRAILING_SL</td><td class="num">103</td><td class="num pos">+$2,846.13</td></tr>
+        <tr><td>ATR_SL</td><td class="num">189</td><td class="num neg">-$10,331.21</td></tr>
+        <tr><td>ATR_TP</td><td class="num">135</td><td class="num pos">+$9,283.41</td></tr>
+        <tr><td>ATR_TRAILING_SL</td><td class="num">161</td><td class="num pos">+$4,956.53</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -4177,22 +4181,25 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="table-scroll"><table class="datatable">
     <thead><tr><th data-i18n="backtest.colYear">Year</th><th class="num" data-i18n="backtest.colNetPnl">Net PnL</th><th class="num" data-i18n="backtest.colTrades">Trades</th></tr></thead>
     <tbody>
-      <tr><td>2019<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear2019"> (partial)</span></td><td class="num pos">+$37.48</td><td class="num">8</td></tr>
+      <tr><td>2016<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear2019"> (partial)</span></td><td class="num pos">+$198.94</td><td class="num">37</td></tr>
+      <tr><td>2017</td><td class="num pos">+$1,594.29</td><td class="num">70</td></tr>
+      <tr><td>2018<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.losingYear"> (losing year)</span></td><td class="num neg">-$106.17</td><td class="num">36</td></tr>
+      <tr><td>2019</td><td class="num pos">+$323.35</td><td class="num">40</td></tr>
       <tr><td>2020</td><td class="num pos">+$1,058.76</td><td class="num">60</td></tr>
       <tr><td>2021</td><td class="num pos">+$36.01</td><td class="num">47</td></tr>
       <tr><td>2022</td><td class="num pos">+$51.15</td><td class="num">34</td></tr>
       <tr><td>2023</td><td class="num pos">+$403.76</td><td class="num">32</td></tr>
       <tr><td>2024</td><td class="num pos">+$385.93</td><td class="num">51</td></tr>
-      <tr><td>2025<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.onlyLosingYear"> (only losing year)</span></td><td class="num neg">-$173.95</td><td class="num">43</td></tr>
+      <tr><td>2025<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.losingYear"> (losing year)</span></td><td class="num neg">-$173.95</td><td class="num">43</td></tr>
       <tr><td>2026<span class="text-faint" style="font-family:var(--font-d);font-size:11px" data-i18n="backtest.partialYear"> (partial, through Sept)</span></td><td class="num pos">+$136.67</td><td class="num">35</td></tr>
     </tbody>
   </table></div>
   <div class="position-body" style="padding-top:0">
     <p class="section-sub" style="margin:0">
-      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$44.44</b> &middot;
-      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$49.54</b> &middot;
-      <span data-i18n="backtest.largestWin">Largest win</span>: <b class="pos">$178.23</b> &middot;
-      <span data-i18n="backtest.largestLoss">Largest loss</span>: <b class="neg">-$201.88</b>
+      <span data-i18n="backtest.avgWin">Avg. win</span>: <b class="pos">$48.11</b> &middot;
+      <span data-i18n="backtest.avgLoss">Avg. loss</span>: <b class="neg">-$54.66</b> &middot;
+      <span data-i18n="backtest.largestWin">Largest win</span>: <b class="pos">$229.93</b> &middot;
+      <span data-i18n="backtest.largestLoss">Largest loss</span>: <b class="neg">-$223.36</b>
     </p>
   </div>
 </section>
