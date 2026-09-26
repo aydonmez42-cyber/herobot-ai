@@ -4041,6 +4041,27 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-7.1%</div></div>
 </section>
 
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.recentTitle">Recent performance</h2></div>
+  <div class="position-body">
+    <p class="section-sub" data-i18n="backtest.recentIntro">The table below is shown deliberately, not just the flattering full-period number: the strategy remains profitable (profit factor above 1.0) in every window shown, including the most recent 12 and 24 months, though at a more modest pace than the multi-year average — a normal and expected pattern as market conditions evolve. A strategy whose recent-window numbers look nothing like its headline number is a red flag worth watching for, which is why these recent windows are published here rather than only the flattering all-time figure.</p>
+  </div>
+  <div class="table-scroll"><table class="datatable">
+    <thead><tr>
+      <th></th>
+      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">311</div></th>
+      <th class="num"><div data-i18n="backtest.colLast24">Last 24 months</div><div class="text-faint" style="font-weight:400;font-size:10px">87</div></th>
+      <th class="num"><div data-i18n="backtest.colLast12">Last 12 months</div><div class="text-faint" style="font-weight:400;font-size:10px">39</div></th>
+    </tr></thead>
+    <tbody>
+      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">66.2%</td><td class="num pos">60.9%</td><td class="num pos">64.1%</td></tr>
+      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.50</td><td class="num pos">1.10</td><td class="num pos">1.37</td></tr>
+      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$7,206.65</td><td class="num pos">+$637.74</td><td class="num pos">+$777.55</td></tr>
+      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+72.1%</td><td class="num pos">+6.4%</td><td class="num pos">+7.8%</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
 <section class="cols" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
   <div class="panel">
     <div class="panel-head"><h2 data-i18n="backtest.bySide">By side</h2></div>
@@ -4104,6 +4125,27 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="kpi"><div class="kpi-label" data-i18n="backtest.returnLbl">Return</div><div class="kpi-value pos">+19.4%</div><div class="kpi-sub">$10,000 → $11,936</div></div>
   <div class="kpi-divider"></div>
   <div class="kpi"><div class="kpi-label" data-i18n="backtest.maxDrawdown">Max. drawdown</div><div class="kpi-value neg">-3.8%</div></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="backtest.recentTitle">Recent performance</h2></div>
+  <div class="position-body">
+    <p class="section-sub" data-i18n="backtest.recentIntro">The table below is shown deliberately, not just the flattering full-period number: the strategy remains profitable (profit factor above 1.0) in every window shown, including the most recent 12 and 24 months, though at a more modest pace than the multi-year average — a normal and expected pattern as market conditions evolve. A strategy whose recent-window numbers look nothing like its headline number is a red flag worth watching for, which is why these recent windows are published here rather than only the flattering all-time figure.</p>
+  </div>
+  <div class="table-scroll"><table class="datatable">
+    <thead><tr>
+      <th></th>
+      <th class="num"><div data-i18n="backtest.colAllTime">All-time</div><div class="text-faint" style="font-weight:400;font-size:10px">310</div></th>
+      <th class="num"><div data-i18n="backtest.colLast24">Last 24 months</div><div class="text-faint" style="font-weight:400;font-size:10px">93</div></th>
+      <th class="num"><div data-i18n="backtest.colLast12">Last 12 months</div><div class="text-faint" style="font-weight:400;font-size:10px">43</div></th>
+    </tr></thead>
+    <tbody>
+      <tr><td data-i18n="backtest.winRate">Win rate</td><td class="num pos">59.4%</td><td class="num pos">58.1%</td><td class="num pos">62.8%</td></tr>
+      <tr><td data-i18n="backtest.profitFactor">Profit factor</td><td class="num pos">1.31</td><td class="num pos">1.16</td><td class="num pos">1.35</td></tr>
+      <tr><td data-i18n="backtest.netPnl">Net PnL</td><td class="num pos">+$1,935.80</td><td class="num pos">+$230.60</td><td class="num pos">+$207.29</td></tr>
+      <tr><td data-i18n="backtest.returnLbl">Return</td><td class="num pos">+19.4%</td><td class="num pos">+2.3%</td><td class="num pos">+2.1%</td></tr>
+    </tbody>
+  </table></div>
 </section>
 
 <section class="cols" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -4189,6 +4231,11 @@ const translations = {
     "backtest.netPnl": "Net PnL",
     "backtest.returnLbl": "Return",
     "backtest.maxDrawdown": "Max. drawdown",
+    "backtest.recentTitle": "Recent performance",
+    "backtest.recentIntro": "The table below is shown deliberately, not just the flattering full-period number: the strategy remains profitable (profit factor above 1.0) in every window shown, including the most recent 12 and 24 months, though at a more modest pace than the multi-year average — a normal and expected pattern as market conditions evolve. A strategy whose recent-window numbers look nothing like its headline number is a red flag worth watching for, which is why these recent windows are published here rather than only the flattering all-time figure.",
+    "backtest.colAllTime": "All-time",
+    "backtest.colLast24": "Last 24 months",
+    "backtest.colLast12": "Last 12 months",
     "backtest.bySide": "By side",
     "backtest.byExitReason": "By exit reason",
     "backtest.byYear": "By year (net PnL)",
@@ -4227,6 +4274,11 @@ const translations = {
     "backtest.netPnl": "Net K/Z",
     "backtest.returnLbl": "Getiri",
     "backtest.maxDrawdown": "Maks. düşüş",
+    "backtest.recentTitle": "Son dönem performansı",
+    "backtest.recentIntro": "Aşağıdaki tablo bilinçli olarak gösteriliyor — sadece göz alıcı tüm dönem rakamını değil: strateji, gösterilen her pencerede (en son 12 ve 24 ay dahil) kâr faktörü 1.0'ın üzerinde kalarak kârlı olmayı sürdürüyor; ancak çok yıllı ortalamaya göre daha mütevazı bir hızda — bu, piyasa koşulları değiştikçe normal ve beklenen bir örüntüdür. Son dönem rakamları başlık rakamına hiç benzemeyen bir strateji, yatırımcıların ve kullanıcıların dikkat etmesi gereken bir uyarı işaretidir; bu nedenle bu son dönem pencereleri, sadece göz alıcı tüm dönem rakamı yerine burada yayınlanıyor.",
+    "backtest.colAllTime": "Tüm dönem",
+    "backtest.colLast24": "Son 24 ay",
+    "backtest.colLast12": "Son 12 ay",
     "backtest.bySide": "Yöne göre",
     "backtest.byExitReason": "Çıkış nedenine göre",
     "backtest.byYear": "Yıla göre (net K/Z)",
@@ -4265,6 +4317,11 @@ const translations = {
     "backtest.netPnl": "净盈亏",
     "backtest.returnLbl": "回报率",
     "backtest.maxDrawdown": "最大回撤",
+    "backtest.recentTitle": "近期表现",
+    "backtest.recentIntro": "下表是特意展示的，而不仅仅是好看的全期数据：在所展示的每个窗口期（包括最近12个月和24个月）中，该策略仍保持盈利（盈亏比高于1.0），尽管盈利速度比多年平均水平更为温和——这是市场条件演变过程中正常且预期的模式。如果一个策略的近期窗口数据与其标题数据完全不符，这是投资者和用户应当警惕的危险信号；这正是为什么这里公布这些近期窗口数据，而不仅仅是好看的全期数字。",
+    "backtest.colAllTime": "全部时段",
+    "backtest.colLast24": "近24个月",
+    "backtest.colLast12": "近12个月",
     "backtest.bySide": "按方向",
     "backtest.byExitReason": "按平仓原因",
     "backtest.byYear": "按年度（净盈亏）",
@@ -4303,6 +4360,11 @@ const translations = {
     "backtest.netPnl": "Netto-PnL",
     "backtest.returnLbl": "Rendite",
     "backtest.maxDrawdown": "Max. Drawdown",
+    "backtest.recentTitle": "Jüngste Performance",
+    "backtest.recentIntro": "Die folgende Tabelle wird bewusst gezeigt — nicht nur die schmeichelhafte Gesamtzeitraum-Zahl: Die Strategie bleibt in jedem gezeigten Zeitraum profitabel (Profitfaktor über 1,0), einschließlich der letzten 12 und 24 Monate, wenn auch in einem moderateren Tempo als der mehrjährige Durchschnitt — ein normales und zu erwartendes Muster, da sich die Marktbedingungen weiterentwickeln. Eine Strategie, deren jüngste Zeitraumzahlen überhaupt nicht der Schlagzeilenzahl ähneln, ist ein Warnsignal, auf das Investoren und Nutzer achten sollten; deshalb werden diese jüngeren Zeiträume hier veröffentlicht und nicht nur die schmeichelhafte Gesamtzeitraum-Zahl.",
+    "backtest.colAllTime": "Gesamtzeitraum",
+    "backtest.colLast24": "Letzte 24 Monate",
+    "backtest.colLast12": "Letzte 12 Monate",
     "backtest.bySide": "Nach Richtung",
     "backtest.byExitReason": "Nach Ausstiegsgrund",
     "backtest.byYear": "Nach Jahr (Netto-PnL)",
@@ -4341,6 +4403,11 @@ const translations = {
     "backtest.netPnl": "PnL net",
     "backtest.returnLbl": "Rendement",
     "backtest.maxDrawdown": "Drawdown max.",
+    "backtest.recentTitle": "Performance récente",
+    "backtest.recentIntro": "Le tableau ci-dessous est présenté délibérément, et pas seulement le chiffre flatteur sur l'ensemble de la période : la stratégie reste profitable (facteur de profit supérieur à 1,0) sur chaque fenêtre indiquée, y compris les 12 et 24 derniers mois, quoiqu'à un rythme plus modeste que la moyenne pluriannuelle — un schéma normal et attendu à mesure que les conditions de marché évoluent. Une stratégie dont les chiffres récents ne ressemblent en rien à son chiffre phare est un signal d'alerte que les investisseurs et utilisateurs doivent surveiller ; c'est pourquoi ces fenêtres récentes sont publiées ici plutôt que le seul chiffre flatteur de l'ensemble de la période.",
+    "backtest.colAllTime": "Toute la période",
+    "backtest.colLast24": "24 derniers mois",
+    "backtest.colLast12": "12 derniers mois",
     "backtest.bySide": "Par sens",
     "backtest.byExitReason": "Par motif de sortie",
     "backtest.byYear": "Par année (PnL net)",
@@ -4379,6 +4446,11 @@ const translations = {
     "backtest.netPnl": "PnL neto",
     "backtest.returnLbl": "Retorno",
     "backtest.maxDrawdown": "Drawdown máx.",
+    "backtest.recentTitle": "Rendimiento reciente",
+    "backtest.recentIntro": "La siguiente tabla se muestra deliberadamente, no solo la cifra favorable de todo el período: la estrategia sigue siendo rentable (factor de beneficio superior a 1,0) en cada ventana mostrada, incluidos los últimos 12 y 24 meses, aunque a un ritmo más moderado que el promedio plurianual, un patrón normal y esperado a medida que evolucionan las condiciones del mercado. Una estrategia cuyas cifras recientes no se parecen en nada a su cifra principal es una señal de alerta que inversores y usuarios deben vigilar; por eso estas ventanas recientes se publican aquí en lugar de mostrar solo la cifra favorable de todo el período.",
+    "backtest.colAllTime": "Todo el período",
+    "backtest.colLast24": "Últimos 24 meses",
+    "backtest.colLast12": "Últimos 12 meses",
     "backtest.bySide": "Por lado",
     "backtest.byExitReason": "Por motivo de salida",
     "backtest.byYear": "Por año (PnL neto)",
