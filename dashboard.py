@@ -14,6 +14,7 @@ from state_store import (
     load_state as _load_shared_state,
     add_to_watchlist as _add_to_watchlist,
     remove_from_watchlist as _remove_from_watchlist,
+    set_equity as _set_equity,
 )
 import ai_analyst
 import auth
@@ -23,7 +24,12 @@ import telegram_link
 import telegram_notifier as tg_notifier
 
 PORT = int(os.environ.get('PORT', '8080'))
-STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
+# See config.PAPER_ACCOUNT_INITIAL_CAPITAL's comment: this is the dashboard's
+# own paper-account balance, decoupled from the backtest-anchored
+# cfg.INITIAL_CAPITAL. A state file that already exists on disk keeps its
+# own persisted equity regardless of this default — use the admin panel's
+# "Sanal bakiyeyi ayarla" action to change an already-running account.
+STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_ACCOUNT_INITIAL_CAPITAL)))
 SESSION_COOKIE = 'session_token'
 
 # "Abonelik Sistemine Geç" bank-transfer details, shown to users choosing a
@@ -4259,7 +4265,7 @@ const translations = {
     "backtest.largestLoss": "Largest loss",
     "backtest.partialYear": " (partial, through Sept)",
     "backtest.partialYear2019": " (partial)",
-    "backtest.onlyLosingYear": " (only losing year)",
+    "backtest.losingYear": " (losing year)",
     "backtest.takeawayTitle": "Comparative takeaway",
     "backtest.takeaway": "The strategy performs meaningfully better on ETH than on BTC over the same ~7-year window: a higher win rate (66.2% vs 59.4%), a higher profit factor (1.50 vs 1.31), and roughly 3.7x the total return. This is expected — every parameter in the strategy's configuration (entry score thresholds, RSI/ADX/MACD/CCI/StochRSI levels, ATR multipliers) was iteratively tuned specifically against ETH; the same thresholds were then applied to BTC with zero BTC-specific tuning. Notably, BTC's 2021 result (+$36 across 47 trades) is weak despite 2021 being a strong BTC bull year — the strategy's stop-losses (ATR_SL) absorbed much of that year's gains during BTC's sharper intra-trend pullbacks. 2025 was BTC's only net-losing year in the backtest.",
     "backtest.caveatsTitle": "Caveats",
@@ -4302,7 +4308,7 @@ const translations = {
     "backtest.largestLoss": "En büyük kayıp",
     "backtest.partialYear": " (kısmi, Eylül'e kadar)",
     "backtest.partialYear2019": " (kısmi)",
-    "backtest.onlyLosingYear": " (tek zarar eden yıl)",
+    "backtest.losingYear": " (zarar eden yıl)",
     "backtest.takeawayTitle": "Karşılaştırmalı özet",
     "backtest.takeaway": "Strateji, aynı ~7 yıllık dönemde ETH'de BTC'ye göre belirgin şekilde daha iyi performans gösteriyor: daha yüksek kazanma oranı (%66.2'ye karşı %59.4), daha yüksek kâr faktörü (1.50'ye karşı 1.31) ve yaklaşık 3.7 katı toplam getiri. Bu beklenen bir sonuç — stratejinin yapılandırmasındaki her parametre (giriş skor eşikleri, RSI/ADX/MACD/CCI/StochRSI seviyeleri, ATR çarpanları) özellikle ETH üzerinde tekrar tekrar ayarlandı; aynı eşikler BTC'ye BTC'ye özgü hiçbir ayar yapılmadan uygulandı. Özellikle, 2021 güçlü bir BTC boğa yılı olmasına rağmen BTC'nin 2021 sonucu (47 işlemde +$36) zayıf — stratejinin stop-loss'ları (ATR_SL) BTC'nin daha keskin trend içi geri çekilmeleri sırasında o yılın kazancının büyük kısmını emdi. 2025, backtest'te BTC'nin net zarar eden tek yılıydı.",
     "backtest.caveatsTitle": "Uyarılar",
@@ -4345,7 +4351,7 @@ const translations = {
     "backtest.largestLoss": "最大单笔亏损",
     "backtest.partialYear": "（截至9月，部分年份）",
     "backtest.partialYear2019": "（部分年份）",
-    "backtest.onlyLosingYear": "（唯一亏损年份）",
+    "backtest.losingYear": "（亏损年份）",
     "backtest.takeawayTitle": "对比结论",
     "backtest.takeaway": "在相同的约7年窗口期内，该策略在 ETH 上的表现明显优于 BTC：更高的胜率（66.2% 对 59.4%）、更高的盈亏比（1.50 对 1.31），以及约3.7倍的总回报。这是符合预期的——策略配置中的每一个参数（入场评分阈值、RSI/ADX/MACD/CCI/StochRSI 水平、ATR 乘数）都是专门针对 ETH 反复调优的；同样的阈值被直接套用到 BTC 上，未针对 BTC 做任何专门调优。值得注意的是，尽管2021年是 BTC 的强牛市年份，但 BTC 在2021年的结果却很弱（47笔交易仅 +36美元）——策略的止损（ATR_SL）在 BTC 更剧烈的趋势内回撤中吞噬了当年的大部分收益。2025年是回测中 BTC 唯一净亏损的年份。",
     "backtest.caveatsTitle": "注意事项",
@@ -4388,7 +4394,7 @@ const translations = {
     "backtest.largestLoss": "Größter Verlust",
     "backtest.partialYear": " (teilweise, bis September)",
     "backtest.partialYear2019": " (teilweise)",
-    "backtest.onlyLosingYear": " (einziges Verlustjahr)",
+    "backtest.losingYear": " (Verlustjahr)",
     "backtest.takeawayTitle": "Vergleichendes Fazit",
     "backtest.takeaway": "Die Strategie schneidet im selben ~7-Jahres-Zeitraum bei ETH deutlich besser ab als bei BTC: höhere Trefferquote (66,2 % vs. 59,4 %), höherer Profitfaktor (1,50 vs. 1,31) und etwa das 3,7-fache der Gesamtrendite. Das ist zu erwarten — jeder Parameter in der Konfiguration der Strategie (Entry-Score-Schwellenwerte, RSI-/ADX-/MACD-/CCI-/StochRSI-Level, ATR-Multiplikatoren) wurde iterativ speziell für ETH optimiert; dieselben Schwellenwerte wurden dann ohne BTC-spezifische Anpassung auf BTC angewendet. Bemerkenswert: Das BTC-Ergebnis für 2021 (+36 USD bei 47 Trades) ist schwach, obwohl 2021 ein starkes BTC-Bullenjahr war — die Stop-Losses der Strategie (ATR_SL) haben einen Großteil der Jahresgewinne bei den schärferen Pullbacks innerhalb des BTC-Trends aufgezehrt. 2025 war im Backtest das einzige Jahr mit Nettoverlust für BTC.",
     "backtest.caveatsTitle": "Einschränkungen",
@@ -4431,7 +4437,7 @@ const translations = {
     "backtest.largestLoss": "Plus grosse perte",
     "backtest.partialYear": " (partielle, jusqu'en septembre)",
     "backtest.partialYear2019": " (partielle)",
-    "backtest.onlyLosingYear": " (seule année perdante)",
+    "backtest.losingYear": " (année perdante)",
     "backtest.takeawayTitle": "Conclusion comparative",
     "backtest.takeaway": "La stratégie est nettement plus performante sur ETH que sur BTC sur la même fenêtre d'environ 7 ans : taux de réussite plus élevé (66,2 % contre 59,4 %), facteur de profit plus élevé (1,50 contre 1,31), et environ 3,7 fois le rendement total. C'est attendu — chaque paramètre de la configuration de la stratégie (seuils de score d'entrée, niveaux RSI/ADX/MACD/CCI/StochRSI, multiplicateurs ATR) a été itérativement calibré spécifiquement sur ETH ; les mêmes seuils ont ensuite été appliqués à BTC sans aucun calibrage spécifique à BTC. Fait notable, le résultat de BTC en 2021 (+36 USD sur 47 trades) est faible malgré une forte année haussière pour BTC — les stop-loss de la stratégie (ATR_SL) ont absorbé une grande partie des gains de cette année-là lors des retracements plus marqués à l'intérieur de la tendance de BTC. 2025 a été la seule année nette négative pour BTC dans le backtest.",
     "backtest.caveatsTitle": "Mises en garde",
@@ -4474,7 +4480,7 @@ const translations = {
     "backtest.largestLoss": "Mayor pérdida",
     "backtest.partialYear": " (parcial, hasta septiembre)",
     "backtest.partialYear2019": " (parcial)",
-    "backtest.onlyLosingYear": " (único año con pérdidas)",
+    "backtest.losingYear": " (año con pérdidas)",
     "backtest.takeawayTitle": "Conclusión comparativa",
     "backtest.takeaway": "La estrategia rinde notablemente mejor en ETH que en BTC durante la misma ventana de ~7 años: mayor tasa de acierto (66,2% frente a 59,4%), mayor factor de beneficio (1,50 frente a 1,31) y aproximadamente 3,7 veces el retorno total. Esto es esperable — cada parámetro de la configuración de la estrategia (umbrales de puntuación de entrada, niveles de RSI/ADX/MACD/CCI/StochRSI, multiplicadores de ATR) se ajustó de forma iterativa específicamente sobre ETH; los mismos umbrales se aplicaron luego a BTC sin ningún ajuste específico para BTC. Cabe destacar que el resultado de BTC en 2021 (+36 USD en 47 operaciones) es débil pese a que 2021 fue un año alcista fuerte para BTC — los stop-loss de la estrategia (ATR_SL) absorbieron gran parte de las ganancias de ese año durante las retrocesiones más pronunciadas dentro de la tendencia de BTC. 2025 fue el único año con pérdida neta para BTC en el backtest.",
     "backtest.caveatsTitle": "Advertencias",
@@ -4546,6 +4552,10 @@ ADMIN_HTML = r'''<!doctype html>
 
   <div id="killSwitchBox" class="account-notice" style="margin-bottom:16px">Yükleniyor…</div>
 
+  <h1 style="margin-top:28px">Sanal (Paper) Hesap Ayarları</h1>
+  <p class="sub">Bu ayarlar, dashboard'da gösterilen ortak paper-trading hesabını etkiler — gerçek kullanıcı paralarını değil. Tarama sonucu "+ Ekle" ile watchlist'e eklenen coinler bu pozisyon büyüklüğüyle işleme girer.</p>
+  <div id="watchlistSettingsBox" class="account-notice" style="margin-bottom:24px">Yükleniyor…</div>
+
   <table class="admin-table" id="tbl">
     <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>Canlı işlem</th><th>Bekleyen ödeme</th><th>İşlem</th><th></th></tr></thead>
     <tbody id="tbody"><tr><td colspan="10">Yükleniyor…</td></tr></tbody>
@@ -4574,6 +4584,51 @@ async function toggleKillSwitch(active){
   if(active && !confirm('Bu, TÜM kullanıcıların yeni canlı (gerçek para) işlem açmasını hemen durduracak. Zaten açık olan pozisyonlar bot tarafından SL/TP ile yönetilmeye devam eder. Emin misiniz?')) return;
   await fetch('/api/admin/kill-switch/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})});
   loadKillSwitch();
+}
+async function loadWatchlistSettings(){
+  const r=await fetch('/api/admin/watchlist-settings',{cache:'no-store'});
+  const box=document.getElementById('watchlistSettingsBox');
+  if(r.status!==200){ box.innerHTML='Yüklenemedi.'; return; }
+  const d=await r.json();
+  const setNote=d.is_default?'<span class="text-faint">(varsayılan, henüz elle değiştirilmedi)</span>'
+    :`<span class="text-faint">(${d.set_by||'?'} tarafından ${(d.set_at||'').replace('T',' ').slice(0,16)}'de ayarlandı)</span>`;
+  box.innerHTML=`
+    <form onsubmit="return submitWatchlistPositionUsd(event)" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <label style="display:block;font-size:12px;margin-bottom:4px">Watchlist coin başına pozisyon (USD, maks ${d.cap.toLocaleString('tr-TR')})</label>
+        <input type="number" step="1" min="1" max="${d.cap}" id="wlPositionUsd" value="${d.position_usd}" style="width:160px">
+      </div>
+      <button class="btn" type="submit">Kaydet</button>
+      <span style="align-self:center">${setNote}</span>
+    </form>
+    <form onsubmit="return submitPaperEquity(event)" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+      <div>
+        <label style="display:block;font-size:12px;margin-bottom:4px">Sanal (paper) hesap bakiyesi (USD) — şu an: ${d.paper_equity.toLocaleString('tr-TR',{maximumFractionDigits:2})}</label>
+        <input type="number" step="1" min="1" id="wlPaperEquity" placeholder="örn. 100000" style="width:200px">
+      </div>
+      <button class="btn" type="submit">Bakiyeyi Ayarla</button>
+    </form>
+  `;
+}
+async function submitWatchlistPositionUsd(ev){
+  ev.preventDefault();
+  const position_usd=document.getElementById('wlPositionUsd').value;
+  const r=await fetch('/api/admin/watchlist-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({position_usd})});
+  const d=await r.json();
+  if(!d.ok){ alert(d.error||'Kaydedilemedi.'); }
+  loadWatchlistSettings();
+  return false;
+}
+async function submitPaperEquity(ev){
+  ev.preventDefault();
+  const equity=document.getElementById('wlPaperEquity').value;
+  if(!equity) return false;
+  if(!confirm(`Paper hesap bakiyesini ${equity} USD olarak ayarlamak istediğinize emin misiniz? Bu, geçmiş işlemleri değiştirmez, sadece ŞU ANKİ bakiyeyi değiştirir.`)) return false;
+  const r=await fetch('/api/admin/paper-equity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({equity})});
+  const d=await r.json();
+  if(!d.ok){ alert(d.error||'Kaydedilemedi.'); }
+  loadWatchlistSettings();
+  return false;
 }
 async function load(){
   const r=await fetch('/api/admin/users',{cache:'no-store'});
@@ -4613,6 +4668,7 @@ async function deleteUser(username){
   load();
 }
 loadKillSwitch();
+loadWatchlistSettings();
 load();
 </script>
 </body></html>'''
@@ -4643,7 +4699,7 @@ def status():
     gross_win=sum(t['net_pnl'] for t in closed if t['net_pnl']>0); gross_loss=abs(sum(t['net_pnl'] for t in closed if t['net_pnl']<0))
     pf=gross_win/gross_loss if gross_loss else (999.0 if gross_win else 0.0)
     avg=sum(t['net_pnl'] for t in closed)/len(closed) if closed else 0
-    start=float(os.environ.get('PAPER_INITIAL_CAPITAL','10000'))
+    start=STARTING_EQUITY
     equity=f(s.get('equity',start)); net=equity-start
     peak=start; maxdd=0
     for t in closed:
@@ -4688,7 +4744,9 @@ def watchlist_status():
             'indicators': sig.get('indicators'),
         })
     items.sort(key=lambda x: x.get('added_at') or '', reverse=True)
-    return {'items': items, 'max_symbols': cfg.WATCHLIST_MAX_SYMBOLS, 'position_usd': cfg.WATCHLIST_POSITION_USD}
+    ws = auth.get_watchlist_settings()
+    position_usd = float(ws.get('position_usd') or cfg.WATCHLIST_POSITION_USD)
+    return {'items': items, 'max_symbols': cfg.WATCHLIST_MAX_SYMBOLS, 'position_usd': position_usd}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -5009,6 +5067,20 @@ class Handler(BaseHTTPRequestHandler):
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
             self._send_json(auth.get_global_kill_switch()); return
+
+        if path=='/api/admin/watchlist-settings':
+            user = self._current_user()
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            ws = auth.get_watchlist_settings()
+            self._send_json({
+                'position_usd': float(ws.get('position_usd') or cfg.WATCHLIST_POSITION_USD),
+                'is_default': not ws.get('position_usd'),
+                'cap': auth.WATCHLIST_POSITION_USD_CAP,
+                'set_by': ws.get('set_by'),
+                'set_at': ws.get('set_at'),
+                'paper_equity': f(read_state().get('equity', STARTING_EQUITY)),
+            }); return
 
         if path=='/api/admin/bist-debug':
             # TEMPORARY diagnostic route — admin-only, read-only. Round 2:
@@ -5369,6 +5441,30 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f'LIVE | TELEGRAM KILL SWITCH NOTIFY ERROR | {type(e).__name__}: {e}', flush=True)
             self._send_json({'ok': True, 'state': auth.get_global_kill_switch()}); return
+
+        if path=='/api/admin/watchlist-settings':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            ok, err = auth.set_watchlist_position_usd(data.get('position_usd'), user)
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=400); return
+            ws = auth.get_watchlist_settings()
+            self._send_json({'ok': True, 'position_usd': float(ws.get('position_usd'))}); return
+
+        if path=='/api/admin/paper-equity':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            try:
+                new_equity = float(data.get('equity'))
+            except (TypeError, ValueError):
+                self._send_json({'ok': False, 'error': 'Geçersiz sayı değeri.'}, status=400); return
+            if not (0 < new_equity <= 100_000_000):
+                self._send_json({'ok': False, 'error': 'Bakiye 0 ile 100.000.000 USD arasında olmalı.'}, status=400); return
+            _set_equity(new_equity)
+            print(f'ADMIN | {user} | SET PAPER EQUITY -> {new_equity}', flush=True)
+            self._send_json({'ok': True, 'equity': new_equity}); return
 
         if path=='/api/account/telegram/link-code':
             code, err = auth.create_telegram_link_code(user)

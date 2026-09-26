@@ -468,6 +468,45 @@ def set_global_kill_switch(active, by_username):
 
 
 # ---------------------------------------------------------------------------
+# Watchlist paper-trading position size — the USD notional sized into each
+# scanner-watchlist ("+ Ekle") trade on the dashboard's own paper account.
+# Admin-editable from /admin; falls back to config.WATCHLIST_POSITION_USD
+# (250 USD) until an admin ever sets it. One shared value, not per-user: the
+# watchlist trades on a single shared paper account, not a real user's money.
+# ---------------------------------------------------------------------------
+WATCHLIST_SETTINGS_FILE = os.environ.get(
+    'WATCHLIST_SETTINGS_FILE',
+    os.path.join(DATA_DIR, 'watchlist_settings.json') if DATA_DIR else 'watchlist_settings.json'
+)
+WATCHLIST_POSITION_USD_CAP = 50000.0  # sanity ceiling on the admin-editable field
+
+
+def get_watchlist_settings():
+    data = _read_json(WATCHLIST_SETTINGS_FILE, {})
+    return {
+        'position_usd': data.get('position_usd'),  # None => caller falls back to config default
+        'set_by': data.get('set_by'),
+        'set_at': data.get('set_at'),
+    }
+
+
+def set_watchlist_position_usd(position_usd, by_username):
+    try:
+        position_usd = float(position_usd)
+    except (TypeError, ValueError):
+        return False, 'Geçersiz sayı değeri.'
+    if not (0 < position_usd <= WATCHLIST_POSITION_USD_CAP):
+        return False, f'Pozisyon büyüklüğü 0 ile {WATCHLIST_POSITION_USD_CAP:,.0f} USD arasında olmalı.'
+    with _lock:
+        _write_json(WATCHLIST_SETTINGS_FILE, {
+            'position_usd': position_usd,
+            'set_by': by_username,
+            'set_at': datetime.now(timezone.utc).isoformat(),
+        })
+    return True, None
+
+
+# ---------------------------------------------------------------------------
 # Per-user Telegram linking — one shared bot (TELEGRAM_BOT_TOKEN), each user
 # links their own chat by requesting a short-lived one-time code here and
 # sending "/start <code>" to the bot (telegram_link.py's polling loop
