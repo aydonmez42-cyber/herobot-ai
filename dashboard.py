@@ -795,7 +795,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .side-tag.long{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-border)}
 .side-tag.short{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
 .pos-symbol{font-family:var(--font-m);font-size:16px;font-weight:600}
-.pos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
 .pos-grid .kpi-label{margin-bottom:5px}
 .pos-grid .val{font-family:var(--font-m);font-size:15.5px;font-weight:600}
 .bar-wrap{margin-top:6px}
@@ -1277,6 +1277,8 @@ const translations = {
   "pos.current": "Current",
   "pos.unrealizedPnl": "Unrealized P&L",
   "pos.atr": "ATR",
+  "pos.qty": "Quantity",
+  "pos.positionSize": "Position size",
   "pos.currentPriceTitle": "Current price",
   "pos.trailingActive": "ACTIVE @",
   "pos.trailingStandby": "standby",
@@ -1537,6 +1539,8 @@ const translations = {
   "pos.current": "Güncel",
   "pos.unrealizedPnl": "Unrealized P&L",
   "pos.atr": "ATR",
+  "pos.qty": "Miktar",
+  "pos.positionSize": "Pozisyon büyüklüğü",
   "pos.currentPriceTitle": "Güncel fiyat",
   "pos.trailingActive": "AKTİF @",
   "pos.trailingStandby": "beklemede",
@@ -1797,6 +1801,8 @@ const translations = {
   "pos.current": "当前价",
   "pos.unrealizedPnl": "未实现盈亏",
   "pos.atr": "ATR",
+  "pos.qty": "数量",
+  "pos.positionSize": "仓位大小",
   "pos.currentPriceTitle": "当前价格",
   "pos.trailingActive": "已启用 @",
   "pos.trailingStandby": "未启用",
@@ -2057,6 +2063,8 @@ const translations = {
   "pos.current": "Aktuell",
   "pos.unrealizedPnl": "Unrealized P&L",
   "pos.atr": "ATR",
+  "pos.qty": "Menge",
+  "pos.positionSize": "Positionsgröße",
   "pos.currentPriceTitle": "Aktueller Preis",
   "pos.trailingActive": "AKTIV @",
   "pos.trailingStandby": "inaktiv",
@@ -2317,6 +2325,8 @@ const translations = {
   "pos.current": "Actuel",
   "pos.unrealizedPnl": "P&L latent",
   "pos.atr": "ATR",
+  "pos.qty": "Quantité",
+  "pos.positionSize": "Taille de la position",
   "pos.currentPriceTitle": "Prix actuel",
   "pos.trailingActive": "ACTIF @",
   "pos.trailingStandby": "en attente",
@@ -2577,6 +2587,8 @@ const translations = {
   "pos.current": "Actual",
   "pos.unrealizedPnl": "P&L no realizado",
   "pos.atr": "ATR",
+  "pos.qty": "Cantidad",
+  "pos.positionSize": "Tamaño de la posición",
   "pos.currentPriceTitle": "Precio actual",
   "pos.trailingActive": "ACTIVO @",
   "pos.trailingStandby": "inactivo",
@@ -2782,6 +2794,7 @@ try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 
 const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const qtyNum=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:6});
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 // live clock
@@ -2823,12 +2836,16 @@ function renderPositionCard(posEl,p){
   const vals=[stop,tp,cur,entry].filter(v=>!isNaN(v));
   const lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1;
   const pct=v=>((v-lo)/span*100).toFixed(1);
+  const qty=Number(p.qty_eth);
+  const positionSizeUsd=(!isNaN(qty)&&!isNaN(entry))?qty*entry:null;
   posEl.innerHTML=`
     <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span></div>
     <div class="pos-grid">
       <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${num(entry)}</div></div>
       <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${num(cur)}</div></div>
       <div><div class="kpi-label">${t('pos.unrealizedPnl')}</div><div class="val ${cls(pnl)}">${money(pnl)}</div></div>
+      <div><div class="kpi-label">${t('pos.qty')}</div><div class="val">${qtyNum(qty)}</div></div>
+      <div><div class="kpi-label">${t('pos.positionSize')}</div><div class="val">${money(positionSizeUsd)}</div></div>
       <div><div class="kpi-label">${t('pos.atr')}</div><div class="val">${num(p.atr)}</div></div>
     </div>
     <div class="bar-wrap">
