@@ -98,3 +98,15 @@ def remove_from_watchlist(symbol):
         s.get('watchlist_signals', {}).pop(symbol, None)
         s.get('symbol_last_closed', {}).pop(symbol, None)
     return update_state(m)
+
+
+def set_equity(new_equity):
+    """Admin-only override of the paper account's current equity (e.g. to
+    apply a new starting balance to a state file that already exists on
+    disk — changing the STARTING_EQUITY default only affects a state file
+    that does not exist yet, see _defaults() above)."""
+    new_equity = float(new_equity)
+
+    def m(s):
+        s['equity'] = new_equity
+    return update_state(m)

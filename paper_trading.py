@@ -12,11 +12,27 @@ from dashboard import start_dashboard
 from telegram_notifier import send_message, entry_message, exit_message, daily_report, verify_connection
 from state_store import load_state as _load_state, save_state, STATE_FILE, TRADES_FILE
 import ai_analyst
+import auth
 import live_trading
 import threading
 
 POLL_SECONDS = int(os.environ.get('POLL_SECONDS', '30'))
-STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.INITIAL_CAPITAL)))
+# The dashboard's own paper account starts at PAPER_ACCOUNT_INITIAL_CAPITAL
+# (not the backtest-anchored INITIAL_CAPITAL); a state file that already
+# exists on disk keeps its own persisted equity regardless of this value
+# (see state_store._defaults) — an admin can reset it from /admin.
+STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_ACCOUNT_INITIAL_CAPITAL)))
+
+
+def watchlist_position_usd():
+    """The USD notional sized into each watchlist ('+ Ekle') paper trade.
+    Admin-editable from /admin (persisted in auth.WATCHLIST_SETTINGS_FILE);
+    falls back to cfg.WATCHLIST_POSITION_USD if never set."""
+    try:
+        v = auth.get_watchlist_settings().get('position_usd')
+        return float(v) if v else cfg.WATCHLIST_POSITION_USD
+    except Exception:
+        return cfg.WATCHLIST_POSITION_USD
 
 USD_M_URL = 'https://fapi.binance.com/fapi/v1/klines'
 COIN_M_URL = 'https://dapi.binance.com/dapi/v1/klines'
@@ -171,8 +187,9 @@ def process_intrabar(state, long_candle, short_candle, now):
 
 def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=False):
     """Same entry logic as enter(), generalized to any watchlist symbol and
-    sized in USD notional (cfg.WATCHLIST_POSITION_USD) instead of a fixed
-    coin quantity, since watchlist symbols can have wildly different prices.
+    sized in USD notional (watchlist_position_usd(), admin-editable — falls
+    back to cfg.WATCHLIST_POSITION_USD) instead of a fixed coin quantity,
+    since watchlist symbols can have wildly different prices.
 
     live_eligible=True only for Binance-tradable crypto watchlist symbols
     (see run_watchlist_symbol); US-stock/BIST watchlist symbols are never
@@ -184,7 +201,7 @@ def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=Fals
     else:
         sl = price + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
         tp = price - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
-    qty = (cfg.WATCHLIST_POSITION_USD / price) if price else 0.0
+    qty = (watchlist_position_usd() / price) if price else 0.0
     pos = {
         'side': side, 'symbol': symbol, 'qty_eth': qty,
         'entry_price': price, 'entry_time': now.isoformat(),
