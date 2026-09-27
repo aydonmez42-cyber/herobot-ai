@@ -3321,7 +3321,7 @@ SCANNER_HTML = r'''<!doctype html>
 <section class="panel" id="tvChartPanel">
   <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2></div>
   <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
-  <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
+  <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
 </section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
@@ -3347,15 +3347,43 @@ function addCell(symbol,market,signal){
 }
 
 // TradingView "Advanced Chart" widget — TradingView's own free public embed
-// (no API key, no account needed; https://www.tradingview.com/widget/advanced-chart/).
-// Clicking any scanner row loads that symbol's live chart into the panel below.
+// script (no API key, no account needed; official embed-widget-advanced-chart.js,
+// https://www.tradingview.com/widget/advanced-chart/). Anonymous/no-login sessions
+// cannot run custom Pine scripts, but TradingView's own built-in studies (RSI, MACD,
+// CCI, Stochastic RSI, ADX/DM — periods matching the bot's own indicator settings)
+// can be requested via the "studies" config key. Each click rebuilds the widget
+// container + script tag from scratch, which is TradingView's documented way to
+// swap symbols/config on an embedded widget after the initial page load.
 function openTvChart(tvSymbol,label){
   document.getElementById('tvChartSymbol').textContent='— '+label;
-  const frame=document.getElementById('tvChartFrame');
-  frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
-    +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
-    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale='+encodeURIComponent(currentLang||'en');
-  frame.classList.remove('hidden');
+  const outer=document.getElementById('tvChartOuter');
+  outer.innerHTML='<div class="tradingview-widget-container" style="height:100%;width:100%">'
+    +'<div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div></div>';
+  const container=outer.querySelector('.tradingview-widget-container');
+  const config={
+    autosize:true,
+    symbol:tvSymbol,
+    interval:"240",
+    timezone:"Etc/UTC",
+    theme:"dark",
+    style:"1",
+    locale:currentLang||'en',
+    toolbar_bg:"#0D1114",
+    enable_publishing:false,
+    hide_side_toolbar:false,
+    allow_symbol_change:true,
+    withdateranges:true,
+    save_image:false,
+    studies:["RSI@tv-basicstudies","MACD@tv-basicstudies","CCI@tv-basicstudies","StochasticRSI@tv-basicstudies","DM@tv-basicstudies"],
+    support_host:"https://www.tradingview.com"
+  };
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async=true;
+  script.textContent=JSON.stringify(config);
+  container.appendChild(script);
+  outer.classList.remove('hidden');
   document.getElementById('tvChartEmpty').style.display='none';
   document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
