@@ -6162,6 +6162,18 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
+<section class="kpistrip" id="closedSummaryStrip">
+  <div class="kpi"><div class="kpi-label" data-i18n="closedSummary.startDate">Start Date</div><div class="kpi-value" id="csStartDate">—</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="closedSummary.totalTrades">Total Trades</div><div class="kpi-value" id="csTotalTrades">—</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="closedSummary.won">Closed in Profit</div><div class="kpi-value" id="csWonCount">—</div><div class="kpi-sub" id="csWonAmount">—</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="closedSummary.lost">Closed in Loss</div><div class="kpi-value" id="csLostCount">—</div><div class="kpi-sub" id="csLostAmount">—</div></div>
+  <div class="kpi-divider"></div>
+  <div class="kpi"><div class="kpi-label" data-i18n="closedSummary.totalPnl">Total P&amp;L</div><div class="kpi-value" id="csTotalPnl">—</div></div>
+</section>
+
 <section class="panel">
   <div class="panel-head"><h2 data-i18n="panel.aiAnalyst">AI Trade Analyst</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()" data-i18n="ai.runBtn">Analyze Now</button></div>
   <div class="ai-body" id="aiAnalysisBody" data-i18n="panel.loading">Loading…</div>
@@ -6219,10 +6231,23 @@ function renderHistory(d){
   historyCache=d;
   document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
 }
+function renderClosedSummary(d){
+  const st=(d && d.stats) || {};
+  document.getElementById('csStartDate').textContent = st.start_date ? String(st.start_date).replace('T',' ').slice(0,16) : '—';
+  document.getElementById('csTotalTrades').textContent = st.trades!=null ? st.trades : '—';
+  document.getElementById('csWonCount').textContent = st.wins!=null ? st.wins : '—';
+  document.getElementById('csWonAmount').textContent = st.gross_win!=null ? money(st.gross_win) : '—';
+  document.getElementById('csLostCount').textContent = st.losses!=null ? st.losses : '—';
+  document.getElementById('csLostAmount').textContent = st.gross_loss!=null ? '-'+money(st.gross_loss) : '—';
+  const totalPnlEl=document.getElementById('csTotalPnl');
+  if(st.net_closed!=null){ totalPnlEl.textContent=money(st.net_closed); totalPnlEl.className='kpi-value '+cls(st.net_closed); }
+  else { totalPnlEl.textContent='—'; totalPnlEl.className='kpi-value'; }
+}
 async function refreshHistory(){
   let d;
   try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
   renderHistory(d);
+  renderClosedSummary(d);
 }
 
 const translations = {
@@ -6247,6 +6272,11 @@ const translations = {
   "history.headerReason": "Reason",
   "history.noClosedTrades": "No closed trades yet.",
   "panel.aiAnalyst": "AI Trade Analyst",
+  "closedSummary.startDate": "Start Date",
+  "closedSummary.totalTrades": "Total Trades",
+  "closedSummary.won": "Closed in Profit",
+  "closedSummary.lost": "Closed in Loss",
+  "closedSummary.totalPnl": "Total P&L",
   "ai.runBtn": "Analyze Now",
   "ai.running": "Analyzing…",
   "ai.disabled": "AI Analyst is disabled — ANTHROPIC_API_KEY is not set.",
@@ -6275,6 +6305,11 @@ const translations = {
   "history.headerReason": "Neden",
   "history.noClosedTrades": "Henüz kapanmış işlem yok.",
   "panel.aiAnalyst": "AI Trade Analisti",
+  "closedSummary.startDate": "Başlangıç Tarihi",
+  "closedSummary.totalTrades": "Toplam İşlem",
+  "closedSummary.won": "Kârla Kapanan",
+  "closedSummary.lost": "Zararla Kapanan",
+  "closedSummary.totalPnl": "Toplam Kâr/Zarar",
   "ai.runBtn": "Şimdi Analiz Et",
   "ai.running": "Analiz ediliyor…",
   "ai.disabled": "AI Analist devre dışı — ANTHROPIC_API_KEY tanımlı değil.",
@@ -6303,6 +6338,11 @@ const translations = {
   "history.headerReason": "原因",
   "history.noClosedTrades": "暂无已平仓交易。",
   "panel.aiAnalyst": "AI 交易分析师",
+  "closedSummary.startDate": "开始日期",
+  "closedSummary.totalTrades": "总交易数",
+  "closedSummary.won": "盈利平仓",
+  "closedSummary.lost": "亏损平仓",
+  "closedSummary.totalPnl": "总盈亏",
   "ai.runBtn": "立即分析",
   "ai.running": "分析中…",
   "ai.disabled": "AI 分析师已禁用 — 未设置 ANTHROPIC_API_KEY。",
@@ -6331,6 +6371,11 @@ const translations = {
   "history.headerReason": "Grund",
   "history.noClosedTrades": "Noch keine geschlossenen Trades.",
   "panel.aiAnalyst": "KI-Trade-Analyst",
+  "closedSummary.startDate": "Startdatum",
+  "closedSummary.totalTrades": "Trades gesamt",
+  "closedSummary.won": "Mit Gewinn geschlossen",
+  "closedSummary.lost": "Mit Verlust geschlossen",
+  "closedSummary.totalPnl": "Gesamt-G/V",
   "ai.runBtn": "Jetzt analysieren",
   "ai.running": "Wird analysiert…",
   "ai.disabled": "KI-Analyst ist deaktiviert — ANTHROPIC_API_KEY ist nicht gesetzt.",
@@ -6359,6 +6404,11 @@ const translations = {
   "history.headerReason": "Raison",
   "history.noClosedTrades": "Aucun trade clôturé pour le moment.",
   "panel.aiAnalyst": "Analyste IA de trading",
+  "closedSummary.startDate": "Date de début",
+  "closedSummary.totalTrades": "Total des trades",
+  "closedSummary.won": "Clôturés en profit",
+  "closedSummary.lost": "Clôturés en perte",
+  "closedSummary.totalPnl": "P&L total",
   "ai.runBtn": "Analyser maintenant",
   "ai.running": "Analyse en cours…",
   "ai.disabled": "L'analyste IA est désactivé — ANTHROPIC_API_KEY n'est pas défini.",
@@ -6387,6 +6437,11 @@ const translations = {
   "history.headerReason": "Motivo",
   "history.noClosedTrades": "Aún no hay operaciones cerradas.",
   "panel.aiAnalyst": "Analista de trading con IA",
+  "closedSummary.startDate": "Fecha de inicio",
+  "closedSummary.totalTrades": "Total de operaciones",
+  "closedSummary.won": "Cerradas con beneficio",
+  "closedSummary.lost": "Cerradas con pérdida",
+  "closedSummary.totalPnl": "P&L total",
   "ai.runBtn": "Analizar ahora",
   "ai.running": "Analizando…",
   "ai.disabled": "El analista de IA está desactivado — ANTHROPIC_API_KEY no está definida.",
@@ -7411,6 +7466,8 @@ def status():
     gross_win=sum(t['net_pnl'] for t in closed if t['net_pnl']>0); gross_loss=abs(sum(t['net_pnl'] for t in closed if t['net_pnl']<0))
     pf=gross_win/gross_loss if gross_loss else (999.0 if gross_win else 0.0)
     avg=sum(t['net_pnl'] for t in closed)/len(closed) if closed else 0
+    net_closed=sum(t['net_pnl'] for t in closed) if closed else 0
+    start_date=(closed[0].get('entry_time') or closed[0].get('exit_time') or '') if closed else ''
     start=STARTING_EQUITY
     equity=f(s.get('equity',start)); net=equity-start
     peak=start; maxdd=0
@@ -7430,7 +7487,7 @@ def status():
         unreal=(cp-ep)*qty if wp.get('side')=='LONG' else (ep-cp)*qty
         total_open_pnl+=unreal
     indicators=s.get('indicators',{})
-    return {'bot_alive': bool(s.get('last_heartbeat')),'heartbeat':s.get('last_heartbeat'),'equity':equity,'net_pnl':net,'return_pct':net/start*100,'price':f(s.get('market_prices',{}).get('ETHUSDT',0)),'price_time':s.get('market_price_time'),'last_closed_time':s.get('last_closed_time'),'position':pos,'signals':s.get('signals',indicators),'total_open_pnl':total_open_pnl,'stats':{'trades':len(closed),'wins':wins,'losses':losses,'win_rate':wins/len(closed)*100 if closed else 0,'profit_factor':pf,'avg_trade':avg,'max_drawdown':maxdd},'history':list(reversed(closed[-20:]))}
+    return {'bot_alive': bool(s.get('last_heartbeat')),'heartbeat':s.get('last_heartbeat'),'equity':equity,'net_pnl':net,'return_pct':net/start*100,'price':f(s.get('market_prices',{}).get('ETHUSDT',0)),'price_time':s.get('market_price_time'),'last_closed_time':s.get('last_closed_time'),'position':pos,'signals':s.get('signals',indicators),'total_open_pnl':total_open_pnl,'stats':{'trades':len(closed),'wins':wins,'losses':losses,'win_rate':wins/len(closed)*100 if closed else 0,'profit_factor':pf,'avg_trade':avg,'max_drawdown':maxdd,'gross_win':gross_win,'gross_loss':gross_loss,'net_closed':net_closed,'start_date':start_date},'history':list(reversed(closed[-20:]))}
 
 def watchlist_status():
     s = read_state()
