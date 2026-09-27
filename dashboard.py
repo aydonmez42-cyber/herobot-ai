@@ -89,7 +89,7 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/ask-admin', '/api/account/subscription-request',
     # FAQ and backtest results are useful for a trial/expired user deciding
     # whether to subscribe, so they stay reachable even after access lapses.
-    '/faq', '/backtest', '/account',
+    '/faq', '/backtest', '/account', '/live',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -959,6 +959,7 @@ th.sort-active{color:var(--accent)}
 
 <nav class="topnav">
   <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -1126,6 +1127,7 @@ const translations = {
   "nav.logout": "Logout",
   "nav.language": "Language",
   "nav.dashboard": "Dashboard",
+  "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
   "nav.faq": "FAQ",
@@ -1390,6 +1392,7 @@ const translations = {
   "nav.logout": "Çıkış",
   "nav.language": "Dil",
   "nav.dashboard": "Panel",
+  "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
   "nav.faq": "SSS",
@@ -1654,6 +1657,7 @@ const translations = {
   "nav.logout": "退出登录",
   "nav.language": "语言",
   "nav.dashboard": "仪表盘",
+  "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
   "nav.faq": "常见问题",
@@ -1918,6 +1922,7 @@ const translations = {
   "nav.logout": "Abmelden",
   "nav.language": "Sprache",
   "nav.dashboard": "Übersicht",
+  "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
   "nav.faq": "FAQ",
@@ -2182,6 +2187,7 @@ const translations = {
   "nav.logout": "Déconnexion",
   "nav.language": "Langue",
   "nav.dashboard": "Tableau de bord",
+  "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
   "nav.faq": "FAQ",
@@ -2446,6 +2452,7 @@ const translations = {
   "nav.logout": "Cerrar sesión",
   "nav.language": "Idioma",
   "nav.dashboard": "Panel",
+  "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
   "nav.faq": "Preguntas frecuentes",
@@ -3434,6 +3441,7 @@ FAQ_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
@@ -3489,7 +3497,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -3512,7 +3520,7 @@ const translations = {
     "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
   },
   tr: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -3535,7 +3543,7 @@ const translations = {
     "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
   },
   zh: {
-    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -3558,7 +3566,7 @@ const translations = {
     "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
   },
   de: {
-    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -3581,7 +3589,7 @@ const translations = {
     "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
   },
   fr: {
-    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -3604,7 +3612,7 @@ const translations = {
     "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
   },
   es: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -3690,6 +3698,7 @@ BACKTEST_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -3904,7 +3913,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -3947,7 +3956,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -3990,7 +3999,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -4033,7 +4042,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -4076,7 +4085,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -4119,7 +4128,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -4253,6 +4262,7 @@ ACCOUNT_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -4268,12 +4278,6 @@ ACCOUNT_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
-  <div class="position-body" id="accountBody">
-    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
-  </div>
-</section>
 
 <section class="panel">
   <div class="panel-head"><h2 data-i18n="panel.telegramConnection">Telegram Connection</h2></div>
@@ -4282,26 +4286,6 @@ ACCOUNT_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
-  <div class="live-panel" style="margin-top:0">
-    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
-    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
-  </div>
-  <div class="table-scroll" style="margin-top:14px">
-    <table class="datatable">
-      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
-      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-  <div class="table-scroll" style="margin-top:14px">
-    <table class="datatable">
-      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
-      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
-</section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
@@ -4310,51 +4294,10 @@ const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFracti
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=x=>Number(x)>=0?'pos':'neg';
 
-let liveMineCache=null;
-function renderMyLive(d){
-  liveMineCache=d;
-  const open=d.open||[], closed=d.closed||[];
-  document.getElementById('liveMineCount').textContent = d.live_trading_enabled
-    ? `${open.length} ${t('liveAccount.openPositionsSuffix')}`
-    : t('liveAccount.liveOff');
-
-  document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
-    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
-    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
-      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
-      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
-      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
-  }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
-
-  document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
-    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
-      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
-      +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
-  }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
-}
-async function refreshMyLive(){
-  let d;
-  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
-  renderMyLive(d);
-}
-refreshMyLive();setInterval(refreshMyLive,15000);
-
-async function closeLivePosition(symbol,btn){
-  if(!confirm(`${t('alert.closePositionConfirmPrefix')} ${symbol} ${t('alert.closePositionConfirmSuffix')}`)) return;
-  btn.disabled=true; btn.textContent=t('liveOpen.closing');
-  try{
-    const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.closePositionFailed')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
-  }catch(e){ alert(t('alert.connectionError')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
-  await refreshMyLive();
-}
 
 let accountCache=null;
 function renderAccount(a){
   accountCache=a;
-  const pill=document.getElementById('binanceStatusPill');
-  const body=document.getElementById('accountBody');
   let whoText=a.username?('👤 '+a.username):'';
   if(a.is_admin){ whoText+=' <span class="badge-admin">'+t('account.admin')+'</span>'; }
   else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">${t('account.trialDaysLeft').replace('{n}',a.days_left)}</span>`; }
@@ -4362,124 +4305,11 @@ function renderAccount(a){
   document.getElementById('whoami').innerHTML=whoText;
   document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
   const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||t('account.emailNotRegistered');
-  if(a.binance_connected){
-    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">'+t('account.verifyError')+'</span>'; }
-    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">'+t('account.verifiedConnected')+'</span>'; }
-    else{ pill.innerHTML='<span class="badge-unverified">'+t('account.connectedNotVerified')+'</span>'; }
-  } else {
-    pill.innerHTML='<span class="badge-unverified">'+t('account.notConnected')+'</span>';
-  }
-  let notice='';
-  if(!a.credential_encryption_ready){
-    notice=`<div class="account-notice">${t('account.credentialWarning')}</div>`;
-  }
-  const maskedRow=a.binance_connected?`<div class="account-row">${t('account.savedKeyLabel')} <b>${a.binance_key_masked}</b></div>`:'';
-  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">${t('account.lastVerified')} ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
-    :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
-  const riskRow=a.risk_ack_at
-    ? `<div class="account-row text-faint">${t('account.riskAckGiven')}: ${a.risk_ack_at.replace('T',' ').slice(0,16)}</div>`
-    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> ${t('account.riskAckLabel')}</label>`;
-  body.innerHTML=`
-    ${maskedRow}${verifyRow}
-    <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
-      <div>
-        <label>${t('account.apiKeyLabel')}</label>
-        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?t('account.apiKeyPlaceholderChange'):t('account.apiKeyPlaceholderNew')}">
-      </div>
-      <div>
-        <label>${t('account.apiSecretLabel')}</label>
-        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?t('account.apiSecretPlaceholderChange'):t('account.apiSecretPlaceholderNew')}">
-      </div>
-      ${riskRow}
-      <div class="account-row">
-        <button class="btn" type="submit" id="binSaveBtn">${t('account.saveVerifyBtn')}</button>
-        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
-      </div>
-    </form>
-    ${notice}
-  `;
-  renderLivePanel(a);
   renderTelegramPanel(a);
 }
 
-function renderLivePanel(a){
-  const box=document.getElementById('livePanelBody');
-  if(!box) return;
-  if(!a.binance_connected || !a.binance_verified_at){
-    box.innerHTML=`<div class="account-notice">${t('live.needConnectFirst')}</div>`;
-    return;
-  }
-  const rt=a.live_runtime||{};
-  let statusLine;
-  if(a.global_kill_switch_active){
-    statusLine=`<span class="badge-live-paused">${t('live.killSwitch')}</span>`;
-  } else if(a.live_trading_enabled && rt.paused_today){
-    statusLine=`<span class="badge-live-paused">${t('live.pausedToday')}</span>`;
-  } else if(a.live_trading_enabled){
-    statusLine=`<span class="badge-live-on">${t('live.on')}</span>`;
-  } else {
-    statusLine=`<span class="badge-live-off">${t('live.off')}</span>`;
-  }
-  const openPos=rt.open_position_count?`<div class="account-row text-faint">${t('live.openPositionCount')} ${rt.open_position_count}</div>`:'';
-  const pnlRow=`<div class="account-row text-faint">${t('live.todayRealizedPnl')} ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
-  const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
-  box.innerHTML=`
-    <div class="account-row">${statusLine}</div>
-    ${openPos}${pnlRow}${errRow}
-    <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
-      <div>
-        <label>${t('live.positionUsdLabel')}</label>
-        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.maxLeverageLabel').replace('{n}',a.live_max_leverage_cap||10)}</label>
-        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="${t('live.maxLeveragePlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.dailyLossLimitLabel')}</label>
-        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
-        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
-      </div>
-      <div class="account-row">
-        <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
-        ${a.live_trading_enabled
-          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">${t('live.turnOffBtn')}</button>`
-          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">${t('live.turnOnBtn')}</button>`}
-      </div>
-    </form>
-    <div class="live-danger">${t('live.dangerText')}</div>
-  `;
-}
 
-async function submitLiveSettings(ev){
-  ev.preventDefault();
-  const body={
-    position_usd: document.getElementById('livePositionUsd').value,
-    max_leverage: document.getElementById('liveMaxLeverage').value,
-    daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
-    max_open_positions: document.getElementById('liveMaxPositions').value,
-  };
-  try{
-    const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  await refreshAccount();
-  return false;
-}
 
-async function toggleLiveTrading(enabled){
-  if(enabled && !confirm(t('live.toggleOnConfirm'))) return;
-  try{
-    const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.actionFailed')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  await refreshAccount();
-}
 
 // Holds an in-progress link code across renderAccount() re-renders (the
 // polling below calls refreshAccount() every few seconds to notice the
@@ -4562,31 +4392,7 @@ async function refreshAccount(){
   renderAccount(d);
 }
 
-async function submitBinanceForm(ev){
-  ev.preventDefault();
-  const key=document.getElementById('binApiKey').value.trim();
-  const secret=document.getElementById('binApiSecret').value.trim();
-  const riskEl=document.getElementById('riskAck');
-  const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
-  if(!key||!secret){ alert(t('alert.apiKeySecretRequired')); return false; }
-  if(riskEl && !riskAck){ alert(t('alert.riskAckRequired')); return false; }
-  const btn=document.getElementById('binSaveBtn');
-  btn.disabled=true; btn.textContent=t('account.savingVerifying');
-  try{
-    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  btn.disabled=false; btn.textContent=t('account.saveVerifyBtn');
-  await refreshAccount();
-  return false;
-}
 
-async function disconnectBinance(){
-  if(!confirm(t('alert.disconnectBinanceConfirm'))) return;
-  try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
-  await refreshAccount();
-}
 
 async function logout(){
   try{ await fetch('/logout',{method:'POST',cache:'no-store'}); }catch(e){}
@@ -4596,6 +4402,7 @@ async function logout(){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
   "nav.faq": "FAQ",
@@ -4726,6 +4533,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
   "nav.faq": "SSS",
@@ -4856,6 +4664,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
   "nav.faq": "常见问题",
@@ -4986,6 +4795,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
   "nav.faq": "FAQ",
@@ -5116,6 +4926,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
   "nav.faq": "FAQ",
@@ -5246,6 +5057,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
   "nav.faq": "Preguntas frecuentes",
@@ -5452,6 +5264,7 @@ TRADES_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" class="active" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -5551,6 +5364,7 @@ async function removeFromWatchlist(symbol){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
   "nav.faq": "FAQ",
@@ -5586,6 +5400,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
   "nav.faq": "SSS",
@@ -5621,6 +5436,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
   "nav.faq": "常见问题",
@@ -5656,6 +5472,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
   "nav.faq": "FAQ",
@@ -5691,6 +5508,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
   "nav.faq": "FAQ",
@@ -5726,6 +5544,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
   "nav.faq": "Preguntas frecuentes",
@@ -5793,6 +5612,790 @@ refreshStatus(); setInterval(refreshStatus,5000);
 refreshWatchlist(); setInterval(refreshWatchlist,10000);
 </script>
 </body></html>'''
+
+LIVE_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Canlı İşlemler — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _ACCOUNT_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="panel.liveTrading">Live Trading</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" class="active" data-i18n="nav.live">Live Trading</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
+  <div class="position-body" id="accountBody">
+    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div class="live-panel" style="margin-top:0">
+    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
+    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
+  </div>
+  <div class="table-scroll" style="margin-top:14px">
+    <table class="datatable">
+      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
+      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-scroll" style="margin-top:14px">
+    <table class="datatable">
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cls=x=>Number(x)>=0?'pos':'neg';
+
+let liveMineCache=null;
+function renderMyLive(d){
+  liveMineCache=d;
+  const open=d.open||[], closed=d.closed||[];
+  document.getElementById('liveMineCount').textContent = d.live_trading_enabled
+    ? `${open.length} ${t('liveAccount.openPositionsSuffix')}`
+    : t('liveAccount.liveOff');
+
+  document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
+    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
+      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
+      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
+      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
+  }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
+
+  document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
+    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
+      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
+      +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
+}
+async function refreshMyLive(){
+  let d;
+  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderMyLive(d);
+}
+
+async function closeLivePosition(symbol,btn){
+  if(!confirm(`${t('alert.closePositionConfirmPrefix')} ${symbol} ${t('alert.closePositionConfirmSuffix')}`)) return;
+  btn.disabled=true; btn.textContent=t('liveOpen.closing');
+  try{
+    const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.closePositionFailed')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
+  }catch(e){ alert(t('alert.connectionError')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
+  await refreshMyLive();
+}
+
+let accountCache=null;
+function renderAccount(a){
+  accountCache=a;
+  const pill=document.getElementById('binanceStatusPill');
+  const body=document.getElementById('accountBody');
+  if(a.binance_connected){
+    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">'+t('account.verifyError')+'</span>'; }
+    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">'+t('account.verifiedConnected')+'</span>'; }
+    else{ pill.innerHTML='<span class="badge-unverified">'+t('account.connectedNotVerified')+'</span>'; }
+  } else {
+    pill.innerHTML='<span class="badge-unverified">'+t('account.notConnected')+'</span>';
+  }
+  let notice='';
+  if(!a.credential_encryption_ready){
+    notice=`<div class="account-notice">${t('account.credentialWarning')}</div>`;
+  }
+  const maskedRow=a.binance_connected?`<div class="account-row">${t('account.savedKeyLabel')} <b>${a.binance_key_masked}</b></div>`:'';
+  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">${t('account.lastVerified')} ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
+    :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
+  const riskRow=a.risk_ack_at
+    ? `<div class="account-row text-faint">${t('account.riskAckGiven')}: ${a.risk_ack_at.replace('T',' ').slice(0,16)}</div>`
+    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> ${t('account.riskAckLabel')}</label>`;
+  body.innerHTML=`
+    ${maskedRow}${verifyRow}
+    <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
+      <div>
+        <label>${t('account.apiKeyLabel')}</label>
+        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?t('account.apiKeyPlaceholderChange'):t('account.apiKeyPlaceholderNew')}">
+      </div>
+      <div>
+        <label>${t('account.apiSecretLabel')}</label>
+        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?t('account.apiSecretPlaceholderChange'):t('account.apiSecretPlaceholderNew')}">
+      </div>
+      ${riskRow}
+      <div class="account-row">
+        <button class="btn" type="submit" id="binSaveBtn">${t('account.saveVerifyBtn')}</button>
+        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
+      </div>
+    </form>
+    ${notice}
+  `;
+  renderLivePanel(a);
+}
+
+function renderLivePanel(a){
+  const box=document.getElementById('livePanelBody');
+  if(!box) return;
+  if(!a.binance_connected || !a.binance_verified_at){
+    box.innerHTML=`<div class="account-notice">${t('live.needConnectFirst')}</div>`;
+    return;
+  }
+  const rt=a.live_runtime||{};
+  let statusLine;
+  if(a.global_kill_switch_active){
+    statusLine=`<span class="badge-live-paused">${t('live.killSwitch')}</span>`;
+  } else if(a.live_trading_enabled && rt.paused_today){
+    statusLine=`<span class="badge-live-paused">${t('live.pausedToday')}</span>`;
+  } else if(a.live_trading_enabled){
+    statusLine=`<span class="badge-live-on">${t('live.on')}</span>`;
+  } else {
+    statusLine=`<span class="badge-live-off">${t('live.off')}</span>`;
+  }
+  const openPos=rt.open_position_count?`<div class="account-row text-faint">${t('live.openPositionCount')} ${rt.open_position_count}</div>`:'';
+  const pnlRow=`<div class="account-row text-faint">${t('live.todayRealizedPnl')} ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
+  const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
+  box.innerHTML=`
+    <div class="account-row">${statusLine}</div>
+    ${openPos}${pnlRow}${errRow}
+    <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
+      <div>
+        <label>${t('live.positionUsdLabel')}</label>
+        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.maxLeverageLabel').replace('{n}',a.live_max_leverage_cap||10)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="${t('live.maxLeveragePlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.dailyLossLimitLabel')}</label>
+        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
+      </div>
+      <div class="account-row">
+        <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
+        ${a.live_trading_enabled
+          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">${t('live.turnOffBtn')}</button>`
+          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">${t('live.turnOnBtn')}</button>`}
+      </div>
+    </form>
+    <div class="live-danger">${t('live.dangerText')}</div>
+  `;
+}
+
+async function submitLiveSettings(ev){
+  ev.preventDefault();
+  const body={
+    position_usd: document.getElementById('livePositionUsd').value,
+    max_leverage: document.getElementById('liveMaxLeverage').value,
+    daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
+    max_open_positions: document.getElementById('liveMaxPositions').value,
+  };
+  try{
+    const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  await refreshAccount();
+  return false;
+}
+
+async function toggleLiveTrading(enabled){
+  if(enabled && !confirm(t('live.toggleOnConfirm'))) return;
+  try{
+    const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.actionFailed')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  await refreshAccount();
+}
+
+async function submitBinanceForm(ev){
+  ev.preventDefault();
+  const key=document.getElementById('binApiKey').value.trim();
+  const secret=document.getElementById('binApiSecret').value.trim();
+  const riskEl=document.getElementById('riskAck');
+  const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
+  if(!key||!secret){ alert(t('alert.apiKeySecretRequired')); return false; }
+  if(riskEl && !riskAck){ alert(t('alert.riskAckRequired')); return false; }
+  const btn=document.getElementById('binSaveBtn');
+  btn.disabled=true; btn.textContent=t('account.savingVerifying');
+  try{
+    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  btn.disabled=false; btn.textContent=t('account.saveVerifyBtn');
+  await refreshAccount();
+  return false;
+}
+
+async function disconnectBinance(){
+  if(!confirm(t('alert.disconnectBinanceConfirm'))) return;
+  try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
+  await refreshAccount();
+}
+
+async function refreshAccount(){
+  let d;
+  try{ const r=await fetch('/api/account',{cache:'no-store'}); if(r.status===401){window.location='/login';return;} d=await r.json(); }catch(e){ return; }
+  renderAccount(d);
+}
+
+const translations = {
+  en: {
+  "nav.dashboard": "Dashboard",
+  "nav.live": "Live Trading",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "My Account",
+  "faq.backToDashboard": "← Dashboard",
+  "panel.liveTrading": "Live Trading",
+  "panel.loading": "Loading…",
+  "pos.entry": "Entry",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Exit",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Reason",
+  "history.noClosedLiveTrades": "You have no closed live trades yet.",
+  "liveOpen.headerQty": "Qty",
+  "liveOpen.headerCurrent": "Current",
+  "liveOpen.headerLeverage": "Leverage",
+  "liveOpen.headerOpened": "Opened",
+  "liveOpen.noOpenPositions": "You have no open live positions right now.",
+  "liveOpen.closeNowBtn": "Close Now",
+  "liveOpen.closing": "Closing…",
+  "alert.connectionError": "Connection error",
+  "alert.closePositionConfirmPrefix": "Are you sure you want to close the",
+  "alert.closePositionConfirmSuffix": "position now with a real market order? This cannot be undone.",
+  "alert.closePositionFailed": "Could not close position",
+  "panel.binanceConnection": "Binance Connection",
+  "panel.liveAccount": "Binance Live Account",
+  "liveAccount.title": "Live Trading (Real Money)",
+  "liveAccount.openPositionsSuffix": "open positions",
+  "liveAccount.liveOff": "Live trading is off",
+  "liveAccount.footnote": "This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.",
+  "live.needConnectFirst": "You need to save and verify your Binance API key above before you can start live (real money) trading.",
+  "live.killSwitch": "🛑 All live trading has been temporarily stopped by the admin",
+  "live.pausedToday": "⏸ Daily max loss limit reached — no new trades will open today",
+  "live.on": "🟢 Live trading is ON",
+  "live.off": "Live trading is off — the bot is running in paper (demo) mode only",
+  "live.openPositionCount": "Open live positions:",
+  "live.todayRealizedPnl": "Today's estimated realized P&L:",
+  "live.positionUsdLabel": "USD amount per trade",
+  "live.positionUsdPlaceholder": "e.g. 100",
+  "live.maxLeverageLabel": "Max leverage (1-{n}x)",
+  "live.maxLeveragePlaceholder": "e.g. 2",
+  "live.dailyLossLimitLabel": "Daily max loss limit (USD) — trading stops automatically for the day if exceeded",
+  "live.dailyLossLimitPlaceholder": "e.g. 50",
+  "live.maxPositionsLabel": "Max open positions (1-{n})",
+  "live.maxPositionsPlaceholder": "e.g. 1",
+  "live.saveSettingsBtn": "Save Settings",
+  "live.turnOffBtn": "Turn Off Live Trading",
+  "live.turnOnBtn": "Turn ON Live Trading (real money)",
+  "live.dangerText": "⚠️ Once live trading is turned on, the bot opens/closes orders using <b>real money</b> on your registered Binance account. You — not the bot — are responsible for any losses. This is not investment advice; compliance with applicable regulations is your own responsibility.",
+  "live.toggleOnConfirm": "You are about to turn on live trading. From this moment the bot will open and close orders with REAL MONEY on your Binance account. Do you confirm that you accept the risk of loss and that these settings are correct?",
+  "account.verifyError": "Verification error",
+  "account.verifiedConnected": "Connected and verified",
+  "account.connectedNotVerified": "Connected, not verified",
+  "account.notConnected": "Not connected",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY is not configured on the server — API keys cannot be saved because they cannot be encrypted safely. Please contact your admin.",
+  "account.savedKeyLabel": "Saved key:",
+  "account.lastVerified": "Last verified:",
+  "account.riskAckGiven": "Risk acknowledgement given on",
+  "account.riskAckLabel": "I confirm and accept that this bot may place real-money orders on crypto futures, that it carries a risk of loss, and that any resulting losses are my own responsibility, not the bot's.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Enter a new key to change it",
+  "account.apiKeyPlaceholderNew": "Binance Futures API key",
+  "account.apiSecretPlaceholderChange": "Enter a new secret to change it",
+  "account.apiSecretPlaceholderNew": "Binance Futures API secret",
+  "account.saveVerifyBtn": "Save & Verify",
+  "account.savingVerifying": "Saving & verifying…",
+  "account.removeConnectionBtn": "Remove Connection",
+  "alert.apiKeySecretRequired": "API key and secret are required.",
+  "alert.riskAckRequired": "You must check the risk acknowledgement box before continuing.",
+  "alert.saveFailedGeneric": "Could not save",
+  "alert.actionFailed": "Action failed",
+  "alert.disconnectBinanceConfirm": "Are you sure you want to remove the Binance connection?",
+  },
+  tr: {
+  "nav.dashboard": "Panel",
+  "nav.live": "Canlı İşlemler",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Deneme İşlemleri",
+  "nav.faq": "SSS",
+  "nav.account": "Hesabım",
+  "faq.backToDashboard": "← Panel",
+  "panel.liveTrading": "Canlı İşlemler",
+  "panel.loading": "Yükleniyor…",
+  "pos.entry": "Giriş",
+  "watchlist.headerSymbol": "Sembol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Tarih",
+  "history.headerDirection": "Yön",
+  "history.headerExit": "Çıkış",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Neden",
+  "history.noClosedLiveTrades": "Henüz kapanmış canlı işleminiz yok.",
+  "liveOpen.headerQty": "Miktar",
+  "liveOpen.headerCurrent": "Güncel",
+  "liveOpen.headerLeverage": "Kaldıraç",
+  "liveOpen.headerOpened": "Açılış",
+  "liveOpen.noOpenPositions": "Şu an açık canlı pozisyonunuz yok.",
+  "liveOpen.closeNowBtn": "Şimdi Kapat",
+  "liveOpen.closing": "Kapatılıyor…",
+  "alert.connectionError": "Bağlantı hatası",
+  "alert.closePositionConfirmPrefix": "",
+  "alert.closePositionConfirmSuffix": "pozisyonunu şimdi gerçek bir market emriyle kapatmak istediğinize emin misiniz? Bu işlem geri alınamaz.",
+  "alert.closePositionFailed": "Pozisyon kapatılamadı",
+  "panel.binanceConnection": "Binance Bağlantısı",
+  "panel.liveAccount": "Binance Canlı Hesap",
+  "liveAccount.title": "Canlı İşlem (Gerçek Para)",
+  "liveAccount.openPositionsSuffix": "açık pozisyon",
+  "liveAccount.liveOff": "Canlı işlem kapalı",
+  "liveAccount.footnote": "Bu panel yalnızca <b>kendi</b> Binance hesabınızdaki canlı işlemleri gösterir — üstteki paper/deneme paneliyle veya diğer kullanıcılarla asla karışmaz; bunu sizden başka kimse göremez.",
+  "live.needConnectFirst": "Canlı (gerçek para) işlem açabilmek için önce yukarıdan Binance API anahtarınızı kaydedip doğrulatmanız gerekiyor.",
+  "live.killSwitch": "🛑 Tüm canlı işlemler yönetici tarafından geçici olarak durduruldu",
+  "live.pausedToday": "⏸ Günlük maksimum zarar limitine ulaşıldı — bugün yeni işlem açılmayacak",
+  "live.on": "🟢 Canlı işlem AÇIK",
+  "live.off": "Canlı işlem kapalı — bot sadece paper (deneme) modda çalışıyor",
+  "live.openPositionCount": "Açık canlı pozisyon sayısı:",
+  "live.todayRealizedPnl": "Bugünkü tahmini gerçekleşen P&L:",
+  "live.positionUsdLabel": "İşlem başına USD miktarı",
+  "live.positionUsdPlaceholder": "örn. 100",
+  "live.maxLeverageLabel": "Maksimum kaldıraç (1-{n}x)",
+  "live.maxLeveragePlaceholder": "örn. 2",
+  "live.dailyLossLimitLabel": "Günlük maksimum zarar limiti (USD) — aşılırsa o gün için işlem otomatik olarak durur",
+  "live.dailyLossLimitPlaceholder": "örn. 50",
+  "live.maxPositionsLabel": "Maksimum açık pozisyon (1-{n})",
+  "live.maxPositionsPlaceholder": "örn. 1",
+  "live.saveSettingsBtn": "Ayarları Kaydet",
+  "live.turnOffBtn": "Canlı İşlemi Kapat",
+  "live.turnOnBtn": "Canlı İşlemi AÇ (gerçek para)",
+  "live.dangerText": "⚠️ Canlı işlem açıldığında bot, kayıtlı Binance hesabınızda <b>gerçek parayla</b> emir açar/kapatır. Kayıplardan bot değil siz sorumlusunuz. Bu, yatırım tavsiyesi değildir; ilgili düzenlemelere uygunluk sizin sorumluluğunuzdadır.",
+  "live.toggleOnConfirm": "Canlı işlemi açmak üzeresiniz. Bot bu andan itibaren Binance hesabınızda GERÇEK PARA ile emir açıp kapatacak. Kayıp riskini kabul ettiğinizi ve bu ayarları doğru girdiğinizi onaylıyor musunuz?",
+  "account.verifyError": "Doğrulama hatası",
+  "account.verifiedConnected": "Bağlı ve doğrulanmış",
+  "account.connectedNotVerified": "Bağlı, doğrulanmamış",
+  "account.notConnected": "Bağlı değil",
+  "account.credentialWarning": "⚠️ Sunucuda CREDENTIAL_ENCRYPTION_KEY yapılandırılmamış — API anahtarları güvenli şekilde şifrelenemediği için kaydedilemiyor. Lütfen yöneticinizle iletişime geçin.",
+  "account.savedKeyLabel": "Kayıtlı anahtar:",
+  "account.lastVerified": "Son doğrulama:",
+  "account.riskAckGiven": "Risk onayı verildi:",
+  "account.riskAckLabel": "Bu botun kripto vadeli işlemlerde gerçek parayla emir açabileceğini, bunun zarar riski taşıdığını ve doğacak zararların bota değil bana ait olduğunu onaylıyor ve kabul ediyorum.",
+  "account.apiKeyLabel": "Binance API Anahtarı",
+  "account.apiSecretLabel": "Binance API Gizli Anahtarı",
+  "account.apiKeyPlaceholderChange": "Değiştirmek için yeni bir anahtar girin",
+  "account.apiKeyPlaceholderNew": "Binance Futures API anahtarı",
+  "account.apiSecretPlaceholderChange": "Değiştirmek için yeni bir gizli anahtar girin",
+  "account.apiSecretPlaceholderNew": "Binance Futures API gizli anahtarı",
+  "account.saveVerifyBtn": "Kaydet ve Doğrula",
+  "account.savingVerifying": "Kaydediliyor ve doğrulanıyor…",
+  "account.removeConnectionBtn": "Bağlantıyı Kaldır",
+  "alert.apiKeySecretRequired": "API anahtarı ve gizli anahtar gereklidir.",
+  "alert.riskAckRequired": "Devam etmeden önce risk onay kutusunu işaretlemeniz gerekiyor.",
+  "alert.saveFailedGeneric": "Kaydedilemedi",
+  "alert.actionFailed": "İşlem başarısız",
+  "alert.disconnectBinanceConfirm": "Binance bağlantısını kaldırmak istediğinize emin misiniz?",
+  },
+  zh: {
+  "nav.dashboard": "仪表盘",
+  "nav.live": "实盘交易",
+  "nav.backtest": "回测",
+  "nav.trades": "模拟交易",
+  "nav.faq": "常见问题",
+  "nav.account": "我的账户",
+  "faq.backToDashboard": "← 仪表盘",
+  "panel.liveTrading": "实盘交易",
+  "panel.loading": "加载中…",
+  "pos.entry": "入场价",
+  "watchlist.headerSymbol": "交易对",
+  "watchlist.headerUnrealizedPnl": "未实现盈亏",
+  "history.headerDate": "日期",
+  "history.headerDirection": "方向",
+  "history.headerExit": "出场价",
+  "history.headerPnl": "盈亏",
+  "history.headerReason": "原因",
+  "history.noClosedLiveTrades": "暂无已平仓的实盘交易。",
+  "liveOpen.headerQty": "数量",
+  "liveOpen.headerCurrent": "当前价",
+  "liveOpen.headerLeverage": "杠杆",
+  "liveOpen.headerOpened": "开仓时间",
+  "liveOpen.noOpenPositions": "当前没有已开的实盘仓位。",
+  "liveOpen.closeNowBtn": "立即平仓",
+  "liveOpen.closing": "正在平仓…",
+  "alert.connectionError": "连接错误",
+  "alert.closePositionConfirmPrefix": "确定要立即以真实市价单平掉",
+  "alert.closePositionConfirmSuffix": "仓位吗？此操作无法撤销。",
+  "alert.closePositionFailed": "无法平仓",
+  "panel.binanceConnection": "Binance 连接",
+  "panel.liveAccount": "Binance 实盘账户",
+  "liveAccount.title": "实盘交易（真实资金）",
+  "liveAccount.openPositionsSuffix": "个持仓",
+  "liveAccount.liveOff": "实盘交易已关闭",
+  "liveAccount.footnote": "此面板仅显示<b>您自己</b> Binance 账户上的实盘交易——绝不会与上面的模拟面板或其他用户混淆；只有您本人可以看到此内容。",
+  "live.needConnectFirst": "在开始实盘（真实资金）交易之前，您需要先在上方保存并验证您的 Binance API 密钥。",
+  "live.killSwitch": "🛑 所有实盘交易已被管理员临时停止",
+  "live.pausedToday": "⏸ 已达到每日最大亏损限额——今日不会开新仓",
+  "live.on": "🟢 实盘交易已开启",
+  "live.off": "实盘交易已关闭——机器人仅以模拟（演示）模式运行",
+  "live.openPositionCount": "已开实盘仓位数：",
+  "live.todayRealizedPnl": "今日预估已实现盈亏：",
+  "live.positionUsdLabel": "每笔交易的美元金额",
+  "live.positionUsdPlaceholder": "例如 100",
+  "live.maxLeverageLabel": "最大杠杆（1-{n}倍）",
+  "live.maxLeveragePlaceholder": "例如 2",
+  "live.dailyLossLimitLabel": "每日最大亏损限额（USD）——超过后当天交易将自动停止",
+  "live.dailyLossLimitPlaceholder": "例如 50",
+  "live.maxPositionsLabel": "最大持仓数（1-{n}）",
+  "live.maxPositionsPlaceholder": "例如 1",
+  "live.saveSettingsBtn": "保存设置",
+  "live.turnOffBtn": "关闭实盘交易",
+  "live.turnOnBtn": "开启实盘交易（真实资金）",
+  "live.dangerText": "⚠️ 一旦开启实盘交易，机器人将在您注册的 Binance 账户上使用<b>真实资金</b>开仓/平仓。任何损失由您本人负责，而非机器人。这不构成投资建议；遵守适用法规是您自己的责任。",
+  "live.toggleOnConfirm": "您即将开启实盘交易。从此刻起，机器人将在您的 Binance 账户上使用真实资金开仓和平仓。您确认接受亏损风险且这些设置正确吗？",
+  "account.verifyError": "验证错误",
+  "account.verifiedConnected": "已连接并已验证",
+  "account.connectedNotVerified": "已连接，未验证",
+  "account.notConnected": "未连接",
+  "account.credentialWarning": "⚠️ 服务器未配置 CREDENTIAL_ENCRYPTION_KEY——由于无法安全加密，API 密钥无法保存。请联系您的管理员。",
+  "account.savedKeyLabel": "已保存的密钥：",
+  "account.lastVerified": "最后验证时间：",
+  "account.riskAckGiven": "风险确认时间：",
+  "account.riskAckLabel": "我确认并接受，该机器人可能在加密货币期货上下达真实资金订单，存在亏损风险，任何由此产生的损失由我本人负责，而非机器人负责。",
+  "account.apiKeyLabel": "Binance API 密钥",
+  "account.apiSecretLabel": "Binance API 密钥密文",
+  "account.apiKeyPlaceholderChange": "输入新密钥以更改",
+  "account.apiKeyPlaceholderNew": "Binance 合约 API 密钥",
+  "account.apiSecretPlaceholderChange": "输入新密钥密文以更改",
+  "account.apiSecretPlaceholderNew": "Binance 合约 API 密钥密文",
+  "account.saveVerifyBtn": "保存并验证",
+  "account.savingVerifying": "正在保存并验证…",
+  "account.removeConnectionBtn": "移除连接",
+  "alert.apiKeySecretRequired": "需要提供 API 密钥和密钥密文。",
+  "alert.riskAckRequired": "继续之前您必须勾选风险确认框。",
+  "alert.saveFailedGeneric": "无法保存",
+  "alert.actionFailed": "操作失败",
+  "alert.disconnectBinanceConfirm": "确定要移除 Binance 连接吗？",
+  },
+  de: {
+  "nav.dashboard": "Übersicht",
+  "nav.live": "Live-Handel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper-Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
+  "faq.backToDashboard": "← Übersicht",
+  "panel.liveTrading": "Live-Handel",
+  "panel.loading": "Wird geladen…",
+  "pos.entry": "Einstieg",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Datum",
+  "history.headerDirection": "Richtung",
+  "history.headerExit": "Ausstieg",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Grund",
+  "history.noClosedLiveTrades": "Sie haben noch keine geschlossenen Live-Trades.",
+  "liveOpen.headerQty": "Menge",
+  "liveOpen.headerCurrent": "Aktuell",
+  "liveOpen.headerLeverage": "Hebel",
+  "liveOpen.headerOpened": "Eröffnet",
+  "liveOpen.noOpenPositions": "Sie haben derzeit keine offenen Live-Positionen.",
+  "liveOpen.closeNowBtn": "Jetzt schließen",
+  "liveOpen.closing": "Wird geschlossen…",
+  "alert.connectionError": "Verbindungsfehler",
+  "alert.closePositionConfirmPrefix": "Möchten Sie die Position",
+  "alert.closePositionConfirmSuffix": "jetzt mit einer echten Market-Order schließen? Dies kann nicht rückgängig gemacht werden.",
+  "alert.closePositionFailed": "Position konnte nicht geschlossen werden",
+  "panel.binanceConnection": "Binance-Verbindung",
+  "panel.liveAccount": "Binance-Live-Konto",
+  "liveAccount.title": "Live-Handel (echtes Geld)",
+  "liveAccount.openPositionsSuffix": "offene Positionen",
+  "liveAccount.liveOff": "Live-Handel ist ausgeschaltet",
+  "liveAccount.footnote": "Dieses Panel zeigt nur Live-Trades auf <b>Ihrem eigenen</b> Binance-Konto — niemals gemischt mit dem Paper/Demo-Panel oben oder mit anderen Nutzern; nur Sie können dies sehen.",
+  "live.needConnectFirst": "Sie müssen oben zuerst Ihren Binance-API-Schlüssel speichern und verifizieren, bevor Sie mit dem Live-Handel (echtes Geld) beginnen können.",
+  "live.killSwitch": "🛑 Der gesamte Live-Handel wurde vom Administrator vorübergehend gestoppt",
+  "live.pausedToday": "⏸ Tägliches Verlustlimit erreicht — heute werden keine neuen Trades eröffnet",
+  "live.on": "🟢 Live-Handel ist EIN",
+  "live.off": "Live-Handel ist ausgeschaltet — der Bot läuft nur im Paper-(Demo-)Modus",
+  "live.openPositionCount": "Offene Live-Positionen:",
+  "live.todayRealizedPnl": "Heutiger geschätzter realisierter P&L:",
+  "live.positionUsdLabel": "USD-Betrag pro Trade",
+  "live.positionUsdPlaceholder": "z.B. 100",
+  "live.maxLeverageLabel": "Max. Hebel (1-{n}x)",
+  "live.maxLeveragePlaceholder": "z.B. 2",
+  "live.dailyLossLimitLabel": "Täglicher max. Verlustlimit (USD) — der Handel wird für den Tag automatisch gestoppt, wenn er überschritten wird",
+  "live.dailyLossLimitPlaceholder": "z.B. 50",
+  "live.maxPositionsLabel": "Max. offene Positionen (1-{n})",
+  "live.maxPositionsPlaceholder": "z.B. 1",
+  "live.saveSettingsBtn": "Einstellungen speichern",
+  "live.turnOffBtn": "Live-Handel ausschalten",
+  "live.turnOnBtn": "Live-Handel einschalten (echtes Geld)",
+  "live.dangerText": "⚠️ Sobald der Live-Handel aktiviert ist, öffnet/schließt der Bot Orders mit <b>echtem Geld</b> auf Ihrem registrierten Binance-Konto. Sie — nicht der Bot — sind für etwaige Verluste verantwortlich. Dies ist keine Anlageberatung; die Einhaltung geltender Vorschriften liegt in Ihrer eigenen Verantwortung.",
+  "live.toggleOnConfirm": "Sie sind dabei, den Live-Handel zu aktivieren. Von diesem Moment an eröffnet und schließt der Bot Orders mit ECHTEM GELD auf Ihrem Binance-Konto. Bestätigen Sie, dass Sie das Verlustrisiko akzeptieren und diese Einstellungen korrekt sind?",
+  "account.verifyError": "Verifizierungsfehler",
+  "account.verifiedConnected": "Verbunden und verifiziert",
+  "account.connectedNotVerified": "Verbunden, nicht verifiziert",
+  "account.notConnected": "Nicht verbunden",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY ist auf dem Server nicht konfiguriert — API-Schlüssel können nicht gespeichert werden, da sie nicht sicher verschlüsselt werden können. Bitte kontaktieren Sie Ihren Administrator.",
+  "account.savedKeyLabel": "Gespeicherter Schlüssel:",
+  "account.lastVerified": "Zuletzt verifiziert:",
+  "account.riskAckGiven": "Risikobestätigung abgegeben am",
+  "account.riskAckLabel": "Ich bestätige und akzeptiere, dass dieser Bot Echtgeld-Orders auf Krypto-Futures platzieren kann, dass dies ein Verlustrisiko birgt und dass daraus resultierende Verluste meine eigene Verantwortung sind, nicht die des Bots.",
+  "account.apiKeyLabel": "Binance-API-Schlüssel",
+  "account.apiSecretLabel": "Binance-API-Secret",
+  "account.apiKeyPlaceholderChange": "Geben Sie einen neuen Schlüssel ein, um ihn zu ändern",
+  "account.apiKeyPlaceholderNew": "Binance-Futures-API-Schlüssel",
+  "account.apiSecretPlaceholderChange": "Geben Sie ein neues Secret ein, um es zu ändern",
+  "account.apiSecretPlaceholderNew": "Binance-Futures-API-Secret",
+  "account.saveVerifyBtn": "Speichern & verifizieren",
+  "account.savingVerifying": "Speichern & Verifizieren…",
+  "account.removeConnectionBtn": "Verbindung entfernen",
+  "alert.apiKeySecretRequired": "API-Schlüssel und Secret sind erforderlich.",
+  "alert.riskAckRequired": "Sie müssen das Kästchen zur Risikobestätigung aktivieren, bevor Sie fortfahren.",
+  "alert.saveFailedGeneric": "Konnte nicht gespeichert werden",
+  "alert.actionFailed": "Aktion fehlgeschlagen",
+  "alert.disconnectBinanceConfirm": "Möchten Sie die Binance-Verbindung wirklich entfernen?",
+  },
+  fr: {
+  "nav.dashboard": "Tableau de bord",
+  "nav.live": "Trading en direct",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Trades paper",
+  "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
+  "faq.backToDashboard": "← Tableau de bord",
+  "panel.liveTrading": "Trading en direct",
+  "panel.loading": "Chargement…",
+  "pos.entry": "Entrée",
+  "watchlist.headerSymbol": "Symbole",
+  "watchlist.headerUnrealizedPnl": "P&L latent",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Sortie",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Raison",
+  "history.noClosedLiveTrades": "Vous n'avez encore aucun trade en direct clôturé.",
+  "liveOpen.headerQty": "Quantité",
+  "liveOpen.headerCurrent": "Actuel",
+  "liveOpen.headerLeverage": "Effet de levier",
+  "liveOpen.headerOpened": "Ouvert",
+  "liveOpen.noOpenPositions": "Vous n'avez actuellement aucune position en direct ouverte.",
+  "liveOpen.closeNowBtn": "Fermer maintenant",
+  "liveOpen.closing": "Fermeture…",
+  "alert.connectionError": "Erreur de connexion",
+  "alert.closePositionConfirmPrefix": "Voulez-vous vraiment fermer la position",
+  "alert.closePositionConfirmSuffix": "maintenant avec un ordre au marché réel ? Cette action est irréversible.",
+  "alert.closePositionFailed": "Impossible de fermer la position",
+  "panel.binanceConnection": "Connexion Binance",
+  "panel.liveAccount": "Compte Binance en direct",
+  "liveAccount.title": "Trading en direct (argent réel)",
+  "liveAccount.openPositionsSuffix": "positions ouvertes",
+  "liveAccount.liveOff": "Le trading en direct est désactivé",
+  "liveAccount.footnote": "Ce panneau affiche uniquement les trades en direct sur <b>votre propre</b> compte Binance — jamais mélangés avec le panneau paper/démo ci-dessus ni avec d'autres utilisateurs ; personne d'autre que vous ne peut voir ceci.",
+  "live.needConnectFirst": "Vous devez d'abord enregistrer et vérifier votre clé API Binance ci-dessus avant de pouvoir démarrer le trading en direct (argent réel).",
+  "live.killSwitch": "🛑 Tout le trading en direct a été temporairement arrêté par l'administrateur",
+  "live.pausedToday": "⏸ Limite quotidienne de perte maximale atteinte — aucun nouveau trade ne s'ouvrira aujourd'hui",
+  "live.on": "🟢 Le trading en direct est ACTIVÉ",
+  "live.off": "Le trading en direct est désactivé — le bot fonctionne uniquement en mode paper (démo)",
+  "live.openPositionCount": "Positions en direct ouvertes :",
+  "live.todayRealizedPnl": "P&L réalisé estimé aujourd'hui :",
+  "live.positionUsdLabel": "Montant en USD par trade",
+  "live.positionUsdPlaceholder": "p. ex. 100",
+  "live.maxLeverageLabel": "Effet de levier max (1-{n}x)",
+  "live.maxLeveragePlaceholder": "p. ex. 2",
+  "live.dailyLossLimitLabel": "Limite quotidienne de perte maximale (USD) — le trading s'arrête automatiquement pour la journée si elle est dépassée",
+  "live.dailyLossLimitPlaceholder": "p. ex. 50",
+  "live.maxPositionsLabel": "Positions ouvertes max (1-{n})",
+  "live.maxPositionsPlaceholder": "p. ex. 1",
+  "live.saveSettingsBtn": "Enregistrer les paramètres",
+  "live.turnOffBtn": "Désactiver le trading en direct",
+  "live.turnOnBtn": "Activer le trading en direct (argent réel)",
+  "live.dangerText": "⚠️ Une fois le trading en direct activé, le bot ouvre/ferme des ordres avec de <b>l'argent réel</b> sur votre compte Binance enregistré. Vous — pas le bot — êtes responsable de toute perte. Ceci ne constitue pas un conseil en investissement ; le respect des réglementations applicables relève de votre propre responsabilité.",
+  "live.toggleOnConfirm": "Vous êtes sur le point d'activer le trading en direct. À partir de ce moment, le bot ouvrira et fermera des ordres avec de L'ARGENT RÉEL sur votre compte Binance. Confirmez-vous accepter le risque de perte et que ces paramètres sont corrects ?",
+  "account.verifyError": "Erreur de vérification",
+  "account.verifiedConnected": "Connecté et vérifié",
+  "account.connectedNotVerified": "Connecté, non vérifié",
+  "account.notConnected": "Non connecté",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY n'est pas configuré sur le serveur — les clés API ne peuvent pas être enregistrées car elles ne peuvent pas être chiffrées en toute sécurité. Veuillez contacter votre administrateur.",
+  "account.savedKeyLabel": "Clé enregistrée :",
+  "account.lastVerified": "Dernière vérification :",
+  "account.riskAckGiven": "Accusé de risque donné le",
+  "account.riskAckLabel": "Je confirme et accepte que ce bot puisse passer des ordres en argent réel sur des contrats à terme crypto, que cela comporte un risque de perte, et que toute perte en résultant est de ma propre responsabilité, et non celle du bot.",
+  "account.apiKeyLabel": "Clé API Binance",
+  "account.apiSecretLabel": "Secret API Binance",
+  "account.apiKeyPlaceholderChange": "Saisissez une nouvelle clé pour la modifier",
+  "account.apiKeyPlaceholderNew": "Clé API Binance Futures",
+  "account.apiSecretPlaceholderChange": "Saisissez un nouveau secret pour le modifier",
+  "account.apiSecretPlaceholderNew": "Secret API Binance Futures",
+  "account.saveVerifyBtn": "Enregistrer et vérifier",
+  "account.savingVerifying": "Enregistrement et vérification…",
+  "account.removeConnectionBtn": "Supprimer la connexion",
+  "alert.apiKeySecretRequired": "La clé API et le secret sont requis.",
+  "alert.riskAckRequired": "Vous devez cocher la case d'accusé de risque avant de continuer.",
+  "alert.saveFailedGeneric": "Impossible d'enregistrer",
+  "alert.actionFailed": "L'action a échoué",
+  "alert.disconnectBinanceConfirm": "Voulez-vous vraiment supprimer la connexion Binance ?",
+  },
+  es: {
+  "nav.dashboard": "Panel",
+  "nav.live": "Operaciones en vivo",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Operaciones de prueba",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
+  "faq.backToDashboard": "← Panel",
+  "panel.liveTrading": "Operaciones en vivo",
+  "panel.loading": "Cargando…",
+  "pos.entry": "Entrada",
+  "watchlist.headerSymbol": "Símbolo",
+  "watchlist.headerUnrealizedPnl": "P&L no realizado",
+  "history.headerDate": "Fecha",
+  "history.headerDirection": "Dirección",
+  "history.headerExit": "Salida",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Motivo",
+  "history.noClosedLiveTrades": "Aún no tienes operaciones en vivo cerradas.",
+  "liveOpen.headerQty": "Cantidad",
+  "liveOpen.headerCurrent": "Actual",
+  "liveOpen.headerLeverage": "Apalancamiento",
+  "liveOpen.headerOpened": "Abierto",
+  "liveOpen.noOpenPositions": "No tienes posiciones en vivo abiertas ahora mismo.",
+  "liveOpen.closeNowBtn": "Cerrar ahora",
+  "liveOpen.closing": "Cerrando…",
+  "alert.connectionError": "Error de conexión",
+  "alert.closePositionConfirmPrefix": "¿Seguro que quieres cerrar la posición",
+  "alert.closePositionConfirmSuffix": "ahora con una orden de mercado real? Esto no se puede deshacer.",
+  "alert.closePositionFailed": "No se pudo cerrar la posición",
+  "panel.binanceConnection": "Conexión con Binance",
+  "panel.liveAccount": "Cuenta en vivo de Binance",
+  "liveAccount.title": "Operaciones en vivo (dinero real)",
+  "liveAccount.openPositionsSuffix": "posiciones abiertas",
+  "liveAccount.liveOff": "Las operaciones en vivo están desactivadas",
+  "liveAccount.footnote": "Este panel solo muestra las operaciones en vivo de <b>tu propia</b> cuenta de Binance; nunca se mezcla con el panel paper/demo de arriba ni con otros usuarios; nadie más que tú puede ver esto.",
+  "live.needConnectFirst": "Debes guardar y verificar tu clave API de Binance arriba antes de poder iniciar operaciones en vivo (dinero real).",
+  "live.killSwitch": "🛑 El administrador ha detenido temporalmente todas las operaciones en vivo",
+  "live.pausedToday": "⏸ Se alcanzó el límite diario de pérdida máxima; hoy no se abrirán nuevas operaciones",
+  "live.on": "🟢 Las operaciones en vivo están ACTIVADAS",
+  "live.off": "Las operaciones en vivo están desactivadas; el bot solo funciona en modo paper (demo)",
+  "live.openPositionCount": "Posiciones en vivo abiertas:",
+  "live.todayRealizedPnl": "P&L realizado estimado de hoy:",
+  "live.positionUsdLabel": "Monto en USD por operación",
+  "live.positionUsdPlaceholder": "p. ej. 100",
+  "live.maxLeverageLabel": "Apalancamiento máximo (1-{n}x)",
+  "live.maxLeveragePlaceholder": "p. ej. 2",
+  "live.dailyLossLimitLabel": "Límite diario de pérdida máxima (USD): las operaciones se detienen automáticamente por el día si se supera",
+  "live.dailyLossLimitPlaceholder": "p. ej. 50",
+  "live.maxPositionsLabel": "Posiciones abiertas máximas (1-{n})",
+  "live.maxPositionsPlaceholder": "p. ej. 1",
+  "live.saveSettingsBtn": "Guardar configuración",
+  "live.turnOffBtn": "Desactivar operaciones en vivo",
+  "live.turnOnBtn": "Activar operaciones en vivo (dinero real)",
+  "live.dangerText": "⚠️ Una vez activadas las operaciones en vivo, el bot abre/cierra órdenes con <b>dinero real</b> en tu cuenta registrada de Binance. Tú, no el bot, eres responsable de cualquier pérdida. Esto no es asesoramiento de inversión; el cumplimiento de la normativa aplicable es tu propia responsabilidad.",
+  "live.toggleOnConfirm": "Estás a punto de activar las operaciones en vivo. A partir de este momento, el bot abrirá y cerrará órdenes con DINERO REAL en tu cuenta de Binance. ¿Confirmas que aceptas el riesgo de pérdida y que esta configuración es correcta?",
+  "account.verifyError": "Error de verificación",
+  "account.verifiedConnected": "Conectado y verificado",
+  "account.connectedNotVerified": "Conectado, no verificado",
+  "account.notConnected": "No conectado",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY no está configurado en el servidor; las claves API no se pueden guardar porque no se pueden cifrar de forma segura. Contacta a tu administrador.",
+  "account.savedKeyLabel": "Clave guardada:",
+  "account.lastVerified": "Última verificación:",
+  "account.riskAckGiven": "Reconocimiento de riesgo dado el",
+  "account.riskAckLabel": "Confirmo y acepto que este bot puede colocar órdenes con dinero real en futuros de criptomonedas, que esto conlleva riesgo de pérdida, y que cualquier pérdida resultante es mi propia responsabilidad, no del bot.",
+  "account.apiKeyLabel": "Clave API de Binance",
+  "account.apiSecretLabel": "Secreto de API de Binance",
+  "account.apiKeyPlaceholderChange": "Introduce una nueva clave para cambiarla",
+  "account.apiKeyPlaceholderNew": "Clave API de Binance Futures",
+  "account.apiSecretPlaceholderChange": "Introduce un nuevo secreto para cambiarlo",
+  "account.apiSecretPlaceholderNew": "Secreto de API de Binance Futures",
+  "account.saveVerifyBtn": "Guardar y verificar",
+  "account.savingVerifying": "Guardando y verificando…",
+  "account.removeConnectionBtn": "Eliminar conexión",
+  "alert.apiKeySecretRequired": "Se requieren la clave API y el secreto.",
+  "alert.riskAckRequired": "Debes marcar la casilla de reconocimiento de riesgo antes de continuar.",
+  "alert.saveFailedGeneric": "No se pudo guardar",
+  "alert.actionFailed": "La acción falló",
+  "alert.disconnectBinanceConfirm": "¿Seguro que quieres eliminar la conexión con Binance?",
+  },
+};
+
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+  if(accountCache) renderAccount(accountCache);
+  if(liveMineCache) renderMyLive(liveMineCache);
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+refreshAccount();
+refreshMyLive(); setInterval(refreshMyLive,15000);
+</script>
+</body></html>'''
+
 
 
 
@@ -6316,6 +6919,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path=='/faq':
             self._send_html(FAQ_HTML); return
+
+        if path=='/live':
+            self._send_html(LIVE_HTML); return
 
         if path=='/backtest':
             self._send_html(BACKTEST_HTML); return
