@@ -990,7 +990,7 @@ th.sort-active{color:var(--accent)}
 </section>
 
 <section class="cols">
-  <div class="panel">
+  <div class="panel" id="positionPanel" style="scroll-margin-top:90px">
     <div class="panel-head"><h2><span data-i18n="panel.openPosition">Open position</span> <span class="text-faint" id="detailSymbol">— ETHUSDT</span></h2></div>
     <div class="position-body" id="position" data-i18n="panel.loading">Loading…</div>
   </div>
@@ -2877,6 +2877,8 @@ function selectSymbol(symbol){
   selectedSymbol=symbol;
   renderDetail();
   renderWatchlistTable();
+  const panel=document.getElementById('positionPanel');
+  if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 function renderDetail(){
