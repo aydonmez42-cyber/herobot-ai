@@ -3165,9 +3165,12 @@ th.sort-active{color:var(--accent)}
 .row-clickable{cursor:pointer}
 .row-clickable:hover{background:var(--panel-2)}
 .tv-chart-empty{padding:60px 18px;text-align:center;color:var(--text-faint);font-size:13px}
-.tv-chart-frame{width:100%;height:560px;border:0;display:block}
+.tv-chart-frame{width:100%;height:900px;border:0;display:block}
 .tv-chart-frame.hidden{display:none}
-@media(max-width:640px){.tv-chart-frame{height:400px}}
+.tv-chart-frame:fullscreen{height:100vh}
+.tv-chart-frame:-webkit-full-screen{height:100vh}
+@media(max-width:640px){.tv-chart-frame{height:560px}}
+.tv-fullscreen-btn{margin-left:auto}
 </style>
 '''
 
@@ -3319,7 +3322,7 @@ SCANNER_HTML = r'''<!doctype html>
 </section>
 
 <section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2></div>
+  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
   <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
   <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
 </section>
@@ -3385,7 +3388,16 @@ function openTvChart(tvSymbol,label){
   container.appendChild(script);
   outer.classList.remove('hidden');
   document.getElementById('tvChartEmpty').style.display='none';
+  document.getElementById('tvFullscreenBtn').classList.remove('hidden');
   document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function toggleTvFullscreen(){
+  const el=document.getElementById('tvChartOuter');
+  if(!document.fullscreenElement){
+    (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+  }else{
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+  }
 }
 async function addToWatchlist(symbol,market,signal,btn){
   if(btn){btn.disabled=true;btn.textContent=t('watchlist.adding');}
@@ -3569,6 +3581,7 @@ const translations = {
   "tvChart.title": "TradingView Chart",
   "tvChart.noSymbol": "— no symbol selected",
   "tvChart.emptyMessage": "Click a row in the scan tables above to view that symbol's TradingView chart here.",
+  "tvChart.fullscreen": "⛶ Fullscreen",
   },
   tr: {
   "nav.dashboard": "Panel",
@@ -3631,6 +3644,7 @@ const translations = {
   "tvChart.title": "TradingView Grafiği",
   "tvChart.noSymbol": "— sembol seçilmedi",
   "tvChart.emptyMessage": "Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.",
+  "tvChart.fullscreen": "⛶ Tam Ekran",
   },
   zh: {
   "nav.dashboard": "仪表盘",
@@ -3693,6 +3707,7 @@ const translations = {
   "tvChart.title": "TradingView 图表",
   "tvChart.noSymbol": "— 未选择交易对",
   "tvChart.emptyMessage": "点击上方扫描表格中的一行，即可在此处查看该交易对的 TradingView 图表。",
+  "tvChart.fullscreen": "⛶ 全屏",
   },
   de: {
   "nav.dashboard": "Übersicht",
@@ -3755,6 +3770,7 @@ const translations = {
   "tvChart.title": "TradingView-Chart",
   "tvChart.noSymbol": "— kein Symbol ausgewählt",
   "tvChart.emptyMessage": "Klicken Sie auf eine Zeile in den obigen Scan-Tabellen, um hier den TradingView-Chart dieses Symbols anzuzeigen.",
+  "tvChart.fullscreen": "⛶ Vollbild",
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
@@ -3817,6 +3833,7 @@ const translations = {
   "tvChart.title": "Graphique TradingView",
   "tvChart.noSymbol": "— aucun symbole sélectionné",
   "tvChart.emptyMessage": "Cliquez sur une ligne dans les tableaux de scan ci-dessus pour afficher ici le graphique TradingView de ce symbole.",
+  "tvChart.fullscreen": "⛶ Plein écran",
   },
   es: {
   "nav.dashboard": "Panel",
@@ -3879,6 +3896,7 @@ const translations = {
   "tvChart.title": "Gráfico de TradingView",
   "tvChart.noSymbol": "— ningún símbolo seleccionado",
   "tvChart.emptyMessage": "Haz clic en una fila de las tablas de escaneo de arriba para ver aquí el gráfico de TradingView de ese símbolo.",
+  "tvChart.fullscreen": "⛶ Pantalla completa",
   },
 };
 
