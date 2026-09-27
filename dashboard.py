@@ -3352,16 +3352,9 @@ function addCell(symbol,market,signal){
 function openTvChart(tvSymbol,label){
   document.getElementById('tvChartSymbol').textContent='— '+label;
   const frame=document.getElementById('tvChartFrame');
-  // TradingView'in ücretsiz embed widget'ı özel Pine Script çalıştıramaz (hesapsız/anonim
-  // oturum), bu yüzden botun kendi indikatöründeki Supertrend + puan paneli buraya eklenemiyor.
-  // Bunun yerine, periyotları botun ayarlarıyla eşleşen TradingView built-in göstergeler
-  // eklendi: RSI(14), MACD(12,26,9), CCI(20), Stochastic RSI(14,14,3,3), ADX/DM(14).
-  // EMA(50)/EMA(100) built-in listede var ama widget URL'sinden periyot ayarı verilemiyor;
-  // grafik açıldıktan sonra sağ üstteki "Gösterge Ekle" ile manuel eklenebilir.
-  const studies=["RSI@tv-basicstudies","MACD@tv-basicstudies","CCI@tv-basicstudies","StochasticRSI@tv-basicstudies","DM@tv-basicstudies"];
   frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
     +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
-    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies='+encodeURIComponent(JSON.stringify(studies))+'&locale='+encodeURIComponent(currentLang||'en');
+    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale='+encodeURIComponent(currentLang||'en');
   frame.classList.remove('hidden');
   document.getElementById('tvChartEmpty').style.display='none';
   document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
