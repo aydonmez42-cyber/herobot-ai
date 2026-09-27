@@ -764,8 +764,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 @media (prefers-reduced-motion:no-preference){@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}}
 
 /* Top nav */
-.topnav{display:flex;gap:6px;align-items:center;padding:0 4px;margin-bottom:14px}
-.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;border:1px solid transparent}
+.topnav{display:flex;gap:4px 6px;align-items:center;padding:0 4px;margin-bottom:14px;flex-wrap:wrap}
+.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
 .topnav a:hover{color:var(--text)}
 .topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
 
@@ -959,10 +959,11 @@ th.sort-active{color:var(--accent)}
 
 <nav class="topnav">
   <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -996,120 +997,6 @@ th.sort-active{color:var(--accent)}
   </div>
 </section>
 
-<section class="panel scanner-panel">
-  <div class="panel-head scanner-tabs">
-    <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')" data-i18n="scanner.tabCrypto">Binance Futures</button>
-    <button class="tab" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
-    <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
-    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 4H closed candle &middot; for signal purposes only, no real orders</div>
-  </div>
-
-  <div class="tabpane active" id="tab-crypto">
-    <div class="scanner-controls">
-      <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
-      <select id="signalFilter" onchange="renderScanner()">
-        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
-      </select>
-      <button class="btn" onclick="startScanner(true)" data-i18n="scanner.scanAll">Scan all</button>
-      <span class="scanner-status" id="scannerStatus" data-i18n="scanner.preparing">Preparing…</span>
-    </div>
-    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long" id="longCount">LONG 0</span><span class="tag tag-short" id="shortCount">SHORT 0</span><span class="tag tag-flat" id="noCount">NO SIGNAL 0</span></div>
-    <div class="table-scroll tall">
-      <table class="datatable" id="scannerTable">
-        <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="scanner" data-i18n="scanner.headerCoin">Coin</th>
-          <th class="sortable num" data-key="price" data-tbl="scanner" data-i18n="scanner.headerPrice">Price</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="scanner" data-i18n="scanner.headerChange24h">24h %</th>
-          <th class="sortable num" data-key="volume" data-tbl="scanner" data-i18n="scanner.headerVolume">Volume</th>
-          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="scanner" data-i18n="scanner.headerAdx">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="scanner" data-i18n="scanner.headerRsi">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="scanner" data-i18n="scanner.headerCci">CCI</th>
-          <th data-i18n="scanner.headerMacd">MACD</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner" data-i18n="scanner.headerAtrp">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="scanner" data-i18n="scanner.headerSignal">Signal</th>
-          <th data-i18n="scanner.headerReason">Description</th>
-          <th data-i18n="scanner.headerAdd">Add</th>
-        </tr></thead>
-        <tbody id="scannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="tabpane" id="tab-bist">
-    <div class="scanner-controls">
-      <input id="bistSearch" placeholder="Search stock (e.g. THYAO)" data-i18n-placeholder="scanner.stockSearchPlaceholderBist" oninput="renderBistScanner()">
-      <select id="bistSignalFilter" onchange="renderBistScanner()">
-        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
-      </select>
-      <button class="btn" onclick="startBistScanner(true)" data-i18n="scanner.scanBist">Scan Borsa Istanbul</button>
-      <span class="scanner-status" id="bistScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
-    </div>
-    <div class="scanner-summary"><span id="bistCount">0 stocks</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
-    <div class="table-scroll tall">
-      <table class="datatable" id="bistScannerTable">
-        <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="bist" data-i18n="scanner.headerStock">Stock</th>
-          <th class="sortable num" data-key="price" data-tbl="bist" data-i18n="scanner.headerPrice">Price</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="bist" data-i18n="scanner.headerChangeDaily">Daily %</th>
-          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="bist" data-i18n="scanner.headerAdx">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="bist" data-i18n="scanner.headerRsi">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="bist" data-i18n="scanner.headerCci">CCI</th>
-          <th data-i18n="scanner.headerMacd">MACD</th>
-          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="bist" data-i18n="scanner.headerAtrp">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="bist" data-i18n="scanner.headerSignal">Signal</th>
-          <th data-i18n="scanner.headerReason">Description</th>
-          <th data-i18n="scanner.headerAdd">Add</th>
-        </tr></thead>
-        <tbody id="bistScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
-      </table>
-    </div>
-    <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
-  </div>
-
-  <div class="tabpane" id="tab-us">
-    <div class="scanner-controls">
-      <input id="usSearch" placeholder="Search stock (e.g. AAPL)" data-i18n-placeholder="scanner.stockSearchPlaceholderUs" oninput="renderUsScanner()">
-      <select id="usSignalFilter" onchange="renderUsScanner()">
-        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
-      </select>
-      <button class="btn" onclick="startUsScanner(true)" data-i18n="scanner.scanUs">Scan S&amp;P500/Nasdaq-100</button>
-      <span class="scanner-status" id="usScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
-    </div>
-    <div class="scanner-summary"><span id="usCount">0 stocks</span><span class="tag tag-long" id="usLongCount">LONG 0</span><span class="tag tag-short" id="usShortCount">SHORT 0</span><span class="tag tag-flat" id="usNoCount">NO SIGNAL 0</span></div>
-    <div class="table-scroll tall">
-      <table class="datatable" id="usScannerTable">
-        <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="us" data-i18n="scanner.headerStock">Stock</th>
-          <th class="sortable num" data-key="price" data-tbl="us" data-i18n="scanner.headerPrice">Price</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="us" data-i18n="scanner.headerChangeDaily">Daily %</th>
-          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="us" data-i18n="scanner.headerAdx">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="us" data-i18n="scanner.headerRsi">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="us" data-i18n="scanner.headerCci">CCI</th>
-          <th data-i18n="scanner.headerMacd">MACD</th>
-          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="us" data-i18n="scanner.headerAtrp">ATRP %ile</th>
-          <th class="sortable" data-key="signal" data-tbl="us" data-i18n="scanner.headerSignal">Signal</th>
-          <th data-i18n="scanner.headerReason">Description</th>
-          <th data-i18n="scanner.headerAdd">Add</th>
-        </tr></thead>
-        <tbody id="usScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
-      </table>
-    </div>
-    <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
-  </div>
-</section>
-
-<section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2></div>
-  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
-  <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
-</section>
-
-
 <div class="page-footer" data-i18n="footer.autoRefresh">Auto-refresh: position 5s &middot; scanners 10s &middot; paper trading, no real orders.</div>
 </div>
 
@@ -1124,6 +1011,7 @@ const translations = {
   "nav.logout": "Logout",
   "nav.language": "Language",
   "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -1390,6 +1278,7 @@ const translations = {
   "nav.logout": "Çıkış",
   "nav.language": "Dil",
   "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -1656,6 +1545,7 @@ const translations = {
   "nav.logout": "退出登录",
   "nav.language": "语言",
   "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -1922,6 +1812,7 @@ const translations = {
   "nav.logout": "Abmelden",
   "nav.language": "Sprache",
   "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -2188,6 +2079,7 @@ const translations = {
   "nav.logout": "Déconnexion",
   "nav.language": "Langue",
   "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -2454,6 +2346,7 @@ const translations = {
   "nav.logout": "Cerrar sesión",
   "nav.language": "Idioma",
   "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -2742,9 +2635,6 @@ function applyTranslation(lang){
 }
 function refreshDynamicTexts(){
   try{ if(statusCache) render(statusCache); }catch(e){}
-  try{ renderScanner(); }catch(e){}
-  try{ renderBistScanner(); }catch(e){}
-  try{ renderUsScanner(); }catch(e){}
 }
 let _initialLang = 'en';
 try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
@@ -2879,155 +2769,17 @@ function render(d){
   drawSparkline(eqSeries);
 
 
-  syncWatchlistSymbols();
   if(selectedSymbol==='ETHUSDT') renderDetail();
 }
 
-function switchTab(name){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
-  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-}
-
 function sigClass(x){return x==='LONG'?'sig-long':x==='SHORT'?'sig-short':x==='ERROR'?'sig-error':'sig-none'}
-function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return `<span class="pill ${c}">${x}</span>`}
-
-let watchlistSymbols=new Set();
-function addCell(symbol,market,signal){
-  if(signal!=='LONG'&&signal!=='SHORT') return '<span class="text-faint">—</span>';
-  if(watchlistSymbols.has(symbol)) return '<span class="added-tag">'+t('watchlist.added')+'</span>';
-  return `<button class="add-btn" onclick="event.stopPropagation();addToWatchlist('${symbol}','${market}','${signal}',this)">${t('watchlist.addBtn')}</button>`;
-}
-
-// TradingView "Advanced Chart" widget — TradingView's own free public embed
-// (no API key, no account needed; https://www.tradingview.com/widget/advanced-chart/).
-// Clicking any scanner row loads that symbol's live chart into the panel below.
-function openTvChart(tvSymbol,label){
-  document.getElementById('tvChartSymbol').textContent='— '+label;
-  const frame=document.getElementById('tvChartFrame');
-  frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
-    +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
-    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale='+encodeURIComponent(currentLang||'en');
-  frame.classList.remove('hidden');
-  document.getElementById('tvChartEmpty').style.display='none';
-  document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
-}
-async function addToWatchlist(symbol,market,signal,btn){
-  if(btn){btn.disabled=true;btn.textContent=t('watchlist.adding');}
-  try{
-    const r=await fetch(`/api/watchlist/add?symbol=${encodeURIComponent(symbol)}&market=${market}&signal=${encodeURIComponent(signal)}`,{cache:'no-store'});
-    const d=await r.json();
-    if(!d.ok && btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');alert(d.error||t('alert.notAdded'));}
-  }catch(e){ if(btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');} }
-  await refreshWatchlist();
-}
-function syncWatchlistSymbols(){
-  watchlistSymbols=new Set((watchlistCache.items||[]).map(x=>x.symbol));
-}
 
 async function refreshWatchlist(){
   let d;
   try{ const r=await fetch('/api/watchlist',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
   watchlistCache=d;
-  syncWatchlistSymbols();
   if(selectedSymbol!=='ETHUSDT') renderDetail();
-  renderScanner(); renderBistScanner(); renderUsScanner();
 }
-
-const sortState={scanner:{key:null,dir:1},bist:{key:null,dir:1},us:{key:null,dir:1}};
-function attachSort(tblId,cacheGetter,renderFn){
-  document.querySelectorAll(`#${tblId} th[data-key]`).forEach(th=>{
-    if(!th.classList.contains('sortable'))return;
-    th.addEventListener('click',()=>{
-      const tbl=th.dataset.tbl,key=th.dataset.key;
-      const state=sortState[tbl];
-      state.dir=(state.key===key)?-state.dir:1; state.key=key;
-      document.querySelectorAll(`#${tblId} th`).forEach(h=>h.classList.remove('sort-active'));
-      th.classList.add('sort-active');
-      renderFn();
-    });
-  });
-}
-function sortRows(rows,tbl){
-  const state=sortState[tbl];
-  if(!state.key) return rows;
-  const k=state.key,dir=state.dir;
-  return rows.slice().sort((a,b)=>{
-    let av=a[k],bv=b[k];
-    const an=Number(av),bn=Number(bv);
-    if(!isNaN(an)&&!isNaN(bn)&&av!==null&&bv!==null){return (an-bn)*dir;}
-    return String(av??'').localeCompare(String(bv??''))*dir;
-  });
-}
-
-async function scannerData(){try{let r=await fetch('/api/scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
-let scannerCache={results:[]};
-function renderScanner(){
-  let q=(document.getElementById('coinSearch')?.value||'').toUpperCase();
-  let f=document.getElementById('signalFilter')?.value||'ALL';
-  let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
-  rows=sortRows(rows,'scanner');
-  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Binance Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
-  document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
-  document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('noCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
-}
-async function bistScannerData(){try{let r=await fetch('/api/bist-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
-let bistScannerCache={results:[]};
-function renderBistScanner(){
-  let q=(document.getElementById('bistSearch')?.value||'').toUpperCase();
-  let f=document.getElementById('bistSignalFilter')?.value||'ALL';
-  let rows=bistScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
-  rows=sortRows(rows,'bist');
-  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
-  document.getElementById('bistCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
-  document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('bistNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
-}
-attachSort('scannerTable',()=>scannerCache,renderScanner);
-attachSort('bistScannerTable',()=>bistScannerCache,renderBistScanner);
-attachSort('usScannerTable',()=>usScannerCache,renderUsScanner);
-
-async function refreshBistScanner(){
-  let d=await bistScannerData();bistScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`${t('scanner.tabBist')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
-  document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
-}
-async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent=t('scanner.startingBistScan');try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
-refreshBistScanner();setInterval(refreshBistScanner,10000);
-
-async function usScannerData(){try{let r=await fetch('/api/us-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
-let usScannerCache={results:[]};
-function renderUsScanner(){
-  let q=(document.getElementById('usSearch')?.value||'').toUpperCase();
-  let f=document.getElementById('usSignalFilter')?.value||'ALL';
-  let rows=usScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
-  rows=sortRows(rows,'us');
-  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
-  document.getElementById('usCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
-  document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('usNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
-}
-async function refreshUsScanner(){
-  let d=await usScannerData();usScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
-  document.getElementById('usScannerStatus').textContent=txt;renderUsScanner();
-}
-async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent=t('scanner.startingUsScan');try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
-refreshUsScanner();setInterval(refreshUsScanner,10000);
-
-async function refreshScanner(){
-  let d=await scannerData();scannerCache=d;
-  let st=d.status||'IDLE';
-  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
-  document.getElementById('scannerStatus').textContent=txt;renderScanner();
-}
-async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
-refreshScanner();setInterval(refreshScanner,10000);
 
 async function refresh(){
   try{let r=await fetch('/api/status',{cache:'no-store'});let d=await r.json();render(d)}
@@ -3346,8 +3098,8 @@ _NAV_PAGE_STYLE_EXTRA = r'''
 .lang-select{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-d)}
 .lang-select:hover{border-color:var(--accent);color:var(--accent)}
 .lang-select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.topnav{display:flex;gap:6px;align-items:center;padding:0 4px;margin-bottom:14px}
-.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;border:1px solid transparent}
+.topnav{display:flex;gap:4px 6px;align-items:center;padding:0 4px;margin-bottom:14px;flex-wrap:wrap}
+.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
 .topnav a:hover{color:var(--text)}
 .topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
@@ -3376,6 +3128,764 @@ td.num{text-align:right}
 @media(max-width:640px){.app{padding:12px}.topbar{flex-wrap:wrap}.kpistrip{flex-wrap:wrap}.kpi-divider{display:none}.kpi{min-width:45%}}
 </style>
 '''
+
+_SCANNER_STYLE_EXTRA = r'''
+<style>
+table.datatable td.wrap-cell{white-space:normal;font-family:var(--font-d);color:var(--text-dim);font-size:12px}
+table.datatable td.empty{color:var(--text-dim);font-family:var(--font-d);white-space:normal;padding:22px 12px;text-align:center}
+.table-scroll.tall{max-height:600px}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+th.sort-active{color:var(--accent)}
+.pill{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:var(--font-m)}
+.pill.long{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-border)}
+.pill.short{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
+.pill.flat{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--border-soft)}
+.scanner-panel{}
+.scanner-tabs{gap:16px;flex-wrap:wrap}
+.tab{background:none;border:none;color:var(--text-faint);font-family:var(--font-d);font-size:13.5px;font-weight:600;padding:4px 0;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:var(--text);border-color:var(--accent)}
+.scanner-note{color:var(--text-faint);font-size:11.5px;margin-left:auto}
+.tabpane{display:none;padding:14px 18px 18px}
+.tabpane.active{display:block}
+.scanner-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.scanner-controls input,.scanner-controls select{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:12.5px;font-family:var(--font-d)}
+.scanner-status{color:var(--text-dim);font-size:12px;align-self:center;margin-left:2px}
+.scanner-summary{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;font-size:11.5px}
+.scanner-summary>span:first-child{color:var(--text-dim);align-self:center;margin-right:4px}
+.tag{padding:3px 9px;border-radius:999px;font-family:var(--font-m);font-weight:700}
+.tag-long{background:var(--bull-bg);color:var(--bull)}
+.tag-short{background:var(--bear-bg);color:var(--bear)}
+.tag-flat{background:var(--panel-2);color:var(--text-dim)}
+.footnote{margin-top:12px;color:var(--text-faint);font-size:11.5px}
+.add-btn{background:var(--accent-soft);color:var(--accent);border:1px solid #4a3d22;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-d);white-space:nowrap}
+.add-btn:hover{background:var(--accent);color:#1a1406}
+.add-btn:disabled{opacity:.55;cursor:default}
+.added-tag{color:var(--bull);font-size:11px;font-weight:700;font-family:var(--font-m);white-space:nowrap}
+.row-clickable{cursor:pointer}
+.row-clickable:hover{background:var(--panel-2)}
+.tv-chart-empty{padding:60px 18px;text-align:center;color:var(--text-faint);font-size:13px}
+.tv-chart-frame{width:100%;height:560px;border:0;display:block}
+.tv-chart-frame.hidden{display:none}
+@media(max-width:640px){.tv-chart-frame{height:400px}}
+</style>
+'''
+
+SCANNER_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tarama — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _SCANNER_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="panel.scanner">Scan</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" class="active" data-i18n="nav.scanner">Scan</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
+</nav>
+
+<section class="panel scanner-panel">
+  <div class="panel-head scanner-tabs">
+    <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')" data-i18n="scanner.tabCrypto">Crypto Futures</button>
+    <button class="tab" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
+    <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
+    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 4H closed candle &middot; for signal purposes only, no real orders</div>
+  </div>
+
+  <div class="tabpane active" id="tab-crypto">
+    <div class="scanner-controls">
+      <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
+      <select id="signalFilter" onchange="renderScanner()">
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+      </select>
+      <button class="btn" onclick="startScanner(true)" data-i18n="scanner.scanAll">Scan all</button>
+      <span class="scanner-status" id="scannerStatus" data-i18n="scanner.preparing">Preparing…</span>
+    </div>
+    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long" id="longCount">LONG 0</span><span class="tag tag-short" id="shortCount">SHORT 0</span><span class="tag tag-flat" id="noCount">NO SIGNAL 0</span></div>
+    <div class="table-scroll tall">
+      <table class="datatable" id="scannerTable">
+        <thead><tr>
+          <th class="sortable" data-key="symbol" data-tbl="scanner" data-i18n="scanner.headerCoin">Coin</th>
+          <th class="sortable num" data-key="price" data-tbl="scanner" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="scanner" data-i18n="scanner.headerChange24h">24h %</th>
+          <th class="sortable num" data-key="volume" data-tbl="scanner" data-i18n="scanner.headerVolume">Volume</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="scanner" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="scanner" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="scanner" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="scanner" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
+        </tr></thead>
+        <tbody id="scannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tabpane" id="tab-bist">
+    <div class="scanner-controls">
+      <input id="bistSearch" placeholder="Search stock (e.g. THYAO)" data-i18n-placeholder="scanner.stockSearchPlaceholderBist" oninput="renderBistScanner()">
+      <select id="bistSignalFilter" onchange="renderBistScanner()">
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+      </select>
+      <button class="btn" onclick="startBistScanner(true)" data-i18n="scanner.scanBist">Scan Borsa Istanbul</button>
+      <span class="scanner-status" id="bistScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
+    </div>
+    <div class="scanner-summary"><span id="bistCount">0 stocks</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
+    <div class="table-scroll tall">
+      <table class="datatable" id="bistScannerTable">
+        <thead><tr>
+          <th class="sortable" data-key="symbol" data-tbl="bist" data-i18n="scanner.headerStock">Stock</th>
+          <th class="sortable num" data-key="price" data-tbl="bist" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="bist" data-i18n="scanner.headerChangeDaily">Daily %</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="bist" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="bist" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="bist" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="bist" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="bist" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
+        </tr></thead>
+        <tbody id="bistScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
+  </div>
+
+  <div class="tabpane" id="tab-us">
+    <div class="scanner-controls">
+      <input id="usSearch" placeholder="Search stock (e.g. AAPL)" data-i18n-placeholder="scanner.stockSearchPlaceholderUs" oninput="renderUsScanner()">
+      <select id="usSignalFilter" onchange="renderUsScanner()">
+        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
+      </select>
+      <button class="btn" onclick="startUsScanner(true)" data-i18n="scanner.scanUs">Scan S&amp;P500/Nasdaq-100</button>
+      <span class="scanner-status" id="usScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
+    </div>
+    <div class="scanner-summary"><span id="usCount">0 stocks</span><span class="tag tag-long" id="usLongCount">LONG 0</span><span class="tag tag-short" id="usShortCount">SHORT 0</span><span class="tag tag-flat" id="usNoCount">NO SIGNAL 0</span></div>
+    <div class="table-scroll tall">
+      <table class="datatable" id="usScannerTable">
+        <thead><tr>
+          <th class="sortable" data-key="symbol" data-tbl="us" data-i18n="scanner.headerStock">Stock</th>
+          <th class="sortable num" data-key="price" data-tbl="us" data-i18n="scanner.headerPrice">Price</th>
+          <th class="sortable num" data-key="change_pct" data-tbl="us" data-i18n="scanner.headerChangeDaily">Daily %</th>
+          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
+          <th class="sortable num" data-key="adx" data-tbl="us" data-i18n="scanner.headerAdx">ADX</th>
+          <th class="sortable num" data-key="rsi" data-tbl="us" data-i18n="scanner.headerRsi">RSI</th>
+          <th class="sortable num" data-key="cci" data-tbl="us" data-i18n="scanner.headerCci">CCI</th>
+          <th data-i18n="scanner.headerMacd">MACD</th>
+          <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
+          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="us" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable" data-key="signal" data-tbl="us" data-i18n="scanner.headerSignal">Signal</th>
+          <th data-i18n="scanner.headerReason">Description</th>
+          <th data-i18n="scanner.headerAdd">Add</th>
+        </tr></thead>
+        <tbody id="usScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
+  </div>
+</section>
+
+<section class="panel" id="tvChartPanel">
+  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2></div>
+  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
+  <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cls=x=>Number(x)>=0?'pos':'neg';
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+}
+
+function sigClass(x){return x==='LONG'?'sig-long':x==='SHORT'?'sig-short':x==='ERROR'?'sig-error':'sig-none'}
+function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return `<span class="pill ${c}">${x}</span>`}
+
+let watchlistSymbols=new Set();
+function addCell(symbol,market,signal){
+  if(signal!=='LONG'&&signal!=='SHORT') return '<span class="text-faint">—</span>';
+  if(watchlistSymbols.has(symbol)) return '<span class="added-tag">'+t('watchlist.added')+'</span>';
+  return `<button class="add-btn" onclick="event.stopPropagation();addToWatchlist('${symbol}','${market}','${signal}',this)">${t('watchlist.addBtn')}</button>`;
+}
+
+// TradingView "Advanced Chart" widget — TradingView's own free public embed
+// (no API key, no account needed; https://www.tradingview.com/widget/advanced-chart/).
+// Clicking any scanner row loads that symbol's live chart into the panel below.
+function openTvChart(tvSymbol,label){
+  document.getElementById('tvChartSymbol').textContent='— '+label;
+  const frame=document.getElementById('tvChartFrame');
+  frame.src='https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tvSymbol)
+    +'&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0D1114'
+    +'&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies=%5B%5D&locale='+encodeURIComponent(currentLang||'en');
+  frame.classList.remove('hidden');
+  document.getElementById('tvChartEmpty').style.display='none';
+  document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function addToWatchlist(symbol,market,signal,btn){
+  if(btn){btn.disabled=true;btn.textContent=t('watchlist.adding');}
+  try{
+    const r=await fetch(`/api/watchlist/add?symbol=${encodeURIComponent(symbol)}&market=${market}&signal=${encodeURIComponent(signal)}`,{cache:'no-store'});
+    const d=await r.json();
+    if(!d.ok && btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');alert(d.error||t('alert.notAdded'));}
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');} }
+  await refreshWatchlist();
+}
+function syncWatchlistSymbols(){
+  watchlistSymbols=new Set((watchlistCache.items||[]).map(x=>x.symbol));
+}
+
+let watchlistCache={items:[]};
+async function refreshWatchlist(){
+  let d;
+  try{ const r=await fetch('/api/watchlist',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  watchlistCache=d;
+  syncWatchlistSymbols();
+  renderScanner(); renderBistScanner(); renderUsScanner();
+}
+
+const sortState={scanner:{key:null,dir:1},bist:{key:null,dir:1},us:{key:null,dir:1}};
+function attachSort(tblId,cacheGetter,renderFn){
+  document.querySelectorAll(`#${tblId} th[data-key]`).forEach(th=>{
+    if(!th.classList.contains('sortable'))return;
+    th.addEventListener('click',()=>{
+      const tbl=th.dataset.tbl,key=th.dataset.key;
+      const state=sortState[tbl];
+      state.dir=(state.key===key)?-state.dir:1; state.key=key;
+      document.querySelectorAll(`#${tblId} th`).forEach(h=>h.classList.remove('sort-active'));
+      th.classList.add('sort-active');
+      renderFn();
+    });
+  });
+}
+function sortRows(rows,tbl){
+  const state=sortState[tbl];
+  if(!state.key) return rows;
+  const k=state.key,dir=state.dir;
+  return rows.slice().sort((a,b)=>{
+    let av=a[k],bv=b[k];
+    const an=Number(av),bn=Number(bv);
+    if(!isNaN(an)&&!isNaN(bn)&&av!==null&&bv!==null){return (an-bn)*dir;}
+    return String(av??'').localeCompare(String(bv??''))*dir;
+  });
+}
+
+async function scannerData(){try{let r=await fetch('/api/scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
+let scannerCache={results:[]};
+function renderScanner(){
+  let q=(document.getElementById('coinSearch')?.value||'').toUpperCase();
+  let f=document.getElementById('signalFilter')?.value||'ALL';
+  let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
+  rows=sortRows(rows,'scanner');
+  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
+  document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
+  document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
+  document.getElementById('noCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+}
+async function bistScannerData(){try{let r=await fetch('/api/bist-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
+let bistScannerCache={results:[]};
+function renderBistScanner(){
+  let q=(document.getElementById('bistSearch')?.value||'').toUpperCase();
+  let f=document.getElementById('bistSignalFilter')?.value||'ALL';
+  let rows=bistScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
+  rows=sortRows(rows,'bist');
+  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('bistCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
+  document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
+  document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
+  document.getElementById('bistNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+}
+attachSort('scannerTable',()=>scannerCache,renderScanner);
+attachSort('bistScannerTable',()=>bistScannerCache,renderBistScanner);
+attachSort('usScannerTable',()=>usScannerCache,renderUsScanner);
+
+async function refreshBistScanner(){
+  let d=await bistScannerData();bistScannerCache=d;
+  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.tabBist')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
+}
+async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent=t('scanner.startingBistScan');try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
+refreshBistScanner();setInterval(refreshBistScanner,10000);
+
+async function usScannerData(){try{let r=await fetch('/api/us-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
+let usScannerCache={results:[]};
+function renderUsScanner(){
+  let q=(document.getElementById('usSearch')?.value||'').toUpperCase();
+  let f=document.getElementById('usSignalFilter')?.value||'ALL';
+  let rows=usScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
+  rows=sortRows(rows,'us');
+  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('usCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
+  document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
+  document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
+  document.getElementById('usNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+}
+async function refreshUsScanner(){
+  let d=await usScannerData();usScannerCache=d;
+  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  document.getElementById('usScannerStatus').textContent=txt;renderUsScanner();
+}
+async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent=t('scanner.startingUsScan');try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
+refreshUsScanner();setInterval(refreshUsScanner,10000);
+
+async function refreshScanner(){
+  let d=await scannerData();scannerCache=d;
+  let st=d.status||'IDLE';
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  document.getElementById('scannerStatus').textContent=txt;renderScanner();
+}
+async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
+refreshScanner();setInterval(refreshScanner,10000);
+
+refreshWatchlist();setInterval(refreshWatchlist,10000);
+
+const translations = {
+  en: {
+  "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
+  "nav.live": "Live Trading",
+  "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
+  "nav.account": "My Account",
+  "faq.backToDashboard": "← Dashboard",
+  "panel.scanner": "Scan",
+  "watchlist.added": "Added ✓",
+  "watchlist.addBtn": "+ Add",
+  "watchlist.adding": "Adding…",
+  "alert.notAdded": "Could not add",
+  "scanner.tabCrypto": "Crypto Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M perpetual · 4H closed candle · for signal purposes only, no real orders",
+  "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
+  "scanner.allSignals": "All signals",
+  "scanner.scanAll": "Scan all",
+  "scanner.scanBist": "Scan Borsa Istanbul",
+  "scanner.scanUs": "Scan S&P500/Nasdaq-100",
+  "scanner.preparing": "Preparing…",
+  "scanner.waiting": "Waiting for scan…",
+  "scanner.noResults": "No results.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Stock",
+  "scanner.headerPrice": "Price",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "Daily %",
+  "scanner.headerVolume": "Volume",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Description",
+  "scanner.headerAdd": "Add",
+  "scanner.coinCountSuffix": "coins",
+  "scanner.stockCountSuffix": "stocks",
+  "scanner.bistFootnote": "SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.",
+  "scanner.usFootnote": "S&P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.",
+  "scanner.scanning": "Scanning",
+  "scanner.ready": "Ready",
+  "scanner.lastScan4h": "Last 4H scan",
+  "scanner.universe": "Universe",
+  "scanner.error": "Error",
+  "scanner.unknownError": "Unknown error",
+  "scanner.startingScan": "Starting scan…",
+  "scanner.startingUsScan": "Starting scan… (514 stocks, may take a few minutes)",
+  "scanner.startingBistScan": "Starting Borsa Istanbul scan…",
+  "tvChart.title": "TradingView Chart",
+  "tvChart.noSymbol": "— no symbol selected",
+  "tvChart.emptyMessage": "Click a row in the scan tables above to view that symbol's TradingView chart here.",
+  },
+  tr: {
+  "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
+  "nav.live": "Canlı İşlemler",
+  "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
+  "nav.backtest": "Backtest",
+  "nav.faq": "SSS",
+  "nav.account": "Hesabım",
+  "faq.backToDashboard": "← Panel",
+  "panel.scanner": "Tarama",
+  "watchlist.added": "Eklendi ✓",
+  "watchlist.addBtn": "+ Ekle",
+  "watchlist.adding": "Ekleniyor…",
+  "alert.notAdded": "Eklenemedi",
+  "scanner.tabCrypto": "Kripto Futures",
+  "scanner.tabBist": "Borsa İstanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M perpetual · 4H kapalı mum · sinyal amaçlı, gerçek emir yok",
+  "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
+  "scanner.allSignals": "Tüm sinyaller",
+  "scanner.scanAll": "Tümünü tara",
+  "scanner.scanBist": "Borsa İstanbul tara",
+  "scanner.scanUs": "S&P500/Nasdaq-100 tara",
+  "scanner.preparing": "Hazırlanıyor…",
+  "scanner.waiting": "Tarama bekleniyor…",
+  "scanner.noResults": "Sonuç yok.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Hisse",
+  "scanner.headerPrice": "Fiyat",
+  "scanner.headerChange24h": "24s %",
+  "scanner.headerChangeDaily": "Günlük %",
+  "scanner.headerVolume": "Hacim",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Sinyal",
+  "scanner.headerReason": "Açıklama",
+  "scanner.headerAdd": "Ekle",
+  "scanner.coinCountSuffix": "coin",
+  "scanner.stockCountSuffix": "hisse",
+  "scanner.bistFootnote": "SHORT burada yalnızca stratejinin teknik sinyalidir; BIST spot piyasasında doğrudan açığa satış emri anlamına gelmez.",
+  "scanner.usFootnote": "S&P 500 + Nasdaq-100 evreni (statik liste, periyodik güncellenmeli). Takip listesine eklenen ABD hisseleri, kripto watchlist'i gibi bağımsız bir paper pozisyon açar; SHORT taraf ödünç/marj kısıtlarını modellemeyen saf bir simülasyondur.",
+  "scanner.scanning": "Tarama yapılıyor",
+  "scanner.ready": "Hazır",
+  "scanner.lastScan4h": "Son 4H tarama",
+  "scanner.universe": "Evren",
+  "scanner.error": "Hata",
+  "scanner.unknownError": "Bilinmeyen hata",
+  "scanner.startingScan": "Tarama başlatılıyor…",
+  "scanner.startingUsScan": "Tarama başlatılıyor… (514 hisse, birkaç dakika sürebilir)",
+  "scanner.startingBistScan": "Borsa İstanbul taraması başlatılıyor…",
+  "tvChart.title": "TradingView Grafiği",
+  "tvChart.noSymbol": "— sembol seçilmedi",
+  "tvChart.emptyMessage": "Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.",
+  },
+  zh: {
+  "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
+  "nav.live": "实盘交易",
+  "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
+  "nav.backtest": "回测",
+  "nav.faq": "常见问题",
+  "nav.account": "我的账户",
+  "faq.backToDashboard": "← 仪表盘",
+  "panel.scanner": "扫描",
+  "watchlist.added": "已添加 ✓",
+  "watchlist.addBtn": "+ 添加",
+  "watchlist.adding": "添加中…",
+  "alert.notAdded": "添加失败",
+  "scanner.tabCrypto": "加密货币合约",
+  "scanner.tabBist": "伊斯坦布尔交易所",
+  "scanner.tabUs": "美股",
+  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 仅供信号参考，无真实订单",
+  "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
+  "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
+  "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
+  "scanner.allSignals": "全部信号",
+  "scanner.scanAll": "扫描全部",
+  "scanner.scanBist": "扫描伊斯坦布尔交易所",
+  "scanner.scanUs": "扫描 S&P500/纳斯达克100",
+  "scanner.preparing": "准备中…",
+  "scanner.waiting": "等待扫描…",
+  "scanner.noResults": "无结果。",
+  "scanner.headerCoin": "币种",
+  "scanner.headerStock": "股票",
+  "scanner.headerPrice": "价格",
+  "scanner.headerChange24h": "24小时涨跌%",
+  "scanner.headerChangeDaily": "日涨跌%",
+  "scanner.headerVolume": "成交量",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP百分位",
+  "scanner.headerSignal": "信号",
+  "scanner.headerReason": "说明",
+  "scanner.headerAdd": "添加",
+  "scanner.coinCountSuffix": "个币种",
+  "scanner.stockCountSuffix": "只股票",
+  "scanner.bistFootnote": "此处的 SHORT 仅为策略的技术信号；并不意味着在 BIST 现货市场直接下达卖空订单。",
+  "scanner.usFootnote": "S&P 500 + 纳斯达克100 股票池（静态列表，应定期更新）。添加到自选列表的美股会像加密自选列表一样开立独立的模拟仓位；SHORT 仅为纯模拟，不考虑借券/保证金限制。",
+  "scanner.scanning": "正在扫描",
+  "scanner.ready": "已就绪",
+  "scanner.lastScan4h": "上次 4H 扫描",
+  "scanner.universe": "标的范围",
+  "scanner.error": "错误",
+  "scanner.unknownError": "未知错误",
+  "scanner.startingScan": "正在启动扫描…",
+  "scanner.startingUsScan": "正在启动扫描…（514 只股票，可能需要几分钟）",
+  "scanner.startingBistScan": "正在启动伊斯坦布尔交易所扫描…",
+  "tvChart.title": "TradingView 图表",
+  "tvChart.noSymbol": "— 未选择交易对",
+  "tvChart.emptyMessage": "点击上方扫描表格中的一行，即可在此处查看该交易对的 TradingView 图表。",
+  },
+  de: {
+  "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
+  "nav.live": "Live-Handel",
+  "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
+  "faq.backToDashboard": "← Übersicht",
+  "panel.scanner": "Scan",
+  "watchlist.added": "Hinzugefügt ✓",
+  "watchlist.addBtn": "+ Hinzufügen",
+  "watchlist.adding": "Wird hinzugefügt…",
+  "alert.notAdded": "Konnte nicht hinzugefügt werden",
+  "scanner.tabCrypto": "Krypto-Futures",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "USDT-M Perpetual · geschlossene 4H-Kerze · nur zu Signalzwecken, keine echten Orders",
+  "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
+  "scanner.allSignals": "Alle Signale",
+  "scanner.scanAll": "Alle scannen",
+  "scanner.scanBist": "Borsa Istanbul scannen",
+  "scanner.scanUs": "S&P500/Nasdaq-100 scannen",
+  "scanner.preparing": "Wird vorbereitet…",
+  "scanner.waiting": "Warte auf Scan…",
+  "scanner.noResults": "Keine Ergebnisse.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Aktie",
+  "scanner.headerPrice": "Preis",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "Tages-%",
+  "scanner.headerVolume": "Volumen",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP-Perzentil",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Beschreibung",
+  "scanner.headerAdd": "Hinzufügen",
+  "scanner.coinCountSuffix": "Coins",
+  "scanner.stockCountSuffix": "Aktien",
+  "scanner.bistFootnote": "SHORT ist hier nur das technische Signal der Strategie; es bedeutet keine direkte Leerverkaufsorder am BIST-Kassamarkt.",
+  "scanner.usFootnote": "S&P-500- + Nasdaq-100-Universum (statische Liste, sollte regelmäßig aktualisiert werden). Zur Watchlist hinzugefügte US-Aktien eröffnen wie die Krypto-Watchlist eine unabhängige Paper-Position; die SHORT-Seite ist eine reine Simulation ohne Modellierung von Leih-/Margin-Beschränkungen.",
+  "scanner.scanning": "Scan läuft",
+  "scanner.ready": "Bereit",
+  "scanner.lastScan4h": "Letzter 4H-Scan",
+  "scanner.universe": "Universum",
+  "scanner.error": "Fehler",
+  "scanner.unknownError": "Unbekannter Fehler",
+  "scanner.startingScan": "Scan wird gestartet…",
+  "scanner.startingUsScan": "Scan wird gestartet… (514 Aktien, kann einige Minuten dauern)",
+  "scanner.startingBistScan": "Borsa-Istanbul-Scan wird gestartet…",
+  "tvChart.title": "TradingView-Chart",
+  "tvChart.noSymbol": "— kein Symbol ausgewählt",
+  "tvChart.emptyMessage": "Klicken Sie auf eine Zeile in den obigen Scan-Tabellen, um hier den TradingView-Chart dieses Symbols anzuzeigen.",
+  },
+  fr: {
+  "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
+  "nav.live": "Trading en direct",
+  "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
+  "nav.backtest": "Backtest",
+  "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
+  "faq.backToDashboard": "← Tableau de bord",
+  "panel.scanner": "Scan",
+  "watchlist.added": "Ajouté ✓",
+  "watchlist.addBtn": "+ Ajouter",
+  "watchlist.adding": "Ajout en cours…",
+  "alert.notAdded": "Ajout impossible",
+  "scanner.tabCrypto": "Futures Crypto",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "Perpétuel USDT-M · bougie 4H clôturée · à titre de signal uniquement, aucun ordre réel",
+  "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
+  "scanner.allSignals": "Tous les signaux",
+  "scanner.scanAll": "Tout scanner",
+  "scanner.scanBist": "Scanner Borsa Istanbul",
+  "scanner.scanUs": "Scanner S&P500/Nasdaq-100",
+  "scanner.preparing": "Préparation…",
+  "scanner.waiting": "En attente du scan…",
+  "scanner.noResults": "Aucun résultat.",
+  "scanner.headerCoin": "Coin",
+  "scanner.headerStock": "Action",
+  "scanner.headerPrice": "Prix",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "% quotidien",
+  "scanner.headerVolume": "Volume",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerSignal": "Signal",
+  "scanner.headerReason": "Description",
+  "scanner.headerAdd": "Ajouter",
+  "scanner.coinCountSuffix": "coins",
+  "scanner.stockCountSuffix": "actions",
+  "scanner.bistFootnote": "SHORT n'indique ici que le signal technique de la stratégie ; cela ne signifie pas un ordre de vente à découvert direct sur le marché au comptant BIST.",
+  "scanner.usFootnote": "Univers S&P 500 + Nasdaq-100 (liste statique, à mettre à jour périodiquement). Les actions américaines ajoutées à la watchlist ouvrent une position paper indépendante, comme la watchlist crypto ; le côté SHORT est une simulation pure qui ne modélise pas les contraintes d'emprunt/marge.",
+  "scanner.scanning": "Analyse en cours",
+  "scanner.ready": "Prêt",
+  "scanner.lastScan4h": "Dernier scan 4H",
+  "scanner.universe": "Univers",
+  "scanner.error": "Erreur",
+  "scanner.unknownError": "Erreur inconnue",
+  "scanner.startingScan": "Démarrage du scan…",
+  "scanner.startingUsScan": "Démarrage du scan… (514 actions, peut prendre quelques minutes)",
+  "scanner.startingBistScan": "Démarrage du scan Borsa Istanbul…",
+  "tvChart.title": "Graphique TradingView",
+  "tvChart.noSymbol": "— aucun symbole sélectionné",
+  "tvChart.emptyMessage": "Cliquez sur une ligne dans les tableaux de scan ci-dessus pour afficher ici le graphique TradingView de ce symbole.",
+  },
+  es: {
+  "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
+  "nav.live": "Operaciones en vivo",
+  "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
+  "nav.backtest": "Backtest",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
+  "faq.backToDashboard": "← Panel",
+  "panel.scanner": "Escaneo",
+  "watchlist.added": "Añadido ✓",
+  "watchlist.addBtn": "+ Añadir",
+  "watchlist.adding": "Añadiendo…",
+  "alert.notAdded": "No se pudo añadir",
+  "scanner.tabCrypto": "Futuros Cripto",
+  "scanner.tabBist": "Borsa Istanbul",
+  "scanner.tabUs": "Wall Street",
+  "scanner.note": "Perpetuo USDT-M · vela 4H cerrada · solo con fines de señal, sin órdenes reales",
+  "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
+  "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
+  "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
+  "scanner.allSignals": "Todas las señales",
+  "scanner.scanAll": "Escanear todo",
+  "scanner.scanBist": "Escanear Borsa Istanbul",
+  "scanner.scanUs": "Escanear S&P500/Nasdaq-100",
+  "scanner.preparing": "Preparando…",
+  "scanner.waiting": "Esperando escaneo…",
+  "scanner.noResults": "Sin resultados.",
+  "scanner.headerCoin": "Moneda",
+  "scanner.headerStock": "Acción",
+  "scanner.headerPrice": "Precio",
+  "scanner.headerChange24h": "24h %",
+  "scanner.headerChangeDaily": "% diario",
+  "scanner.headerVolume": "Volumen",
+  "scanner.headerSt": "ST",
+  "scanner.headerAdx": "ADX",
+  "scanner.headerRsi": "RSI",
+  "scanner.headerCci": "CCI",
+  "scanner.headerMacd": "MACD",
+  "scanner.headerStochKd": "Stoch K/D",
+  "scanner.headerAtrp": "ATRP %il",
+  "scanner.headerSignal": "Señal",
+  "scanner.headerReason": "Descripción",
+  "scanner.headerAdd": "Añadir",
+  "scanner.coinCountSuffix": "monedas",
+  "scanner.stockCountSuffix": "acciones",
+  "scanner.bistFootnote": "SHORT aquí es solo la señal técnica de la estrategia; no implica una orden de venta en corto directa en el mercado spot de BIST.",
+  "scanner.usFootnote": "Universo S&P 500 + Nasdaq-100 (lista estática, debe actualizarse periódicamente). Las acciones de EE. UU. añadidas a la watchlist abren una posición paper independiente igual que la watchlist cripto; el lado SHORT es una simulación pura que no modela restricciones de préstamo/margen.",
+  "scanner.scanning": "Escaneando",
+  "scanner.ready": "Listo",
+  "scanner.lastScan4h": "Último escaneo 4H",
+  "scanner.universe": "Universo",
+  "scanner.error": "Error",
+  "scanner.unknownError": "Error desconocido",
+  "scanner.startingScan": "Iniciando escaneo…",
+  "scanner.startingUsScan": "Iniciando escaneo… (514 acciones, puede tardar unos minutos)",
+  "scanner.startingBistScan": "Iniciando escaneo de Borsa Istanbul…",
+  "tvChart.title": "Gráfico de TradingView",
+  "tvChart.noSymbol": "— ningún símbolo seleccionado",
+  "tvChart.emptyMessage": "Haz clic en una fila de las tablas de escaneo de arriba para ver aquí el gráfico de TradingView de ese símbolo.",
+  },
+};
+
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+  try{ renderScanner(); }catch(e){}
+  try{ renderBistScanner(); }catch(e){}
+  try{ renderUsScanner(); }catch(e){}
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+</script>
+</body></html>'''
+
 
 # Standalone FAQ page — the FAQ block used to live inside the account panel
 # (ACCOUNT_EXTRAS_HTML) but was moved here to its own route so it's easy to
@@ -3413,10 +3923,11 @@ FAQ_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -3470,7 +3981,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -3493,7 +4004,7 @@ const translations = {
     "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -3516,7 +4027,7 @@ const translations = {
     "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -3539,7 +4050,7 @@ const translations = {
     "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -3562,7 +4073,7 @@ const translations = {
     "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -3585,7 +4096,7 @@ const translations = {
     "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -3671,10 +4182,11 @@ BACKTEST_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -3887,7 +4399,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -3930,7 +4442,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -3973,7 +4485,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -4016,7 +4528,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -4059,7 +4571,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -4102,7 +4614,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -4236,10 +4748,11 @@ ACCOUNT_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" class="active" data-i18n="nav.account">My Account</a>
 </nav>
@@ -4377,6 +4890,7 @@ async function logout(){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -4509,6 +5023,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -4641,6 +5156,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -4773,6 +5289,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -4905,6 +5422,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -5037,6 +5555,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -5245,10 +5764,11 @@ TRADES_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" class="active" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -5333,6 +5853,7 @@ async function removeFromWatchlist(symbol){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -5370,6 +5891,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -5407,6 +5929,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -5444,6 +5967,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -5481,6 +6005,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -5518,6 +6043,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -5627,10 +6153,11 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" class="active" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -5701,6 +6228,7 @@ async function refreshHistory(){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -5728,6 +6256,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -5755,6 +6284,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -5782,6 +6312,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -5809,6 +6340,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -5836,6 +6368,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -5928,10 +6461,11 @@ LIVE_HTML = r'''<!doctype html>
 
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" class="active" data-i18n="nav.live">Live Trading</a>
-  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -6168,6 +6702,7 @@ async function refreshAccount(){
 const translations = {
   en: {
   "nav.dashboard": "Dashboard",
+  "nav.scanner": "Scan",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -6249,6 +6784,7 @@ const translations = {
   },
   tr: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Tarama",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -6330,6 +6866,7 @@ const translations = {
   },
   zh: {
   "nav.dashboard": "仪表盘",
+  "nav.scanner": "扫描",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -6411,6 +6948,7 @@ const translations = {
   },
   de: {
   "nav.dashboard": "Übersicht",
+  "nav.scanner": "Scan",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -6492,6 +7030,7 @@ const translations = {
   },
   fr: {
   "nav.dashboard": "Tableau de bord",
+  "nav.scanner": "Scan",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -6573,6 +7112,7 @@ const translations = {
   },
   es: {
   "nav.dashboard": "Panel",
+  "nav.scanner": "Escaneo",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -7207,6 +7747,9 @@ class Handler(BaseHTTPRequestHandler):
             if not auth.is_admin(user):
                 self._redirect('/'); return
             self._send_html(ADMIN_HTML); return
+
+        if path=='/scanner':
+            self._send_html(SCANNER_HTML); return
 
         if path=='/faq':
             self._send_html(FAQ_HTML); return
