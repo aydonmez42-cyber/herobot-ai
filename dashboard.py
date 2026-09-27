@@ -7516,9 +7516,17 @@ def status():
     start_date=(closed[0].get('entry_time') or closed[0].get('exit_time') or '') if closed else ''
     start=STARTING_EQUITY
     equity=f(s.get('equity',start)); net=equity-start
-    peak=start; maxdd=0
+    # Max drawdown: bakiyeyi (STARTING_EQUITY) sonradan değiştirirseniz eski
+    # işlemlerin CSV'ye yazılmış 'equity_after' değerleri o zamanki (eski) bakiyeye
+    # göre donmuş kalır. Yeni (büyük) bir tepe değeriyle o eski rakamları doğrudan
+    # kıyaslamak yapay/hayali bir çöküş gösterir (ör. bakiyeyi 10.000'den 100.000'e
+    # çıkarınca eski işlemler 100.000'e göre %90 "zarar"da görünür). Bunun yerine
+    # bakiye eğrisini şimdiki 'start' üzerine işlemlerin net kâr/zararını kümülatif
+    # ekleyerek yeniden kuruyoruz; böylece hangi başlangıç bakiyesi seçilirse
+    # seçilsin doğru ölçekte kalır.
+    peak=start; maxdd=0; running=start
     for t in closed:
-        e=f(t.get('equity_after',start)); peak=max(peak,e); maxdd=min(maxdd,(e/peak-1)*100 if peak else 0)
+        running+=t.get('net_pnl',0); peak=max(peak,running); maxdd=min(maxdd,(running/peak-1)*100 if peak else 0)
     p=s.get('position'); pos=None; total_open_pnl=0.0
     if p:
         cp=f(s.get('market_prices',{}).get(p.get('symbol'),p.get('entry_price')))
