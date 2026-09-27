@@ -962,6 +962,7 @@ th.sort-active{color:var(--accent)}
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -1108,10 +1109,6 @@ th.sort-active{color:var(--accent)}
   <iframe id="tvChartFrame" class="tv-chart-frame hidden" allowfullscreen></iframe>
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.aiAnalyst">AI Trade Analyst</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()" data-i18n="ai.runBtn">Analyze Now</button></div>
-  <div class="ai-body" id="aiAnalysisBody" data-i18n="panel.loading">Loading…</div>
-</section>
 
 <div class="page-footer" data-i18n="footer.autoRefresh">Auto-refresh: position 5s &middot; scanners 10s &middot; paper trading, no real orders.</div>
 </div>
@@ -1130,6 +1127,7 @@ const translations = {
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "kpi.equity": "Current balance",
@@ -1395,6 +1393,7 @@ const translations = {
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "kpi.equity": "Güncel bakiye",
@@ -1660,6 +1659,7 @@ const translations = {
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "kpi.equity": "当前余额",
@@ -1925,6 +1925,7 @@ const translations = {
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "kpi.equity": "Aktueller Kontostand",
@@ -2190,6 +2191,7 @@ const translations = {
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "kpi.equity": "Solde actuel",
@@ -2455,6 +2457,7 @@ const translations = {
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "kpi.equity": "Saldo actual",
@@ -2742,7 +2745,6 @@ function refreshDynamicTexts(){
   try{ renderScanner(); }catch(e){}
   try{ renderBistScanner(); }catch(e){}
   try{ renderUsScanner(); }catch(e){}
-  try{ if(aiAnalysisCache) renderAiAnalysis(aiAnalysisCache); }catch(e){}
 }
 let _initialLang = 'en';
 try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
@@ -3042,36 +3044,6 @@ refreshWatchlist().then(()=>{
 setInterval(refreshWatchlist,10000);
 
 
-let aiAnalysisCache=null;
-function renderAiAnalysis(d){
-  aiAnalysisCache=d;
-  const body=document.getElementById('aiAnalysisBody');
-  if(!d.enabled){ body.innerHTML='<div class="ai-disabled">'+t('ai.disabled')+'</div>'; return; }
-  const a=d.analysis;
-  if(!a || !a.ok){
-    let msg=t('ai.noAnalysisYet');
-    if(d.last_error && d.last_error.error){
-      msg=t('ai.lastAttemptFailed')+' ('+(d.last_error.at||'').replace('T',' ').slice(0,16)+'): '+d.last_error.error;
-    }
-    body.innerHTML='<div class="ai-disabled">'+msg.replace(/</g,'&lt;')+'</div>';
-    return;
-  }
-  const meta=`<div class="ai-meta">${(a.generated_at||'').replace('T',' ').slice(0,16)} &middot; ${a.trades_analyzed} ${t('ai.tradesAnalyzedPrefix')} ${a.total_trades_all_time})</div>`;
-  body.innerHTML=meta+'<div>'+a.text.replace(/</g,'&lt;')+'</div>';
-}
-async function refreshAiAnalysis(){
-  let d;
-  try{ const r=await fetch('/api/ai-analysis',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
-  renderAiAnalysis(d);
-}
-async function runAiAnalysis(){
-  const btn=document.getElementById('aiRunBtn');
-  btn.disabled=true; btn.textContent=t('ai.running');
-  try{ await fetch('/api/ai-analysis/run',{cache:'no-store'}); }catch(e){}
-  await refreshAiAnalysis();
-  btn.disabled=false; btn.textContent=t('ai.runBtn');
-}
-refreshAiAnalysis();setInterval(refreshAiAnalysis,60000);
 
 async function logout(){
   try{ await fetch('/logout',{method:'POST',cache:'no-store'}); }catch(e){}
@@ -3444,6 +3416,7 @@ FAQ_HTML = r'''<!doctype html>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -3497,7 +3470,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -3520,7 +3493,7 @@ const translations = {
     "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -3543,7 +3516,7 @@ const translations = {
     "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -3566,7 +3539,7 @@ const translations = {
     "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -3589,7 +3562,7 @@ const translations = {
     "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -3612,7 +3585,7 @@ const translations = {
     "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -3701,6 +3674,7 @@ BACKTEST_HTML = r'''<!doctype html>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -3913,7 +3887,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -3956,7 +3930,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -3999,7 +3973,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -4042,7 +4016,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -4085,7 +4059,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -4128,7 +4102,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -4265,6 +4239,7 @@ ACCOUNT_HTML = r'''<!doctype html>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" class="active" data-i18n="nav.account">My Account</a>
 </nav>
@@ -4405,6 +4380,7 @@ const translations = {
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "nav.admin": "Admin",
@@ -4536,6 +4512,7 @@ const translations = {
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "nav.admin": "Yönetim",
@@ -4667,6 +4644,7 @@ const translations = {
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "nav.admin": "管理",
@@ -4798,6 +4776,7 @@ const translations = {
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "nav.admin": "Verwaltung",
@@ -4929,6 +4908,7 @@ const translations = {
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "nav.admin": "Administration",
@@ -5060,6 +5040,7 @@ const translations = {
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "nav.admin": "Administración",
@@ -5267,6 +5248,7 @@ TRADES_HTML = r'''<!doctype html>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" class="active" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -5282,15 +5264,6 @@ TRADES_HTML = r'''<!doctype html>
   <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.recentTrades">Recent Trades</h2></div>
-  <div class="table-scroll">
-    <table class="datatable">
-      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
-      <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-</section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
@@ -5307,9 +5280,6 @@ function goToSymbol(symbol){
   window.location.href = '/?symbol=' + encodeURIComponent(symbol);
 }
 
-function renderHistory(d){
-  document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
-}
 
 function renderWatchlistTable(){
   const d=watchlistCache;
@@ -5347,7 +5317,6 @@ async function refreshStatus(){
   let d;
   try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
   statusCache=d;
-  renderHistory(d);
   renderWatchlistTable();
 }
 async function refreshWatchlist(){
@@ -5367,6 +5336,7 @@ const translations = {
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "faq.backToDashboard": "← Dashboard",
@@ -5403,6 +5373,7 @@ const translations = {
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "faq.backToDashboard": "← Panel",
@@ -5439,6 +5410,7 @@ const translations = {
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "faq.backToDashboard": "← 仪表盘",
@@ -5475,6 +5447,7 @@ const translations = {
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "faq.backToDashboard": "← Übersicht",
@@ -5511,6 +5484,7 @@ const translations = {
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "faq.backToDashboard": "← Tableau de bord",
@@ -5547,6 +5521,7 @@ const translations = {
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "faq.backToDashboard": "← Panel",
@@ -5613,6 +5588,315 @@ refreshWatchlist(); setInterval(refreshWatchlist,10000);
 </script>
 </body></html>'''
 
+_CLOSED_STYLE_EXTRA = r'''
+<style>
+.ai-body{padding:16px 18px;font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap}
+.ai-meta{color:var(--text-faint);font-size:11.5px;margin-bottom:10px}
+.ai-disabled{color:var(--text-dim);font-size:13px}
+</style>
+'''
+
+CLOSED_TRADES_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kapanan İşlemler — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _TRADES_STYLE_EXTRA + _CLOSED_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="panel.closedTrades">Closed Trades</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/live" data-i18n="nav.live">Live Trading</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" class="active" data-i18n="nav.closedTrades">Closed Trades</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.aiAnalyst">AI Trade Analyst</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()" data-i18n="ai.runBtn">Analyze Now</button></div>
+  <div class="ai-body" id="aiAnalysisBody" data-i18n="panel.loading">Loading…</div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.closedTrades">Closed Trades</h2></div>
+  <div class="table-scroll">
+    <table class="datatable">
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cls=x=>Number(x)>=0?'pos':'neg';
+
+let aiAnalysisCache=null;
+function renderAiAnalysis(d){
+  aiAnalysisCache=d;
+  const body=document.getElementById('aiAnalysisBody');
+  if(!d.enabled){ body.innerHTML='<div class="ai-disabled">'+t('ai.disabled')+'</div>'; return; }
+  const a=d.analysis;
+  if(!a || !a.ok){
+    let msg=t('ai.noAnalysisYet');
+    if(d.last_error && d.last_error.error){
+      msg=t('ai.lastAttemptFailed')+' ('+(d.last_error.at||'').replace('T',' ').slice(0,16)+'): '+d.last_error.error;
+    }
+    body.innerHTML='<div class="ai-disabled">'+msg.replace(/</g,'&lt;')+'</div>';
+    return;
+  }
+  const meta=`<div class="ai-meta">${(a.generated_at||'').replace('T',' ').slice(0,16)} &middot; ${a.trades_analyzed} ${t('ai.tradesAnalyzedPrefix')} ${a.total_trades_all_time})</div>`;
+  body.innerHTML=meta+'<div>'+a.text.replace(/</g,'&lt;')+'</div>';
+}
+async function refreshAiAnalysis(){
+  let d;
+  try{ const r=await fetch('/api/ai-analysis',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderAiAnalysis(d);
+}
+async function runAiAnalysis(){
+  const btn=document.getElementById('aiRunBtn');
+  btn.disabled=true; btn.textContent=t('ai.running');
+  try{ await fetch('/api/ai-analysis/run',{cache:'no-store'}); }catch(e){}
+  await refreshAiAnalysis();
+  btn.disabled=false; btn.textContent=t('ai.runBtn');
+}
+
+let historyCache=null;
+function renderHistory(d){
+  historyCache=d;
+  document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
+}
+async function refreshHistory(){
+  let d;
+  try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderHistory(d);
+}
+
+const translations = {
+  en: {
+  "nav.dashboard": "Dashboard",
+  "nav.live": "Live Trading",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "My Account",
+  "faq.backToDashboard": "← Dashboard",
+  "panel.closedTrades": "Closed Trades",
+  "panel.loading": "Loading…",
+  "pos.entry": "Entry",
+  "watchlist.headerSymbol": "Symbol",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Exit",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Reason",
+  "history.noClosedTrades": "No closed trades yet.",
+  "panel.aiAnalyst": "AI Trade Analyst",
+  "ai.runBtn": "Analyze Now",
+  "ai.running": "Analyzing…",
+  "ai.disabled": "AI Analyst is disabled — ANTHROPIC_API_KEY is not set.",
+  "ai.noAnalysisYet": "No analysis generated yet. Click \"Analyze Now\" to create the first report.",
+  "ai.lastAttemptFailed": "Last attempt failed",
+  "ai.tradesAnalyzedPrefix": "trades analyzed (total",
+  },
+  tr: {
+  "nav.dashboard": "Panel",
+  "nav.live": "Canlı İşlemler",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
+  "nav.faq": "SSS",
+  "nav.account": "Hesabım",
+  "faq.backToDashboard": "← Panel",
+  "panel.closedTrades": "Kapanan İşlemler",
+  "panel.loading": "Yükleniyor…",
+  "pos.entry": "Giriş",
+  "watchlist.headerSymbol": "Sembol",
+  "history.headerDate": "Tarih",
+  "history.headerDirection": "Yön",
+  "history.headerExit": "Çıkış",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Neden",
+  "history.noClosedTrades": "Henüz kapanmış işlem yok.",
+  "panel.aiAnalyst": "AI Trade Analisti",
+  "ai.runBtn": "Şimdi Analiz Et",
+  "ai.running": "Analiz ediliyor…",
+  "ai.disabled": "AI Analist devre dışı — ANTHROPIC_API_KEY tanımlı değil.",
+  "ai.noAnalysisYet": "Henüz bir analiz üretilmedi. \"Şimdi Analiz Et\" ile ilk raporu oluşturabilirsiniz.",
+  "ai.lastAttemptFailed": "Son deneme başarısız oldu",
+  "ai.tradesAnalyzedPrefix": "işlem incelendi (toplam",
+  },
+  zh: {
+  "nav.dashboard": "仪表盘",
+  "nav.live": "实盘交易",
+  "nav.backtest": "回测",
+  "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
+  "nav.faq": "常见问题",
+  "nav.account": "我的账户",
+  "faq.backToDashboard": "← 仪表盘",
+  "panel.closedTrades": "已平仓交易",
+  "panel.loading": "加载中…",
+  "pos.entry": "入场价",
+  "watchlist.headerSymbol": "交易对",
+  "history.headerDate": "日期",
+  "history.headerDirection": "方向",
+  "history.headerExit": "出场价",
+  "history.headerPnl": "盈亏",
+  "history.headerReason": "原因",
+  "history.noClosedTrades": "暂无已平仓交易。",
+  "panel.aiAnalyst": "AI 交易分析师",
+  "ai.runBtn": "立即分析",
+  "ai.running": "分析中…",
+  "ai.disabled": "AI 分析师已禁用 — 未设置 ANTHROPIC_API_KEY。",
+  "ai.noAnalysisYet": "尚未生成分析。点击\"立即分析\"生成第一份报告。",
+  "ai.lastAttemptFailed": "上次尝试失败",
+  "ai.tradesAnalyzedPrefix": "笔交易已分析（共计",
+  },
+  de: {
+  "nav.dashboard": "Übersicht",
+  "nav.live": "Live-Handel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
+  "faq.backToDashboard": "← Übersicht",
+  "panel.closedTrades": "Geschlossene Trades",
+  "panel.loading": "Wird geladen…",
+  "pos.entry": "Einstieg",
+  "watchlist.headerSymbol": "Symbol",
+  "history.headerDate": "Datum",
+  "history.headerDirection": "Richtung",
+  "history.headerExit": "Ausstieg",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Grund",
+  "history.noClosedTrades": "Noch keine geschlossenen Trades.",
+  "panel.aiAnalyst": "KI-Trade-Analyst",
+  "ai.runBtn": "Jetzt analysieren",
+  "ai.running": "Wird analysiert…",
+  "ai.disabled": "KI-Analyst ist deaktiviert — ANTHROPIC_API_KEY ist nicht gesetzt.",
+  "ai.noAnalysisYet": "Noch keine Analyse erstellt. Klicken Sie auf „Jetzt analysieren\", um den ersten Bericht zu erstellen.",
+  "ai.lastAttemptFailed": "Letzter Versuch fehlgeschlagen",
+  "ai.tradesAnalyzedPrefix": "Trades analysiert (insgesamt",
+  },
+  fr: {
+  "nav.dashboard": "Tableau de bord",
+  "nav.live": "Trading en direct",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
+  "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
+  "faq.backToDashboard": "← Tableau de bord",
+  "panel.closedTrades": "Trades clôturés",
+  "panel.loading": "Chargement…",
+  "pos.entry": "Entrée",
+  "watchlist.headerSymbol": "Symbole",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Sortie",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Raison",
+  "history.noClosedTrades": "Aucun trade clôturé pour le moment.",
+  "panel.aiAnalyst": "Analyste IA de trading",
+  "ai.runBtn": "Analyser maintenant",
+  "ai.running": "Analyse en cours…",
+  "ai.disabled": "L'analyste IA est désactivé — ANTHROPIC_API_KEY n'est pas défini.",
+  "ai.noAnalysisYet": "Aucune analyse générée pour le moment. Cliquez sur « Analyser maintenant » pour créer le premier rapport.",
+  "ai.lastAttemptFailed": "La dernière tentative a échoué",
+  "ai.tradesAnalyzedPrefix": "trades analysés (total",
+  },
+  es: {
+  "nav.dashboard": "Panel",
+  "nav.live": "Operaciones en vivo",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
+  "faq.backToDashboard": "← Panel",
+  "panel.closedTrades": "Operaciones cerradas",
+  "panel.loading": "Cargando…",
+  "pos.entry": "Entrada",
+  "watchlist.headerSymbol": "Símbolo",
+  "history.headerDate": "Fecha",
+  "history.headerDirection": "Dirección",
+  "history.headerExit": "Salida",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Motivo",
+  "history.noClosedTrades": "Aún no hay operaciones cerradas.",
+  "panel.aiAnalyst": "Analista de trading con IA",
+  "ai.runBtn": "Analizar ahora",
+  "ai.running": "Analizando…",
+  "ai.disabled": "El analista de IA está desactivado — ANTHROPIC_API_KEY no está definida.",
+  "ai.noAnalysisYet": "Aún no se ha generado ningún análisis. Haz clic en \"Analizar ahora\" para crear el primer informe.",
+  "ai.lastAttemptFailed": "El último intento falló",
+  "ai.tradesAnalyzedPrefix": "operaciones analizadas (total",
+  },
+};
+
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+  if(aiAnalysisCache) renderAiAnalysis(aiAnalysisCache);
+  if(historyCache) renderHistory(historyCache);
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+refreshAiAnalysis(); setInterval(refreshAiAnalysis,60000);
+refreshHistory(); setInterval(refreshHistory,5000);
+</script>
+</body></html>'''
+
+
 LIVE_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Canlı İşlemler — A&amp;I Trading Terminal</title>
@@ -5647,6 +5931,7 @@ LIVE_HTML = r'''<!doctype html>
   <a href="/live" class="active" data-i18n="nav.live">Live Trading</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
@@ -5886,6 +6171,7 @@ const translations = {
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
+  "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "faq.backToDashboard": "← Dashboard",
@@ -5966,6 +6252,7 @@ const translations = {
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
+  "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "faq.backToDashboard": "← Panel",
@@ -6046,6 +6333,7 @@ const translations = {
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
+  "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "faq.backToDashboard": "← 仪表盘",
@@ -6126,6 +6414,7 @@ const translations = {
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
+  "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "faq.backToDashboard": "← Übersicht",
@@ -6206,6 +6495,7 @@ const translations = {
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
+  "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "faq.backToDashboard": "← Tableau de bord",
@@ -6286,6 +6576,7 @@ const translations = {
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
+  "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "faq.backToDashboard": "← Panel",
@@ -6931,6 +7222,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path=='/trades':
             self._send_html(TRADES_HTML); return
+        if path=='/closed-trades':
+            self._send_html(CLOSED_TRADES_HTML); return
 
         if path=='/api/admin/users':
             user = self._current_user()
