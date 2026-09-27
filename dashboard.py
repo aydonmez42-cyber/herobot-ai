@@ -89,7 +89,7 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/ask-admin', '/api/account/subscription-request',
     # FAQ and backtest results are useful for a trial/expired user deciding
     # whether to subscribe, so they stay reachable even after access lapses.
-    '/faq', '/backtest',
+    '/faq', '/backtest', '/account',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -960,7 +960,9 @@ th.sort-active{color:var(--accent)}
 <nav class="topnav">
   <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
 <section class="kpistrip">
@@ -980,14 +982,6 @@ th.sort-active{color:var(--accent)}
   <div class="kpi"><div class="kpi-label" data-i18n="kpi.maxDrawdown">Max. drawdown</div><div class="kpi-value" id="dd">—</div><div class="kpi-sub" id="candle">—</div></div>
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="account.title">My Account</h2></div>
-  <div class="position-body">
-    <div class="account-row">👤 <b>__USERNAME__</b></div>
-    <div class="account-row text-faint">✉️ <span id="acctEmail">—</span></div>
-    <div style="margin-top:14px">''' + ACCOUNT_EXTRAS_HTML + r'''</div>
-  </div>
-</section>
 
 <section class="cols">
   <div class="panel" id="positionPanel" style="scroll-margin-top:90px">
@@ -1114,62 +1108,6 @@ th.sort-active{color:var(--accent)}
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
-  <div class="table-scroll">
-    <table class="datatable">
-      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="watchlist.headerMarket">Market</th><th data-i18n="watchlist.headerDirection">Direction / Signal</th><th class="num" data-i18n="watchlist.headerPrice">Price</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="watchlist.headerAdded">Added</th><th></th></tr></thead>
-      <tbody id="watchlistRows"><tr><td colspan="7" class="empty" data-i18n="watchlist.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-  <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
-</section>
-
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
-  <div class="position-body" id="accountBody">
-    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
-  </div>
-</section>
-
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.telegramConnection">Telegram Connection</h2></div>
-  <div class="position-body">
-    <div id="telegramPanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
-  </div>
-</section>
-
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
-  <div class="live-panel" style="margin-top:0">
-    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
-    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
-  </div>
-  <div class="table-scroll" style="margin-top:14px">
-    <table class="datatable">
-      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
-      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-  <div class="table-scroll" style="margin-top:14px">
-    <table class="datatable">
-      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
-      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
-</section>
-
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.recentTrades">Recent Trades</h2></div>
-  <div class="table-scroll">
-    <table class="datatable">
-      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
-      <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
-    </table>
-  </div>
-</section>
-
-<section class="panel">
   <div class="panel-head"><h2 data-i18n="panel.aiAnalyst">AI Trade Analyst</h2><button class="btn" id="aiRunBtn" onclick="runAiAnalysis()" data-i18n="ai.runBtn">Analyze Now</button></div>
   <div class="ai-body" id="aiAnalysisBody" data-i18n="panel.loading">Loading…</div>
 </section>
@@ -1189,7 +1127,9 @@ const translations = {
   "nav.language": "Language",
   "nav.dashboard": "Dashboard",
   "nav.backtest": "Backtest",
+  "nav.trades": "Paper Trades",
   "nav.faq": "FAQ",
+  "nav.account": "My Account",
   "kpi.equity": "Current balance",
   "kpi.openPnl": "Open positions P&L",
   "kpi.openPnlSub": "All open positions",
@@ -1451,7 +1391,9 @@ const translations = {
   "nav.language": "Dil",
   "nav.dashboard": "Panel",
   "nav.backtest": "Backtest",
+  "nav.trades": "Deneme İşlemleri",
   "nav.faq": "SSS",
+  "nav.account": "Hesabım",
   "kpi.equity": "Güncel bakiye",
   "kpi.openPnl": "Açık pozisyonlar P&L",
   "kpi.openPnlSub": "Tüm açık pozisyonlar",
@@ -1713,7 +1655,9 @@ const translations = {
   "nav.language": "语言",
   "nav.dashboard": "仪表盘",
   "nav.backtest": "回测",
+  "nav.trades": "模拟交易",
   "nav.faq": "常见问题",
+  "nav.account": "我的账户",
   "kpi.equity": "当前余额",
   "kpi.openPnl": "持仓盈亏",
   "kpi.openPnlSub": "所有持仓",
@@ -1975,7 +1919,9 @@ const translations = {
   "nav.language": "Sprache",
   "nav.dashboard": "Übersicht",
   "nav.backtest": "Backtest",
+  "nav.trades": "Paper-Trades",
   "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
   "kpi.equity": "Aktueller Kontostand",
   "kpi.openPnl": "Offene Positionen P&L",
   "kpi.openPnlSub": "Alle offenen Positionen",
@@ -2237,7 +2183,9 @@ const translations = {
   "nav.language": "Langue",
   "nav.dashboard": "Tableau de bord",
   "nav.backtest": "Backtest",
+  "nav.trades": "Trades paper",
   "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
   "kpi.equity": "Solde actuel",
   "kpi.openPnl": "P&L positions ouvertes",
   "kpi.openPnlSub": "Toutes les positions ouvertes",
@@ -2499,7 +2447,9 @@ const translations = {
   "nav.language": "Idioma",
   "nav.dashboard": "Panel",
   "nav.backtest": "Backtest",
+  "nav.trades": "Operaciones de prueba",
   "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
   "kpi.equity": "Saldo actual",
   "kpi.openPnl": "P&L de posiciones abiertas",
   "kpi.openPnlSub": "Todas las posiciones abiertas",
@@ -2781,13 +2731,11 @@ function applyTranslation(lang){
   refreshDynamicTexts();
 }
 function refreshDynamicTexts(){
-  try{ if(statusCache) render(statusCache); else renderWatchlistTable(); }catch(e){}
+  try{ if(statusCache) render(statusCache); }catch(e){}
   try{ renderScanner(); }catch(e){}
   try{ renderBistScanner(); }catch(e){}
   try{ renderUsScanner(); }catch(e){}
-  try{ if(accountCache) renderAccount(accountCache); }catch(e){}
   try{ if(aiAnalysisCache) renderAiAnalysis(aiAnalysisCache); }catch(e){}
-  try{ if(liveMineCache) renderMyLive(liveMineCache); }catch(e){}
 }
 let _initialLang = 'en';
 try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
@@ -2876,7 +2824,6 @@ let selectedSymbol='ETHUSDT';
 function selectSymbol(symbol){
   selectedSymbol=symbol;
   renderDetail();
-  renderWatchlistTable();
   const panel=document.getElementById('positionPanel');
   if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -2922,9 +2869,8 @@ function render(d){
   if(eqSeries.length<2 && d.equity!=null) eqSeries.push(Number(d.equity));
   drawSparkline(eqSeries);
 
-  document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
 
-  renderWatchlistTable();
+  syncWatchlistSymbols();
   if(selectedSymbol==='ETHUSDT') renderDetail();
 }
 
@@ -2965,52 +2911,15 @@ async function addToWatchlist(symbol,market,signal,btn){
   }catch(e){ if(btn){btn.disabled=false;btn.textContent=t('watchlist.addBtn');} }
   await refreshWatchlist();
 }
-async function removeFromWatchlist(symbol){
-  try{ await fetch(`/api/watchlist/remove?symbol=${encodeURIComponent(symbol)}`,{cache:'no-store'}); }catch(e){}
-  await refreshWatchlist();
-}
-function renderWatchlistTable(){
-  const d=watchlistCache;
-  document.getElementById('wlUsd').textContent=Number(d.position_usd||0).toLocaleString('en-US');
-  const items=d.items||[];
-  watchlistSymbols=new Set(items.map(x=>x.symbol));
-  document.getElementById('watchlistCount').textContent=`${items.length} / ${d.max_symbols??'—'}`;
-
-  // Pinned row for the main ETH engine — always present, never removable, and
-  // clickable just like any other tracked symbol.
-  let rowsHtml='';
-  if(statusCache){
-    const p=statusCache.position;
-    const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
-    const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
-    const sel=selectedSymbol==='ETHUSDT'?' row-selected':'';
-    rowsHtml+=`<tr class="row-clickable${sel}" onclick="selectSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td></td></tr>`;
-  }
-
-  rowsHtml+=items.map(x=>{
-    const p=x.position;
-    let sideCell, pnlCell;
-    if(p){
-      sideCell=`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`;
-      pnlCell=`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`;
-    } else {
-      sideCell=sigPill(x.current_signal||'NO SIGNAL');
-      pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
-    }
-    const added=(x.added_at||'').replace('T',' ').slice(0,16);
-    const sel=selectedSymbol===x.symbol?' row-selected':'';
-    const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
-    return `<tr class="row-clickable${sel}" onclick="selectSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
-  }).join('');
-
-  document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
+function syncWatchlistSymbols(){
+  watchlistSymbols=new Set((watchlistCache.items||[]).map(x=>x.symbol));
 }
 
 async function refreshWatchlist(){
   let d;
   try{ const r=await fetch('/api/watchlist',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
   watchlistCache=d;
-  renderWatchlistTable();
+  syncWatchlistSymbols();
   if(selectedSymbol!=='ETHUSDT') renderDetail();
   renderScanner(); renderBistScanner(); renderUsScanner();
 }
@@ -3116,47 +3025,15 @@ async function refresh(){
   catch(e){const st=document.getElementById('status');st.className='status-pill err';st.innerHTML='<span class="dot"></span>'+t('nav.connectionError');}
 }
 refresh();setInterval(refresh,5000);
-refreshWatchlist();setInterval(refreshWatchlist,10000);
+const _qSymbol = new URLSearchParams(window.location.search).get('symbol');
+refreshWatchlist().then(()=>{
+  if(_qSymbol){
+    selectSymbol(_qSymbol);
+    try{ window.history.replaceState({}, '', '/'); }catch(e){}
+  }
+});
+setInterval(refreshWatchlist,10000);
 
-let liveMineCache=null;
-function renderMyLive(d){
-  liveMineCache=d;
-  const open=d.open||[], closed=d.closed||[];
-  document.getElementById('liveMineCount').textContent = d.live_trading_enabled
-    ? `${open.length} ${t('liveAccount.openPositionsSuffix')}`
-    : t('liveAccount.liveOff');
-
-  document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
-    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
-    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
-      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
-      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
-      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
-  }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
-
-  document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
-    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
-      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
-      +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
-  }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
-}
-async function refreshMyLive(){
-  let d;
-  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
-  renderMyLive(d);
-}
-refreshMyLive();setInterval(refreshMyLive,15000);
-
-async function closeLivePosition(symbol,btn){
-  if(!confirm(`${t('alert.closePositionConfirmPrefix')} ${symbol} ${t('alert.closePositionConfirmSuffix')}`)) return;
-  btn.disabled=true; btn.textContent=t('liveOpen.closing');
-  try{
-    const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.closePositionFailed')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
-  }catch(e){ alert(t('alert.connectionError')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
-  await refreshMyLive();
-}
 
 let aiAnalysisCache=null;
 function renderAiAnalysis(d){
@@ -3194,246 +3071,19 @@ async function logout(){
   window.location='/login';
 }
 
-let accountCache=null;
-function renderAccount(a){
-  accountCache=a;
-  const pill=document.getElementById('binanceStatusPill');
-  const body=document.getElementById('accountBody');
-  let whoText=a.username?('👤 '+a.username):'';
-  if(a.is_admin){ whoText+=' <span class="badge-admin">'+t('account.admin')+'</span>'; }
-  else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">${t('account.trialDaysLeft').replace('{n}',a.days_left)}</span>`; }
-  else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">'+t('account.trialExpired')+'</span>'; }
-  document.getElementById('whoami').innerHTML=whoText;
-  document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
-  const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||t('account.emailNotRegistered');
-  if(a.binance_connected){
-    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">'+t('account.verifyError')+'</span>'; }
-    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">'+t('account.verifiedConnected')+'</span>'; }
-    else{ pill.innerHTML='<span class="badge-unverified">'+t('account.connectedNotVerified')+'</span>'; }
-  } else {
-    pill.innerHTML='<span class="badge-unverified">'+t('account.notConnected')+'</span>';
-  }
-  let notice='';
-  if(!a.credential_encryption_ready){
-    notice=`<div class="account-notice">${t('account.credentialWarning')}</div>`;
-  }
-  const maskedRow=a.binance_connected?`<div class="account-row">${t('account.savedKeyLabel')} <b>${a.binance_key_masked}</b></div>`:'';
-  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">${t('account.lastVerified')} ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
-    :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
-  const riskRow=a.risk_ack_at
-    ? `<div class="account-row text-faint">${t('account.riskAckGiven')}: ${a.risk_ack_at.replace('T',' ').slice(0,16)}</div>`
-    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> ${t('account.riskAckLabel')}</label>`;
-  body.innerHTML=`
-    ${maskedRow}${verifyRow}
-    <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
-      <div>
-        <label>${t('account.apiKeyLabel')}</label>
-        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?t('account.apiKeyPlaceholderChange'):t('account.apiKeyPlaceholderNew')}">
-      </div>
-      <div>
-        <label>${t('account.apiSecretLabel')}</label>
-        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?t('account.apiSecretPlaceholderChange'):t('account.apiSecretPlaceholderNew')}">
-      </div>
-      ${riskRow}
-      <div class="account-row">
-        <button class="btn" type="submit" id="binSaveBtn">${t('account.saveVerifyBtn')}</button>
-        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
-      </div>
-    </form>
-    ${notice}
-  `;
-  renderLivePanel(a);
-  renderTelegramPanel(a);
-}
-
-function renderLivePanel(a){
-  const box=document.getElementById('livePanelBody');
-  if(!box) return;
-  if(!a.binance_connected || !a.binance_verified_at){
-    box.innerHTML=`<div class="account-notice">${t('live.needConnectFirst')}</div>`;
-    return;
-  }
-  const rt=a.live_runtime||{};
-  let statusLine;
-  if(a.global_kill_switch_active){
-    statusLine=`<span class="badge-live-paused">${t('live.killSwitch')}</span>`;
-  } else if(a.live_trading_enabled && rt.paused_today){
-    statusLine=`<span class="badge-live-paused">${t('live.pausedToday')}</span>`;
-  } else if(a.live_trading_enabled){
-    statusLine=`<span class="badge-live-on">${t('live.on')}</span>`;
-  } else {
-    statusLine=`<span class="badge-live-off">${t('live.off')}</span>`;
-  }
-  const openPos=rt.open_position_count?`<div class="account-row text-faint">${t('live.openPositionCount')} ${rt.open_position_count}</div>`:'';
-  const pnlRow=`<div class="account-row text-faint">${t('live.todayRealizedPnl')} ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
-  const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
-  box.innerHTML=`
-    <div class="account-row">${statusLine}</div>
-    ${openPos}${pnlRow}${errRow}
-    <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
-      <div>
-        <label>${t('live.positionUsdLabel')}</label>
-        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.maxLeverageLabel').replace('{n}',a.live_max_leverage_cap||10)}</label>
-        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="${t('live.maxLeveragePlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.dailyLossLimitLabel')}</label>
-        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
-      </div>
-      <div>
-        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
-        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
-      </div>
-      <div class="account-row">
-        <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
-        ${a.live_trading_enabled
-          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">${t('live.turnOffBtn')}</button>`
-          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">${t('live.turnOnBtn')}</button>`}
-      </div>
-    </form>
-    <div class="live-danger">${t('live.dangerText')}</div>
-  `;
-}
-
-async function submitLiveSettings(ev){
-  ev.preventDefault();
-  const body={
-    position_usd: document.getElementById('livePositionUsd').value,
-    max_leverage: document.getElementById('liveMaxLeverage').value,
-    daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
-    max_open_positions: document.getElementById('liveMaxPositions').value,
-  };
-  try{
-    const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  await refreshAccount();
-  return false;
-}
-
-async function toggleLiveTrading(enabled){
-  if(enabled && !confirm(t('live.toggleOnConfirm'))) return;
-  try{
-    const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.actionFailed')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  await refreshAccount();
-}
-
-// Holds an in-progress link code across renderAccount() re-renders (the
-// polling below calls refreshAccount() every few seconds to notice the
-// moment the user sends /start, and that re-render must not wipe the code
-// that's still on screen).
-let _tgActiveCode=null; // {code, bot_username, obtainedAt, ttlSeconds}
-let _tgCodeTimer=null;
-
-function renderTelegramPanel(a){
-  const box=document.getElementById('telegramPanelBody');
-  if(!box) return;
-  if(!a.telegram_bot_enabled){
-    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
-    box.innerHTML=`<div class="account-notice">${t('telegram.notEnabled')}</div>`;
-    return;
-  }
-  if(a.telegram_linked){
-    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
-    _tgActiveCode=null;
-    box.innerHTML=`
-      <div class="account-row">${t('telegram.linked')}${a.telegram_username?(' — @'+a.telegram_username):''}</div>
-      <div class="account-row text-faint">${t('telegram.notificationsDesc')}</div>
-      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">${t('telegram.removeConnectionBtn')}</button></div>
-    `;
-    return;
-  }
-  if(_tgActiveCode){
-    renderTelegramCodeBox();
-    return;
-  }
-  box.innerHTML=`
-    <div class="account-row text-faint">${t('telegram.notLinkedDesc')}</div>
-    <div class="account-row"><button class="btn" type="button" id="tgLinkBtn" onclick="getTelegramLinkCode()">${t('telegram.getCodeBtn')}</button></div>
-  `;
-}
-
-function renderTelegramCodeBox(){
-  const box=document.getElementById('telegramPanelBody');
-  if(!box || !_tgActiveCode) return;
-  const {code, bot_username, obtainedAt, ttlSeconds}=_tgActiveCode;
-  const remaining=Math.max(0, ttlSeconds - Math.floor((Date.now()-obtainedAt)/1000));
-  const botLink=bot_username?`https://t.me/${bot_username}`:null;
-  box.innerHTML=`
-    <div class="account-notice">
-      ${t('telegram.step1')} ${botLink?`<a href="${botLink}" target="_blank" style="color:var(--accent)">@${bot_username}</a>`:t('telegram.step1Fallback')} ${t('telegram.step1End')}<br>
-      ${t('telegram.step2')} <span class="tg-code">/start ${code}</span><br>
-      <span class="text-faint">${t('telegram.codeExpiresPrefix')} ${Math.floor(remaining/60)} ${t('telegram.minutes')} ${remaining%60} ${t('telegram.seconds')}</span>
-    </div>`;
-}
-
-async function getTelegramLinkCode(){
-  const btn=document.getElementById('tgLinkBtn');
-  if(btn){ btn.disabled=true; }
-  try{
-    const r=await fetch('/api/account/telegram/link-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.codeNotObtained')); if(btn) btn.disabled=false; return; }
-    _tgActiveCode={code:d.code, bot_username:d.bot_username, obtainedAt:Date.now(), ttlSeconds:d.expires_in_seconds||600};
-    renderTelegramCodeBox();
-    if(_tgCodeTimer) clearInterval(_tgCodeTimer);
-    _tgCodeTimer=setInterval(async ()=>{
-      if(!_tgActiveCode){ clearInterval(_tgCodeTimer); return; }
-      const remaining=_tgActiveCode.ttlSeconds - Math.floor((Date.now()-_tgActiveCode.obtainedAt)/1000);
-      if(remaining<=0){ clearInterval(_tgCodeTimer); _tgActiveCode=null; await refreshAccount(); return; }
-      await refreshAccount(); // re-renders; if /start already landed, telegram_linked flips to true
-    },4000);
-  }catch(e){ alert(t('alert.connectionError')); }
-  if(btn) btn.disabled=false;
-}
-
-async function unlinkTelegram(){
-  if(!confirm(t('telegram.unlinkConfirm'))) return;
-  try{ await fetch('/api/account/telegram/unlink',{method:'POST',cache:'no-store'}); }catch(e){}
-  await refreshAccount();
-}
-
-async function refreshAccount(){
+async function refreshWhoAmI(){
   let d;
   try{ const r=await fetch('/api/account',{cache:'no-store'}); if(r.status===401){window.location='/login';return;} d=await r.json(); }catch(e){ return; }
-  renderAccount(d);
-}
-
-async function submitBinanceForm(ev){
-  ev.preventDefault();
-  const key=document.getElementById('binApiKey').value.trim();
-  const secret=document.getElementById('binApiSecret').value.trim();
-  const riskEl=document.getElementById('riskAck');
-  const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
-  if(!key||!secret){ alert(t('alert.apiKeySecretRequired')); return false; }
-  if(riskEl && !riskAck){ alert(t('alert.riskAckRequired')); return false; }
-  const btn=document.getElementById('binSaveBtn');
-  btn.disabled=true; btn.textContent=t('account.savingVerifying');
-  try{
-    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
-    const d=await r.json();
-    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
-  }catch(e){ alert(t('alert.connectionError')); }
-  btn.disabled=false; btn.textContent=t('account.saveVerifyBtn');
-  await refreshAccount();
-  return false;
-}
-
-async function disconnectBinance(){
-  if(!confirm(t('alert.disconnectBinanceConfirm'))) return;
-  try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
-  await refreshAccount();
+  let whoText=d.username?('👤 '+d.username):'';
+  if(d.is_admin){ whoText+=' <span class="badge-admin">'+t('account.admin')+'</span>'; }
+  else if(d.subscription_status==='trial'){ whoText+=` <span class="badge-trial">${t('account.trialDaysLeft').replace('{n}',d.days_left)}</span>`; }
+  else if(d.subscription_status==='expired'){ whoText+=' <span class="badge-error">'+t('account.trialExpired')+'</span>'; }
+  document.getElementById('whoami').innerHTML=whoText;
+  document.getElementById('adminLink').style.display=d.is_admin?'inline-block':'none';
 }
 
 applyTranslation(_initialLang);
-refreshAccount();
+refreshWhoAmI();
 </script></body></html>'''
 
 _AUTH_STYLE = r'''
@@ -3785,7 +3435,9 @@ FAQ_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
 <section class="panel">
@@ -3837,7 +3489,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -3860,7 +3512,7 @@ const translations = {
     "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
   },
   tr: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS",
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -3883,7 +3535,7 @@ const translations = {
     "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
   },
   zh: {
-    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题",
+    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -3906,7 +3558,7 @@ const translations = {
     "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
   },
   de: {
-    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -3929,7 +3581,7 @@ const translations = {
     "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
   },
   fr: {
-    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -3952,7 +3604,7 @@ const translations = {
     "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
   },
   es: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes",
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -4039,7 +3691,9 @@ BACKTEST_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
 <section class="panel">
@@ -4250,7 +3904,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.trades": "Paper Trades",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -4293,7 +3947,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS",
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.trades": "Deneme İşlemleri",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -4336,7 +3990,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题",
+    "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.trades": "模拟交易",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -4379,7 +4033,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.trades": "Paper-Trades",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -4422,7 +4076,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ",
+    "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.trades": "Trades paper",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -4465,7 +4119,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes",
+    "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.trades": "Operaciones de prueba",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -4536,6 +4190,1611 @@ try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 applyTranslation(_initialLang);
 </script>
 </body></html>'''
+
+_ACCOUNT_STYLE_EXTRA = r'''
+<style>
+.account-form{display:flex;flex-direction:column;gap:10px;max-width:440px}
+.account-form label{font-size:11.5px;color:var(--text-faint)}
+.account-form input{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--font-m);width:100%}
+.badge-verified{color:var(--bull);font-weight:700}
+.badge-unverified{color:var(--text-dim)}
+.badge-error{color:var(--bear);font-weight:600}
+.badge-trial{color:var(--accent);font-weight:600}
+.badge-admin{color:var(--bull);font-weight:600}
+.risk-ack{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}
+.risk-ack input{width:auto!important;margin-top:2px}
+.live-panel{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
+.live-panel h4{margin:0 0 8px 0;font-size:13.5px}
+.live-danger{background:var(--bear-bg);border:1px solid var(--bear-border);color:var(--bear);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:10px;line-height:1.55}
+.badge-live-on{color:var(--bull);font-weight:700}
+.badge-live-off{color:var(--text-dim)}
+.badge-live-paused{color:var(--accent);font-weight:700}
+.tg-code{font-family:var(--font-m);font-size:20px;font-weight:700;letter-spacing:3px;background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:inline-block;margin:6px 0}
+.pos-empty{color:var(--text-dim);font-size:13px;padding:6px 0 2px}
+.pill{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:var(--font-m)}
+.pill.long{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-border)}
+.pill.short{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
+.btn-danger{border-color:#7a2a2a;color:#ff8080}
+.btn-danger:hover{border-color:#ff5c5c;color:#ff5c5c;background:rgba(255,92,92,0.08)}
+</style>
+'''
+
+ACCOUNT_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hesabım — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _ACCOUNT_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="account.title">My Account</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+    <span class="text-faint" id="whoami">__USERNAME__</span>
+    <a class="btn" id="adminLink" href="/admin" style="display:none;text-decoration:none" data-i18n="nav.admin">Admin</a>
+    <button class="btn" onclick="logout()" data-i18n="nav.logout">Logout</button>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" class="active" data-i18n="nav.account">My Account</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="account.title">My Account</h2></div>
+  <div class="position-body">
+    <div class="account-row">👤 <b>__USERNAME__</b></div>
+    <div class="account-row text-faint">✉️ <span id="acctEmail">—</span></div>
+    <div style="margin-top:14px">''' + ACCOUNT_EXTRAS_HTML + r'''</div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
+  <div class="position-body" id="accountBody">
+    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.telegramConnection">Telegram Connection</h2></div>
+  <div class="position-body">
+    <div id="telegramPanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div class="live-panel" style="margin-top:0">
+    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
+    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
+  </div>
+  <div class="table-scroll" style="margin-top:14px">
+    <table class="datatable">
+      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
+      <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-scroll" style="margin-top:14px">
+    <table class="datatable">
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cls=x=>Number(x)>=0?'pos':'neg';
+
+let liveMineCache=null;
+function renderMyLive(d){
+  liveMineCache=d;
+  const open=d.open||[], closed=d.closed||[];
+  document.getElementById('liveMineCount').textContent = d.live_trading_enabled
+    ? `${open.length} ${t('liveAccount.openPositionsSuffix')}`
+    : t('liveAccount.liveOff');
+
+  document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
+    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
+      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
+      +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
+      +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
+  }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
+
+  document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
+    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
+      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
+      +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
+}
+async function refreshMyLive(){
+  let d;
+  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  renderMyLive(d);
+}
+refreshMyLive();setInterval(refreshMyLive,15000);
+
+async function closeLivePosition(symbol,btn){
+  if(!confirm(`${t('alert.closePositionConfirmPrefix')} ${symbol} ${t('alert.closePositionConfirmSuffix')}`)) return;
+  btn.disabled=true; btn.textContent=t('liveOpen.closing');
+  try{
+    const r=await fetch('/api/live/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.closePositionFailed')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
+  }catch(e){ alert(t('alert.connectionError')); btn.disabled=false; btn.textContent=t('liveOpen.closeNowBtn'); return; }
+  await refreshMyLive();
+}
+
+let accountCache=null;
+function renderAccount(a){
+  accountCache=a;
+  const pill=document.getElementById('binanceStatusPill');
+  const body=document.getElementById('accountBody');
+  let whoText=a.username?('👤 '+a.username):'';
+  if(a.is_admin){ whoText+=' <span class="badge-admin">'+t('account.admin')+'</span>'; }
+  else if(a.subscription_status==='trial'){ whoText+=` <span class="badge-trial">${t('account.trialDaysLeft').replace('{n}',a.days_left)}</span>`; }
+  else if(a.subscription_status==='expired'){ whoText+=' <span class="badge-error">'+t('account.trialExpired')+'</span>'; }
+  document.getElementById('whoami').innerHTML=whoText;
+  document.getElementById('adminLink').style.display=a.is_admin?'inline-block':'none';
+  const emailEl=document.getElementById('acctEmail'); if(emailEl) emailEl.textContent=a.email||t('account.emailNotRegistered');
+  if(a.binance_connected){
+    if(a.binance_verify_error){ pill.innerHTML='<span class="badge-error">'+t('account.verifyError')+'</span>'; }
+    else if(a.binance_verified_at){ pill.innerHTML='<span class="badge-verified">'+t('account.verifiedConnected')+'</span>'; }
+    else{ pill.innerHTML='<span class="badge-unverified">'+t('account.connectedNotVerified')+'</span>'; }
+  } else {
+    pill.innerHTML='<span class="badge-unverified">'+t('account.notConnected')+'</span>';
+  }
+  let notice='';
+  if(!a.credential_encryption_ready){
+    notice=`<div class="account-notice">${t('account.credentialWarning')}</div>`;
+  }
+  const maskedRow=a.binance_connected?`<div class="account-row">${t('account.savedKeyLabel')} <b>${a.binance_key_masked}</b></div>`:'';
+  const verifyRow=a.binance_verified_at?`<div class="account-row text-faint">${t('account.lastVerified')} ${a.binance_verified_at.replace('T',' ').slice(0,16)}</div>`
+    :(a.binance_verify_error?`<div class="account-row"><span class="badge-error">${a.binance_verify_error}</span></div>`:'');
+  const riskRow=a.risk_ack_at
+    ? `<div class="account-row text-faint">${t('account.riskAckGiven')}: ${a.risk_ack_at.replace('T',' ').slice(0,16)}</div>`
+    : `<label class="risk-ack"><input type="checkbox" id="riskAck"> ${t('account.riskAckLabel')}</label>`;
+  body.innerHTML=`
+    ${maskedRow}${verifyRow}
+    <form class="account-form" id="binanceForm" onsubmit="return submitBinanceForm(event)">
+      <div>
+        <label>${t('account.apiKeyLabel')}</label>
+        <input type="text" id="binApiKey" autocomplete="off" placeholder="${a.binance_connected?t('account.apiKeyPlaceholderChange'):t('account.apiKeyPlaceholderNew')}">
+      </div>
+      <div>
+        <label>${t('account.apiSecretLabel')}</label>
+        <input type="password" id="binApiSecret" autocomplete="off" placeholder="${a.binance_connected?t('account.apiSecretPlaceholderChange'):t('account.apiSecretPlaceholderNew')}">
+      </div>
+      ${riskRow}
+      <div class="account-row">
+        <button class="btn" type="submit" id="binSaveBtn">${t('account.saveVerifyBtn')}</button>
+        ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
+      </div>
+    </form>
+    ${notice}
+  `;
+  renderLivePanel(a);
+  renderTelegramPanel(a);
+}
+
+function renderLivePanel(a){
+  const box=document.getElementById('livePanelBody');
+  if(!box) return;
+  if(!a.binance_connected || !a.binance_verified_at){
+    box.innerHTML=`<div class="account-notice">${t('live.needConnectFirst')}</div>`;
+    return;
+  }
+  const rt=a.live_runtime||{};
+  let statusLine;
+  if(a.global_kill_switch_active){
+    statusLine=`<span class="badge-live-paused">${t('live.killSwitch')}</span>`;
+  } else if(a.live_trading_enabled && rt.paused_today){
+    statusLine=`<span class="badge-live-paused">${t('live.pausedToday')}</span>`;
+  } else if(a.live_trading_enabled){
+    statusLine=`<span class="badge-live-on">${t('live.on')}</span>`;
+  } else {
+    statusLine=`<span class="badge-live-off">${t('live.off')}</span>`;
+  }
+  const openPos=rt.open_position_count?`<div class="account-row text-faint">${t('live.openPositionCount')} ${rt.open_position_count}</div>`:'';
+  const pnlRow=`<div class="account-row text-faint">${t('live.todayRealizedPnl')} ${(rt.realized_pnl_usd||0).toFixed(2)} USD</div>`;
+  const errRow=rt.last_error?`<div class="account-row"><span class="badge-error">${(''+rt.last_error).slice(0,200)}</span></div>`:'';
+  box.innerHTML=`
+    <div class="account-row">${statusLine}</div>
+    ${openPos}${pnlRow}${errRow}
+    <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
+      <div>
+        <label>${t('live.positionUsdLabel')}</label>
+        <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.maxLeverageLabel').replace('{n}',a.live_max_leverage_cap||10)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_leverage_cap||10}" id="liveMaxLeverage" value="${a.live_max_leverage||''}" placeholder="${t('live.maxLeveragePlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.dailyLossLimitLabel')}</label>
+        <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
+      </div>
+      <div>
+        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
+      </div>
+      <div class="account-row">
+        <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
+        ${a.live_trading_enabled
+          ? `<button class="btn" type="button" onclick="toggleLiveTrading(false)">${t('live.turnOffBtn')}</button>`
+          : `<button class="btn" type="button" onclick="toggleLiveTrading(true)" style="background:var(--bear);border-color:var(--bear-border)">${t('live.turnOnBtn')}</button>`}
+      </div>
+    </form>
+    <div class="live-danger">${t('live.dangerText')}</div>
+  `;
+}
+
+async function submitLiveSettings(ev){
+  ev.preventDefault();
+  const body={
+    position_usd: document.getElementById('livePositionUsd').value,
+    max_leverage: document.getElementById('liveMaxLeverage').value,
+    daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
+    max_open_positions: document.getElementById('liveMaxPositions').value,
+  };
+  try{
+    const r=await fetch('/api/account/live-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  await refreshAccount();
+  return false;
+}
+
+async function toggleLiveTrading(enabled){
+  if(enabled && !confirm(t('live.toggleOnConfirm'))) return;
+  try{
+    const r=await fetch('/api/account/live-toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.actionFailed')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  await refreshAccount();
+}
+
+// Holds an in-progress link code across renderAccount() re-renders (the
+// polling below calls refreshAccount() every few seconds to notice the
+// moment the user sends /start, and that re-render must not wipe the code
+// that's still on screen).
+let _tgActiveCode=null; // {code, bot_username, obtainedAt, ttlSeconds}
+let _tgCodeTimer=null;
+
+function renderTelegramPanel(a){
+  const box=document.getElementById('telegramPanelBody');
+  if(!box) return;
+  if(!a.telegram_bot_enabled){
+    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
+    box.innerHTML=`<div class="account-notice">${t('telegram.notEnabled')}</div>`;
+    return;
+  }
+  if(a.telegram_linked){
+    if(_tgCodeTimer){ clearInterval(_tgCodeTimer); _tgCodeTimer=null; }
+    _tgActiveCode=null;
+    box.innerHTML=`
+      <div class="account-row">${t('telegram.linked')}${a.telegram_username?(' — @'+a.telegram_username):''}</div>
+      <div class="account-row text-faint">${t('telegram.notificationsDesc')}</div>
+      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">${t('telegram.removeConnectionBtn')}</button></div>
+    `;
+    return;
+  }
+  if(_tgActiveCode){
+    renderTelegramCodeBox();
+    return;
+  }
+  box.innerHTML=`
+    <div class="account-row text-faint">${t('telegram.notLinkedDesc')}</div>
+    <div class="account-row"><button class="btn" type="button" id="tgLinkBtn" onclick="getTelegramLinkCode()">${t('telegram.getCodeBtn')}</button></div>
+  `;
+}
+
+function renderTelegramCodeBox(){
+  const box=document.getElementById('telegramPanelBody');
+  if(!box || !_tgActiveCode) return;
+  const {code, bot_username, obtainedAt, ttlSeconds}=_tgActiveCode;
+  const remaining=Math.max(0, ttlSeconds - Math.floor((Date.now()-obtainedAt)/1000));
+  const botLink=bot_username?`https://t.me/${bot_username}`:null;
+  box.innerHTML=`
+    <div class="account-notice">
+      ${t('telegram.step1')} ${botLink?`<a href="${botLink}" target="_blank" style="color:var(--accent)">@${bot_username}</a>`:t('telegram.step1Fallback')} ${t('telegram.step1End')}<br>
+      ${t('telegram.step2')} <span class="tg-code">/start ${code}</span><br>
+      <span class="text-faint">${t('telegram.codeExpiresPrefix')} ${Math.floor(remaining/60)} ${t('telegram.minutes')} ${remaining%60} ${t('telegram.seconds')}</span>
+    </div>`;
+}
+
+async function getTelegramLinkCode(){
+  const btn=document.getElementById('tgLinkBtn');
+  if(btn){ btn.disabled=true; }
+  try{
+    const r=await fetch('/api/account/telegram/link-code',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.codeNotObtained')); if(btn) btn.disabled=false; return; }
+    _tgActiveCode={code:d.code, bot_username:d.bot_username, obtainedAt:Date.now(), ttlSeconds:d.expires_in_seconds||600};
+    renderTelegramCodeBox();
+    if(_tgCodeTimer) clearInterval(_tgCodeTimer);
+    _tgCodeTimer=setInterval(async ()=>{
+      if(!_tgActiveCode){ clearInterval(_tgCodeTimer); return; }
+      const remaining=_tgActiveCode.ttlSeconds - Math.floor((Date.now()-_tgActiveCode.obtainedAt)/1000);
+      if(remaining<=0){ clearInterval(_tgCodeTimer); _tgActiveCode=null; await refreshAccount(); return; }
+      await refreshAccount(); // re-renders; if /start already landed, telegram_linked flips to true
+    },4000);
+  }catch(e){ alert(t('alert.connectionError')); }
+  if(btn) btn.disabled=false;
+}
+
+async function unlinkTelegram(){
+  if(!confirm(t('telegram.unlinkConfirm'))) return;
+  try{ await fetch('/api/account/telegram/unlink',{method:'POST',cache:'no-store'}); }catch(e){}
+  await refreshAccount();
+}
+
+async function refreshAccount(){
+  let d;
+  try{ const r=await fetch('/api/account',{cache:'no-store'}); if(r.status===401){window.location='/login';return;} d=await r.json(); }catch(e){ return; }
+  renderAccount(d);
+}
+
+async function submitBinanceForm(ev){
+  ev.preventDefault();
+  const key=document.getElementById('binApiKey').value.trim();
+  const secret=document.getElementById('binApiSecret').value.trim();
+  const riskEl=document.getElementById('riskAck');
+  const riskAck=riskEl?riskEl.checked:true; // already acked previously -> element isn't shown
+  if(!key||!secret){ alert(t('alert.apiKeySecretRequired')); return false; }
+  if(riskEl && !riskAck){ alert(t('alert.riskAckRequired')); return false; }
+  const btn=document.getElementById('binSaveBtn');
+  btn.disabled=true; btn.textContent=t('account.savingVerifying');
+  try{
+    const r=await fetch('/api/account/connect-binance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key,api_secret:secret,risk_ack:riskAck})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||t('alert.saveFailedGeneric')); }
+  }catch(e){ alert(t('alert.connectionError')); }
+  btn.disabled=false; btn.textContent=t('account.saveVerifyBtn');
+  await refreshAccount();
+  return false;
+}
+
+async function disconnectBinance(){
+  if(!confirm(t('alert.disconnectBinanceConfirm'))) return;
+  try{ await fetch('/api/account/disconnect-binance',{method:'POST',cache:'no-store'}); }catch(e){}
+  await refreshAccount();
+}
+
+async function logout(){
+  try{ await fetch('/logout',{method:'POST',cache:'no-store'}); }catch(e){}
+  window.location='/login';
+}
+
+const translations = {
+  en: {
+  "nav.dashboard": "Dashboard",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "My Account",
+  "nav.admin": "Admin",
+  "nav.logout": "Logout",
+  "faq.backToDashboard": "← Dashboard",
+  "panel.loading": "Loading…",
+  "pos.entry": "Entry",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Exit",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Reason",
+  "history.noClosedLiveTrades": "You have no closed live trades yet.",
+  "liveOpen.headerQty": "Qty",
+  "liveOpen.headerCurrent": "Current",
+  "liveOpen.headerLeverage": "Leverage",
+  "liveOpen.headerOpened": "Opened",
+  "liveOpen.noOpenPositions": "You have no open live positions right now.",
+  "liveOpen.closeNowBtn": "Close Now",
+  "liveOpen.closing": "Closing…",
+  "alert.connectionError": "Connection error",
+  "alert.closePositionConfirmPrefix": "Are you sure you want to close the",
+  "alert.closePositionConfirmSuffix": "position now with a real market order? This cannot be undone.",
+  "alert.closePositionFailed": "Could not close position",
+  "account.title": "My Account",
+  "account.subscriptionBtn": "💳 Switch to Subscription",
+  "account.askAdminBtn": "✉️ Ask Admin",
+  "account.emailNotRegistered": "(no email on file)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Trial: {n} days left",
+  "account.trialExpired": "Trial expired",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY is not configured on the server — API keys cannot be saved because they cannot be encrypted safely. Please contact your admin.",
+  "account.savedKeyLabel": "Saved key:",
+  "account.lastVerified": "Last verified:",
+  "account.riskAckGiven": "Risk acknowledgement given on",
+  "account.riskAckLabel": "I confirm and accept that this bot may place real-money orders on crypto futures, that it carries a risk of loss, and that any resulting losses are my own responsibility, not the bot's.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Enter a new key to change it",
+  "account.apiKeyPlaceholderNew": "Binance Futures API key",
+  "account.apiSecretPlaceholderChange": "Enter a new secret to change it",
+  "account.apiSecretPlaceholderNew": "Binance Futures API secret",
+  "account.saveVerifyBtn": "Save & Verify",
+  "account.savingVerifying": "Saving & verifying…",
+  "account.removeConnectionBtn": "Remove Connection",
+  "account.verifyError": "Verification error",
+  "account.verifiedConnected": "Connected and verified",
+  "account.connectedNotVerified": "Connected, not verified",
+  "account.notConnected": "Not connected",
+  "subscription.title": "Switch to Subscription",
+  "subscription.desc": "Choose a plan, send the payment to the IBAN below, and click \"I’ve Sent the Payment\" — our team will verify your payment and activate your account as soon as possible.",
+  "subscription.planMonthlyName": "Monthly Subscription",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Annual Subscription",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Selected plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Recipient:",
+  "subscription.usernameNote": "Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.",
+  "subscription.paySentBtn": "I've Sent the Payment",
+  "subscription.sending": "Sending…",
+  "subscription.resendBtn": "Notify Again",
+  "subscription.successMsg": "✓ Notification received — our team will activate your account once your payment is verified.",
+  "subscription.genericError": "Something went wrong, please try again.",
+  "subscription.connectionError": "Connection error, please try again.",
+  "subscription.selectedMonthly": "Monthly — 50 USD",
+  "subscription.selectedAnnual": "Annual — 500 USD",
+  "askAdmin.title": "Ask Admin",
+  "askAdmin.desc": "Your message will be sent to herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Type your question here…",
+  "askAdmin.sendBtn": "Send",
+  "askAdmin.sending": "Sending…",
+  "askAdmin.emptyMessage": "Please enter a message.",
+  "askAdmin.successMsg": "✓ Your message has been sent. We'll get back to you shortly.",
+  "askAdmin.genericError": "Could not send, please try again.",
+  "askAdmin.connectionError": "Connection error, please try again.",
+  "panel.binanceConnection": "Binance Connection",
+  "panel.telegramConnection": "Telegram Connection",
+  "panel.liveAccount": "Binance Live Account",
+  "liveAccount.title": "Live Trading (Real Money)",
+  "liveAccount.openPositionsSuffix": "open positions",
+  "liveAccount.liveOff": "Live trading is off",
+  "liveAccount.footnote": "This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.",
+  "live.needConnectFirst": "You need to save and verify your Binance API key above before you can start live (real money) trading.",
+  "live.killSwitch": "🛑 All live trading has been temporarily stopped by the admin",
+  "live.pausedToday": "⏸ Daily max loss limit reached — no new trades will open today",
+  "live.on": "🟢 Live trading is ON",
+  "live.off": "Live trading is off — the bot is running in paper (demo) mode only",
+  "live.openPositionCount": "Open live positions:",
+  "live.todayRealizedPnl": "Today's estimated realized P&L:",
+  "live.positionUsdLabel": "USD amount per trade",
+  "live.positionUsdPlaceholder": "e.g. 100",
+  "live.maxLeverageLabel": "Max leverage (1-{n}x)",
+  "live.maxLeveragePlaceholder": "e.g. 2",
+  "live.dailyLossLimitLabel": "Daily max loss limit (USD) — trading stops automatically for the day if exceeded",
+  "live.dailyLossLimitPlaceholder": "e.g. 50",
+  "live.maxPositionsLabel": "Max open positions (1-{n})",
+  "live.maxPositionsPlaceholder": "e.g. 1",
+  "live.saveSettingsBtn": "Save Settings",
+  "live.turnOffBtn": "Turn Off Live Trading",
+  "live.turnOnBtn": "Turn ON Live Trading (real money)",
+  "live.dangerText": "⚠️ Once live trading is turned on, the bot opens/closes orders using <b>real money</b> on your registered Binance account. You — not the bot — are responsible for any losses. This is not investment advice; compliance with applicable regulations is your own responsibility.",
+  "live.toggleOnConfirm": "You are about to turn on live trading. From this moment the bot will open and close orders with REAL MONEY on your Binance account. Do you confirm that you accept the risk of loss and that these settings are correct?",
+  "telegram.notEnabled": "Telegram bot is not configured on the server.",
+  "telegram.linked": "🟢 Telegram connected",
+  "telegram.notificationsDesc": "Live trade open/close notifications, risk alerts, and the daily summary will arrive here.",
+  "telegram.removeConnectionBtn": "Remove Connection",
+  "telegram.notLinkedDesc": "Connect to receive your live trade notifications on your own Telegram.",
+  "telegram.getCodeBtn": "Get Link Code",
+  "telegram.step1": "1) Open",
+  "telegram.step1Fallback": "our bot",
+  "telegram.step1End": "on Telegram.",
+  "telegram.step2": "2) Send this:",
+  "telegram.codeExpiresPrefix": "Code expires in",
+  "telegram.minutes": "min",
+  "telegram.seconds": "sec",
+  "telegram.unlinkConfirm": "Are you sure you want to remove the Telegram connection?",
+  "alert.apiKeySecretRequired": "API key and secret are required.",
+  "alert.riskAckRequired": "You must check the risk acknowledgement box before continuing.",
+  "alert.saveFailedGeneric": "Could not save",
+  "alert.actionFailed": "Action failed",
+  "alert.codeNotObtained": "Could not get code",
+  "alert.disconnectBinanceConfirm": "Are you sure you want to remove the Binance connection?",
+  },
+  tr: {
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Deneme İşlemleri",
+  "nav.faq": "SSS",
+  "nav.account": "Hesabım",
+  "nav.admin": "Yönetim",
+  "nav.logout": "Çıkış",
+  "faq.backToDashboard": "← Panel",
+  "panel.loading": "Yükleniyor…",
+  "pos.entry": "Giriş",
+  "watchlist.headerSymbol": "Sembol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Tarih",
+  "history.headerDirection": "Yön",
+  "history.headerExit": "Çıkış",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Neden",
+  "history.noClosedLiveTrades": "Henüz kapanmış canlı işleminiz yok.",
+  "liveOpen.headerQty": "Miktar",
+  "liveOpen.headerCurrent": "Güncel",
+  "liveOpen.headerLeverage": "Kaldıraç",
+  "liveOpen.headerOpened": "Açılış",
+  "liveOpen.noOpenPositions": "Şu an açık canlı pozisyonunuz yok.",
+  "liveOpen.closeNowBtn": "Şimdi Kapat",
+  "liveOpen.closing": "Kapatılıyor…",
+  "alert.connectionError": "Bağlantı hatası",
+  "alert.closePositionConfirmPrefix": "",
+  "alert.closePositionConfirmSuffix": "pozisyonunu şimdi gerçek bir market emriyle kapatmak istediğinize emin misiniz? Bu işlem geri alınamaz.",
+  "alert.closePositionFailed": "Pozisyon kapatılamadı",
+  "account.title": "Hesabım",
+  "account.subscriptionBtn": "💳 Abonelik Sistemine Geç",
+  "account.askAdminBtn": "✉️ Admin'e Soru Sor",
+  "account.emailNotRegistered": "(e-posta kayıtlı değil)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Deneme: {n} gün kaldı",
+  "account.trialExpired": "Deneme doldu",
+  "account.credentialWarning": "⚠️ Sunucuda CREDENTIAL_ENCRYPTION_KEY tanımlı değil — API anahtarları güvenle şifrelenemediği için kaydedilemez. Lütfen yöneticinizle iletişime geçin.",
+  "account.savedKeyLabel": "Kayıtlı anahtar:",
+  "account.lastVerified": "Son doğrulama:",
+  "account.riskAckGiven": "Risk onayı tarihi",
+  "account.riskAckLabel": "Bu botun kripto vadeli işlemlerde gerçek para ile emir açabileceğini, kayıp riski taşıdığını ve olası kayıplardan botun değil kendi sorumluluğumda olduğumu anladığımı ve kabul ettiğimi onaylıyorum.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Değiştirmek için yeni key girin",
+  "account.apiKeyPlaceholderNew": "Binance Futures API key",
+  "account.apiSecretPlaceholderChange": "Değiştirmek için yeni secret girin",
+  "account.apiSecretPlaceholderNew": "Binance Futures API secret",
+  "account.saveVerifyBtn": "Kaydet ve Doğrula",
+  "account.savingVerifying": "Kaydediliyor ve doğrulanıyor…",
+  "account.removeConnectionBtn": "Bağlantıyı Kaldır",
+  "account.verifyError": "Doğrulama hatası",
+  "account.verifiedConnected": "Bağlı ve doğrulandı",
+  "account.connectedNotVerified": "Bağlı, doğrulanmadı",
+  "account.notConnected": "Bağlı değil",
+  "subscription.title": "Abonelik Sistemine Geç",
+  "subscription.desc": "Bir plan seçin, IBAN’a ödemeyi gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
+  "subscription.planMonthlyName": "Aylık Abonelik",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Yıllık Abonelik",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Seçilen plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Alıcı:",
+  "subscription.usernameNote": "Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.",
+  "subscription.paySentBtn": "Tutarı Gönderdim",
+  "subscription.sending": "Gönderiliyor…",
+  "subscription.resendBtn": "Tekrar Bildir",
+  "subscription.successMsg": "✓ Bildirim alındı — ekibimiz ödemenizi kontrol ettikten sonra hesabınızı aktif hale getirecek.",
+  "subscription.genericError": "Bir hata oluştu, lütfen tekrar deneyin.",
+  "subscription.connectionError": "Bağlantı hatası, lütfen tekrar deneyin.",
+  "subscription.selectedMonthly": "Aylık — 50 USD",
+  "subscription.selectedAnnual": "Yıllık — 500 USD",
+  "askAdmin.title": "Admin'e Soru Sor",
+  "askAdmin.desc": "Mesajınız herobotai.int@gmail.com adresine iletilecek.",
+  "askAdmin.placeholder": "Sorunuzu buraya yazın…",
+  "askAdmin.sendBtn": "Gönder",
+  "askAdmin.sending": "Gönderiliyor…",
+  "askAdmin.emptyMessage": "Lütfen bir mesaj yazın.",
+  "askAdmin.successMsg": "✓ Mesajınız gönderildi. En kısa sürede size dönüş yapılacaktır.",
+  "askAdmin.genericError": "Gönderilemedi, lütfen tekrar deneyin.",
+  "askAdmin.connectionError": "Bağlantı hatası, lütfen tekrar deneyin.",
+  "panel.binanceConnection": "Binance Bağlantısı",
+  "panel.telegramConnection": "Telegram Bağlantısı",
+  "panel.liveAccount": "Binance Gerçek Hesap",
+  "liveAccount.title": "Canlı İşlem (Gerçek Para)",
+  "liveAccount.openPositionsSuffix": "açık pozisyon",
+  "liveAccount.liveOff": "Canlı işlem kapalı",
+  "liveAccount.footnote": "Bu panel yalnızca <b>sizin</b> Binance hesabınızda gerçekleşen canlı işlemleri gösterir — yukarıdaki paper/demo panel ile veya başka kullanıcılarla karışmaz; sizden başka hiç kimse burayı göremez.",
+  "live.needConnectFirst": "Canlı (gerçek para) işlem açabilmek için önce yukarıdan Binance API anahtarınızı kaydedip doğrulatmanız gerekiyor.",
+  "live.killSwitch": "🛑 Yönetici tarafından tüm canlı işlemler geçici olarak durduruldu",
+  "live.pausedToday": "⏸ Günlük maksimum kayıp limitine ulaşıldı — bugün için yeni işlem açılmıyor",
+  "live.on": "🟢 Canlı işlem AÇIK",
+  "live.off": "Canlı işlem kapalı — bot sadece paper (deneme) modda çalışıyor",
+  "live.openPositionCount": "Açık canlı pozisyon:",
+  "live.todayRealizedPnl": "Bugünkü tahmini gerçekleşmiş K/Z:",
+  "live.positionUsdLabel": "İşlem başına USD tutarı",
+  "live.positionUsdPlaceholder": "Örn. 100",
+  "live.maxLeverageLabel": "Maksimum kaldıraç (1-{n}x)",
+  "live.maxLeveragePlaceholder": "Örn. 2",
+  "live.dailyLossLimitLabel": "Günlük maksimum kayıp limiti (USD) — aşılırsa o gün otomatik durur",
+  "live.dailyLossLimitPlaceholder": "Örn. 50",
+  "live.maxPositionsLabel": "Maksimum açık pozisyon sayısı (1-{n})",
+  "live.maxPositionsPlaceholder": "Örn. 1",
+  "live.saveSettingsBtn": "Ayarları Kaydet",
+  "live.turnOffBtn": "Canlı İşlemi Kapat",
+  "live.turnOnBtn": "Canlı İşlemi AÇ (gerçek para)",
+  "live.dangerText": "⚠️ Canlı işlem açıldığında bot, kayıtlı Binance hesabınızda <b>gerçek parayla</b> emir açar/kapatır. Kayıplardan bot değil siz sorumlusunuz. Bu, yatırım tavsiyesi değildir; ilgili düzenlemelere uygunluk sizin sorumluluğunuzdadır.",
+  "live.toggleOnConfirm": "Canlı işlemi açmak üzeresiniz. Bot bu andan itibaren Binance hesabınızda GERÇEK PARA ile emir açıp kapatacak. Kayıp riskini kabul ettiğinizi ve bu ayarları doğru girdiğinizi onaylıyor musunuz?",
+  "telegram.notEnabled": "Sunucuda Telegram botu tanımlı değil.",
+  "telegram.linked": "🟢 Telegram bağlı",
+  "telegram.notificationsDesc": "Canlı işlem giriş/çıkış bildirimleri, risk uyarıları ve günlük özet buraya gelecek.",
+  "telegram.removeConnectionBtn": "Bağlantıyı Kaldır",
+  "telegram.notLinkedDesc": "Canlı işlem bildirimlerinizi kendi Telegram'ınızda almak için bağlanın.",
+  "telegram.getCodeBtn": "Bağlantı Kodu Al",
+  "telegram.step1": "1) Telegram'da",
+  "telegram.step1Fallback": "botumuzu",
+  "telegram.step1End": "açın.",
+  "telegram.step2": "2) Şunu gönderin:",
+  "telegram.codeExpiresPrefix": "Kod",
+  "telegram.minutes": "dakika",
+  "telegram.seconds": "saniye içinde geçersiz olur.",
+  "telegram.unlinkConfirm": "Telegram bağlantısını kaldırmak istediğinize emin misiniz?",
+  "alert.apiKeySecretRequired": "API key ve secret gerekli.",
+  "alert.riskAckRequired": "Devam etmeden önce risk onayı kutusunu işaretlemelisiniz.",
+  "alert.saveFailedGeneric": "Kaydedilemedi",
+  "alert.actionFailed": "İşlem başarısız",
+  "alert.codeNotObtained": "Kod alınamadı",
+  "alert.disconnectBinanceConfirm": "Binance bağlantısını kaldırmak istediğinize emin misiniz?",
+  },
+  zh: {
+  "nav.dashboard": "仪表盘",
+  "nav.backtest": "回测",
+  "nav.trades": "模拟交易",
+  "nav.faq": "常见问题",
+  "nav.account": "我的账户",
+  "nav.admin": "管理",
+  "nav.logout": "退出登录",
+  "faq.backToDashboard": "← 仪表盘",
+  "panel.loading": "加载中…",
+  "pos.entry": "入场价",
+  "watchlist.headerSymbol": "交易对",
+  "watchlist.headerUnrealizedPnl": "未实现盈亏",
+  "history.headerDate": "日期",
+  "history.headerDirection": "方向",
+  "history.headerExit": "出场价",
+  "history.headerPnl": "盈亏",
+  "history.headerReason": "原因",
+  "history.noClosedLiveTrades": "暂无已平仓的实盘交易。",
+  "liveOpen.headerQty": "数量",
+  "liveOpen.headerCurrent": "当前价",
+  "liveOpen.headerLeverage": "杠杆",
+  "liveOpen.headerOpened": "开仓时间",
+  "liveOpen.noOpenPositions": "您当前没有开启的实盘仓位。",
+  "liveOpen.closeNowBtn": "立即平仓",
+  "liveOpen.closing": "平仓中…",
+  "alert.connectionError": "连接错误",
+  "alert.closePositionConfirmPrefix": "确定要立即以真实市价单平仓",
+  "alert.closePositionConfirmSuffix": "吗？此操作不可撤销。",
+  "alert.closePositionFailed": "平仓失败",
+  "account.title": "我的账户",
+  "account.subscriptionBtn": "💳 升级为订阅",
+  "account.askAdminBtn": "✉️ 联系管理员",
+  "account.emailNotRegistered": "（未登记邮箱）",
+  "account.admin": "（管理员）",
+  "account.trialDaysLeft": "试用：剩余 {n} 天",
+  "account.trialExpired": "试用已到期",
+  "account.credentialWarning": "⚠️ 服务器未配置 CREDENTIAL_ENCRYPTION_KEY — 无法安全加密，API 密钥无法保存。请联系您的管理员。",
+  "account.savedKeyLabel": "已保存的密钥：",
+  "account.lastVerified": "上次验证时间：",
+  "account.riskAckGiven": "风险确认时间",
+  "account.riskAckLabel": "我确认并接受：此机器人可能在加密货币期货交易中下单真实资金，存在亏损风险，任何损失由我自己承担，而非机器人责任。",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "输入新密钥以更换",
+  "account.apiKeyPlaceholderNew": "Binance 合约 API Key",
+  "account.apiSecretPlaceholderChange": "输入新 Secret 以更换",
+  "account.apiSecretPlaceholderNew": "Binance 合约 API Secret",
+  "account.saveVerifyBtn": "保存并验证",
+  "account.savingVerifying": "正在保存并验证…",
+  "account.removeConnectionBtn": "解除连接",
+  "account.verifyError": "验证错误",
+  "account.verifiedConnected": "已连接并已验证",
+  "account.connectedNotVerified": "已连接，尚未验证",
+  "account.notConnected": "未连接",
+  "subscription.title": "升级为订阅",
+  "subscription.desc": "选择一个套餐，将款项汇入下面的 IBAN，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
+  "subscription.planMonthlyName": "月订阅",
+  "subscription.planMonthlyPrice": "50 美元",
+  "subscription.planAnnualName": "年订阅",
+  "subscription.planAnnualPrice": "500 美元",
+  "subscription.selectedPlanLabel": "已选套餐：",
+  "subscription.ibanLabel": "IBAN：",
+  "subscription.recipientLabel": "收款人：",
+  "subscription.usernameNote": "在付款备注中填写您的用户名（<b>__USERNAME__</b>）可加快审核。",
+  "subscription.paySentBtn": "我已付款",
+  "subscription.sending": "发送中…",
+  "subscription.resendBtn": "再次通知",
+  "subscription.successMsg": "✓ 已收到通知 — 核实付款后团队将激活您的账户。",
+  "subscription.genericError": "发生错误，请重试。",
+  "subscription.connectionError": "连接错误，请重试。",
+  "subscription.selectedMonthly": "月度 — 50 美元",
+  "subscription.selectedAnnual": "年度 — 500 美元",
+  "askAdmin.title": "联系管理员",
+  "askAdmin.desc": "您的消息将发送到 herobotai.int@gmail.com。",
+  "askAdmin.placeholder": "在此输入您的问题…",
+  "askAdmin.sendBtn": "发送",
+  "askAdmin.sending": "发送中…",
+  "askAdmin.emptyMessage": "请输入消息内容。",
+  "askAdmin.successMsg": "✓ 您的消息已发送，我们将尽快回复。",
+  "askAdmin.genericError": "发送失败，请重试。",
+  "askAdmin.connectionError": "连接错误，请重试。",
+  "panel.binanceConnection": "Binance 连接",
+  "panel.telegramConnection": "Telegram 连接",
+  "panel.liveAccount": "Binance 实盘账户",
+  "liveAccount.title": "实盘交易（真实资金）",
+  "liveAccount.openPositionsSuffix": "个持仓",
+  "liveAccount.liveOff": "实盘交易已关闭",
+  "liveAccount.footnote": "此面板仅显示 <b>您自己</b> Binance 账户中的实盘交易 — 不会与上方的模拟面板或其他用户混淆；除了您本人之外，任何人都无法查看此处。",
+  "live.needConnectFirst": "您需要先在上方保存并验证 Binance API 密钥，才能开始实盘（真实资金）交易。",
+  "live.killSwitch": "🛑 管理员已暂时停止所有实盘交易",
+  "live.pausedToday": "⏸ 已达到每日最大亏损限额 — 今日不会开启新交易",
+  "live.on": "🟢 实盘交易已开启",
+  "live.off": "实盘交易已关闭 — 机器人仅在模拟（演示）模式下运行",
+  "live.openPositionCount": "实盘持仓数：",
+  "live.todayRealizedPnl": "今日预估已实现盈亏：",
+  "live.positionUsdLabel": "每笔交易金额（美元）",
+  "live.positionUsdPlaceholder": "例如 100",
+  "live.maxLeverageLabel": "最大杠杆倍数（1-{n}倍）",
+  "live.maxLeveragePlaceholder": "例如 2",
+  "live.dailyLossLimitLabel": "每日最大亏损限额（美元）— 超过则当日自动停止交易",
+  "live.dailyLossLimitPlaceholder": "例如 50",
+  "live.maxPositionsLabel": "最大持仓数（1-{n}）",
+  "live.maxPositionsPlaceholder": "例如 1",
+  "live.saveSettingsBtn": "保存设置",
+  "live.turnOffBtn": "关闭实盘交易",
+  "live.turnOnBtn": "开启实盘交易（真实资金）",
+  "live.dangerText": "⚠️ 开启实盘交易后，机器人将在您绑定的 Binance 账户上用<b>真实资金</b>开平订单。任何亏损由您本人而非机器人承担。本工具不构成投资建议；遵守相关监管规定为您自己的责任。",
+  "live.toggleOnConfirm": "您即将开启实盘交易。从此刻起，机器人将在您的 Binance 账户上用真实资金开平订单。您确认接受亏损风险且以上设置正确吗？",
+  "telegram.notEnabled": "服务器未配置 Telegram 机器人。",
+  "telegram.linked": "🟢 Telegram 已连接",
+  "telegram.notificationsDesc": "实盘开/平仓通知、风险提醒以及每日汇总将发送至此。",
+  "telegram.removeConnectionBtn": "解除连接",
+  "telegram.notLinkedDesc": "连接后可在您自己的 Telegram 中接收实盘交易通知。",
+  "telegram.getCodeBtn": "获取绑定代码",
+  "telegram.step1": "1) 在 Telegram 中打开",
+  "telegram.step1Fallback": "我们的机器人",
+  "telegram.step1End": "。",
+  "telegram.step2": "2) 发送以下内容：",
+  "telegram.codeExpiresPrefix": "验证码将在",
+  "telegram.minutes": "分",
+  "telegram.seconds": "秒后失效。",
+  "telegram.unlinkConfirm": "确定要解除 Telegram 连接吗？",
+  "alert.apiKeySecretRequired": "需要填写 API Key 和 Secret。",
+  "alert.riskAckRequired": "继续之前请勾选风险确认框。",
+  "alert.saveFailedGeneric": "保存失败",
+  "alert.actionFailed": "操作失败",
+  "alert.codeNotObtained": "无法获取验证码",
+  "alert.disconnectBinanceConfirm": "确定要解除 Binance 连接吗？",
+  },
+  de: {
+  "nav.dashboard": "Übersicht",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper-Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
+  "nav.admin": "Verwaltung",
+  "nav.logout": "Abmelden",
+  "faq.backToDashboard": "← Übersicht",
+  "panel.loading": "Wird geladen…",
+  "pos.entry": "Einstieg",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "history.headerDate": "Datum",
+  "history.headerDirection": "Richtung",
+  "history.headerExit": "Ausstieg",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Grund",
+  "history.noClosedLiveTrades": "Sie haben noch keine geschlossenen Live-Trades.",
+  "liveOpen.headerQty": "Menge",
+  "liveOpen.headerCurrent": "Aktuell",
+  "liveOpen.headerLeverage": "Hebel",
+  "liveOpen.headerOpened": "Eröffnet",
+  "liveOpen.noOpenPositions": "Sie haben derzeit keine offenen Live-Positionen.",
+  "liveOpen.closeNowBtn": "Jetzt schließen",
+  "liveOpen.closing": "Wird geschlossen…",
+  "alert.connectionError": "Verbindungsfehler",
+  "alert.closePositionConfirmPrefix": "Sind Sie sicher, dass Sie die Position",
+  "alert.closePositionConfirmSuffix": "jetzt mit einer echten Market-Order schließen möchten? Dies kann nicht rückgängig gemacht werden.",
+  "alert.closePositionFailed": "Position konnte nicht geschlossen werden",
+  "account.title": "Mein Konto",
+  "account.subscriptionBtn": "💳 Zum Abo wechseln",
+  "account.askAdminBtn": "✉️ Admin fragen",
+  "account.emailNotRegistered": "(keine E-Mail hinterlegt)",
+  "account.admin": "(Admin)",
+  "account.trialDaysLeft": "Testphase: noch {n} Tage",
+  "account.trialExpired": "Testphase abgelaufen",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY ist auf dem Server nicht konfiguriert — API-Schlüssel können nicht sicher verschlüsselt und daher nicht gespeichert werden. Bitte wenden Sie sich an Ihren Administrator.",
+  "account.savedKeyLabel": "Gespeicherter Schlüssel:",
+  "account.lastVerified": "Zuletzt verifiziert:",
+  "account.riskAckGiven": "Risikobestätigung erteilt am",
+  "account.riskAckLabel": "Ich bestätige und akzeptiere, dass dieser Bot Orders mit echtem Geld im Krypto-Futures-Handel platzieren kann, dass dies ein Verlustrisiko birgt und dass ich selbst — nicht der Bot — für etwaige Verluste verantwortlich bin.",
+  "account.apiKeyLabel": "Binance API Key",
+  "account.apiSecretLabel": "Binance API Secret",
+  "account.apiKeyPlaceholderChange": "Neuen Key eingeben, um ihn zu ändern",
+  "account.apiKeyPlaceholderNew": "Binance Futures API Key",
+  "account.apiSecretPlaceholderChange": "Neues Secret eingeben, um es zu ändern",
+  "account.apiSecretPlaceholderNew": "Binance Futures API Secret",
+  "account.saveVerifyBtn": "Speichern & Verifizieren",
+  "account.savingVerifying": "Wird gespeichert & verifiziert…",
+  "account.removeConnectionBtn": "Verbindung entfernen",
+  "account.verifyError": "Verifizierungsfehler",
+  "account.verifiedConnected": "Verbunden und verifiziert",
+  "account.connectedNotVerified": "Verbunden, nicht verifiziert",
+  "account.notConnected": "Nicht verbunden",
+  "subscription.title": "Zum Abo wechseln",
+  "subscription.desc": "Wählen Sie einen Plan, überweisen Sie den Betrag an die untenstehende IBAN und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
+  "subscription.planMonthlyName": "Monatsabo",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Jahresabo",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Gewählter Plan:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Empfänger:",
+  "subscription.usernameNote": "Wenn Sie Ihren Benutzernamen (<b>__USERNAME__</b>) im Verwendungszweck angeben, beschleunigt das die Prüfung.",
+  "subscription.paySentBtn": "Betrag überwiesen",
+  "subscription.sending": "Wird gesendet…",
+  "subscription.resendBtn": "Erneut melden",
+  "subscription.successMsg": "✓ Meldung erhalten — unser Team aktiviert Ihr Konto, sobald die Zahlung bestätigt ist.",
+  "subscription.genericError": "Etwas ist schiefgelaufen, bitte versuchen Sie es erneut.",
+  "subscription.connectionError": "Verbindungsfehler, bitte versuchen Sie es erneut.",
+  "subscription.selectedMonthly": "Monatlich — 50 USD",
+  "subscription.selectedAnnual": "Jährlich — 500 USD",
+  "askAdmin.title": "Admin fragen",
+  "askAdmin.desc": "Ihre Nachricht wird an herobotai.int@gmail.com gesendet.",
+  "askAdmin.placeholder": "Schreiben Sie hier Ihre Frage…",
+  "askAdmin.sendBtn": "Senden",
+  "askAdmin.sending": "Wird gesendet…",
+  "askAdmin.emptyMessage": "Bitte geben Sie eine Nachricht ein.",
+  "askAdmin.successMsg": "✓ Ihre Nachricht wurde gesendet. Wir melden uns in Kürze bei Ihnen.",
+  "askAdmin.genericError": "Konnte nicht gesendet werden, bitte versuchen Sie es erneut.",
+  "askAdmin.connectionError": "Verbindungsfehler, bitte versuchen Sie es erneut.",
+  "panel.binanceConnection": "Binance-Verbindung",
+  "panel.telegramConnection": "Telegram-Verbindung",
+  "panel.liveAccount": "Binance Live-Konto",
+  "liveAccount.title": "Live-Handel (Echtgeld)",
+  "liveAccount.openPositionsSuffix": "offene Positionen",
+  "liveAccount.liveOff": "Live-Handel ist deaktiviert",
+  "liveAccount.footnote": "Dieses Panel zeigt ausschließlich Live-Trades auf <b>Ihrem eigenen</b> Binance-Konto — es wird nie mit dem obigen Paper-/Demo-Panel oder mit anderen Nutzern vermischt; niemand außer Ihnen kann dies sehen.",
+  "live.needConnectFirst": "Sie müssen zuerst oben Ihren Binance-API-Schlüssel speichern und verifizieren, bevor Sie den Live-Handel (Echtgeld) starten können.",
+  "live.killSwitch": "🛑 Der gesamte Live-Handel wurde vom Administrator vorübergehend gestoppt",
+  "live.pausedToday": "⏸ Tägliches Verlustlimit erreicht — heute werden keine neuen Trades eröffnet",
+  "live.on": "🟢 Live-Handel ist AN",
+  "live.off": "Live-Handel ist deaktiviert — der Bot läuft nur im Paper-(Demo-)Modus",
+  "live.openPositionCount": "Offene Live-Positionen:",
+  "live.todayRealizedPnl": "Heutiger geschätzter realisierter G/V:",
+  "live.positionUsdLabel": "USD-Betrag pro Trade",
+  "live.positionUsdPlaceholder": "z. B. 100",
+  "live.maxLeverageLabel": "Max. Hebel (1-{n}x)",
+  "live.maxLeveragePlaceholder": "z. B. 2",
+  "live.dailyLossLimitLabel": "Tägliches Verlustlimit (USD) — der Handel stoppt automatisch für den Tag, wenn überschritten",
+  "live.dailyLossLimitPlaceholder": "z. B. 50",
+  "live.maxPositionsLabel": "Max. offene Positionen (1-{n})",
+  "live.maxPositionsPlaceholder": "z. B. 1",
+  "live.saveSettingsBtn": "Einstellungen speichern",
+  "live.turnOffBtn": "Live-Handel ausschalten",
+  "live.turnOnBtn": "Live-Handel EINSCHALTEN (Echtgeld)",
+  "live.dangerText": "⚠️ Sobald der Live-Handel aktiviert ist, eröffnet/schließt der Bot Orders mit <b>echtem Geld</b> auf Ihrem registrierten Binance-Konto. Sie — nicht der Bot — sind für etwaige Verluste verantwortlich. Dies ist keine Anlageberatung; die Einhaltung geltender Vorschriften liegt in Ihrer eigenen Verantwortung.",
+  "live.toggleOnConfirm": "Sie sind dabei, den Live-Handel zu aktivieren. Ab sofort eröffnet und schließt der Bot Orders mit ECHTEM GELD auf Ihrem Binance-Konto. Bestätigen Sie, dass Sie das Verlustrisiko akzeptieren und diese Einstellungen korrekt sind?",
+  "telegram.notEnabled": "Der Telegram-Bot ist auf dem Server nicht konfiguriert.",
+  "telegram.linked": "🟢 Telegram verbunden",
+  "telegram.notificationsDesc": "Benachrichtigungen über Live-Trade-Eröffnungen/-Schließungen, Risikowarnungen und die tägliche Zusammenfassung erscheinen hier.",
+  "telegram.removeConnectionBtn": "Verbindung entfernen",
+  "telegram.notLinkedDesc": "Verbinden Sie sich, um Ihre Live-Trade-Benachrichtigungen in Ihrem eigenen Telegram zu erhalten.",
+  "telegram.getCodeBtn": "Verknüpfungscode erhalten",
+  "telegram.step1": "1) Öffnen Sie",
+  "telegram.step1Fallback": "unseren Bot",
+  "telegram.step1End": "in Telegram.",
+  "telegram.step2": "2) Senden Sie Folgendes:",
+  "telegram.codeExpiresPrefix": "Der Code läuft in",
+  "telegram.minutes": "Min.",
+  "telegram.seconds": "Sek. ab.",
+  "telegram.unlinkConfirm": "Sind Sie sicher, dass Sie die Telegram-Verbindung entfernen möchten?",
+  "alert.apiKeySecretRequired": "API-Key und Secret sind erforderlich.",
+  "alert.riskAckRequired": "Sie müssen die Risikobestätigung ankreuzen, bevor Sie fortfahren können.",
+  "alert.saveFailedGeneric": "Konnte nicht gespeichert werden",
+  "alert.actionFailed": "Aktion fehlgeschlagen",
+  "alert.codeNotObtained": "Code konnte nicht abgerufen werden",
+  "alert.disconnectBinanceConfirm": "Sind Sie sicher, dass Sie die Binance-Verbindung entfernen möchten?",
+  },
+  fr: {
+  "nav.dashboard": "Tableau de bord",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Trades paper",
+  "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
+  "nav.admin": "Administration",
+  "nav.logout": "Déconnexion",
+  "faq.backToDashboard": "← Tableau de bord",
+  "panel.loading": "Chargement…",
+  "pos.entry": "Entrée",
+  "watchlist.headerSymbol": "Symbole",
+  "watchlist.headerUnrealizedPnl": "P&L latent",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Sortie",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Raison",
+  "history.noClosedLiveTrades": "Vous n'avez encore aucun trade en direct clôturé.",
+  "liveOpen.headerQty": "Quantité",
+  "liveOpen.headerCurrent": "Actuel",
+  "liveOpen.headerLeverage": "Levier",
+  "liveOpen.headerOpened": "Ouvert le",
+  "liveOpen.noOpenPositions": "Vous n'avez actuellement aucune position en direct ouverte.",
+  "liveOpen.closeNowBtn": "Fermer maintenant",
+  "liveOpen.closing": "Fermeture en cours…",
+  "alert.connectionError": "Erreur de connexion",
+  "alert.closePositionConfirmPrefix": "Êtes-vous sûr de vouloir fermer la position",
+  "alert.closePositionConfirmSuffix": "maintenant avec un ordre au marché réel ? Cette action est irréversible.",
+  "alert.closePositionFailed": "Impossible de fermer la position",
+  "account.title": "Mon compte",
+  "account.subscriptionBtn": "💳 Passer à l'abonnement",
+  "account.askAdminBtn": "✉️ Contacter l'admin",
+  "account.emailNotRegistered": "(aucun e-mail enregistré)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Essai : {n} jours restants",
+  "account.trialExpired": "Essai expiré",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY n'est pas configuré sur le serveur — les clés API ne peuvent pas être enregistrées car elles ne peuvent pas être chiffrées en toute sécurité. Veuillez contacter votre administrateur.",
+  "account.savedKeyLabel": "Clé enregistrée :",
+  "account.lastVerified": "Dernière vérification :",
+  "account.riskAckGiven": "Confirmation du risque donnée le",
+  "account.riskAckLabel": "Je confirme et accepte que ce bot puisse placer des ordres en argent réel sur des contrats à terme crypto, que cela comporte un risque de perte, et que je suis seul responsable — et non le bot — de toute perte éventuelle.",
+  "account.apiKeyLabel": "Clé API Binance",
+  "account.apiSecretLabel": "Secret API Binance",
+  "account.apiKeyPlaceholderChange": "Entrez une nouvelle clé pour la modifier",
+  "account.apiKeyPlaceholderNew": "Clé API Binance Futures",
+  "account.apiSecretPlaceholderChange": "Entrez un nouveau secret pour le modifier",
+  "account.apiSecretPlaceholderNew": "Secret API Binance Futures",
+  "account.saveVerifyBtn": "Enregistrer et vérifier",
+  "account.savingVerifying": "Enregistrement et vérification…",
+  "account.removeConnectionBtn": "Supprimer la connexion",
+  "account.verifyError": "Erreur de vérification",
+  "account.verifiedConnected": "Connecté et vérifié",
+  "account.connectedNotVerified": "Connecté, non vérifié",
+  "account.notConnected": "Non connecté",
+  "subscription.title": "Passer à l'abonnement",
+  "subscription.desc": "Choisissez un plan, envoyez le paiement à l'IBAN ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
+  "subscription.planMonthlyName": "Abonnement mensuel",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Abonnement annuel",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Plan sélectionné :",
+  "subscription.ibanLabel": "IBAN :",
+  "subscription.recipientLabel": "Bénéficiaire :",
+  "subscription.usernameNote": "Indiquer votre nom d'utilisateur (<b>__USERNAME__</b>) dans le motif du virement accélère la vérification.",
+  "subscription.paySentBtn": "J'ai envoyé le paiement",
+  "subscription.sending": "Envoi en cours…",
+  "subscription.resendBtn": "Notifier à nouveau",
+  "subscription.successMsg": "✓ Notification reçue — notre équipe activera votre compte dès que votre paiement sera vérifié.",
+  "subscription.genericError": "Une erreur s'est produite, veuillez réessayer.",
+  "subscription.connectionError": "Erreur de connexion, veuillez réessayer.",
+  "subscription.selectedMonthly": "Mensuel — 50 USD",
+  "subscription.selectedAnnual": "Annuel — 500 USD",
+  "askAdmin.title": "Contacter l'admin",
+  "askAdmin.desc": "Votre message sera envoyé à herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Écrivez votre question ici…",
+  "askAdmin.sendBtn": "Envoyer",
+  "askAdmin.sending": "Envoi en cours…",
+  "askAdmin.emptyMessage": "Veuillez saisir un message.",
+  "askAdmin.successMsg": "✓ Votre message a été envoyé. Nous vous répondrons sous peu.",
+  "askAdmin.genericError": "Envoi impossible, veuillez réessayer.",
+  "askAdmin.connectionError": "Erreur de connexion, veuillez réessayer.",
+  "panel.binanceConnection": "Connexion Binance",
+  "panel.telegramConnection": "Connexion Telegram",
+  "panel.liveAccount": "Compte réel Binance",
+  "liveAccount.title": "Trading en direct (argent réel)",
+  "liveAccount.openPositionsSuffix": "positions ouvertes",
+  "liveAccount.liveOff": "Trading en direct désactivé",
+  "liveAccount.footnote": "Ce panneau n'affiche que les trades en direct sur <b>votre propre</b> compte Binance — jamais mélangés avec le panneau paper/démo ci-dessus ni avec d'autres utilisateurs ; personne d'autre que vous ne peut voir cela.",
+  "live.needConnectFirst": "Vous devez d'abord enregistrer et vérifier votre clé API Binance ci-dessus avant de pouvoir démarrer le trading en direct (argent réel).",
+  "live.killSwitch": "🛑 Tout le trading en direct a été temporairement arrêté par l'administrateur",
+  "live.pausedToday": "⏸ Limite quotidienne de perte maximale atteinte — aucun nouveau trade ne sera ouvert aujourd'hui",
+  "live.on": "🟢 Trading en direct ACTIVÉ",
+  "live.off": "Trading en direct désactivé — le bot fonctionne uniquement en mode paper (démo)",
+  "live.openPositionCount": "Positions en direct ouvertes :",
+  "live.todayRealizedPnl": "P&L réalisé estimé du jour :",
+  "live.positionUsdLabel": "Montant en USD par trade",
+  "live.positionUsdPlaceholder": "ex. 100",
+  "live.maxLeverageLabel": "Levier max. (1-{n}x)",
+  "live.maxLeveragePlaceholder": "ex. 2",
+  "live.dailyLossLimitLabel": "Limite quotidienne de perte maximale (USD) — le trading s'arrête automatiquement pour la journée si dépassée",
+  "live.dailyLossLimitPlaceholder": "ex. 50",
+  "live.maxPositionsLabel": "Nombre max. de positions ouvertes (1-{n})",
+  "live.maxPositionsPlaceholder": "ex. 1",
+  "live.saveSettingsBtn": "Enregistrer les paramètres",
+  "live.turnOffBtn": "Désactiver le trading en direct",
+  "live.turnOnBtn": "ACTIVER le trading en direct (argent réel)",
+  "live.dangerText": "⚠️ Une fois le trading en direct activé, le bot ouvre/ferme des ordres avec de l'<b>argent réel</b> sur votre compte Binance enregistré. C'est vous — et non le bot — qui êtes responsable des pertes éventuelles. Ceci ne constitue pas un conseil en investissement ; la conformité avec la réglementation applicable est de votre seule responsabilité.",
+  "live.toggleOnConfirm": "Vous êtes sur le point d'activer le trading en direct. À partir de maintenant, le bot ouvrira et fermera des ordres avec de l'ARGENT RÉEL sur votre compte Binance. Confirmez-vous accepter le risque de perte et que ces paramètres sont corrects ?",
+  "telegram.notEnabled": "Le bot Telegram n'est pas configuré sur le serveur.",
+  "telegram.linked": "🟢 Telegram connecté",
+  "telegram.notificationsDesc": "Les notifications d'ouverture/clôture de trades en direct, les alertes de risque et le résumé quotidien arriveront ici.",
+  "telegram.removeConnectionBtn": "Supprimer la connexion",
+  "telegram.notLinkedDesc": "Connectez-vous pour recevoir vos notifications de trading en direct sur votre propre Telegram.",
+  "telegram.getCodeBtn": "Obtenir le code de liaison",
+  "telegram.step1": "1) Ouvrez",
+  "telegram.step1Fallback": "notre bot",
+  "telegram.step1End": "sur Telegram.",
+  "telegram.step2": "2) Envoyez ceci :",
+  "telegram.codeExpiresPrefix": "Le code expire dans",
+  "telegram.minutes": "min",
+  "telegram.seconds": "sec.",
+  "telegram.unlinkConfirm": "Êtes-vous sûr de vouloir supprimer la connexion Telegram ?",
+  "alert.apiKeySecretRequired": "La clé API et le secret sont requis.",
+  "alert.riskAckRequired": "Vous devez cocher la case de confirmation du risque avant de continuer.",
+  "alert.saveFailedGeneric": "Enregistrement impossible",
+  "alert.actionFailed": "Échec de l'opération",
+  "alert.codeNotObtained": "Impossible d'obtenir le code",
+  "alert.disconnectBinanceConfirm": "Êtes-vous sûr de vouloir supprimer la connexion Binance ?",
+  },
+  es: {
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Operaciones de prueba",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
+  "nav.admin": "Administración",
+  "nav.logout": "Cerrar sesión",
+  "faq.backToDashboard": "← Panel",
+  "panel.loading": "Cargando…",
+  "pos.entry": "Entrada",
+  "watchlist.headerSymbol": "Símbolo",
+  "watchlist.headerUnrealizedPnl": "P&L no realizado",
+  "history.headerDate": "Fecha",
+  "history.headerDirection": "Dirección",
+  "history.headerExit": "Salida",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Motivo",
+  "history.noClosedLiveTrades": "Aún no tienes operaciones en vivo cerradas.",
+  "liveOpen.headerQty": "Cantidad",
+  "liveOpen.headerCurrent": "Actual",
+  "liveOpen.headerLeverage": "Apalancamiento",
+  "liveOpen.headerOpened": "Apertura",
+  "liveOpen.noOpenPositions": "Ahora mismo no tienes posiciones en vivo abiertas.",
+  "liveOpen.closeNowBtn": "Cerrar ahora",
+  "liveOpen.closing": "Cerrando…",
+  "alert.connectionError": "Error de conexión",
+  "alert.closePositionConfirmPrefix": "¿Seguro que quieres cerrar la posición",
+  "alert.closePositionConfirmSuffix": "ahora con una orden de mercado real? Esta acción no se puede deshacer.",
+  "alert.closePositionFailed": "No se pudo cerrar la posición",
+  "account.title": "Mi cuenta",
+  "account.subscriptionBtn": "💳 Cambiar a suscripción",
+  "account.askAdminBtn": "✉️ Preguntar al admin",
+  "account.emailNotRegistered": "(sin correo registrado)",
+  "account.admin": "(admin)",
+  "account.trialDaysLeft": "Prueba: quedan {n} días",
+  "account.trialExpired": "Prueba caducada",
+  "account.credentialWarning": "⚠️ CREDENTIAL_ENCRYPTION_KEY no está configurada en el servidor — las claves API no se pueden guardar porque no se pueden cifrar de forma segura. Por favor, contáctate con tu administrador.",
+  "account.savedKeyLabel": "Clave guardada:",
+  "account.lastVerified": "Última verificación:",
+  "account.riskAckGiven": "Confirmación de riesgo otorgada el",
+  "account.riskAckLabel": "Confirmo y acepto que este bot puede abrir órdenes con dinero real en futuros de criptomonedas, que esto conlleva riesgo de pérdida, y que cualquier pérdida resultante es responsabilidad mía, no del bot.",
+  "account.apiKeyLabel": "Clave API de Binance",
+  "account.apiSecretLabel": "Secreto API de Binance",
+  "account.apiKeyPlaceholderChange": "Introduce una nueva clave para cambiarla",
+  "account.apiKeyPlaceholderNew": "Clave API de Binance Futures",
+  "account.apiSecretPlaceholderChange": "Introduce un nuevo secreto para cambiarlo",
+  "account.apiSecretPlaceholderNew": "Secreto API de Binance Futures",
+  "account.saveVerifyBtn": "Guardar y verificar",
+  "account.savingVerifying": "Guardando y verificando…",
+  "account.removeConnectionBtn": "Eliminar conexión",
+  "account.verifyError": "Error de verificación",
+  "account.verifiedConnected": "Conectado y verificado",
+  "account.connectedNotVerified": "Conectado, sin verificar",
+  "account.notConnected": "No conectado",
+  "subscription.title": "Cambiar a suscripción",
+  "subscription.desc": "Elige un plan, envía el pago al IBAN de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
+  "subscription.planMonthlyName": "Suscripción mensual",
+  "subscription.planMonthlyPrice": "50 USD",
+  "subscription.planAnnualName": "Suscripción anual",
+  "subscription.planAnnualPrice": "500 USD",
+  "subscription.selectedPlanLabel": "Plan seleccionado:",
+  "subscription.ibanLabel": "IBAN:",
+  "subscription.recipientLabel": "Beneficiario:",
+  "subscription.usernameNote": "Incluir tu nombre de usuario (<b>__USERNAME__</b>) en el concepto del pago agiliza la verificación.",
+  "subscription.paySentBtn": "He enviado el pago",
+  "subscription.sending": "Enviando…",
+  "subscription.resendBtn": "Notificar de nuevo",
+  "subscription.successMsg": "✓ Notificación recibida — nuestro equipo activará tu cuenta en cuanto se verifique tu pago.",
+  "subscription.genericError": "Algo salió mal, inténtalo de nuevo.",
+  "subscription.connectionError": "Error de conexión, inténtalo de nuevo.",
+  "subscription.selectedMonthly": "Mensual — 50 USD",
+  "subscription.selectedAnnual": "Anual — 500 USD",
+  "askAdmin.title": "Preguntar al admin",
+  "askAdmin.desc": "Tu mensaje se enviará a herobotai.int@gmail.com.",
+  "askAdmin.placeholder": "Escribe tu pregunta aquí…",
+  "askAdmin.sendBtn": "Enviar",
+  "askAdmin.sending": "Enviando…",
+  "askAdmin.emptyMessage": "Por favor, escribe un mensaje.",
+  "askAdmin.successMsg": "✓ Tu mensaje ha sido enviado. Te responderemos en breve.",
+  "askAdmin.genericError": "No se pudo enviar, inténtalo de nuevo.",
+  "askAdmin.connectionError": "Error de conexión, inténtalo de nuevo.",
+  "panel.binanceConnection": "Conexión con Binance",
+  "panel.telegramConnection": "Conexión con Telegram",
+  "panel.liveAccount": "Cuenta real de Binance",
+  "liveAccount.title": "Trading en vivo (dinero real)",
+  "liveAccount.openPositionsSuffix": "posiciones abiertas",
+  "liveAccount.liveOff": "Trading en vivo desactivado",
+  "liveAccount.footnote": "Este panel solo muestra operaciones en vivo en <b>tu propia</b> cuenta de Binance — nunca se mezcla con el panel paper/demo de arriba ni con otros usuarios; nadie más que tú puede verlo.",
+  "live.needConnectFirst": "Primero debes guardar y verificar tu clave API de Binance arriba antes de poder iniciar el trading en vivo (dinero real).",
+  "live.killSwitch": "🛑 El administrador ha detenido temporalmente todo el trading en vivo",
+  "live.pausedToday": "⏸ Se alcanzó el límite diario de pérdida máxima — hoy no se abrirán nuevas operaciones",
+  "live.on": "🟢 Trading en vivo ACTIVADO",
+  "live.off": "Trading en vivo desactivado — el bot solo funciona en modo paper (demo)",
+  "live.openPositionCount": "Posiciones en vivo abiertas:",
+  "live.todayRealizedPnl": "P&L realizado estimado de hoy:",
+  "live.positionUsdLabel": "Importe en USD por operación",
+  "live.positionUsdPlaceholder": "ej. 100",
+  "live.maxLeverageLabel": "Apalancamiento máx. (1-{n}x)",
+  "live.maxLeveragePlaceholder": "ej. 2",
+  "live.dailyLossLimitLabel": "Límite diario de pérdida máxima (USD) — el trading se detiene automáticamente ese día si se supera",
+  "live.dailyLossLimitPlaceholder": "ej. 50",
+  "live.maxPositionsLabel": "Número máx. de posiciones abiertas (1-{n})",
+  "live.maxPositionsPlaceholder": "ej. 1",
+  "live.saveSettingsBtn": "Guardar configuración",
+  "live.turnOffBtn": "Desactivar trading en vivo",
+  "live.turnOnBtn": "ACTIVAR trading en vivo (dinero real)",
+  "live.dangerText": "⚠️ Una vez activado el trading en vivo, el bot abre/cierra órdenes con <b>dinero real</b> en tu cuenta de Binance registrada. Tú — no el bot — eres responsable de cualquier pérdida. Esto no es asesoramiento de inversión; el cumplimiento de la normativa aplicable es tu propia responsabilidad.",
+  "live.toggleOnConfirm": "Estás a punto de activar el trading en vivo. A partir de este momento, el bot abrirá y cerrará órdenes con DINERO REAL en tu cuenta de Binance. ¿Confirmas que aceptas el riesgo de pérdida y que esta configuración es correcta?",
+  "telegram.notEnabled": "El bot de Telegram no está configurado en el servidor.",
+  "telegram.linked": "🟢 Telegram conectado",
+  "telegram.notificationsDesc": "Aquí llegarán las notificaciones de apertura/cierre de operaciones en vivo, las alertas de riesgo y el resumen diario.",
+  "telegram.removeConnectionBtn": "Eliminar conexión",
+  "telegram.notLinkedDesc": "Conéctate para recibir tus notificaciones de trading en vivo en tu propio Telegram.",
+  "telegram.getCodeBtn": "Obtener código de enlace",
+  "telegram.step1": "1) Abre",
+  "telegram.step1Fallback": "nuestro bot",
+  "telegram.step1End": "en Telegram.",
+  "telegram.step2": "2) Envía esto:",
+  "telegram.codeExpiresPrefix": "El código caduca en",
+  "telegram.minutes": "min",
+  "telegram.seconds": "seg.",
+  "telegram.unlinkConfirm": "¿Seguro que quieres eliminar la conexión con Telegram?",
+  "alert.apiKeySecretRequired": "Se requieren la clave API y el secreto.",
+  "alert.riskAckRequired": "Debes marcar la casilla de confirmación de riesgo antes de continuar.",
+  "alert.saveFailedGeneric": "No se pudo guardar",
+  "alert.actionFailed": "La acción falló",
+  "alert.codeNotObtained": "No se pudo obtener el código",
+  "alert.disconnectBinanceConfirm": "¿Seguro que quieres eliminar la conexión con Binance?",
+  },
+};
+
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+refreshAccount();
+</script>
+</body></html>'''
+
+_TRADES_STYLE_EXTRA = r'''
+<style>
+table.datatable td.empty{color:var(--text-dim);font-family:var(--font-d);white-space:normal;padding:22px 12px;text-align:center}
+table.datatable td.wrap-cell{white-space:normal;font-family:var(--font-d);color:var(--text-dim);font-size:12px}
+.footnote{margin-top:12px;color:var(--text-faint);font-size:11.5px}
+.pill{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:var(--font-m)}
+.pill.long{background:var(--bull-bg);color:var(--bull);border:1px solid var(--bull-border)}
+.pill.short{background:var(--bear-bg);color:var(--bear);border:1px solid var(--bear-border)}
+.pill.flat{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--border-soft)}
+.watchlist-empty{color:var(--text-dim);font-size:13px;padding:4px 0}
+.row-clickable{cursor:pointer}
+.row-clickable:hover{background:var(--panel-2)}
+</style>
+'''
+
+TRADES_HTML = r'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deneme İşlemleri — A&amp;I Trading Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _TRADES_STYLE_EXTRA + r'''</head>
+<body><div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-sub" data-i18n="panel.paperTrades">Paper Trades</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <select class="lang-select" id="langSelect" aria-label="Language" onchange="applyTranslation(this.value)">
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+      <option value="zh">中文</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+</header>
+
+<nav class="topnav">
+  <a href="/" data-i18n="nav.dashboard">Dashboard</a>
+  <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
+  <a href="/trades" class="active" data-i18n="nav.trades">Paper Trades</a>
+  <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/account" data-i18n="nav.account">My Account</a>
+</nav>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
+  <div class="table-scroll">
+    <table class="datatable">
+      <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="watchlist.headerMarket">Market</th><th data-i18n="watchlist.headerDirection">Direction / Signal</th><th class="num" data-i18n="watchlist.headerPrice">Price</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="watchlist.headerAdded">Added</th><th></th></tr></thead>
+      <tbody id="watchlistRows"><tr><td colspan="7" class="empty" data-i18n="watchlist.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.recentTrades">Recent Trades</h2></div>
+  <div class="table-scroll">
+    <table class="datatable">
+      <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
+      <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
+</div>
+<script>
+const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cls=x=>Number(x)>=0?'pos':'neg';
+function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return `<span class="pill ${c}">${x}</span>`}
+
+let statusCache=null;
+let watchlistCache={items:[]};
+
+function goToSymbol(symbol){
+  window.location.href = '/?symbol=' + encodeURIComponent(symbol);
+}
+
+function renderHistory(d){
+  document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
+}
+
+function renderWatchlistTable(){
+  const d=watchlistCache;
+  document.getElementById('wlUsd').textContent=Number(d.position_usd||0).toLocaleString('en-US');
+  const items=d.items||[];
+  document.getElementById('watchlistCount').textContent=`${items.length} / ${d.max_symbols??'—'}`;
+
+  let rowsHtml='';
+  if(statusCache){
+    const p=statusCache.position;
+    const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
+    const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
+    rowsHtml+=`<tr class="row-clickable" onclick="goToSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td></td></tr>`;
+  }
+
+  rowsHtml+=items.map(x=>{
+    const p=x.position;
+    let sideCell, pnlCell;
+    if(p){
+      sideCell=`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`;
+      pnlCell=`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`;
+    } else {
+      sideCell=sigPill(x.current_signal||'NO SIGNAL');
+      pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
+    }
+    const added=(x.added_at||'').replace('T',' ').slice(0,16);
+    const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
+    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
+  }).join('');
+
+  document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
+}
+
+async function refreshStatus(){
+  let d;
+  try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  statusCache=d;
+  renderHistory(d);
+  renderWatchlistTable();
+}
+async function refreshWatchlist(){
+  let d;
+  try{ const r=await fetch('/api/watchlist',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  watchlistCache=d;
+  renderWatchlistTable();
+}
+async function removeFromWatchlist(symbol){
+  try{ await fetch(`/api/watchlist/remove?symbol=${encodeURIComponent(symbol)}`,{cache:'no-store'}); }catch(e){}
+  await refreshWatchlist();
+}
+
+const translations = {
+  en: {
+  "nav.dashboard": "Dashboard",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "My Account",
+  "faq.backToDashboard": "← Dashboard",
+  "panel.paperTrades": "Paper Trades",
+  "panel.recentTrades": "Recent Trades",
+  "panel.loading": "Loading…",
+  "pos.entry": "Entry",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerMarket": "Market",
+  "watchlist.headerDirection": "Direction / Signal",
+  "watchlist.headerPrice": "Price",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Added",
+  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail on the dashboard. Crypto symbols open an independent paper position using the same strategy (size: $",
+  "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
+  "watchlist.loading": "Loading…",
+  "watchlist.empty": "Watchlist is empty. Click \"+ Add\" on any symbol showing LONG/SHORT in the scanner to have the bot watch/paper-trade it.",
+  "watchlist.mainEngine": "Main engine",
+  "watchlist.noPosition": "no position",
+  "watchlist.watched": "watched",
+  "watchlist.removeBtn": "Remove",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "US Stock",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Exit",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Reason",
+  "history.noClosedTrades": "No closed trades yet.",
+  },
+  tr: {
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Deneme İşlemleri",
+  "nav.faq": "SSS",
+  "nav.account": "Hesabım",
+  "faq.backToDashboard": "← Panel",
+  "panel.paperTrades": "Deneme İşlemleri",
+  "panel.recentTrades": "Son işlemler",
+  "panel.loading": "Yükleniyor…",
+  "pos.entry": "Giriş",
+  "watchlist.headerSymbol": "Sembol",
+  "watchlist.headerMarket": "Piyasa",
+  "watchlist.headerDirection": "Yön / Sinyal",
+  "watchlist.headerPrice": "Fiyat",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Eklenme",
+  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını panelde görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
+  "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
+  "watchlist.loading": "Yükleniyor…",
+  "watchlist.empty": "Takip listesi boş. Tarayıcıda LONG/SHORT veren bir sembole \"+ Ekle\" diyerek botun izlemesini/paper trade etmesini sağlayabilirsin.",
+  "watchlist.mainEngine": "Ana motor",
+  "watchlist.noPosition": "pozisyon yok",
+  "watchlist.watched": "izleniyor",
+  "watchlist.removeBtn": "Kaldır",
+  "market.binance": "Binance",
+  "market.bist": "Borsa İstanbul",
+  "market.usStock": "ABD Hisse",
+  "history.headerDate": "Tarih",
+  "history.headerDirection": "Yön",
+  "history.headerExit": "Çıkış",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Neden",
+  "history.noClosedTrades": "Henüz kapanmış işlem yok.",
+  },
+  zh: {
+  "nav.dashboard": "仪表盘",
+  "nav.backtest": "回测",
+  "nav.trades": "模拟交易",
+  "nav.faq": "常见问题",
+  "nav.account": "我的账户",
+  "faq.backToDashboard": "← 仪表盘",
+  "panel.paperTrades": "模拟交易",
+  "panel.recentTrades": "最近交易",
+  "panel.loading": "加载中…",
+  "pos.entry": "入场价",
+  "watchlist.headerSymbol": "交易对",
+  "watchlist.headerMarket": "市场",
+  "watchlist.headerDirection": "方向 / 信号",
+  "watchlist.headerPrice": "价格",
+  "watchlist.headerUnrealizedPnl": "未实现盈亏",
+  "watchlist.headerAdded": "添加时间",
+  "watchlist.footnotePrefix": "点击一行即可在面板上查看该交易对的仓位及信号详情。加密交易对会以相同策略开立独立的模拟仓位（仓位规模：$",
+  "watchlist.footnoteSuffix": " 名义本金）。伊斯坦布尔交易对仅用于信号跟踪，不会开立真实/模拟订单。",
+  "watchlist.loading": "加载中…",
+  "watchlist.empty": "自选列表为空。在扫描列表中对显示 LONG/SHORT 的交易对点击“+ 添加”，即可让机器人对其进行跟踪/模拟交易。",
+  "watchlist.mainEngine": "主引擎",
+  "watchlist.noPosition": "无仓位",
+  "watchlist.watched": "跟踪中",
+  "watchlist.removeBtn": "移除",
+  "market.binance": "Binance",
+  "market.bist": "伊斯坦布尔交易所",
+  "market.usStock": "美股",
+  "history.headerDate": "日期",
+  "history.headerDirection": "方向",
+  "history.headerExit": "出场价",
+  "history.headerPnl": "盈亏",
+  "history.headerReason": "原因",
+  "history.noClosedTrades": "暂无已平仓交易。",
+  },
+  de: {
+  "nav.dashboard": "Übersicht",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Paper-Trades",
+  "nav.faq": "FAQ",
+  "nav.account": "Mein Konto",
+  "faq.backToDashboard": "← Übersicht",
+  "panel.paperTrades": "Paper-Trades",
+  "panel.recentTrades": "Letzte Trades",
+  "panel.loading": "Wird geladen…",
+  "pos.entry": "Einstieg",
+  "watchlist.headerSymbol": "Symbol",
+  "watchlist.headerMarket": "Markt",
+  "watchlist.headerDirection": "Richtung / Signal",
+  "watchlist.headerPrice": "Preis",
+  "watchlist.headerUnrealizedPnl": "Unrealized P&L",
+  "watchlist.headerAdded": "Hinzugefügt",
+  "watchlist.footnotePrefix": "Klicken Sie auf eine Zeile, um die Positions- und Signaldetails dieses Symbols im Dashboard zu sehen. Krypto-Symbole eröffnen mit derselben Strategie eine unabhängige Paper-Position (Größe: $",
+  "watchlist.footnoteSuffix": " nominal). Borsa-Istanbul-Symbole dienen nur der Signalbeobachtung; es wird keine echte/Paper-Order eröffnet.",
+  "watchlist.loading": "Wird geladen…",
+  "watchlist.empty": "Die Watchlist ist leer. Klicken Sie bei einem Symbol mit LONG/SHORT im Scanner auf „+ Hinzufügen“, damit der Bot es beobachtet/als Paper-Trade führt.",
+  "watchlist.mainEngine": "Haupt-Engine",
+  "watchlist.noPosition": "keine Position",
+  "watchlist.watched": "beobachtet",
+  "watchlist.removeBtn": "Entfernen",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "US-Aktie",
+  "history.headerDate": "Datum",
+  "history.headerDirection": "Richtung",
+  "history.headerExit": "Ausstieg",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Grund",
+  "history.noClosedTrades": "Noch keine geschlossenen Trades.",
+  },
+  fr: {
+  "nav.dashboard": "Tableau de bord",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Trades paper",
+  "nav.faq": "FAQ",
+  "nav.account": "Mon compte",
+  "faq.backToDashboard": "← Tableau de bord",
+  "panel.paperTrades": "Trades paper",
+  "panel.recentTrades": "Trades récents",
+  "panel.loading": "Chargement…",
+  "pos.entry": "Entrée",
+  "watchlist.headerSymbol": "Symbole",
+  "watchlist.headerMarket": "Marché",
+  "watchlist.headerDirection": "Direction / Signal",
+  "watchlist.headerPrice": "Prix",
+  "watchlist.headerUnrealizedPnl": "P&L latent",
+  "watchlist.headerAdded": "Ajouté",
+  "watchlist.footnotePrefix": "Cliquez sur une ligne pour afficher le détail de la position et du signal de ce symbole sur le tableau de bord. Les symboles crypto ouvrent une position paper indépendante avec la même stratégie (taille : $",
+  "watchlist.footnoteSuffix": " nominal). Les symboles Borsa Istanbul servent uniquement au suivi du signal ; aucun ordre réel/paper n'est ouvert.",
+  "watchlist.loading": "Chargement…",
+  "watchlist.empty": "La watchlist est vide. Cliquez sur « + Ajouter » sur un symbole affichant LONG/SHORT dans le scanner pour que le bot le suive/le trade en paper.",
+  "watchlist.mainEngine": "Moteur principal",
+  "watchlist.noPosition": "pas de position",
+  "watchlist.watched": "suivi",
+  "watchlist.removeBtn": "Retirer",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "Action US",
+  "history.headerDate": "Date",
+  "history.headerDirection": "Direction",
+  "history.headerExit": "Sortie",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Raison",
+  "history.noClosedTrades": "Aucun trade clôturé pour le moment.",
+  },
+  es: {
+  "nav.dashboard": "Panel",
+  "nav.backtest": "Backtest",
+  "nav.trades": "Operaciones de prueba",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.account": "Mi cuenta",
+  "faq.backToDashboard": "← Panel",
+  "panel.paperTrades": "Operaciones de prueba",
+  "panel.recentTrades": "Operaciones recientes",
+  "panel.loading": "Cargando…",
+  "pos.entry": "Entrada",
+  "watchlist.headerSymbol": "Símbolo",
+  "watchlist.headerMarket": "Mercado",
+  "watchlist.headerDirection": "Dirección / Señal",
+  "watchlist.headerPrice": "Precio",
+  "watchlist.headerUnrealizedPnl": "P&L no realizado",
+  "watchlist.headerAdded": "Añadido",
+  "watchlist.footnotePrefix": "Haz clic en una fila para ver el detalle de posición y señal de ese símbolo en el panel. Los símbolos cripto abren una posición paper independiente con la misma estrategia (tamaño: $",
+  "watchlist.footnoteSuffix": " nominal). Los símbolos de Borsa Istanbul son solo de seguimiento de señal; no se abre ninguna orden real/paper.",
+  "watchlist.loading": "Cargando…",
+  "watchlist.empty": "La watchlist está vacía. Haz clic en \"+ Añadir\" en cualquier símbolo que muestre LONG/SHORT en el escaneo para que el bot lo siga/opere en modo paper.",
+  "watchlist.mainEngine": "Motor principal",
+  "watchlist.noPosition": "sin posición",
+  "watchlist.watched": "en seguimiento",
+  "watchlist.removeBtn": "Quitar",
+  "market.binance": "Binance",
+  "market.bist": "Borsa Istanbul",
+  "market.usStock": "Acción EE. UU.",
+  "history.headerDate": "Fecha",
+  "history.headerDirection": "Dirección",
+  "history.headerExit": "Salida",
+  "history.headerPnl": "P&L",
+  "history.headerReason": "Motivo",
+  "history.noClosedTrades": "Aún no hay operaciones cerradas.",
+  },
+};
+
+let currentLang = 'en';
+function trGet(lang, key){
+  let v = translations[lang] ? translations[lang][key] : undefined;
+  if(v === undefined || v === null) v = translations['en'][key];
+  return (v === undefined || v === null) ? key : v;
+}
+function t(key){ return trGet(currentLang, key); }
+function applyTranslation(lang){
+  if(!translations[lang]) lang = 'en';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    const val = trGet(lang, key);
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.setAttribute('placeholder', trGet(lang, el.getAttribute('data-i18n-placeholder')));
+  });
+  try{ localStorage.setItem('lang', lang); }catch(e){}
+  const sel = document.getElementById('langSelect');
+  if(sel && sel.value !== lang) sel.value = lang;
+  renderWatchlistTable();
+  if(statusCache) renderHistory(statusCache);
+}
+let _initialLang = 'en';
+try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
+applyTranslation(_initialLang);
+refreshStatus(); setInterval(refreshStatus,5000);
+refreshWatchlist(); setInterval(refreshWatchlist,10000);
+</script>
+</body></html>'''
+
+
 
 _ADMIN_STYLE_EXTRA = r'''
 <style>
@@ -5060,6 +6319,12 @@ class Handler(BaseHTTPRequestHandler):
 
         if path=='/backtest':
             self._send_html(BACKTEST_HTML); return
+
+        if path=='/account':
+            self._send_html(ACCOUNT_HTML.replace('__USERNAME__', user)); return
+
+        if path=='/trades':
+            self._send_html(TRADES_HTML); return
 
         if path=='/api/admin/users':
             user = self._current_user()
