@@ -5986,7 +5986,7 @@ const translations = {
   "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail on the dashboard. Crypto symbols open an independent paper position using the same strategy (size: $",
   "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
   "trades.resetBtn": "Reset Trades",
-  "trades.resetConfirm": "This will permanently delete ALL paper trade history and open positions, and reset the balance to {amount}. This cannot be undone. Continue?",
+  "trades.resetConfirm": "This will close/clear any open paper position(s) and watchlist, and reset the balance to {amount}. Your closed-trade history (Closed Trades page) is NOT affected. This cannot be undone. Continue?",
   "trades.resetting": "Resetting…",
   "trades.resetDone": "Paper trading has been reset.",
   "trades.resetError": "Reset failed. Please try again.",
@@ -6029,7 +6029,7 @@ const translations = {
   "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını panelde görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
   "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
   "trades.resetBtn": "İşlemleri Sıfırla",
-  "trades.resetConfirm": "Bu işlem TÜM deneme işlem geçmişini ve açık pozisyonları kalıcı olarak siler, bakiyeyi {amount} olarak sıfırlar. Bu işlem geri alınamaz. Devam edilsin mi?",
+  "trades.resetConfirm": "Bu işlem açık pozisyon(lar)ı ve takip listesini temizler, bakiyeyi {amount} olarak sıfırlar. Kapanan İşlemler geçmişiniz ETKİLENMEZ. Bu işlem geri alınamaz. Devam edilsin mi?",
   "trades.resetting": "Sıfırlanıyor…",
   "trades.resetDone": "Deneme işlemleri sıfırlandı.",
   "trades.resetError": "Sıfırlama başarısız oldu. Lütfen tekrar deneyin.",
@@ -6072,7 +6072,7 @@ const translations = {
   "watchlist.footnotePrefix": "点击一行即可在面板上查看该交易对的仓位及信号详情。加密交易对会以相同策略开立独立的模拟仓位（仓位规模：$",
   "watchlist.footnoteSuffix": " 名义本金）。伊斯坦布尔交易对仅用于信号跟踪，不会开立真实/模拟订单。",
   "trades.resetBtn": "重置交易",
-  "trades.resetConfirm": "此操作将永久删除所有模拟交易记录和当前持仓，并将余额重置为 {amount}。此操作无法撤销，是否继续？",
+  "trades.resetConfirm": "此操作将清除当前持仓和关注列表，并将余额重置为 {amount}。不会影响您的已平仓交易记录（已平仓交易页面）。此操作无法撤销，是否继续？",
   "trades.resetting": "正在重置…",
   "trades.resetDone": "模拟交易已重置。",
   "trades.resetError": "重置失败，请重试。",
@@ -6115,7 +6115,7 @@ const translations = {
   "watchlist.footnotePrefix": "Klicken Sie auf eine Zeile, um die Positions- und Signaldetails dieses Symbols im Dashboard zu sehen. Krypto-Symbole eröffnen mit derselben Strategie eine unabhängige Paper-Position (Größe: $",
   "watchlist.footnoteSuffix": " nominal). Borsa-Istanbul-Symbole dienen nur der Signalbeobachtung; es wird keine echte/Paper-Order eröffnet.",
   "trades.resetBtn": "Trades zurücksetzen",
-  "trades.resetConfirm": "Dadurch werden ALLE Paper-Trade-Verläufe und offenen Positionen dauerhaft gelöscht und der Kontostand auf {amount} zurückgesetzt. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
+  "trades.resetConfirm": "Dadurch werden alle offenen Paper-Positionen und die Watchlist gelöscht und der Kontostand auf {amount} zurückgesetzt. Ihr Verlauf geschlossener Trades (Seite „Geschlossene Trades“) ist NICHT betroffen. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
   "trades.resetting": "Wird zurückgesetzt…",
   "trades.resetDone": "Paper-Trading wurde zurückgesetzt.",
   "trades.resetError": "Zurücksetzen fehlgeschlagen. Bitte erneut versuchen.",
@@ -6158,7 +6158,7 @@ const translations = {
   "watchlist.footnotePrefix": "Cliquez sur une ligne pour afficher le détail de la position et du signal de ce symbole sur le tableau de bord. Les symboles crypto ouvrent une position paper indépendante avec la même stratégie (taille : $",
   "watchlist.footnoteSuffix": " nominal). Les symboles Borsa Istanbul servent uniquement au suivi du signal ; aucun ordre réel/paper n'est ouvert.",
   "trades.resetBtn": "Réinitialiser les trades",
-  "trades.resetConfirm": "Cette action supprimera définitivement TOUT l'historique des trades paper et les positions ouvertes, et réinitialisera le solde à {amount}. Cette action est irréversible. Continuer ?",
+  "trades.resetConfirm": "Cette action effacera les positions paper ouvertes et la watchlist, et réinitialisera le solde à {amount}. Votre historique des trades clôturés (page Trades clôturés) n'est PAS affecté. Cette action est irréversible. Continuer ?",
   "trades.resetting": "Réinitialisation…",
   "trades.resetDone": "Le paper trading a été réinitialisé.",
   "trades.resetError": "Échec de la réinitialisation. Veuillez réessayer.",
@@ -6201,7 +6201,7 @@ const translations = {
   "watchlist.footnotePrefix": "Haz clic en una fila para ver el detalle de posición y señal de ese símbolo en el panel. Los símbolos cripto abren una posición paper independiente con la misma estrategia (tamaño: $",
   "watchlist.footnoteSuffix": " nominal). Los símbolos de Borsa Istanbul son solo de seguimiento de señal; no se abre ninguna orden real/paper.",
   "trades.resetBtn": "Restablecer operaciones",
-  "trades.resetConfirm": "Esta acción eliminará permanentemente TODO el historial de operaciones de prueba y las posiciones abiertas, y restablecerá el saldo a {amount}. Esta acción no se puede deshacer. ¿Continuar?",
+  "trades.resetConfirm": "Esta acción borrará las posiciones de prueba abiertas y la lista de seguimiento, y restablecerá el saldo a {amount}. Su historial de operaciones cerradas (página Operaciones cerradas) NO se ve afectado. Esta acción no se puede deshacer. ¿Continuar?",
   "trades.resetting": "Restableciendo…",
   "trades.resetDone": "Las operaciones de prueba se han restablecido.",
   "trades.resetError": "Error al restablecer. Inténtalo de nuevo.",
@@ -8432,22 +8432,21 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({'ok': True, 'equity': new_equity}); return
 
         if path=='/api/admin/reset-paper-trading':
-            # Full, irreversible reset: wipes the main-engine position, every
-            # watchlist position/tracked symbol/cached signal (state file),
-            # AND the closed-trades CSV history, then restores equity to the
-            # configured starting balance — i.e. a brand-new paper account.
+            # Resets the LIVE state only: wipes the main-engine's open
+            # position and every watchlist position/tracked symbol/cached
+            # signal, then restores equity to the configured starting
+            # balance — i.e. a fresh start going forward. Deliberately does
+            # NOT touch TRADES_FILE (the closed-trades CSV / "Kapanan
+            # İşlemler" history) — that record is kept permanently so the
+            # bot's historical profitability can still be measured across
+            # every reset.
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
             try:
                 _reset_paper_trading(STARTING_EQUITY)
             except Exception as e:
                 self._send_json({'ok': False, 'error': str(e)}, status=500); return
-            try:
-                if os.path.exists(TRADES_FILE):
-                    os.remove(TRADES_FILE)
-            except Exception as e:
-                print(f'ADMIN | RESET PAPER TRADING | CSV REMOVE ERROR | {type(e).__name__}: {e}', flush=True)
-            print(f'ADMIN | {user} | RESET PAPER TRADING -> equity={STARTING_EQUITY}', flush=True)
+            print(f'ADMIN | {user} | RESET PAPER TRADING (open positions + equity only, closed-trade history kept) -> equity={STARTING_EQUITY}', flush=True)
             self._send_json({'ok': True, 'equity': STARTING_EQUITY}); return
 
         if path=='/api/account/telegram/link-code':
