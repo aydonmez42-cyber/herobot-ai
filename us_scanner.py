@@ -8,7 +8,7 @@ import pandas as pd
 import config as cfg
 from indicators import add_indicators, atr
 from tradingview_data import fetch_tv_bars, add_close_time
-from strategy import long_signal, short_signal
+from strategy import long_signal, short_signal, long_conditions, short_conditions
 from us_stocks_universe import get_us_symbols
 
 US_SCANNER_WORKERS = int(os.environ.get('US_SCANNER_WORKERS', '6'))
@@ -130,6 +130,9 @@ def scan_symbol(symbol):
 
         sig = 'LONG' if long_ok else ('SHORT' if short_ok else 'NO SIGNAL')
         long_checks, short_checks = _reason_map(row)
+        long_score = sum(1 for _, ok in long_conditions(enriched, i, cfg) if ok)
+        short_score = sum(1 for _, ok in short_conditions(enriched, i, cfg) if ok)
+        score = long_score if sig == 'LONG' else (short_score if sig == 'SHORT' else max(long_score, short_score))
         if volatile:
             reason = f'1D VOLATILE BLOCK | ATRP percentile={atrp_pct:.1f}'
         elif sig == 'LONG':
@@ -173,6 +176,8 @@ def scan_symbol(symbol):
             'stoch_d': round(float(row.stoch_d), 2),
             'atr': round(float(row.atr), 6),
             'atrp_percentile_1d': round(float(atrp_pct), 2) if atrp_pct is not None else None,
+            'score': score,
+            'score_max': 8,
             'candle_time': pd.Timestamp(row.close_time).isoformat(),
             'reason': reason,
             'short_note': 'Paper SHORT simülasyonudur; gerçek açığa satışın ödünç/marj kısıtlarını modellemez.',

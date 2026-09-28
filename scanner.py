@@ -9,7 +9,7 @@ import requests
 
 import config as cfg
 from indicators import add_indicators, atr
-from strategy import long_signal, short_signal
+from strategy import long_signal, short_signal, long_conditions, short_conditions
 
 BASE_URL = 'https://fapi.binance.com'
 KLINES_URL = BASE_URL + '/fapi/v1/klines'
@@ -140,6 +140,10 @@ def scan_symbol(symbol, ticker):
 
         sig = 'LONG' if long_ok else ('SHORT' if short_ok else 'NO SIGNAL')
         long_checks, short_checks = _reason_map(row)
+        i_last = len(enriched) - 1
+        long_score = sum(1 for _, ok in long_conditions(enriched, i_last, cfg) if ok)
+        short_score = sum(1 for _, ok in short_conditions(enriched, i_last, cfg) if ok)
+        score = long_score if sig == 'LONG' else (short_score if sig == 'SHORT' else max(long_score, short_score))
         if volatile:
             reason = f'1D VOLATILE BLOCK | ATRP percentile={atrp_pct:.1f}'
         elif sig == 'LONG':
@@ -169,6 +173,8 @@ def scan_symbol(symbol, ticker):
             'stoch_d': round(float(row.stoch_d), 2),
             'atr': round(float(row.atr), 6),
             'atrp_percentile_1d': round(float(atrp_pct), 2) if atrp_pct is not None else None,
+            'score': score,
+            'score_max': 8,
             'candle_time': row.close_time.isoformat(),
             'reason': reason,
         }
