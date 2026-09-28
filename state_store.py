@@ -100,6 +100,21 @@ def remove_from_watchlist(symbol):
     return update_state(m)
 
 
+def reset_paper_trading(starting_equity):
+    """Admin-only full reset of paper trading: wipes the open main-engine
+    position, all watchlist positions/tracked symbols/cached signals, and
+    resets equity back to starting_equity — i.e. restores the JSON state
+    file to a brand-new install's defaults. Does NOT touch TRADES_FILE (the
+    closed-trades CSV); the caller clears/archives that separately since it
+    lives outside this state file."""
+    starting_equity = float(starting_equity)
+
+    def m(s):
+        s.clear()
+        s.update(_defaults(starting_equity))
+    return update_state(m, starting_equity=starting_equity)
+
+
 def set_equity(new_equity):
     """Admin-only override of the paper account's current equity (e.g. to
     apply a new starting balance to a state file that already exists on

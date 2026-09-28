@@ -15,6 +15,7 @@ from state_store import (
     add_to_watchlist as _add_to_watchlist,
     remove_from_watchlist as _remove_from_watchlist,
     set_equity as _set_equity,
+    reset_paper_trading as _reset_paper_trading,
 )
 import ai_analyst
 import auth
@@ -5885,7 +5886,7 @@ TRADES_HTML = r'''<!doctype html>
 </nav>
 
 <section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span></div>
+  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span><button class="btn btn-danger" id="resetTradesBtn" type="button" style="display:none" onclick="resetPaperTrading()" data-i18n="trades.resetBtn">Reset Trades</button></div>
   <div class="table-scroll">
     <table class="datatable">
       <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="watchlist.headerMarket">Market</th><th data-i18n="watchlist.headerDirection">Direction / Signal</th><th class="num" data-i18n="watchlist.headerPrice">Price</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="watchlist.headerAdded">Added</th><th></th></tr></thead>
@@ -5984,6 +5985,11 @@ const translations = {
   "watchlist.headerAdded": "Added",
   "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail on the dashboard. Crypto symbols open an independent paper position using the same strategy (size: $",
   "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
+  "trades.resetBtn": "Reset Trades",
+  "trades.resetConfirm": "This will permanently delete ALL paper trade history and open positions, and reset the balance to {amount}. This cannot be undone. Continue?",
+  "trades.resetting": "Resetting…",
+  "trades.resetDone": "Paper trading has been reset.",
+  "trades.resetError": "Reset failed. Please try again.",
   "watchlist.loading": "Loading…",
   "watchlist.empty": "Watchlist is empty. Click \"+ Add\" on any symbol showing LONG/SHORT in the scanner to have the bot watch/paper-trade it.",
   "watchlist.mainEngine": "Main engine",
@@ -6022,6 +6028,11 @@ const translations = {
   "watchlist.headerAdded": "Eklenme",
   "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını panelde görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
   "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
+  "trades.resetBtn": "İşlemleri Sıfırla",
+  "trades.resetConfirm": "Bu işlem TÜM deneme işlem geçmişini ve açık pozisyonları kalıcı olarak siler, bakiyeyi {amount} olarak sıfırlar. Bu işlem geri alınamaz. Devam edilsin mi?",
+  "trades.resetting": "Sıfırlanıyor…",
+  "trades.resetDone": "Deneme işlemleri sıfırlandı.",
+  "trades.resetError": "Sıfırlama başarısız oldu. Lütfen tekrar deneyin.",
   "watchlist.loading": "Yükleniyor…",
   "watchlist.empty": "Takip listesi boş. Tarayıcıda LONG/SHORT veren bir sembole \"+ Ekle\" diyerek botun izlemesini/paper trade etmesini sağlayabilirsin.",
   "watchlist.mainEngine": "Ana motor",
@@ -6060,6 +6071,11 @@ const translations = {
   "watchlist.headerAdded": "添加时间",
   "watchlist.footnotePrefix": "点击一行即可在面板上查看该交易对的仓位及信号详情。加密交易对会以相同策略开立独立的模拟仓位（仓位规模：$",
   "watchlist.footnoteSuffix": " 名义本金）。伊斯坦布尔交易对仅用于信号跟踪，不会开立真实/模拟订单。",
+  "trades.resetBtn": "重置交易",
+  "trades.resetConfirm": "此操作将永久删除所有模拟交易记录和当前持仓，并将余额重置为 {amount}。此操作无法撤销，是否继续？",
+  "trades.resetting": "正在重置…",
+  "trades.resetDone": "模拟交易已重置。",
+  "trades.resetError": "重置失败，请重试。",
   "watchlist.loading": "加载中…",
   "watchlist.empty": "自选列表为空。在扫描列表中对显示 LONG/SHORT 的交易对点击“+ 添加”，即可让机器人对其进行跟踪/模拟交易。",
   "watchlist.mainEngine": "主引擎",
@@ -6098,6 +6114,11 @@ const translations = {
   "watchlist.headerAdded": "Hinzugefügt",
   "watchlist.footnotePrefix": "Klicken Sie auf eine Zeile, um die Positions- und Signaldetails dieses Symbols im Dashboard zu sehen. Krypto-Symbole eröffnen mit derselben Strategie eine unabhängige Paper-Position (Größe: $",
   "watchlist.footnoteSuffix": " nominal). Borsa-Istanbul-Symbole dienen nur der Signalbeobachtung; es wird keine echte/Paper-Order eröffnet.",
+  "trades.resetBtn": "Trades zurücksetzen",
+  "trades.resetConfirm": "Dadurch werden ALLE Paper-Trade-Verläufe und offenen Positionen dauerhaft gelöscht und der Kontostand auf {amount} zurückgesetzt. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
+  "trades.resetting": "Wird zurückgesetzt…",
+  "trades.resetDone": "Paper-Trading wurde zurückgesetzt.",
+  "trades.resetError": "Zurücksetzen fehlgeschlagen. Bitte erneut versuchen.",
   "watchlist.loading": "Wird geladen…",
   "watchlist.empty": "Die Watchlist ist leer. Klicken Sie bei einem Symbol mit LONG/SHORT im Scanner auf „+ Hinzufügen“, damit der Bot es beobachtet/als Paper-Trade führt.",
   "watchlist.mainEngine": "Haupt-Engine",
@@ -6136,6 +6157,11 @@ const translations = {
   "watchlist.headerAdded": "Ajouté",
   "watchlist.footnotePrefix": "Cliquez sur une ligne pour afficher le détail de la position et du signal de ce symbole sur le tableau de bord. Les symboles crypto ouvrent une position paper indépendante avec la même stratégie (taille : $",
   "watchlist.footnoteSuffix": " nominal). Les symboles Borsa Istanbul servent uniquement au suivi du signal ; aucun ordre réel/paper n'est ouvert.",
+  "trades.resetBtn": "Réinitialiser les trades",
+  "trades.resetConfirm": "Cette action supprimera définitivement TOUT l'historique des trades paper et les positions ouvertes, et réinitialisera le solde à {amount}. Cette action est irréversible. Continuer ?",
+  "trades.resetting": "Réinitialisation…",
+  "trades.resetDone": "Le paper trading a été réinitialisé.",
+  "trades.resetError": "Échec de la réinitialisation. Veuillez réessayer.",
   "watchlist.loading": "Chargement…",
   "watchlist.empty": "La watchlist est vide. Cliquez sur « + Ajouter » sur un symbole affichant LONG/SHORT dans le scanner pour que le bot le suive/le trade en paper.",
   "watchlist.mainEngine": "Moteur principal",
@@ -6174,6 +6200,11 @@ const translations = {
   "watchlist.headerAdded": "Añadido",
   "watchlist.footnotePrefix": "Haz clic en una fila para ver el detalle de posición y señal de ese símbolo en el panel. Los símbolos cripto abren una posición paper independiente con la misma estrategia (tamaño: $",
   "watchlist.footnoteSuffix": " nominal). Los símbolos de Borsa Istanbul son solo de seguimiento de señal; no se abre ninguna orden real/paper.",
+  "trades.resetBtn": "Restablecer operaciones",
+  "trades.resetConfirm": "Esta acción eliminará permanentemente TODO el historial de operaciones de prueba y las posiciones abiertas, y restablecerá el saldo a {amount}. Esta acción no se puede deshacer. ¿Continuar?",
+  "trades.resetting": "Restableciendo…",
+  "trades.resetDone": "Las operaciones de prueba se han restablecido.",
+  "trades.resetError": "Error al restablecer. Inténtalo de nuevo.",
   "watchlist.loading": "Cargando…",
   "watchlist.empty": "La watchlist está vacía. Haz clic en \"+ Añadir\" en cualquier símbolo que muestre LONG/SHORT en el escaneo para que el bot lo siga/opere en modo paper.",
   "watchlist.mainEngine": "Motor principal",
@@ -6220,6 +6251,35 @@ function applyTranslation(lang){
 let _initialLang = 'en';
 try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 applyTranslation(_initialLang);
+async function checkAdminForReset(){
+  try{
+    const r=await fetch('/api/account',{cache:'no-store'});
+    const d=await r.json();
+    if(d.is_admin) document.getElementById('resetTradesBtn').style.display='inline-block';
+  }catch(e){}
+}
+async function resetPaperTrading(){
+  const amountStr='$'+Number(__STARTING_EQUITY__).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(!confirm(t('trades.resetConfirm').replace('{amount}', amountStr))) return;
+  if(!confirm(t('trades.resetConfirm').replace('{amount}', amountStr))) return; // deliberate double confirm — irreversible
+  const btn=document.getElementById('resetTradesBtn');
+  btn.disabled=true; const origText=btn.textContent; btn.textContent=t('trades.resetting');
+  try{
+    const r=await fetch('/api/admin/reset-paper-trading',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(d.ok){
+      alert(t('trades.resetDone'));
+      window.location.reload();
+    } else {
+      alert(d.error || t('trades.resetError'));
+      btn.disabled=false; btn.textContent=origText;
+    }
+  }catch(e){
+    alert(t('trades.resetError'));
+    btn.disabled=false; btn.textContent=origText;
+  }
+}
+checkAdminForReset();
 refreshStatus(); setInterval(refreshStatus,5000);
 refreshWatchlist(); setInterval(refreshWatchlist,10000);
 </script>
@@ -7942,7 +8002,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(html); return
 
         if path=='/trades':
-            self._send_html(TRADES_HTML); return
+            html = TRADES_HTML.replace('__STARTING_EQUITY__', repr(STARTING_EQUITY))
+            self._send_html(html); return
         if path=='/closed-trades':
             self._send_html(CLOSED_TRADES_HTML); return
 
@@ -8369,6 +8430,25 @@ class Handler(BaseHTTPRequestHandler):
             _set_equity(new_equity)
             print(f'ADMIN | {user} | SET PAPER EQUITY -> {new_equity}', flush=True)
             self._send_json({'ok': True, 'equity': new_equity}); return
+
+        if path=='/api/admin/reset-paper-trading':
+            # Full, irreversible reset: wipes the main-engine position, every
+            # watchlist position/tracked symbol/cached signal (state file),
+            # AND the closed-trades CSV history, then restores equity to the
+            # configured starting balance — i.e. a brand-new paper account.
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            try:
+                _reset_paper_trading(STARTING_EQUITY)
+            except Exception as e:
+                self._send_json({'ok': False, 'error': str(e)}, status=500); return
+            try:
+                if os.path.exists(TRADES_FILE):
+                    os.remove(TRADES_FILE)
+            except Exception as e:
+                print(f'ADMIN | RESET PAPER TRADING | CSV REMOVE ERROR | {type(e).__name__}: {e}', flush=True)
+            print(f'ADMIN | {user} | RESET PAPER TRADING -> equity={STARTING_EQUITY}', flush=True)
+            self._send_json({'ok': True, 'equity': STARTING_EQUITY}); return
 
         if path=='/api/account/telegram/link-code':
             code, err = auth.create_telegram_link_code(user)
