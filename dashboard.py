@@ -32,13 +32,11 @@ PORT = int(os.environ.get('PORT', '8080'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_ACCOUNT_INITIAL_CAPITAL)))
 SESSION_COOKIE = 'session_token'
 
-# "Abonelik Sistemine Geç" bank-transfer details, shown to users choosing a
-# plan. *** PLACEHOLDER *** — set SUBSCRIPTION_IBAN / SUBSCRIPTION_IBAN_HOLDER
-# to the real bank account before going live; a wrong/fake IBAN here would
-# send customers' money nowhere, so this is deliberately left as an obvious
-# placeholder rather than a guessed value.
-SUBSCRIPTION_IBAN = os.environ.get('SUBSCRIPTION_IBAN', 'TR00 0000 0000 0000 0000 0000 00 — GERÇEK IBAN BURAYA GİRİLMELİ')
-SUBSCRIPTION_IBAN_HOLDER = os.environ.get('SUBSCRIPTION_IBAN_HOLDER', 'Hesap sahibi adı buraya girilmeli')
+# "Abonelik Sistemine Geç" crypto (USDT) payment details, shown to users
+# choosing a plan. Configurable via env vars so the real wallet address lives
+# in deployment config, not hardcoded in source.
+SUBSCRIPTION_USDT_ADDRESS = os.environ.get('SUBSCRIPTION_USDT_ADDRESS', '0xe217e113fa475b8e4b5e1d1f5e35ddb04b13cffc')
+SUBSCRIPTION_USDT_NETWORK = os.environ.get('SUBSCRIPTION_USDT_NETWORK', 'BNB Smart Chain (BEP20)')
 
 # ---------------------------------------------------------------------------
 # Per-IP rate limiting for the auth-adjacent endpoints (login, register,
@@ -616,8 +614,8 @@ TANITIM_HTML = r'''<!doctype html>
 # Shared "Abonelik Sistemine Geç" / "Admin'e Soru Sor" / FAQ block — embedded
 # both in the main dashboard (HTML, under the account panel) and in the
 # trial-expired page (TRIAL_EXPIRED_HTML, where it's the main call to
-# action). __USERNAME__/__IBAN__/__IBAN_HOLDER__ are replaced the same way
-# __USERNAME__ already is elsewhere in these templates.
+# action). __USERNAME__/__USDT_ADDRESS__/__USDT_NETWORK__ are replaced the
+# same way __USERNAME__ already is elsewhere in these templates.
 ACCOUNT_EXTRAS_HTML = r'''
 <div class="stack-gap">
   <div class="account-row">
@@ -627,7 +625,7 @@ ACCOUNT_EXTRAS_HTML = r'''
 
   <div id="subscriptionBox" style="display:none">
     <div class="section-title" style="margin-top:14px" data-i18n="subscription.title">Switch to Subscription</div>
-    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0" data-i18n="subscription.desc">Choose a plan, send the payment to the IBAN below, and click "I've Sent the Payment" — our team will verify your payment and activate your account as soon as possible.</p>
+    <p class="text-faint" style="font-size:12.5px;margin:0 0 4px 0" data-i18n="subscription.desc">Choose a plan, send the USDT payment to the wallet address below, and click "I've Sent the Payment" — our team will verify your payment and activate your account as soon as possible.</p>
     <div class="plan-choices">
       <button type="button" class="plan-btn" id="planBtn_monthly" onclick="selectPlan('monthly')">
         <span class="plan-name" data-i18n="subscription.planMonthlyName">Monthly Subscription</span>
@@ -641,10 +639,18 @@ ACCOUNT_EXTRAS_HTML = r'''
     <div id="planIbanBox" style="display:none">
       <div class="iban-box">
         <div class="account-row text-faint"><span data-i18n="subscription.selectedPlanLabel">Selected plan:</span> <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
-        <div class="account-row" style="margin-top:8px" data-i18n="subscription.ibanLabel">IBAN:</div>
-        <div class="iban-num">__IBAN__</div>
-        <div class="account-row text-faint" style="margin-top:4px"><span data-i18n="subscription.recipientLabel">Recipient:</span> __IBAN_HOLDER__</div>
-        <div class="account-row text-faint" data-i18n="subscription.usernameNote" data-i18n-html="1">Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.</div>
+        <div class="account-row" style="margin-top:8px" data-i18n="subscription.networkLabel">Network:</div>
+        <div class="iban-num">__USDT_NETWORK__</div>
+        <div class="account-row" style="margin-top:8px" data-i18n="subscription.addressLabel">USDT Wallet Address:</div>
+        <div class="iban-num" id="usdtAddressText">__USDT_ADDRESS__</div>
+        <div class="account-row" style="margin-top:10px">
+          <div id="usdtQr" style="display:inline-block;padding:8px;background:#fff;border-radius:8px;line-height:0"></div>
+        </div>
+        <div class="account-row" style="margin-top:8px">
+          <button class="btn" type="button" onclick="copyUsdtAddress()" data-i18n="subscription.copyBtn">📋 Copy Address</button>
+          <span id="usdtCopiedMsg" style="margin-left:8px;font-size:12px;color:var(--bull);display:none" data-i18n="subscription.copiedMsg">Copied!</span>
+        </div>
+        <div class="account-row text-faint" style="margin-top:8px" data-i18n="subscription.usdtWarning">Only send USDT over the network shown above. Sending a different token or using a different network may result in permanent loss of funds.</div>
         <div class="account-row" style="margin-top:10px">
           <button class="btn btn-primary" type="button" id="paySentBtn" onclick="confirmPaymentSent()" data-i18n="subscription.paySentBtn">I've Sent the Payment</button>
         </div>
@@ -665,12 +671,23 @@ ACCOUNT_EXTRAS_HTML = r'''
 
 
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 function toggleBox(id){
   const el=document.getElementById(id);
   if(!el) return;
   el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none';
 }
+function renderUsdtQr(){
+  try{
+    const el=document.getElementById('usdtQr');
+    const addr=document.getElementById('usdtAddressText');
+    if(!el || !addr || typeof QRCode==='undefined') return;
+    el.innerHTML='';
+    new QRCode(el, {text: addr.textContent.trim(), width:140, height:140, correctLevel: QRCode.CorrectLevel.M});
+  }catch(e){}
+}
+renderUsdtQr();
 let _selectedPlan=null;
 function selectPlan(plan){
   _selectedPlan=plan;
@@ -681,6 +698,21 @@ function selectPlan(plan){
   document.getElementById('paySentMsg').textContent='';
   const btn=document.getElementById('paySentBtn');
   btn.disabled=false; btn.textContent=t('subscription.paySentBtn');
+}
+function copyUsdtAddress(){
+  const addr=document.getElementById('usdtAddressText').textContent.trim();
+  const showCopied=()=>{
+    const msg=document.getElementById('usdtCopiedMsg');
+    msg.style.display='inline'; setTimeout(()=>{ msg.style.display='none'; }, 2000);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(addr).then(showCopied).catch(()=>{});
+  } else {
+    const ta=document.createElement('textarea'); ta.value=addr; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); showCopied(); }catch(e){}
+    document.body.removeChild(ta);
+  }
 }
 async function confirmPaymentSent(){
   if(!_selectedPlan) return;
@@ -1053,15 +1085,17 @@ const translations = {
   "account.connectedNotVerified": "Connected, not verified",
   "account.notConnected": "Not connected",
   "subscription.title": "Switch to Subscription",
-  "subscription.desc": "Choose a plan, send the payment to the IBAN below, and click “I've Sent the Payment” — our team will verify your payment and activate your account as soon as possible.",
+  "subscription.desc": "Choose a plan, send the USDT payment to the wallet address below, and click \"I've Sent the Payment\" — our team will verify your payment and activate your account as soon as possible.",
   "subscription.planMonthlyName": "Monthly Subscription",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Annual Subscription",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Selected plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Recipient:",
-  "subscription.usernameNote": "Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.",
+  "subscription.networkLabel": "Network:",
+  "subscription.addressLabel": "USDT Wallet Address:",
+  "subscription.copyBtn": "📋 Copy Address",
+  "subscription.copiedMsg": "Copied!",
+  "subscription.usdtWarning": "Only send USDT over the network shown above. Sending a different token or using a different network may result in permanent loss of funds.",
   "subscription.paySentBtn": "I've Sent the Payment",
   "subscription.sending": "Sending…",
   "subscription.resendBtn": "Notify Again",
@@ -1083,9 +1117,9 @@ const translations = {
   "faq.q1": "Does this bot trade with real money?",
   "faq.a1": "By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on “Live Trading” yourself from your own panel.",
   "faq.q2": "How long is the free trial and what happens when it ends?",
-  "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click “I've Sent the Payment” — our team will verify it and activate your account.",
+  "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, send the USDT payment, and click “I've Sent the Payment” — our team will verify it and activate your account.",
   "faq.q3": "How is the subscription paid, is card payment available?",
-  "faq.a3": "Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
+  "faq.a3": "Currently payments are accepted via USDT (crypto) sent to our wallet address. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
   "faq.q4": "Is it safe to give my Binance API key?",
   "faq.a4": "Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without “withdrawal” permission on the Binance side.",
   "faq.q5": "Which markets are traded?",
@@ -1320,15 +1354,17 @@ const translations = {
   "account.connectedNotVerified": "Bağlı, doğrulanmadı",
   "account.notConnected": "Bağlı değil",
   "subscription.title": "Abonelik Sistemine Geç",
-  "subscription.desc": "Bir plan seçin, IBAN'a ödemeyi gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
+  "subscription.desc": "Bir plan seçin, USDT ödemesini aşağıdaki cüzdan adresine gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
   "subscription.planMonthlyName": "Aylık Abonelik",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Yıllık Abonelik",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Seçilen plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Alıcı:",
-  "subscription.usernameNote": "Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.",
+  "subscription.networkLabel": "Ağ:",
+  "subscription.addressLabel": "USDT Cüzdan Adresi:",
+  "subscription.copyBtn": "📋 Adresi Kopyala",
+  "subscription.copiedMsg": "Kopyalandı!",
+  "subscription.usdtWarning": "Yalnızca yukarıda belirtilen ağ üzerinden USDT gönderin. Farklı bir token veya farklı bir ağ kullanmak fonların kalıcı olarak kaybolmasına yol açabilir.",
   "subscription.paySentBtn": "Tutarı Gönderdim",
   "subscription.sending": "Gönderiliyor…",
   "subscription.resendBtn": "Tekrar Bildir",
@@ -1350,9 +1386,9 @@ const translations = {
   "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
   "faq.a1": "Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp “Canlı İşlem” ayarını kendi panelinizden siz açmanız gerekir.",
   "faq.q2": "Ücretsiz deneme süresi ne kadar ve dolunca ne olur?",
-  "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
+  "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip USDT ödemesini gönderdikten sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
   "faq.q3": "Abonelik nasıl ödeniyor, kartla ödeme var mı?",
-  "faq.a3": "Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
+  "faq.a3": "Şu an ödemeler USDT (kripto) olarak cüzdan adresimize gönderilerek alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
   "faq.q4": "Binance API anahtarımı vermek güvenli mi?",
   "faq.a4": "Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında “para çekme” (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.",
   "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
@@ -1587,15 +1623,17 @@ const translations = {
   "account.connectedNotVerified": "已连接，尚未验证",
   "account.notConnected": "未连接",
   "subscription.title": "升级为订阅",
-  "subscription.desc": "选择一个套餐，将款项汇入下面的 IBAN，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
+  "subscription.desc": "选择一个套餐，将 USDT 款项发送到下面的钱包地址，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
   "subscription.planMonthlyName": "月订阅",
   "subscription.planMonthlyPrice": "50 美元",
   "subscription.planAnnualName": "年订阅",
   "subscription.planAnnualPrice": "500 美元",
   "subscription.selectedPlanLabel": "已选套餐：",
-  "subscription.ibanLabel": "IBAN：",
-  "subscription.recipientLabel": "收款人：",
-  "subscription.usernameNote": "在付款备注中填写您的用户名（<b>__USERNAME__</b>）可加快审核。",
+  "subscription.networkLabel": "网络：",
+  "subscription.addressLabel": "USDT 钱包地址：",
+  "subscription.copyBtn": "📋 复制地址",
+  "subscription.copiedMsg": "已复制！",
+  "subscription.usdtWarning": "请仅通过上方显示的网络发送 USDT。发送其他代币或使用其他网络可能导致资金永久丢失。",
   "subscription.paySentBtn": "我已付款",
   "subscription.sending": "发送中…",
   "subscription.resendBtn": "再次通知",
@@ -1617,9 +1655,9 @@ const translations = {
   "faq.q1": "这个机器人会用真实资金交易吗？",
   "faq.a1": "默认不会 — 系统默认运行在模拟/演示模式，不会下达任何真实订单。如需用真实资金交易，需要您自己在面板中绑定 Binance API 密钥并开启“实盘交易”。",
   "faq.q2": "免费试用期多长，到期后会怎样？",
-  "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并向 IBAN 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
+  "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并发送 USDT 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
   "faq.q3": "订阅费如何支付，支持刷卡吗？",
-  "faq.a3": "目前仅支持通过银行转账/EFT 向 IBAN 付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
+  "faq.a3": "目前仅支持通过 USDT（加密货币）汇款至我们的钱包地址付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
   "faq.q4": "提供我的 Binance API 密钥安全吗？",
   "faq.a4": "您的密钥会在服务器上加密存储，仅用于代您开平订单。建议您在 Binance 上创建一个不带“提现”权限的 API 密钥。",
   "faq.q5": "交易哪些市场？",
@@ -1854,15 +1892,17 @@ const translations = {
   "account.connectedNotVerified": "Verbunden, nicht verifiziert",
   "account.notConnected": "Nicht verbunden",
   "subscription.title": "Zum Abo wechseln",
-  "subscription.desc": "Wählen Sie einen Plan, überweisen Sie den Betrag an die untenstehende IBAN und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
+  "subscription.desc": "Wählen Sie einen Plan, senden Sie die USDT-Zahlung an die untenstehende Wallet-Adresse und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
   "subscription.planMonthlyName": "Monatsabo",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Jahresabo",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Gewählter Plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Empfänger:",
-  "subscription.usernameNote": "Wenn Sie Ihren Benutzernamen (<b>__USERNAME__</b>) im Verwendungszweck angeben, beschleunigt das die Prüfung.",
+  "subscription.networkLabel": "Netzwerk:",
+  "subscription.addressLabel": "USDT-Wallet-Adresse:",
+  "subscription.copyBtn": "📋 Adresse kopieren",
+  "subscription.copiedMsg": "Kopiert!",
+  "subscription.usdtWarning": "Senden Sie USDT nur über das oben angegebene Netzwerk. Das Senden eines anderen Tokens oder die Nutzung eines anderen Netzwerks kann zum dauerhaften Verlust der Gelder führen.",
   "subscription.paySentBtn": "Betrag überwiesen",
   "subscription.sending": "Wird gesendet…",
   "subscription.resendBtn": "Erneut melden",
@@ -1884,9 +1924,9 @@ const translations = {
   "faq.q1": "Handelt dieser Bot mit echtem Geld?",
   "faq.a1": "Standardmäßig nein — das System läuft im Paper-/Demo-Modus und sendet keine echten Orders. Um mit echtem Geld zu handeln, müssen Sie Ihren Binance-API-Schlüssel verbinden und „Live-Handel“ selbst in Ihrem Panel aktivieren.",
   "faq.q2": "Wie lange läuft die kostenlose Testphase und was passiert danach?",
-  "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, zahlen an die IBAN und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
+  "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, senden Sie die USDT-Zahlung und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
   "faq.q3": "Wie wird das Abo bezahlt, gibt es Kartenzahlung?",
-  "faq.a3": "Derzeit werden Zahlungen per Banküberweisung/EFT an die IBAN entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
+  "faq.a3": "Derzeit werden Zahlungen per USDT (Krypto) an unsere Wallet-Adresse entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
   "faq.q4": "Ist es sicher, meinen Binance-API-Schlüssel anzugeben?",
   "faq.a4": "Ihr Schlüssel wird verschlüsselt auf dem Server gespeichert und nur verwendet, um in Ihrem Namen Orders zu öffnen und zu schließen. Wir empfehlen, auf Binance-Seite einen API-Schlüssel ohne „Auszahlungs“-Berechtigung zu erstellen.",
   "faq.q5": "An welchen Märkten wird gehandelt?",
@@ -2121,15 +2161,17 @@ const translations = {
   "account.connectedNotVerified": "Connecté, non vérifié",
   "account.notConnected": "Non connecté",
   "subscription.title": "Passer à l'abonnement",
-  "subscription.desc": "Choisissez un plan, envoyez le paiement à l'IBAN ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
+  "subscription.desc": "Choisissez un plan, envoyez le paiement en USDT à l'adresse de portefeuille ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
   "subscription.planMonthlyName": "Abonnement mensuel",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Abonnement annuel",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Plan sélectionné :",
-  "subscription.ibanLabel": "IBAN :",
-  "subscription.recipientLabel": "Bénéficiaire :",
-  "subscription.usernameNote": "Indiquer votre nom d'utilisateur (<b>__USERNAME__</b>) dans le motif du virement accélère la vérification.",
+  "subscription.networkLabel": "Réseau :",
+  "subscription.addressLabel": "Adresse du portefeuille USDT :",
+  "subscription.copyBtn": "📋 Copier l'adresse",
+  "subscription.copiedMsg": "Copié !",
+  "subscription.usdtWarning": "N'envoyez de l'USDT que sur le réseau indiqué ci-dessus. L'envoi d'un autre jeton ou l'utilisation d'un autre réseau peut entraîner la perte définitive des fonds.",
   "subscription.paySentBtn": "J'ai envoyé le paiement",
   "subscription.sending": "Envoi en cours…",
   "subscription.resendBtn": "Notifier à nouveau",
@@ -2151,9 +2193,9 @@ const translations = {
   "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
   "faq.a1": "Par défaut, non — le système fonctionne en mode paper/démo et n'envoie jamais d'ordres réels. Pour trader avec de l'argent réel, vous devez connecter votre clé API Binance et activer vous-même le « Trading en direct » depuis votre panneau.",
   "faq.q2": "Combien de temps dure l'essai gratuit et que se passe-t-il à la fin ?",
-  "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, payez l'IBAN, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
+  "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, envoyez le paiement en USDT, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
   "faq.q3": "Comment l'abonnement est-il payé, le paiement par carte est-il disponible ?",
-  "faq.a3": "Actuellement, les paiements sont acceptés par virement bancaire/EFT vers l'IBAN. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
+  "faq.a3": "Actuellement, les paiements sont acceptés en USDT (crypto) envoyés à notre adresse de portefeuille. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
   "faq.q4": "Est-il sûr de fournir ma clé API Binance ?",
   "faq.a4": "Votre clé est stockée chiffrée sur le serveur et n'est utilisée que pour ouvrir et fermer des ordres en votre nom. Nous vous recommandons de créer une clé API sans autorisation de « retrait » côté Binance.",
   "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
@@ -2388,15 +2430,17 @@ const translations = {
   "account.connectedNotVerified": "Conectado, sin verificar",
   "account.notConnected": "No conectado",
   "subscription.title": "Cambiar a suscripción",
-  "subscription.desc": "Elige un plan, envía el pago al IBAN de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
+  "subscription.desc": "Elige un plan, envía el pago en USDT a la dirección de billetera de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
   "subscription.planMonthlyName": "Suscripción mensual",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Suscripción anual",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Plan seleccionado:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Beneficiario:",
-  "subscription.usernameNote": "Incluir tu nombre de usuario (<b>__USERNAME__</b>) en el concepto del pago agiliza la verificación.",
+  "subscription.networkLabel": "Red:",
+  "subscription.addressLabel": "Dirección de billetera USDT:",
+  "subscription.copyBtn": "📋 Copiar dirección",
+  "subscription.copiedMsg": "¡Copiado!",
+  "subscription.usdtWarning": "Envía USDT solo a través de la red indicada arriba. Enviar un token diferente o usar una red distinta puede provocar la pérdida permanente de los fondos.",
   "subscription.paySentBtn": "He enviado el pago",
   "subscription.sending": "Enviando…",
   "subscription.resendBtn": "Notificar de nuevo",
@@ -2418,9 +2462,9 @@ const translations = {
   "faq.q1": "¿Este bot opera con dinero real?",
   "faq.a1": "Por defecto, no — el sistema funciona en modo paper/demo y nunca envía órdenes reales. Para operar con dinero real debes conectar tu clave API de Binance y activar tú mismo el “Trading en vivo” desde tu panel.",
   "faq.q2": "¿Cuánto dura la prueba gratuita y qué pasa cuando termina?",
-  "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, paga al IBAN y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
+  "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, envía el pago en USDT y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
   "faq.q3": "¿Cómo se paga la suscripción, hay pago con tarjeta?",
-  "faq.a3": "Actualmente los pagos se aceptan mediante transferencia bancaria/EFT al IBAN. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
+  "faq.a3": "Actualmente los pagos se aceptan en USDT (cripto) enviados a nuestra dirección de billetera. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
   "faq.q4": "¿Es seguro proporcionar mi clave API de Binance?",
   "faq.a4": "Tu clave se almacena cifrada en el servidor y solo se usa para abrir y cerrar órdenes en tu nombre. Recomendamos crear una clave API sin permiso de “retiro” en Binance.",
   "faq.q5": "¿En qué mercados se opera?",
@@ -3245,11 +3289,12 @@ SCANNER_HTML = r'''<!doctype html>
           <th class="sortable num" data-key="cci" data-tbl="scanner" data-i18n="scanner.headerCci">CCI</th>
           <th data-i18n="scanner.headerMacd">MACD</th>
           <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable num" data-key="score" data-tbl="scanner" data-i18n="scanner.headerScore">Score</th>
           <th class="sortable" data-key="signal" data-tbl="scanner" data-i18n="scanner.headerSignal">Signal</th>
           <th data-i18n="scanner.headerReason">Description</th>
           <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="scannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+        <tbody id="scannerRows"><tr><td colspan="14" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -3277,11 +3322,12 @@ SCANNER_HTML = r'''<!doctype html>
           <th data-i18n="scanner.headerMacd">MACD</th>
           <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
           <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="bist" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable num" data-key="score" data-tbl="bist" data-i18n="scanner.headerScore">Score</th>
           <th class="sortable" data-key="signal" data-tbl="bist" data-i18n="scanner.headerSignal">Signal</th>
           <th data-i18n="scanner.headerReason">Description</th>
           <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="bistScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+        <tbody id="bistScannerRows"><tr><td colspan="14" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
     <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
@@ -3310,11 +3356,12 @@ SCANNER_HTML = r'''<!doctype html>
           <th data-i18n="scanner.headerMacd">MACD</th>
           <th class="num" data-i18n="scanner.headerStochKd">Stoch K/D</th>
           <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="us" data-i18n="scanner.headerAtrp">ATRP %ile</th>
+          <th class="sortable num" data-key="score" data-tbl="us" data-i18n="scanner.headerScore">Score</th>
           <th class="sortable" data-key="signal" data-tbl="us" data-i18n="scanner.headerSignal">Signal</th>
           <th data-i18n="scanner.headerReason">Description</th>
           <th data-i18n="scanner.headerAdd">Add</th>
         </tr></thead>
-        <tbody id="usScannerRows"><tr><td colspan="13" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
+        <tbody id="usScannerRows"><tr><td colspan="14" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
     <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
@@ -3454,7 +3501,7 @@ function renderScanner(){
   let f=document.getElementById('signalFilter')?.value||'ALL';
   let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'scanner');
-  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
   document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -3467,7 +3514,7 @@ function renderBistScanner(){
   let f=document.getElementById('bistSignalFilter')?.value||'ALL';
   let rows=bistScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'bist');
-  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('bistCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
   document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -3493,7 +3540,7 @@ function renderUsScanner(){
   let f=document.getElementById('usSignalFilter')?.value||'ALL';
   let rows=usScannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'us');
-  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="13" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('usCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
   document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
   document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
@@ -3562,6 +3609,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerScore": "Score",
   "scanner.headerSignal": "Signal",
   "scanner.headerReason": "Description",
   "scanner.headerAdd": "Add",
@@ -3625,6 +3673,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerScore": "Puan",
   "scanner.headerSignal": "Sinyal",
   "scanner.headerReason": "Açıklama",
   "scanner.headerAdd": "Ekle",
@@ -3688,6 +3737,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP百分位",
+  "scanner.headerScore": "评分",
   "scanner.headerSignal": "信号",
   "scanner.headerReason": "说明",
   "scanner.headerAdd": "添加",
@@ -3751,6 +3801,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP-Perzentil",
+  "scanner.headerScore": "Punktzahl",
   "scanner.headerSignal": "Signal",
   "scanner.headerReason": "Beschreibung",
   "scanner.headerAdd": "Hinzufügen",
@@ -3814,6 +3865,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP %ile",
+  "scanner.headerScore": "Score",
   "scanner.headerSignal": "Signal",
   "scanner.headerReason": "Description",
   "scanner.headerAdd": "Ajouter",
@@ -3877,6 +3929,7 @@ const translations = {
   "scanner.headerMacd": "MACD",
   "scanner.headerStochKd": "Stoch K/D",
   "scanner.headerAtrp": "ATRP %il",
+  "scanner.headerScore": "Puntuación",
   "scanner.headerSignal": "Señal",
   "scanner.headerReason": "Descripción",
   "scanner.headerAdd": "Añadir",
@@ -3988,11 +4041,11 @@ FAQ_HTML = r'''<!doctype html>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q2">How long is the free trial and what happens when it ends?</summary>
-        <p data-i18n="faq.a2">7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click "I've Sent the Payment" — our team will verify it and activate your account.</p>
+        <p data-i18n="faq.a2">7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, send USDT to the wallet address shown, and click "I've Sent the Payment" — our team will verify it and activate your account.</p>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q3">How is the subscription paid, is card payment available?</summary>
-        <p data-i18n="faq.a3">Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.</p>
+        <p data-i18n="faq.a3">Currently payments are accepted via USDT (crypto) to the wallet address shown on the subscription page. The monthly plan is billed as 50 USD, the annual plan as 500 USD.</p>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q4">Is it safe to give my Binance API key?</summary>
@@ -4033,9 +4086,9 @@ const translations = {
     "faq.q1": "Does this bot trade with real money?",
     "faq.a1": "By default, no — the system runs in paper/demo mode and never places real orders. To trade with real money you need to connect your Binance API key and turn on “Live Trading” yourself from your own panel.",
     "faq.q2": "How long is the free trial and what happens when it ends?",
-    "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, pay to the IBAN, and click “I've Sent the Payment” — our team will verify it and activate your account.",
+    "faq.a2": "7 days. Once it ends, your access to the panel is restricted; to continue, just pick a plan here, send the USDT payment, and click “I've Sent the Payment” — our team will verify it and activate your account.",
     "faq.q3": "How is the subscription paid, is card payment available?",
-    "faq.a3": "Currently payments are accepted via bank transfer/EFT to the IBAN. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
+    "faq.a3": "Currently payments are accepted via USDT (crypto) sent to our wallet address. The monthly plan is billed as 50 USD, the annual plan as 500 USD.",
     "faq.q4": "Is it safe to give my Binance API key?",
     "faq.a4": "Your key is stored encrypted on the server and is only used to open and close orders on your behalf. We recommend creating an API key without “withdrawal” permission on the Binance side.",
     "faq.q5": "Which markets are traded?",
@@ -4056,9 +4109,9 @@ const translations = {
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
     "faq.a1": "Varsayılan olarak hayır — sistem paper/demo modda çalışır ve gerçek emir göndermez. Gerçek parayla işlem yapmak isterseniz Binance API anahtarınızı bağlayıp “Canlı İşlem” ayarını kendi panelinizden siz açmanız gerekir.",
     "faq.q2": "Ücretsiz deneme süresi ne kadar ve dolunca ne olur?",
-    "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip IBAN'a ödeme yaptıktan sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
+    "faq.a2": "7 gündür. Süre dolduğunda panele erişiminiz kısıtlanır; devam etmek için buradan bir plan seçip USDT ödemesini gönderdikten sonra “Tutarı Gönderdim” demeniz yeterli — ekibimiz kontrol edip hesabınızı aktif hale getirir.",
     "faq.q3": "Abonelik nasıl ödeniyor, kartla ödeme var mı?",
-    "faq.a3": "Şu an ödemeler banka havalesi/EFT ile IBAN üzerinden alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
+    "faq.a3": "Şu an ödemeler USDT (kripto) olarak cüzdan adresimize gönderilerek alınıyor. Aylık plan 50 USD, yıllık plan 500 USD karşılığı olarak tahsil edilir.",
     "faq.q4": "Binance API anahtarımı vermek güvenli mi?",
     "faq.a4": "Anahtarınız sunucuda şifrelenerek saklanır ve yalnızca sizin adınıza emir açıp kapatmak için kullanılır. Binance tarafında “para çekme” (withdrawal) izni olmayan bir API anahtarı oluşturmanızı öneririz.",
     "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
@@ -4079,9 +4132,9 @@ const translations = {
     "faq.q1": "这个机器人会用真实资金交易吗？",
     "faq.a1": "默认不会 — 系统默认运行在模拟/演示模式，不会下达任何真实订单。如需用真实资金交易，需要您自己在面板中绑定 Binance API 密钥并开启“实盘交易”。",
     "faq.q2": "免费试用期多长，到期后会怎样？",
-    "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并向 IBAN 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
+    "faq.a2": "试用期为 7 天。到期后您对面板的访问将受到限制；如需继续使用，只需在此处选择套餐并发送 USDT 付款，然后点击“我已付款”，我们的团队将审核并激活您的账户。",
     "faq.q3": "订阅费如何支付，支持刷卡吗？",
-    "faq.a3": "目前仅支持通过银行转账/EFT 向 IBAN 付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
+    "faq.a3": "目前仅支持通过 USDT（加密货币）汇款至我们的钱包地址付款。月度套餐收费 50 美元，年度套餐收费 500 美元。",
     "faq.q4": "提供我的 Binance API 密钥安全吗？",
     "faq.a4": "您的密钥会在服务器上加密存储，仅用于代您开平订单。建议您在 Binance 上创建一个不带“提现”权限的 API 密钥。",
     "faq.q5": "交易哪些市场？",
@@ -4102,9 +4155,9 @@ const translations = {
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
     "faq.a1": "Standardmäßig nein — das System läuft im Paper-/Demo-Modus und sendet keine echten Orders. Um mit echtem Geld zu handeln, müssen Sie Ihren Binance-API-Schlüssel verbinden und „Live-Handel“ selbst in Ihrem Panel aktivieren.",
     "faq.q2": "Wie lange läuft die kostenlose Testphase und was passiert danach?",
-    "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, zahlen an die IBAN und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
+    "faq.a2": "7 Tage. Nach Ablauf wird Ihr Zugriff auf das Panel eingeschränkt; um fortzufahren, wählen Sie hier einfach einen Plan, senden Sie die USDT-Zahlung und klicken auf „Betrag überwiesen“ — unser Team prüft dies und aktiviert Ihr Konto.",
     "faq.q3": "Wie wird das Abo bezahlt, gibt es Kartenzahlung?",
-    "faq.a3": "Derzeit werden Zahlungen per Banküberweisung/EFT an die IBAN entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
+    "faq.a3": "Derzeit werden Zahlungen per USDT (Krypto) an unsere Wallet-Adresse entgegengenommen. Der Monatsplan kostet 50 USD, der Jahresplan 500 USD.",
     "faq.q4": "Ist es sicher, meinen Binance-API-Schlüssel anzugeben?",
     "faq.a4": "Ihr Schlüssel wird verschlüsselt auf dem Server gespeichert und nur verwendet, um in Ihrem Namen Orders zu öffnen und zu schließen. Wir empfehlen, auf Binance-Seite einen API-Schlüssel ohne „Auszahlungs“-Berechtigung zu erstellen.",
     "faq.q5": "An welchen Märkten wird gehandelt?",
@@ -4125,9 +4178,9 @@ const translations = {
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
     "faq.a1": "Par défaut, non — le système fonctionne en mode paper/démo et n'envoie jamais d'ordres réels. Pour trader avec de l'argent réel, vous devez connecter votre clé API Binance et activer vous-même le « Trading en direct » depuis votre panneau.",
     "faq.q2": "Combien de temps dure l'essai gratuit et que se passe-t-il à la fin ?",
-    "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, payez l'IBAN, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
+    "faq.a2": "7 jours. Une fois expiré, l'accès au panneau est restreint ; pour continuer, choisissez simplement un plan ici, envoyez le paiement en USDT, puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera et activera votre compte.",
     "faq.q3": "Comment l'abonnement est-il payé, le paiement par carte est-il disponible ?",
-    "faq.a3": "Actuellement, les paiements sont acceptés par virement bancaire/EFT vers l'IBAN. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
+    "faq.a3": "Actuellement, les paiements sont acceptés en USDT (crypto) envoyés à notre adresse de portefeuille. Le plan mensuel est facturé 50 USD, le plan annuel 500 USD.",
     "faq.q4": "Est-il sûr de fournir ma clé API Binance ?",
     "faq.a4": "Votre clé est stockée chiffrée sur le serveur et n'est utilisée que pour ouvrir et fermer des ordres en votre nom. Nous vous recommandons de créer une clé API sans autorisation de « retrait » côté Binance.",
     "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
@@ -4148,9 +4201,9 @@ const translations = {
     "faq.q1": "¿Este bot opera con dinero real?",
     "faq.a1": "Por defecto, no — el sistema funciona en modo paper/demo y nunca envía órdenes reales. Para operar con dinero real debes conectar tu clave API de Binance y activar tú mismo el “Trading en vivo” desde tu panel.",
     "faq.q2": "¿Cuánto dura la prueba gratuita y qué pasa cuando termina?",
-    "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, paga al IBAN y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
+    "faq.a2": "7 días. Al terminar, tu acceso al panel se restringe; para continuar, elige un plan aquí, envía el pago en USDT y haz clic en “He enviado el pago” — nuestro equipo lo verificará y activará tu cuenta.",
     "faq.q3": "¿Cómo se paga la suscripción, hay pago con tarjeta?",
-    "faq.a3": "Actualmente los pagos se aceptan mediante transferencia bancaria/EFT al IBAN. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
+    "faq.a3": "Actualmente los pagos se aceptan en USDT (cripto) enviados a nuestra dirección de billetera. El plan mensual se cobra como 50 USD y el anual como 500 USD.",
     "faq.q4": "¿Es seguro proporcionar mi clave API de Binance?",
     "faq.a4": "Tu clave se almacena cifrada en el servidor y solo se usa para abrir y cerrar órdenes en tu nombre. Recomendamos crear una clave API sin permiso de “retiro” en Binance.",
     "faq.q5": "¿En qué mercados se opera?",
@@ -4993,15 +5046,17 @@ const translations = {
   "account.connectedNotVerified": "Connected, not verified",
   "account.notConnected": "Not connected",
   "subscription.title": "Switch to Subscription",
-  "subscription.desc": "Choose a plan, send the payment to the IBAN below, and click \"I’ve Sent the Payment\" — our team will verify your payment and activate your account as soon as possible.",
+  "subscription.desc": "Choose a plan, send the USDT payment to the wallet address below, and click \"I've Sent the Payment\" — our team will verify your payment and activate your account as soon as possible.",
   "subscription.planMonthlyName": "Monthly Subscription",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Annual Subscription",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Selected plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Recipient:",
-  "subscription.usernameNote": "Adding your username (<b>__USERNAME__</b>) to the payment description speeds up verification.",
+  "subscription.networkLabel": "Network:",
+  "subscription.addressLabel": "USDT Wallet Address:",
+  "subscription.copyBtn": "📋 Copy Address",
+  "subscription.copiedMsg": "Copied!",
+  "subscription.usdtWarning": "Only send USDT over the network shown above. Sending a different token or using a different network may result in permanent loss of funds.",
   "subscription.paySentBtn": "I've Sent the Payment",
   "subscription.sending": "Sending…",
   "subscription.resendBtn": "Notify Again",
@@ -5126,15 +5181,17 @@ const translations = {
   "account.connectedNotVerified": "Bağlı, doğrulanmadı",
   "account.notConnected": "Bağlı değil",
   "subscription.title": "Abonelik Sistemine Geç",
-  "subscription.desc": "Bir plan seçin, IBAN’a ödemeyi gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
+  "subscription.desc": "Bir plan seçin, USDT ödemesini aşağıdaki cüzdan adresine gönderin ve “Tutarı Gönderdim” butonuna basın — ekibimiz ödemenizi kontrol edip hesabınızı en kısa sürede aktif hale getirecek.",
   "subscription.planMonthlyName": "Aylık Abonelik",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Yıllık Abonelik",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Seçilen plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Alıcı:",
-  "subscription.usernameNote": "Açıklama kısmına kullanıcı adınızı (<b>__USERNAME__</b>) yazmanız kontrolü hızlandırır.",
+  "subscription.networkLabel": "Ağ:",
+  "subscription.addressLabel": "USDT Cüzdan Adresi:",
+  "subscription.copyBtn": "📋 Adresi Kopyala",
+  "subscription.copiedMsg": "Kopyalandı!",
+  "subscription.usdtWarning": "Yalnızca yukarıda belirtilen ağ üzerinden USDT gönderin. Farklı bir token veya farklı bir ağ kullanmak fonların kalıcı olarak kaybolmasına yol açabilir.",
   "subscription.paySentBtn": "Tutarı Gönderdim",
   "subscription.sending": "Gönderiliyor…",
   "subscription.resendBtn": "Tekrar Bildir",
@@ -5259,15 +5316,17 @@ const translations = {
   "account.connectedNotVerified": "已连接，尚未验证",
   "account.notConnected": "未连接",
   "subscription.title": "升级为订阅",
-  "subscription.desc": "选择一个套餐，将款项汇入下面的 IBAN，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
+  "subscription.desc": "选择一个套餐，将 USDT 款项发送到下面的钱包地址，然后点击“我已付款”——我们的团队将尽快核实您的付款并激活您的账户。",
   "subscription.planMonthlyName": "月订阅",
   "subscription.planMonthlyPrice": "50 美元",
   "subscription.planAnnualName": "年订阅",
   "subscription.planAnnualPrice": "500 美元",
   "subscription.selectedPlanLabel": "已选套餐：",
-  "subscription.ibanLabel": "IBAN：",
-  "subscription.recipientLabel": "收款人：",
-  "subscription.usernameNote": "在付款备注中填写您的用户名（<b>__USERNAME__</b>）可加快审核。",
+  "subscription.networkLabel": "网络：",
+  "subscription.addressLabel": "USDT 钱包地址：",
+  "subscription.copyBtn": "📋 复制地址",
+  "subscription.copiedMsg": "已复制！",
+  "subscription.usdtWarning": "请仅通过上方显示的网络发送 USDT。发送其他代币或使用其他网络可能导致资金永久丢失。",
   "subscription.paySentBtn": "我已付款",
   "subscription.sending": "发送中…",
   "subscription.resendBtn": "再次通知",
@@ -5392,15 +5451,17 @@ const translations = {
   "account.connectedNotVerified": "Verbunden, nicht verifiziert",
   "account.notConnected": "Nicht verbunden",
   "subscription.title": "Zum Abo wechseln",
-  "subscription.desc": "Wählen Sie einen Plan, überweisen Sie den Betrag an die untenstehende IBAN und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
+  "subscription.desc": "Wählen Sie einen Plan, senden Sie die USDT-Zahlung an die untenstehende Wallet-Adresse und klicken Sie auf „Betrag überwiesen“ — unser Team prüft Ihre Zahlung und aktiviert Ihr Konto so schnell wie möglich.",
   "subscription.planMonthlyName": "Monatsabo",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Jahresabo",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Gewählter Plan:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Empfänger:",
-  "subscription.usernameNote": "Wenn Sie Ihren Benutzernamen (<b>__USERNAME__</b>) im Verwendungszweck angeben, beschleunigt das die Prüfung.",
+  "subscription.networkLabel": "Netzwerk:",
+  "subscription.addressLabel": "USDT-Wallet-Adresse:",
+  "subscription.copyBtn": "📋 Adresse kopieren",
+  "subscription.copiedMsg": "Kopiert!",
+  "subscription.usdtWarning": "Senden Sie USDT nur über das oben angegebene Netzwerk. Das Senden eines anderen Tokens oder die Nutzung eines anderen Netzwerks kann zum dauerhaften Verlust der Gelder führen.",
   "subscription.paySentBtn": "Betrag überwiesen",
   "subscription.sending": "Wird gesendet…",
   "subscription.resendBtn": "Erneut melden",
@@ -5525,15 +5586,17 @@ const translations = {
   "account.connectedNotVerified": "Connecté, non vérifié",
   "account.notConnected": "Non connecté",
   "subscription.title": "Passer à l'abonnement",
-  "subscription.desc": "Choisissez un plan, envoyez le paiement à l'IBAN ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
+  "subscription.desc": "Choisissez un plan, envoyez le paiement en USDT à l'adresse de portefeuille ci-dessous puis cliquez sur « J'ai envoyé le paiement » — notre équipe vérifiera votre paiement et activera votre compte au plus vite.",
   "subscription.planMonthlyName": "Abonnement mensuel",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Abonnement annuel",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Plan sélectionné :",
-  "subscription.ibanLabel": "IBAN :",
-  "subscription.recipientLabel": "Bénéficiaire :",
-  "subscription.usernameNote": "Indiquer votre nom d'utilisateur (<b>__USERNAME__</b>) dans le motif du virement accélère la vérification.",
+  "subscription.networkLabel": "Réseau :",
+  "subscription.addressLabel": "Adresse du portefeuille USDT :",
+  "subscription.copyBtn": "📋 Copier l'adresse",
+  "subscription.copiedMsg": "Copié !",
+  "subscription.usdtWarning": "N'envoyez de l'USDT que sur le réseau indiqué ci-dessus. L'envoi d'un autre jeton ou l'utilisation d'un autre réseau peut entraîner la perte définitive des fonds.",
   "subscription.paySentBtn": "J'ai envoyé le paiement",
   "subscription.sending": "Envoi en cours…",
   "subscription.resendBtn": "Notifier à nouveau",
@@ -5658,15 +5721,17 @@ const translations = {
   "account.connectedNotVerified": "Conectado, sin verificar",
   "account.notConnected": "No conectado",
   "subscription.title": "Cambiar a suscripción",
-  "subscription.desc": "Elige un plan, envía el pago al IBAN de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
+  "subscription.desc": "Elige un plan, envía el pago en USDT a la dirección de billetera de abajo y haz clic en “He enviado el pago” — nuestro equipo verificará tu pago y activará tu cuenta lo antes posible.",
   "subscription.planMonthlyName": "Suscripción mensual",
   "subscription.planMonthlyPrice": "50 USD",
   "subscription.planAnnualName": "Suscripción anual",
   "subscription.planAnnualPrice": "500 USD",
   "subscription.selectedPlanLabel": "Plan seleccionado:",
-  "subscription.ibanLabel": "IBAN:",
-  "subscription.recipientLabel": "Beneficiario:",
-  "subscription.usernameNote": "Incluir tu nombre de usuario (<b>__USERNAME__</b>) en el concepto del pago agiliza la verificación.",
+  "subscription.networkLabel": "Red:",
+  "subscription.addressLabel": "Dirección de billetera USDT:",
+  "subscription.copyBtn": "📋 Copiar dirección",
+  "subscription.copiedMsg": "¡Copiado!",
+  "subscription.usdtWarning": "Envía USDT solo a través de la red indicada arriba. Enviar un token diferente o usar una red distinta puede provocar la pérdida permanente de los fondos.",
   "subscription.paySentBtn": "He enviado el pago",
   "subscription.sending": "Enviando…",
   "subscription.resendBtn": "Notificar de nuevo",
@@ -7850,7 +7915,7 @@ class Handler(BaseHTTPRequestHandler):
                 if path.startswith('/api/'):
                     self._send_json({'error': 'subscription required', 'subscription_status': 'expired'}, status=402); return
                 html = (TRIAL_EXPIRED_HTML.replace('__USERNAME__', user)
-                        .replace('__IBAN__', SUBSCRIPTION_IBAN).replace('__IBAN_HOLDER__', SUBSCRIPTION_IBAN_HOLDER))
+                        .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
                 self._send_html(html); return
 
         if path=='/admin':
@@ -7872,7 +7937,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(BACKTEST_HTML); return
 
         if path=='/account':
-            self._send_html(ACCOUNT_HTML.replace('__USERNAME__', user)); return
+            html=(ACCOUNT_HTML.replace('__USERNAME__', user)
+                  .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
+            self._send_html(html); return
 
         if path=='/trades':
             self._send_html(TRADES_HTML); return
@@ -8066,7 +8133,7 @@ class Handler(BaseHTTPRequestHandler):
             summary['live_trading_enabled']=bool((auth.get_user(user) or {}).get('live_trading_enabled'))
             body=json.dumps(summary,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         html=(HTML.replace('__USERNAME__', self._current_user() or '')
-              .replace('__IBAN__', SUBSCRIPTION_IBAN).replace('__IBAN_HOLDER__', SUBSCRIPTION_IBAN_HOLDER))
+              .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
         body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
 
     # -- auth / account POST routes ---------------------------------------
