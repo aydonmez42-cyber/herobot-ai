@@ -5924,7 +5924,8 @@ function renderWatchlistTable(){
     const p=statusCache.position;
     const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
     const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
-    rowsHtml+=`<tr class="row-clickable" onclick="goToSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td></td></tr>`;
+    const mainCloseBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_ETHUSDT" onclick="event.stopPropagation();closePosition('ETHUSDT',true)">${t('watchlist.closeBtn')}</button>`:'';
+    rowsHtml+=`<tr class="row-clickable" onclick="goToSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td>${mainCloseBtn}</td></tr>`;
   }
 
   rowsHtml+=items.map(x=>{
@@ -5939,7 +5940,8 @@ function renderWatchlistTable(){
     }
     const added=(x.added_at||'').replace('T',' ').slice(0,16);
     const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
-    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td><button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
+    const closeBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_${x.symbol}" onclick="event.stopPropagation();closePosition('${x.symbol}',false)">${t('watchlist.closeBtn')}</button> `:'';
+    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
   }).join('');
 
   document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
@@ -5996,6 +5998,10 @@ const translations = {
   "watchlist.noPosition": "no position",
   "watchlist.watched": "watched",
   "watchlist.removeBtn": "Remove",
+  "watchlist.closeBtn": "Close Position",
+  "watchlist.closeConfirm": "Close this position now at the current market price? This cannot be undone.",
+  "watchlist.closing": "Closing…",
+  "watchlist.closeError": "Could not close the position. Please try again.",
   "market.binance": "Binance",
   "market.bist": "Borsa Istanbul",
   "market.usStock": "US Stock",
@@ -6039,6 +6045,10 @@ const translations = {
   "watchlist.noPosition": "pozisyon yok",
   "watchlist.watched": "izleniyor",
   "watchlist.removeBtn": "Kaldır",
+  "watchlist.closeBtn": "Pozisyonu Kapat",
+  "watchlist.closeConfirm": "Bu pozisyon şu anki piyasa fiyatından hemen kapatılsın mı? Bu işlem geri alınamaz.",
+  "watchlist.closing": "Kapatılıyor…",
+  "watchlist.closeError": "Pozisyon kapatılamadı. Lütfen tekrar deneyin.",
   "market.binance": "Binance",
   "market.bist": "Borsa İstanbul",
   "market.usStock": "ABD Hisse",
@@ -6082,6 +6092,10 @@ const translations = {
   "watchlist.noPosition": "无仓位",
   "watchlist.watched": "跟踪中",
   "watchlist.removeBtn": "移除",
+  "watchlist.closeBtn": "平仓",
+  "watchlist.closeConfirm": "现在按当前市场价格平仓吗？此操作无法撤销。",
+  "watchlist.closing": "平仓中…",
+  "watchlist.closeError": "平仓失败，请重试。",
   "market.binance": "Binance",
   "market.bist": "伊斯坦布尔交易所",
   "market.usStock": "美股",
@@ -6125,6 +6139,10 @@ const translations = {
   "watchlist.noPosition": "keine Position",
   "watchlist.watched": "beobachtet",
   "watchlist.removeBtn": "Entfernen",
+  "watchlist.closeBtn": "Position schließen",
+  "watchlist.closeConfirm": "Diese Position jetzt zum aktuellen Marktpreis schließen? Dies kann nicht rückgängig gemacht werden.",
+  "watchlist.closing": "Wird geschlossen…",
+  "watchlist.closeError": "Position konnte nicht geschlossen werden. Bitte erneut versuchen.",
   "market.binance": "Binance",
   "market.bist": "Borsa Istanbul",
   "market.usStock": "US-Aktie",
@@ -6168,6 +6186,10 @@ const translations = {
   "watchlist.noPosition": "pas de position",
   "watchlist.watched": "suivi",
   "watchlist.removeBtn": "Retirer",
+  "watchlist.closeBtn": "Clôturer la position",
+  "watchlist.closeConfirm": "Clôturer cette position maintenant au prix du marché actuel ? Cette action est irréversible.",
+  "watchlist.closing": "Clôture en cours…",
+  "watchlist.closeError": "Impossible de clôturer la position. Veuillez réessayer.",
   "market.binance": "Binance",
   "market.bist": "Borsa Istanbul",
   "market.usStock": "Action US",
@@ -6211,6 +6233,10 @@ const translations = {
   "watchlist.noPosition": "sin posición",
   "watchlist.watched": "en seguimiento",
   "watchlist.removeBtn": "Quitar",
+  "watchlist.closeBtn": "Cerrar posición",
+  "watchlist.closeConfirm": "¿Cerrar esta posición ahora al precio de mercado actual? Esta acción no se puede deshacer.",
+  "watchlist.closing": "Cerrando…",
+  "watchlist.closeError": "No se pudo cerrar la posición. Inténtalo de nuevo.",
   "market.binance": "Binance",
   "market.bist": "Borsa Istanbul",
   "market.usStock": "Acción EE. UU.",
@@ -6251,12 +6277,28 @@ function applyTranslation(lang){
 let _initialLang = 'en';
 try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 applyTranslation(_initialLang);
+let isAdmin=false;
 async function checkAdminForReset(){
   try{
     const r=await fetch('/api/account',{cache:'no-store'});
     const d=await r.json();
-    if(d.is_admin) document.getElementById('resetTradesBtn').style.display='inline-block';
+    isAdmin=!!d.is_admin;
+    if(isAdmin) document.getElementById('resetTradesBtn').style.display='inline-block';
+    renderWatchlistTable();
   }catch(e){}
+}
+async function closePosition(symbol, isMain){
+  if(!confirm(t('watchlist.closeConfirm'))) return;
+  const btn=document.getElementById('closeBtn_'+symbol);
+  if(btn){ btn.disabled=true; btn.textContent=t('watchlist.closing'); }
+  try{
+    const r=await fetch('/api/admin/close-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol, main: !!isMain})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error || t('watchlist.closeError')); }
+    await refreshStatus(); await refreshWatchlist();
+  }catch(e){
+    alert(t('watchlist.closeError'));
+  }
 }
 async function resetPaperTrading(){
   const amountStr='$'+Number(__STARTING_EQUITY__).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -8548,6 +8590,51 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'ok': False, 'error': f'Yazma hatası: {e}'}, status=500); return
             print(f'ADMIN | {user} | IMPORT CLOSED TRADES | mode={mode} | +{len(new_rows)} rows | total={len(all_rows)}', flush=True)
             self._send_json({'ok': True, 'rows': len(new_rows), 'total_rows': len(all_rows)}); return
+
+        if path=='/api/admin/close-position':
+            # Manually closes an open PAPER position early, at the latest
+            # known market price, instead of waiting for SL/TP/trailing.
+            # Admin-only: unlike "Kaldır" (which just forgets a watchlist
+            # position's bookkeeping with no further effect), this goes
+            # through the exact same exit_position()/exit_symbol_position()
+            # code path the bot itself uses — it logs a real closed-trade
+            # row, adjusts the shared paper equity, AND (via
+            # live_trading.on_exit_signal inside those functions) mirrors
+            # the close to any user's real Binance position if they have
+            # live trading mirroring turned on for this symbol. That real-
+            # money side effect is exactly why this is admin-gated rather
+            # than open to every logged-in member the way watchlist
+            # add/remove is.
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data = self._read_json_body()
+            symbol = (data.get('symbol') or '').strip().upper()
+            is_main = bool(data.get('main'))
+            if not symbol:
+                self._send_json({'ok': False, 'error': 'Sembol gerekli.'}, status=400); return
+            from datetime import datetime, timezone
+            import paper_trading as pt  # deferred import: paper_trading.py itself imports dashboard.py at module load time, so importing it back at dashboard.py's top level would deadlock on a circular import; importing it lazily here (once the process is already fully up) is safe.
+            state = _load_shared_state(STARTING_EQUITY)
+            now = datetime.now(timezone.utc)
+            try:
+                if is_main:
+                    p = state.get('position')
+                    if not p:
+                        self._send_json({'ok': False, 'error': 'Açık ana motor pozisyonu yok (belki az önce SL/TP ile kapandı).'}, status=400); return
+                    raw_price = f(state.get('market_prices', {}).get(p.get('symbol'), p.get('entry_price')))
+                    pt.exit_position(state, raw_price, 'MANUAL_CLOSE', now)
+                else:
+                    p = (state.get('positions', {}) or {}).get(symbol)
+                    if not p:
+                        self._send_json({'ok': False, 'error': 'Bu sembolde açık pozisyon yok (belki az önce SL/TP ile kapandı).'}, status=400); return
+                    sig = (state.get('watchlist_signals', {}) or {}).get(symbol, {})
+                    raw_price = f(sig.get('price', p.get('entry_price')))
+                    live_eligible = (state.get('watchlist', {}) or {}).get(symbol, {}).get('market') == 'crypto'
+                    pt.exit_symbol_position(state, symbol, raw_price, 'MANUAL_CLOSE', now, live_eligible=live_eligible)
+            except Exception as e:
+                self._send_json({'ok': False, 'error': f'Kapatma hatası: {e}'}, status=500); return
+            print(f'ADMIN | {user} | MANUAL CLOSE POSITION | symbol={symbol} main={is_main}', flush=True)
+            self._send_json({'ok': True}); return
 
         if path=='/api/account/telegram/link-code':
             code, err = auth.create_telegram_link_code(user)
