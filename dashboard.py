@@ -1,4 +1,4 @@
-import csv, json, os, secrets, threading, time
+import csv, io, json, os, secrets, threading, time
 from collections import defaultdict, deque
 import requests
 from http.cookies import SimpleCookie
@@ -7494,6 +7494,17 @@ ADMIN_HTML = r'''<!doctype html>
   <p class="sub">Bu ayarlar, dashboard'da gösterilen ortak paper-trading hesabını etkiler — gerçek kullanıcı paralarını değil. Tarama sonucu "+ Ekle" ile watchlist'e eklenen coinler bu pozisyon büyüklüğüyle işleme girer.</p>
   <div id="watchlistSettingsBox" class="account-notice" style="margin-bottom:24px">Yükleniyor…</div>
 
+  <h1 style="margin-top:28px">Kapanan İşlemler CSV İçe Aktar</h1>
+  <p class="sub">Bir yedekten (ör. Telegram mesajlarından yeniden oluşturulmuş bir CSV) kapanan işlem geçmişini geri yüklemek için kullanın. CSV içeriğini aşağıya yapıştırın (ilk satır başlık satırı olmalı).</p>
+  <div id="importTradesBox" style="margin-bottom:24px">
+    <textarea id="importTradesCsv" placeholder="signal_time,entry_time,exit_time,side,symbol,qty_eth,entry_price,exit_price,atr,sl,tp,trail_active,trail_stop,gross_pnl,fees,net_pnl,reason,equity_after&#10;..." style="width:100%;min-height:160px;font-family:var(--font-m,monospace);font-size:12px;background:var(--panel-2);color:var(--text);border:1px solid var(--border-soft);border-radius:8px;padding:10px"></textarea>
+    <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" type="button" onclick="submitImportClosedTrades('append')">Sona Ekle</button>
+      <button class="btn btn-danger" type="button" onclick="submitImportClosedTrades('replace')">Tüm Dosyanın Yerine Koy</button>
+    </div>
+    <div id="importTradesMsg" style="margin-top:8px;font-size:12.5px"></div>
+  </div>
+
   <table class="admin-table" id="tbl">
     <thead><tr><th>Kullanıcı</th><th>E-posta</th><th>Giriş türü</th><th>Binance</th><th>Durum</th><th>Kalan gün</th><th>Canlı işlem</th><th>Bekleyen ödeme</th><th>İşlem</th><th></th></tr></thead>
     <tbody id="tbody"><tr><td colspan="10">Yükleniyor…</td></tr></tbody>
@@ -7567,6 +7578,27 @@ async function submitPaperEquity(ev){
   if(!d.ok){ alert(d.error||'Kaydedilemedi.'); }
   loadWatchlistSettings();
   return false;
+}
+async function submitImportClosedTrades(mode){
+  const csv=document.getElementById('importTradesCsv').value;
+  if(!csv.trim()){ alert('Lütfen önce CSV içeriğini yapıştırın.'); return; }
+  const warnText = mode==='replace'
+    ? 'Bu, sunucudaki MEVCUT kapanan işlemler dosyasının TAMAMINI silip yerine yapıştırdığınız CSV\'yi koyacak. Bu işlem geri alınamaz. Devam edilsin mi?'
+    : 'Yapıştırdığınız satırlar mevcut kapanan işlemler dosyasının SONUNA eklenecek (mevcut kayıtlar silinmez). Devam edilsin mi?';
+  if(!confirm(warnText)) return;
+  const msg=document.getElementById('importTradesMsg');
+  msg.textContent='Yükleniyor…';
+  try{
+    const r=await fetch('/api/admin/import-closed-trades',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csv, mode})});
+    const d=await r.json();
+    if(d.ok){
+      msg.innerHTML=`<span style="color:var(--bull)">✓ ${d.rows} satır işlendi. Dosyada şimdi toplam ${d.total_rows} kapanan işlem var.</span>`;
+    } else {
+      msg.innerHTML=`<span style="color:var(--bear)">${d.error||'Bilinmeyen hata.'}</span>`;
+    }
+  }catch(e){
+    msg.innerHTML='<span style="color:var(--bear)">Bağlantı hatası, tekrar deneyin.</span>';
+  }
 }
 async function load(){
   const r=await fetch('/api/admin/users',{cache:'no-store'});
@@ -8448,6 +8480,65 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'ok': False, 'error': str(e)}, status=500); return
             print(f'ADMIN | {user} | RESET PAPER TRADING (open positions + equity only, closed-trade history kept) -> equity={STARTING_EQUITY}', flush=True)
             self._send_json({'ok': True, 'equity': STARTING_EQUITY}); return
+
+        if path=='/api/admin/import-closed-trades':
+            # Lets an admin paste a CSV (e.g. one reconstructed from Telegram
+            # trade-exit messages after an accidental data loss) directly
+            # into the browser, instead of needing shell/volume access to
+            # the server's filesystem. mode='replace' overwrites TRADES_FILE
+            # entirely (atomically); mode='append' merges the pasted rows
+            # after whatever is already on disk, unioning column headers so
+            # no column from either side is silently dropped.
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data = self._read_json_body()
+            csv_text = data.get('csv') or ''
+            mode = data.get('mode') or 'append'
+            if mode not in ('append', 'replace'):
+                self._send_json({'ok': False, 'error': 'Geçersiz mod.'}, status=400); return
+            REQUIRED_TRADE_COLUMNS = {
+                'side', 'symbol', 'entry_price', 'exit_price', 'net_pnl',
+                'gross_pnl', 'fees', 'entry_time', 'exit_time', 'equity_after', 'reason',
+            }
+            CANONICAL_TRADE_HEADER = [
+                'signal_time', 'entry_time', 'exit_time', 'side', 'symbol', 'qty_eth',
+                'entry_price', 'exit_price', 'atr', 'sl', 'tp', 'trail_active', 'trail_stop',
+                'gross_pnl', 'fees', 'net_pnl', 'reason', 'equity_after',
+            ]
+            try:
+                new_rows = list(csv.DictReader(io.StringIO(csv_text)))
+            except Exception as e:
+                self._send_json({'ok': False, 'error': f'CSV ayrıştırılamadı: {e}'}, status=400); return
+            if not new_rows:
+                self._send_json({'ok': False, 'error': 'CSV boş görünüyor (başlık satırı + en az bir veri satırı gerekli).'}, status=400); return
+            missing = REQUIRED_TRADE_COLUMNS - set(new_rows[0].keys())
+            if missing:
+                self._send_json({'ok': False, 'error': f'CSV\'de eksik sütun(lar): {", ".join(sorted(missing))}'}, status=400); return
+            try:
+                if mode == 'replace':
+                    all_rows = new_rows
+                else:
+                    existing_rows = []
+                    if os.path.exists(TRADES_FILE):
+                        with open(TRADES_FILE, 'r', encoding='utf-8', newline='') as fh:
+                            existing_rows = list(csv.DictReader(fh))
+                    all_rows = existing_rows + new_rows
+                header = list(CANONICAL_TRADE_HEADER)
+                for row in all_rows:
+                    for k in row.keys():
+                        if k not in header:
+                            header.append(k)
+                tmp_path = TRADES_FILE + '.tmp'
+                with open(tmp_path, 'w', encoding='utf-8', newline='') as fh:
+                    w = csv.DictWriter(fh, fieldnames=header, restval='')
+                    w.writeheader()
+                    for row in all_rows:
+                        w.writerow(row)
+                os.replace(tmp_path, TRADES_FILE)
+            except Exception as e:
+                self._send_json({'ok': False, 'error': f'Yazma hatası: {e}'}, status=500); return
+            print(f'ADMIN | {user} | IMPORT CLOSED TRADES | mode={mode} | +{len(new_rows)} rows | total={len(all_rows)}', flush=True)
+            self._send_json({'ok': True, 'rows': len(new_rows), 'total_rows': len(all_rows)}); return
 
         if path=='/api/account/telegram/link-code':
             code, err = auth.create_telegram_link_code(user)
