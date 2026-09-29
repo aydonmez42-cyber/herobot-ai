@@ -7665,6 +7665,15 @@ def status():
         for k in ['entry_price','exit_price','net_pnl','gross_pnl','fees','equity_after','qty_eth']:
             if k in t:t[k]=f(t[k])
         closed.append(t)
+    # Sort chronologically (by exit_time, falling back to entry_time) rather
+    # than trusting on-disk row order. Normally the bot only ever appends
+    # trades as they close, so file order already IS chronological order —
+    # but an admin-imported/restored CSV (see /api/admin/import-closed-trades)
+    # can land older historical rows after newer ones already on disk. Without
+    # this sort, start_date, the max-drawdown equity-curve walk, and the
+    # "recent trades" history slice below would all silently use the wrong
+    # order for a restored account.
+    closed.sort(key=lambda t: t.get('exit_time') or t.get('entry_time') or '')
     wins=sum(1 for t in closed if t.get('net_pnl',0)>0); losses=sum(1 for t in closed if t.get('net_pnl',0)<0)
     gross_win=sum(t['net_pnl'] for t in closed if t['net_pnl']>0); gross_loss=abs(sum(t['net_pnl'] for t in closed if t['net_pnl']<0))
     pf=gross_win/gross_loss if gross_loss else (999.0 if gross_win else 0.0)
