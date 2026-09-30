@@ -58,8 +58,15 @@ SHORT_ENTRY_MIN_SCORE = 8    # SHORT threshold — stricter: backtest showed SHO
 ATR_LENGTH = 14
 ATR_SL_MULTIPLIER = 3.5
 ATR_SHORT_SL_MULTIPLIER = 1.35       # TEST 1: Initial stop distance = ATR * 2.0
-ATR_LONG_TP_MULTIPLIER = 4.0   # TEST 32: Long TP = ATR * 4.0
-ATR_SHORT_TP_MULTIPLIER = 3.0  # TEST 32: Short TP = ATR * 3.0
+ATR_LONG_TP_MULTIPLIER = 2.2   # TEST 33 (2026-09-30): was 4.0 — most winners were
+                                # exiting via ATR_TRAILING_SL well before reaching
+                                # TP (giving back ~ATR_TRAIL_MULTIPLIER of profit
+                                # from the peak on the way there). Backtest on
+                                # 2020-2021 ETH/BTC data showed pulling TP in to
+                                # match ATR_TRAIL_ACTIVATION (2.2) let far more
+                                # trades close at full TP and improved profit
+                                # factor and net PnL on both symbols.
+ATR_SHORT_TP_MULTIPLIER = 2.2  # TEST 33: was 3.0, same reasoning as the long side.
 ATR_TRAIL_ACTIVATION = 2.2    # TEST 1: Activate trailing after +2 ATR unrealized
 ATR_TRAIL_MULTIPLIER = 1.3    # was 2.0 — at 2.0 the trail sat only 0.2 ATR above
                                 # entry the instant it activated (2.2-2.0), so a
