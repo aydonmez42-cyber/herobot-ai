@@ -755,7 +755,7 @@ async function submitAskAdmin(){
 
 HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>A&amp;I Trading Terminal</title>
+<title>Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -969,7 +969,7 @@ th.sort-active{color:var(--accent)}
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub">Welcome to AI Trading Platform</div>
     </div>
   </div>
@@ -2921,13 +2921,13 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 
 LOGIN_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Giriş — A&amp;I Trading Terminal</title>
+<title>Giriş — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
-  <h1>A&amp;I Trading Terminal</h1>
+  <h1>Herobot-AI Trading Platform</h1>
   <p class="sub">Devam etmek için giriş yapın</p>
   <div class="auth-error" id="err"></div>
   __AUTH0_LOGIN_BLOCK__
@@ -2964,14 +2964,14 @@ async function doLogin(ev){
 
 REGISTER_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kayıt Ol — A&amp;I Trading Terminal</title>
+<title>Kayıt Ol — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 ''' + _AUTH_STYLE + r'''</head>
 <body>
 <div class="auth-page"><div class="auth-card">
   <h1>Hesap oluştur</h1>
-  <p class="sub">A&amp;I Trading Terminal'e katılın — __TRIAL_DAYS__ gün ücretsiz deneme</p>
+  <p class="sub">Herobot-AI Trading Platform'a katılın — __TRIAL_DAYS__ gün ücretsiz deneme</p>
   <div class="auth-error" id="err"></div>
   __AUTH0_LOGIN_BLOCK__
   <form onsubmit="return doRegister(event)">
@@ -3105,7 +3105,7 @@ AUTH0_LOGIN_BLOCK = r'''<a href="/auth0/login" style="display:block;text-align:c
 
 TRIAL_EXPIRED_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Deneme süresi doldu — A&amp;I Trading Terminal</title>
+<title>Deneme süresi doldu — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 ''' + _AUTH_STYLE + r'''</head>
@@ -3221,7 +3221,7 @@ th.sort-active{color:var(--accent)}
 
 SCANNER_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tarama — A&amp;I Trading Terminal</title>
+<title>Tarama — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -3232,7 +3232,7 @@ SCANNER_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="panel.scanner">Scan</div>
     </div>
   </div>
@@ -3994,7 +3994,7 @@ applyTranslation(_initialLang);
 # verbatim below) so wording stays identical between the two pages.
 FAQ_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FAQ — A&amp;I Trading Terminal</title>
+<title>FAQ — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -4005,7 +4005,7 @@ FAQ_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="faq.title">FAQ — Frequently Asked Questions</div>
     </div>
   </div>
@@ -4253,7 +4253,7 @@ applyTranslation(_initialLang);
 # live data / JS fetch calls: the numbers are baked into the page.
 BACKTEST_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Backtest — A&amp;I Trading Terminal</title>
+<title>Backtest — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -4264,7 +4264,7 @@ BACKTEST_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="backtest.title">Backtest Results</div>
     </div>
   </div>
@@ -4816,7 +4816,7 @@ _ACCOUNT_STYLE_EXTRA = r'''
 
 ACCOUNT_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hesabım — A&amp;I Trading Terminal</title>
+<title>Hesabım — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -4827,7 +4827,7 @@ ACCOUNT_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="account.title">My Account</div>
     </div>
   </div>
@@ -5847,7 +5847,7 @@ table.datatable td.wrap-cell{white-space:normal;font-family:var(--font-d);color:
 
 TRADES_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Deneme İşlemleri — A&amp;I Trading Terminal</title>
+<title>Deneme İşlemleri — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -5858,7 +5858,7 @@ TRADES_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="panel.paperTrades">Paper Trades</div>
     </div>
   </div>
@@ -6337,7 +6337,7 @@ _CLOSED_STYLE_EXTRA = r'''
 
 CLOSED_TRADES_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kapanan İşlemler — A&amp;I Trading Terminal</title>
+<title>Kapanan İşlemler — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -6348,7 +6348,7 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="panel.closedTrades">Closed Trades</div>
     </div>
   </div>
@@ -6700,7 +6700,7 @@ refreshHistory(); setInterval(refreshHistory,5000);
 
 LIVE_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Canlı İşlemler — A&amp;I Trading Terminal</title>
+<title>Canlı İşlemler — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -6711,7 +6711,7 @@ LIVE_HTML = r'''<!doctype html>
   <div class="brand">
     <span class="brand-mark"></span>
     <div>
-      <div class="brand-name">A&amp;I Trading Terminal</div>
+      <div class="brand-name">Herobot-AI Trading Platform</div>
       <div class="brand-sub" data-i18n="panel.liveTrading">Live Trading</div>
     </div>
   </div>
@@ -7520,7 +7520,7 @@ table.admin-table select{background:var(--bg-elev);color:var(--text);border:1px 
 
 ADMIN_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yönetim — A&amp;I Trading Terminal</title>
+<title>Yönetim — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 ''' + _AUTH_STYLE + _ADMIN_STYLE_EXTRA + r'''</head>
