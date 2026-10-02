@@ -365,8 +365,8 @@ def ack_risk(username):
 # validates the settings and answers "is this user currently eligible to
 # have new live orders placed for them".
 # ---------------------------------------------------------------------------
-LIVE_MAX_LEVERAGE_CAP = 10
-LIVE_MAX_POSITIONS_CAP = 5
+LIVE_MAX_LEVERAGE_CAP = 50
+LIVE_MAX_POSITIONS_CAP = 10
 
 KILL_SWITCH_FILE = os.environ.get(
     'KILL_SWITCH_FILE',
