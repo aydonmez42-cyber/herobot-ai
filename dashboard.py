@@ -8439,6 +8439,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'ok': False, 'error': 'Deneme süreniz doldu. Devam etmek için aboneliğinizi aktive etmemiz gerekiyor.'}, status=402); return
             data=self._read_json_body()
             ok, err = auth.set_live_trading_enabled(user, bool(data.get('enabled')))
+            if ok:
+                # Toggling live trading on/off starts a clean slate: drop any stale
+                # last_error left over from an earlier failed order. Best-effort and
+                # guarded so an older live_trading.py without this helper still works.
+                try:
+                    clear_fn = getattr(live_trading, 'clear_last_error', None)
+                    if clear_fn: clear_fn(user)
+                except Exception as e:
+                    print(f'LIVE | CLEAR LAST ERROR FAILED | {user} | {type(e).__name__}: {e}', flush=True)
             self._send_json({'ok': ok, 'error': err}); return
 
         if path=='/api/live/close-position':
