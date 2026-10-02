@@ -128,8 +128,8 @@ USE_VOLATILE_FILTER = True
 # Watchlist — symbols manually added from the scanner ("+ Ekle"). Same
 # strategy/indicators as the main ETH engine, but sized in USD notional
 # instead of a fixed coin quantity, since altcoin prices vary hugely.
-WATCHLIST_POSITION_USD = 250.0
-WATCHLIST_MAX_SYMBOLS = 10
+WATCHLIST_POSITION_USD = 1000.0
+WATCHLIST_MAX_SYMBOLS = 100
 
 # AI Trade Analyst — read-only, periodic LLM-written report on the bot's own
 # closed-trade history. It NEVER opens/closes positions and NEVER changes any
