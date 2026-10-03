@@ -6871,9 +6871,37 @@ function renderAccount(a){
         ${a.binance_connected?'<button class="btn" type="button" onclick="disconnectBinance()">'+t('account.removeConnectionBtn')+'</button>':''}
       </div>
     </form>
+    ${renderStaticIpBox()}
     ${notice}
   `;
   renderLivePanel(a);
+}
+
+const BOT_STATIC_IPS=['208.77.244.241','152.55.184.240','152.55.184.241'];
+const STATIC_IP_TEXT={
+  tr:{title:'Statik IP (Binance API kısıtlaması)',desc:'Binance API anahtarınızı oluştururken “Erişimi yalnızca güvenilir IP’lerle sınırla” seçeneğini işaretleyin ve aşağıdaki üç IP adresini de ekleyin.',copy:'Kopyala',copied:'Kopyalandı ✓',copyAll:'Tümünü kopyala'},
+  en:{title:'Static IPs (Binance API restriction)',desc:'When creating your Binance API key, choose “Restrict access to trusted IPs only” and add all three IP addresses below.',copy:'Copy',copied:'Copied ✓',copyAll:'Copy all'},
+  de:{title:'Statische IPs (Binance-API-Beschränkung)',desc:'Wählen Sie beim Erstellen Ihres Binance-API-Schlüssels „Zugriff nur auf vertrauenswürdige IPs beschränken“ und tragen Sie alle drei IP-Adressen unten ein.',copy:'Kopieren',copied:'Kopiert ✓',copyAll:'Alle kopieren'},
+  fr:{title:'IP statiques (restriction API Binance)',desc:'Lors de la création de votre clé API Binance, choisissez « Restreindre l’accès aux IP de confiance » et ajoutez les trois adresses IP ci-dessous.',copy:'Copier',copied:'Copié ✓',copyAll:'Tout copier'},
+  es:{title:'IP estáticas (restricción de la API de Binance)',desc:'Al crear su clave API de Binance, elija «Restringir el acceso solo a IP de confianza» y añada las tres direcciones IP de abajo.',copy:'Copiar',copied:'Copiado ✓',copyAll:'Copiar todo'},
+  zh:{title:'静态 IP（币安 API 限制）',desc:'创建币安 API 密钥时，请选择“仅限受信任的 IP 访问”，并添加下面全部三个 IP 地址。',copy:'复制',copied:'已复制 ✓',copyAll:'全部复制'}
+};
+function staticIpT(){ return STATIC_IP_TEXT[currentLang] || STATIC_IP_TEXT.en; }
+function renderStaticIpBox(){
+  const x=staticIpT();
+  const rows=BOT_STATIC_IPS.map(ip=>`<div class="account-row" style="justify-content:space-between;margin-top:6px"><code style="font-size:13px">${ip}</code><button class="btn" type="button" onclick="copyStaticIp('${ip}',this)">${x.copy}</button></div>`).join('');
+  return `<div class="account-notice" id="staticIpBox" style="margin-top:14px"><b>${x.title}</b><div style="margin-top:6px">${x.desc}</div>${rows}<div class="account-row" style="margin-top:10px"><button class="btn" type="button" onclick="copyStaticIp(BOT_STATIC_IPS.join(', '),this)">${x.copyAll}</button></div></div>`;
+}
+function copyStaticIp(text,btn){
+  const x=staticIpT(), old=btn.textContent;
+  const done=()=>{btn.textContent=x.copied;setTimeout(()=>{btn.textContent=old;},1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>{});
+  }else{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){}
+    document.body.removeChild(ta);
+  }
 }
 
 function renderLivePanel(a){
@@ -6914,8 +6942,8 @@ function renderLivePanel(a){
         <input type="number" step="0.01" min="0" id="liveDailyLossLimit" value="${a.live_daily_loss_limit_usd||''}" placeholder="${t('live.dailyLossLimitPlaceholder')}">
       </div>
       <div>
-        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||5)}</label>
-        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||5}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
+        <label>${t('live.maxPositionsLabel').replace('{n}',a.live_max_positions_cap||10)}</label>
+        <input type="number" step="1" min="1" max="${a.live_max_positions_cap||10}" id="liveMaxPositions" value="${a.live_max_open_positions||''}" placeholder="${t('live.maxPositionsPlaceholder')}">
       </div>
       <div class="account-row">
         <button class="btn" type="submit">${t('live.saveSettingsBtn')}</button>
