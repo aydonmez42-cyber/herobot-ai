@@ -1,70 +1,82 @@
 """
-Transactional email — currently only "şifremi unuttum" reset links.
+Transactional email — şifre sıfırlama, admin soruları, deneme süresi ve
+abonelik ödeme bildirimleri.
 
-Uses plain SMTP (stdlib smtplib), not a vendor SDK, so it works with any
-provider (Gmail app password, SendGrid/Mailgun/Postmark SMTP relay, a
-company mail server, etc.) purely through environment variables:
+Resend HTTP API kullanır (SMTP DEĞİL). Railway SMTP portlarını engelleyebildiği
+için HTTP tabanlı gönderim daha güvenilirdir. Ek paket gerekmez, yalnızca
+standart kütüphane kullanılır. Ayarlar ortam değişkenleriyle yapılır:
 
-  SMTP_HOST        e.g. smtp.gmail.com / smtp.sendgrid.net
-  SMTP_PORT        default 587 (STARTTLS). Use 465 for implicit TLS.
-  SMTP_USER        SMTP auth username
-  SMTP_PASSWORD    SMTP auth password / app password / API key
-  SMTP_FROM        "From" address shown to the recipient (default: SMTP_USER)
-  SMTP_FROM_NAME   display name for the From header (default: "Herobot-ai")
-  SMTP_USE_SSL     "true" -> connect with implicit TLS (smtplib.SMTP_SSL)
-                    instead of plaintext-then-STARTTLS. Default: false.
+  RESEND_API_KEY      Resend panelinden alınan API anahtarı (zorunlu)
+  RESEND_FROM         Gönderen. Varsayılan: "Herobot-ai <onboarding@resend.dev>"
+                      (kendi domaininizi Resend'de doğruladıysanız
+                      "Herobot-ai <info@alanadiniz.com>" yapın)
+  ADMIN_NOTIFY_EMAIL  Admin bildirimlerinin gideceği adres. Yoksa NOTIFY_EMAIL,
+                      o da yoksa herobotai.int@gmail.com kullanılır.
+  TRIAL_DAYS          Ücretsiz deneme günü (varsayılan 7)
 
-If SMTP_HOST/SMTP_USER/SMTP_PASSWORD aren't set, sending is soft-disabled:
-callers get (False, 'not configured') instead of a crash, so a missing mail
-setup can never take down the login/reset flow or any other route.
+NOT: Resend'de domain doğrulanmadıysa, onboarding@resend.dev ile yalnızca
+Resend hesabını açtığınız e-posta adresine mail gönderilebilir. Kullanıcılara
+giden mailler (ör. şifre sıfırlama) için domain doğrulaması gerekir.
+
+RESEND_API_KEY tanımlı değilse gönderim devre dışı kalır: çağıranlar
+(False, 'not configured') alır, uygulama çökmez.
 """
+import json
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.utils import formataddr
+import urllib.error
+import urllib.request
 
-SMTP_HOST = os.environ.get('SMTP_HOST', '').strip()
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USER = os.environ.get('SMTP_USER', '').strip()
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '').strip()
-SMTP_FROM = (os.environ.get('SMTP_FROM', '').strip() or SMTP_USER)
-SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'Herobot-ai').strip()
-SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', '').strip().lower() in ('1', 'true', 'yes')
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
+RESEND_FROM = os.environ.get(
+    'RESEND_FROM', 'Herobot-ai <onboarding@resend.dev>').strip()
 
 # Shared inbox that gets: trial-expiry notices, "Admin'e soru sor" questions,
-# and "tutarı gönderdim" subscription-payment notices. Overridable via env
-# var in case the business address ever changes.
-ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', 'herobotai.int@gmail.com').strip()
+# and "tutarı gönderdim" subscription-payment notices.
+ADMIN_NOTIFY_EMAIL = (os.environ.get('ADMIN_NOTIFY_EMAIL')
+                      or os.environ.get('NOTIFY_EMAIL')
+                      or 'herobotai.int@gmail.com').strip()
 # Mirrors auth.TRIAL_DAYS (same env var) — kept independent rather than
 # imported so this module has no dependency on auth.py.
 TRIAL_DAYS = int(os.environ.get('TRIAL_DAYS', '7'))
 
-EMAIL_ENABLED = bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD and SMTP_FROM)
+EMAIL_ENABLED = bool(RESEND_API_KEY)
 
 
 def _send(to_email, subject, body_text, reply_to=None):
+    """Resend API ile düz metin mail gönderir. (başarılı_mı, hata_metni) döner."""
     if not EMAIL_ENABLED:
+        print('MAIL | RESEND_API_KEY tanimli degil', flush=True)
         return False, 'not configured'
-    msg = MIMEText(body_text, 'plain', 'utf-8')
-    msg['Subject'] = subject
-    msg['From'] = formataddr((SMTP_FROM_NAME, SMTP_FROM))
-    msg['To'] = to_email
+
+    payload = {
+        'from': RESEND_FROM,
+        'to': [to_email],
+        'subject': subject,
+        'text': body_text,
+    }
     if reply_to:
-        msg['Reply-To'] = reply_to
+        payload['reply_to'] = reply_to
+
+    req = urllib.request.Request(
+        'https://api.resend.com/emails',
+        data=json.dumps(payload).encode('utf-8'),
+        headers={
+            'Authorization': f'Bearer {RESEND_API_KEY}',
+            'Content-Type': 'application/json',
+            'User-Agent': 'herobot-ai/1.0',
+        },
+        method='POST',
+    )
     try:
-        if SMTP_USE_SSL:
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15)
-        else:
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15)
-        try:
-            if not SMTP_USE_SSL:
-                server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, [to_email], msg.as_string())
-        finally:
-            server.quit()
-        return True, None
+        with urllib.request.urlopen(req, timeout=15):
+            print(f'MAIL | gonderildi -> {to_email} | {subject}', flush=True)
+            return True, None
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode('utf-8', errors='replace')
+        print(f'MAIL | Resend hata {e.code}: {detail}', flush=True)
+        return False, f'HTTP {e.code}: {detail}'
     except Exception as e:
+        print(f'MAIL | istisna: {type(e).__name__}: {e}', flush=True)
         return False, f'{type(e).__name__}: {e}'
 
 
@@ -121,14 +133,14 @@ def send_admin_question(username, user_email, message):
 def send_subscription_payment_notice(username, user_email, plan_label, amount_usd):
     """"Tutarı gönderdim" butonuna basıldığında ADMIN_NOTIFY_EMAIL'e gider —
     gerçek para transferini asla otomatik doğrulamaz, sadece admin'e
-    "şu kullanıcı şu tutarı gönderdiğini bildirdi, banka hesabını kontrol et"
+    "şu kullanıcı şu tutarı gönderdiğini bildirdi, cüzdanını kontrol et"
     der. Hesabı "aktif" yapmak admin panelinden hâlâ admin'in elindedir."""
     subject = f'Herobot-ai — Abonelik ödeme bildirimi: {username} ({plan_label}, {amount_usd} USD)'
     body = (
         f'"{username}" kullanıcısı ({user_email or "e-posta belirtilmemiş"}) '
-        f'{plan_label} abonelik bedeli olan {amount_usd} USD tutarını IBAN\'a '
+        f'{plan_label} abonelik bedeli olan {amount_usd} USD tutarını '
         f'gönderdiğini bildirdi.\n\n'
-        f'Lütfen banka hesabınızı kontrol edin ve tutar/açıklama eşleştiğinde '
+        f'Lütfen cüzdanınızı/hesabınızı kontrol edin ve tutar eşleştiğinde '
         f'admin panelinden bu kullanıcıyı "Aktif (ödedi)" olarak işaretleyin.\n\n'
         f'Not: Bu bildirim yalnızca kullanıcının beyanıdır — ödeme sistem '
         f'tarafından otomatik doğrulanmaz.\n\n'
