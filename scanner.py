@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 import pandas as pd
 import requests
 
+import binance_guard
+binance_guard.install()  # Binance'e giden TUM istekleri (bu process'te) hiz sinirina ve 429/418 beklemesine tabi tutar
+
 import config as cfg
 from indicators import add_indicators, atr
 from strategy import long_signal, short_signal, long_conditions, short_conditions
@@ -16,7 +19,8 @@ KLINES_URL = BASE_URL + '/fapi/v1/klines'
 EXCHANGE_INFO_URL = BASE_URL + '/fapi/v1/exchangeInfo'
 TICKER_URL = BASE_URL + '/fapi/v1/ticker/24hr'
 
-SCANNER_WORKERS = int(os.environ.get('SCANNER_WORKERS', '8'))
+# Hiz sinirini binance_guard uyguladigi icin worker sayisi dusuruldu (8 -> 3).
+SCANNER_WORKERS = int(os.environ.get('SCANNER_WORKERS', '3'))
 SCANNER_CACHE_SECONDS = int(os.environ.get('SCANNER_CACHE_SECONDS', '900'))
 SCANNER_KLINE_LIMIT = int(os.environ.get('SCANNER_KLINE_LIMIT', '280'))
 SCANNER_DAILY_LIMIT = int(os.environ.get('SCANNER_DAILY_LIMIT', '400'))
@@ -32,6 +36,14 @@ _state = {
     'results': [],
     'last_scan_candle': None,
 }
+
+# Mum onbellegi: (sembol, aralik, limit) -> (DataFrame, gecerlilik_bitis_epoch)
+# Indikatorler yalnizca KAPANMIS mumlardan hesaplanir. Son satir (olusmakta olan
+# mum) kapaninca yeni bir mum olusana kadar kapanmis mumlar degismez; bu yuzden
+# veri o ana kadar yeniden indirilmez. 4 saatlik mum icin 15 dakikalik her
+# taramada ~500 istek yerine 4 saatte bir ~500 istek atilir.
+_kline_cache = {}
+_cache_lock = threading.Lock()
 
 
 def _get_json(url, params=None, timeout=20):
@@ -75,10 +87,29 @@ def fetch_klines(symbol, interval='4h', limit=280):
     return df
 
 
+def fetch_klines_cached(symbol, interval='4h', limit=280):
+    """fetch_klines ile ayni sonucu verir; olusmakta olan mum kapanana kadar
+    ayni DataFrame'i onbellekten dondurur (kapanmis mumlar degismez)."""
+    key = (symbol, interval, limit)
+    now = time.time()
+    with _cache_lock:
+        hit = _kline_cache.get(key)
+    if hit and now < hit[1]:
+        return hit[0]
+    df = fetch_klines(symbol, interval, limit)
+    if len(df):
+        valid_until = df['close_time'].iloc[-1].timestamp() + 2  # kapanisin 2 sn sonrasi
+    else:
+        valid_until = now + 60
+    with _cache_lock:
+        _kline_cache[key] = (df, valid_until)
+    return df
+
+
 def daily_volatile(symbol):
     """Use only fully closed daily bars for the FINAL V1 volatility veto."""
     try:
-        df = fetch_klines(symbol, '1d', SCANNER_DAILY_LIMIT)
+        df = fetch_klines_cached(symbol, '1d', SCANNER_DAILY_LIMIT)
         if len(df) < cfg.VOLATILITY_PERCENTILE_LENGTH + cfg.VOLATILITY_ATR_LENGTH + 2:
             return False, None
         df = df.iloc[:-1].copy()  # forming day excluded
@@ -122,7 +153,7 @@ def _reason_map(row):
 
 def scan_symbol(symbol, ticker):
     try:
-        df = fetch_klines(symbol, '4h', SCANNER_KLINE_LIMIT)
+        df = fetch_klines_cached(symbol, '4h', SCANNER_KLINE_LIMIT)
         if len(df) < 250:
             return {'symbol': symbol, 'signal': 'DATA', 'reason': 'Yetersiz 4H veri'}
         closed = df.iloc[:-1].copy()
@@ -186,13 +217,23 @@ def _scan_worker(symbols):
     with _lock:
         _state.update(status='SCANNING', started_at=datetime.now(timezone.utc).isoformat(), finished_at=None,
                       last_error=None, symbols_total=len(symbols), symbols_done=0)
+        # Onceki basarili sonuclar: bu taramada hata alan semboller icin korunur,
+        # boylece 429/ban yuzunden tablo ERROR satirlariyla dolup bosalmaz.
+        prev = {r['symbol']: r for r in _state.get('results', []) if r.get('symbol')}
     try:
         tickers = get_tickers()
         results = []
+        errors = 0
         with ThreadPoolExecutor(max_workers=SCANNER_WORKERS) as ex:
             futs = {ex.submit(scan_symbol, s, tickers.get(s, {})): s for s in symbols}
             for fut in as_completed(futs):
-                results.append(fut.result())
+                r = fut.result()
+                if r.get('signal') == 'ERROR':
+                    errors += 1
+                    old = prev.get(r.get('symbol'))
+                    if old and old.get('signal') != 'ERROR':
+                        r = old
+                results.append(r)
                 with _lock:
                     _state['symbols_done'] += 1
         results.sort(key=lambda x: (0 if x.get('signal') == 'LONG' else 1 if x.get('signal') == 'SHORT' else 2, -(x.get('volume') or 0)))
@@ -202,6 +243,9 @@ def _scan_worker(symbols):
             _state['status'] = 'READY'
             _state['finished_at'] = datetime.now(timezone.utc).isoformat()
             _state['last_scan_candle'] = max(candle_times) if candle_times else None
+            if binance_guard.in_cooldown():
+                _state['last_error'] = f'Binance bekleme suresi aktif ({binance_guard.cooldown_remaining()} sn); eski sonuclar korundu'
+        print(f'SCANNER | tarama bitti | {len(symbols)} sembol | hata={errors}', flush=True)
     except Exception as e:
         with _lock:
             _state['status'] = 'ERROR'
@@ -220,6 +264,9 @@ def start_scan(force=False):
                     return False
             except Exception:
                 pass
+    # Binance bekleme suresindeyken yeni tarama baslatma (ban uzamasin)
+    if binance_guard.in_cooldown():
+        return False
     symbols = get_symbols()
     threading.Thread(target=_scan_worker, args=(symbols,), daemon=True).start()
     return True
