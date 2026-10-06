@@ -6803,7 +6803,7 @@ function renderMyLive(d){
 
   document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
     const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
-    return `<tr><td><b>${p.symbol}</b></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
+    return `<tr><td><a href="/?symbol=${encodeURIComponent(p.symbol)}" style="color:var(--accent);text-decoration:none" title="${t('panel.openPosition')}"><b>${p.symbol}</b> ↗</a></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
       +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
       +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
       +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
