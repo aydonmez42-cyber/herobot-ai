@@ -1,4 +1,4 @@
-import csv, io, json, os, secrets, threading, time
+import csv, io, json, os, re, secrets, threading, time
 from collections import defaultdict, deque
 import requests
 from http.cookies import SimpleCookie
@@ -6439,12 +6439,21 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
 
 <section class="panel">
   <div class="panel-head"><h2 data-i18n="panel.closedTrades">Closed Trades</h2></div>
+  <div id="ctFilter" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:4px 2px 12px">
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px"><span id="ctLblFrom">From</span><input type="date" id="ctFrom" style="background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:6px;padding:6px 8px"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px"><span id="ctLblTo">To</span><input type="date" id="ctTo" style="background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:6px;padding:6px 8px"></label>
+    <label style="display:flex;flex-direction:column;gap:4px;font-size:12px"><span id="ctLblSize">Per page</span><select id="ctSize" style="background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:6px;padding:6px 8px"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label>
+    <button class="btn" type="button" id="ctApply" onclick="ctApplyFilter()">Filter</button>
+    <button class="btn" type="button" id="ctClear" onclick="ctClearFilter()">Clear</button>
+  </div>
+  <div id="ctInfo" class="text-faint" style="font-size:12px;padding:0 2px 10px;line-height:1.5"></div>
   <div class="table-scroll">
     <table class="datatable">
       <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
       <tbody id="history"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
+  <div id="ctPager" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:12px 0 2px"></div>
 </section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
@@ -6487,6 +6496,7 @@ async function runAiAnalysis(){
 let historyCache=null;
 function renderHistory(d){
   historyCache=d;
+  try{ ctRenderChrome(d); }catch(e){}
   document.getElementById('history').innerHTML=(d.history||[]).map(tr=>`<tr><td>${tr.exit_time||'—'}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td><td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td><td class="num ${cls(tr.net_pnl)}"><b>${money(tr.net_pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedTrades')}</td></tr>`;
 }
 function renderClosedSummary(d){
@@ -6501,11 +6511,66 @@ function renderClosedSummary(d){
   if(st.net_closed!=null){ totalPnlEl.textContent=money(st.net_closed); totalPnlEl.className='kpi-value '+cls(st.net_closed); }
   else { totalPnlEl.textContent='—'; totalPnlEl.className='kpi-value'; }
 }
+const CT_TEXT={
+  tr:{from:'Başlangıç',to:'Bitiş',size:'Sayfa başına',filter:'Filtrele',clear:'Temizle',page:'Sayfa',of:'/',total:'toplam',trades:'işlem',range:'Kayıtlı işlem aralığı',period:'Seçili dönem',win:'kârlı',loss:'zararlı',net:'Net K/Z',prev:'‹ Önceki',next:'Sonraki ›',first:'« İlk',last:'Son »'},
+  en:{from:'From',to:'To',size:'Per page',filter:'Filter',clear:'Clear',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades on record',period:'Selected period',win:'wins',loss:'losses',net:'Net P&L',prev:'‹ Prev',next:'Next ›',first:'« First',last:'Last »'},
+  de:{from:'Von',to:'Bis',size:'Pro Seite',filter:'Filtern',clear:'Zurücksetzen',page:'Seite',of:'/',total:'gesamt',trades:'Trades',range:'Gespeicherte Trades',period:'Gewählter Zeitraum',win:'Gewinne',loss:'Verluste',net:'Netto-G/V',prev:'‹ Zurück',next:'Weiter ›',first:'« Erste',last:'Letzte »'},
+  fr:{from:'Du',to:'Au',size:'Par page',filter:'Filtrer',clear:'Effacer',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades enregistrés',period:'Période choisie',win:'gagnants',loss:'perdants',net:'P&L net',prev:'‹ Préc.',next:'Suiv. ›',first:'« Début',last:'Fin »'},
+  es:{from:'Desde',to:'Hasta',size:'Por página',filter:'Filtrar',clear:'Limpiar',page:'Página',of:'/',total:'total',trades:'operaciones',range:'Operaciones registradas',period:'Periodo elegido',win:'ganadoras',loss:'perdedoras',net:'P&L neto',prev:'‹ Anterior',next:'Siguiente ›',first:'« Primera',last:'Última »'},
+  zh:{from:'开始',to:'结束',size:'每页',filter:'筛选',clear:'清除',page:'页',of:'/',total:'共',trades:'笔交易',range:'已记录交易区间',period:'所选时段',win:'盈利',loss:'亏损',net:'净盈亏',prev:'‹ 上一页',next:'下一页 ›',first:'« 首页',last:'末页 »'}
+};
+function ctT(){ return CT_TEXT[currentLang] || CT_TEXT.en; }
+const ctState={from:'',to:'',page:1,size:20};
+
+function ctRenderChrome(d){
+  const x=ctT();
+  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+  set('ctLblFrom',x.from); set('ctLblTo',x.to); set('ctLblSize',x.size);
+  set('ctApply',x.filter); set('ctClear',x.clear);
+  const info=document.getElementById('ctInfo');
+  if(info && d){
+    const st=d.period_stats||{};
+    const rng=(d.first_date&&d.last_date)?`${x.range}: ${d.first_date} → ${d.last_date}`:'';
+    const per=(d.from||d.to)?` &nbsp;|&nbsp; ${x.period}: <b>${d.total}</b> ${x.trades}, ${st.wins||0} ${x.win} / ${st.losses||0} ${x.loss}, ${x.net}: <b class="${cls(st.net||0)}">${money(st.net||0)}</b>`:` &nbsp;|&nbsp; <b>${d.total}</b> ${x.trades} ${x.total}`;
+    info.innerHTML=rng+per;
+  }
+  const pg=document.getElementById('ctPager');
+  if(!pg || !d) return;
+  const pages=d.pages||1, cur=d.page||1;
+  if(pages<=1){ pg.innerHTML=''; return; }
+  const btn=(label,page,opts={})=>`<button class="btn" type="button" ${opts.disabled?'disabled':''} style="min-width:36px;${opts.active?'font-weight:700;outline:2px solid currentColor;':''}" onclick="ctGoto(${page})">${label}</button>`;
+  let h=btn(x.first,1,{disabled:cur===1})+btn(x.prev,cur-1,{disabled:cur===1});
+  const lo=Math.max(1,cur-2), hi=Math.min(pages,cur+2);
+  if(lo>1) h+='<span class="text-faint">…</span>';
+  for(let i=lo;i<=hi;i++) h+=btn(i,i,{active:i===cur});
+  if(hi<pages) h+='<span class="text-faint">…</span>';
+  h+=btn(x.next,cur+1,{disabled:cur===pages})+btn(x.last,pages,{disabled:cur===pages});
+  h+=`<span class="text-faint" style="margin-left:8px;font-size:12px">${x.page} ${cur} ${x.of} ${pages}</span>`;
+  pg.innerHTML=h;
+}
+function ctGoto(page){ ctState.page=Math.max(1,page); refreshHistory(); try{ document.getElementById('ctFilter').scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} }
+function ctApplyFilter(){
+  ctState.from=document.getElementById('ctFrom').value||'';
+  ctState.to=document.getElementById('ctTo').value||'';
+  ctState.size=parseInt(document.getElementById('ctSize').value,10)||20;
+  ctState.page=1; refreshHistory();
+}
+function ctClearFilter(){
+  document.getElementById('ctFrom').value=''; document.getElementById('ctTo').value='';
+  ctState.from=''; ctState.to=''; ctState.page=1; refreshHistory();
+}
 async function refreshHistory(){
-  let d;
-  try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  const qs=new URLSearchParams({page:ctState.page,page_size:ctState.size});
+  if(ctState.from) qs.set('from',ctState.from);
+  if(ctState.to) qs.set('to',ctState.to);
+  let d, st;
+  try{
+    const [r1,r2]=await Promise.all([fetch('/api/closed-trades?'+qs.toString(),{cache:'no-store'}),fetch('/api/status',{cache:'no-store'})]);
+    d=await r1.json(); st=await r2.json();
+  }catch(e){ return; }
+  if(d && d.page && d.page!==ctState.page) ctState.page=d.page;  // server clamped an out-of-range page
   renderHistory(d);
-  renderClosedSummary(d);
+  renderClosedSummary(st);
 }
 
 const translations = {
@@ -7824,6 +7889,70 @@ def status():
     indicators=s.get('indicators',{})
     return {'bot_alive': bool(s.get('last_heartbeat')),'heartbeat':s.get('last_heartbeat'),'equity':equity,'net_pnl':net,'return_pct':net/start*100,'price':f(s.get('market_prices',{}).get('ETHUSDT',0)),'price_time':s.get('market_price_time'),'last_closed_time':s.get('last_closed_time'),'position':pos,'signals':s.get('signals',indicators),'total_open_pnl':total_open_pnl,'stats':{'trades':len(closed),'wins':wins,'losses':losses,'win_rate':wins/len(closed)*100 if closed else 0,'profit_factor':pf,'avg_trade':avg,'max_drawdown':maxdd,'gross_win':gross_win,'gross_loss':gross_loss,'net_closed':net_closed,'start_date':start_date},'history':list(reversed(closed[-20:]))}
 
+_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+
+def closed_trades_page(q):
+    """Paginated + date-range filtered closed trades (newest first).
+    Query params: from=YYYY-MM-DD, to=YYYY-MM-DD (inclusive, matched against
+    the first 10 chars of exit_time — the same date the table shows),
+    page (1-based), page_size (1-100, default 20). Also returns stats for
+    the filtered set and the first/last trade dates on file, so a missing
+    old period is visible instead of silent."""
+    def _arg(name, default=''):
+        return (q.get(name, [default])[0] or default).strip()
+    date_from = _arg('from'); date_to = _arg('to')
+    if date_from and not _DATE_RE.match(date_from): date_from = ''
+    if date_to and not _DATE_RE.match(date_to): date_to = ''
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    try: page_size = max(1, min(100, int(_arg('page_size', '20'))))
+    except ValueError: page_size = 20
+    try: page = max(1, int(_arg('page', '1')))
+    except ValueError: page = 1
+
+    trades = read_trades()
+    rows = []
+    for t in trades:
+        for k in ['entry_price','exit_price','net_pnl','gross_pnl','fees','equity_after','qty_eth']:
+            if k in t: t[k] = f(t[k])
+        rows.append(t)
+    def _day(t): return str(t.get('exit_time') or t.get('entry_time') or '')[:10]
+    rows.sort(key=lambda t: t.get('exit_time') or t.get('entry_time') or '', reverse=True)
+
+    days = [d for d in (_day(t) for t in rows) if d]
+    first_date = min(days) if days else None
+    last_date = max(days) if days else None
+
+    if date_from or date_to:
+        filtered = []
+        for t in rows:
+            d = _day(t)
+            if not d: continue
+            if date_from and d < date_from: continue
+            if date_to and d > date_to: continue
+            filtered.append(t)
+    else:
+        filtered = rows
+
+    total = len(filtered)
+    pages = max(1, -(-total // page_size))
+    page = min(page, pages)
+    start = (page - 1) * page_size
+    items = filtered[start:start + page_size]
+
+    wins = sum(1 for t in filtered if t.get('net_pnl', 0) > 0)
+    losses = sum(1 for t in filtered if t.get('net_pnl', 0) < 0)
+    gross_win = sum(t['net_pnl'] for t in filtered if t.get('net_pnl', 0) > 0)
+    gross_loss = abs(sum(t['net_pnl'] for t in filtered if t.get('net_pnl', 0) < 0))
+    return {
+        'history': items, 'page': page, 'pages': pages, 'page_size': page_size,
+        'total': total, 'from': date_from, 'to': date_to,
+        'first_date': first_date, 'last_date': last_date,
+        'period_stats': {'trades': total, 'wins': wins, 'losses': losses,
+                         'gross_win': gross_win, 'gross_loss': gross_loss,
+                         'net': gross_win - gross_loss},
+    }
+
 def watchlist_status():
     s = read_state()
     watchlist = s.get('watchlist', {}) or {}
@@ -8289,6 +8418,9 @@ class Handler(BaseHTTPRequestHandler):
 
             self._send_json(out); return
 
+        if path=='/api/closed-trades':
+            q=parse_qs(urlparse(self.path).query)
+            body=json.dumps(closed_trades_page(q),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/status':
             body=json.dumps(status(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/health':
