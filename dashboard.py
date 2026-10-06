@@ -80,7 +80,7 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/risk-ack', '/logout', '/admin', '/api/admin/users', '/api/admin/set-status',
     '/api/account/live-settings', '/api/account/live-toggle',
     '/api/admin/kill-switch', '/api/admin/kill-switch/toggle', '/api/admin/delete-user',
-    '/api/account/telegram/link-code', '/api/account/telegram/unlink',
+    '/api/account/telegram/link-code', '/api/account/telegram/unlink', '/api/account/telegram/test',
     '/api/live/my-positions',
     # These two are the whole point of being reachable after a trial expires:
     # an expired user still needs to be able to ask a question or tell the
@@ -4926,6 +4926,27 @@ function renderAccount(a){
 let _tgActiveCode=null; // {code, bot_username, obtainedAt, ttlSeconds}
 let _tgCodeTimer=null;
 
+const TG_TEST_TEXT={
+  tr:{btn:'Test bildirimi gönder',sending:'Gönderiliyor…',ok:'✅ Test mesajı gönderildi. Telegram\'ı kontrol edin.',fail:'❌ Gönderilemedi: ',conn:'Bağlantı hatası.'},
+  en:{btn:'Send test notification',sending:'Sending…',ok:'✅ Test message sent. Check your Telegram.',fail:'❌ Could not send: ',conn:'Connection error.'},
+  de:{btn:'Testbenachrichtigung senden',sending:'Wird gesendet…',ok:'✅ Testnachricht gesendet. Prüfen Sie Telegram.',fail:'❌ Senden fehlgeschlagen: ',conn:'Verbindungsfehler.'},
+  fr:{btn:'Envoyer une notification de test',sending:'Envoi…',ok:'✅ Message de test envoyé. Vérifiez Telegram.',fail:'❌ Échec de l’envoi : ',conn:'Erreur de connexion.'},
+  es:{btn:'Enviar notificación de prueba',sending:'Enviando…',ok:'✅ Mensaje de prueba enviado. Revisa Telegram.',fail:'❌ No se pudo enviar: ',conn:'Error de conexión.'},
+  zh:{btn:'发送测试通知',sending:'发送中…',ok:'✅ 测试消息已发送，请查看 Telegram。',fail:'❌ 发送失败：',conn:'连接错误。'}
+};
+function tgTestText(){ return TG_TEST_TEXT[currentLang] || TG_TEST_TEXT.en; }
+async function sendTelegramTest(btn){
+  const x=tgTestText(), out=document.getElementById('tgTestResult');
+  btn.disabled=true; const old=btn.textContent; btn.textContent=x.sending;
+  if(out) out.textContent='';
+  try{
+    const r=await fetch('/api/account/telegram/test',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(out) out.textContent = d.ok ? x.ok : (x.fail+(d.error||''));
+  }catch(e){ if(out) out.textContent=x.fail+x.conn; }
+  btn.disabled=false; btn.textContent=old;
+}
+
 function renderTelegramPanel(a){
   const box=document.getElementById('telegramPanelBody');
   if(!box) return;
@@ -4940,7 +4961,11 @@ function renderTelegramPanel(a){
     box.innerHTML=`
       <div class="account-row">${t('telegram.linked')}${a.telegram_username?(' — @'+a.telegram_username):''}</div>
       <div class="account-row text-faint">${t('telegram.notificationsDesc')}</div>
-      <div class="account-row"><button class="btn" type="button" onclick="unlinkTelegram()">${t('telegram.removeConnectionBtn')}</button></div>
+      <div class="account-row">
+        <button class="btn" type="button" id="tgTestBtn" onclick="sendTelegramTest(this)">${tgTestText().btn}</button>
+        <button class="btn" type="button" onclick="unlinkTelegram()">${t('telegram.removeConnectionBtn')}</button>
+      </div>
+      <div class="account-row text-faint" id="tgTestResult"></div>
     `;
     return;
   }
@@ -8704,6 +8729,16 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/account/telegram/unlink':
             auth.unlink_telegram(user)
             self._send_json({'ok': True}); return
+
+        if path=='/api/account/telegram/test':
+            chat_id = auth.get_telegram_chat_id(user)
+            if not chat_id:
+                self._send_json({'ok': False, 'error': 'Telegram hesabınız bağlı değil.'}); return
+            if not tg_notifier.TELEGRAM_BOT_ENABLED:
+                self._send_json({'ok': False, 'error': 'Sunucuda TELEGRAM_BOT_TOKEN tanımlı değil.'}); return
+            ok, err = tg_notifier.send_to_detailed(chat_id, '🔔 HEROBOT-AI — TEST BİLDİRİMİ\n\nTelegram bildirimleriniz çalışıyor. Canlı işlem açılış/kapanış ve günlük özet mesajları bu sohbete gelecek.')
+            print(f'TELEGRAM | TEST | {user} | chat_id={chat_id} | ok={ok} | {err or ""}', flush=True)
+            self._send_json({'ok': bool(ok), 'error': err}); return
 
         self._send_json({'error': 'not found'}, status=404)
 

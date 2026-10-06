@@ -43,28 +43,44 @@ def ensure_bot_username():
     return _bot_username
 
 
-def send_to(chat_id, text: str) -> bool:
-    """Sends a message to an arbitrary chat_id (a per-user linked Telegram
-    chat, or the admin's own). Only needs TELEGRAM_BOT_TOKEN — unlike the
-    original send_message(), it does not require TELEGRAM_CHAT_ID."""
-    if not TELEGRAM_BOT_ENABLED or not chat_id:
-        return False
+def send_to_detailed(chat_id, text: str):
+    """Same as send_to(), but returns (ok, error_text) so callers (e.g. the
+    dashboard's 'Test bildirimi gönder' button) can show WHY a message
+    failed. Every failure path is also logged."""
+    if not TELEGRAM_BOT_ENABLED:
+        print('TELEGRAM | send SKIPPED | TELEGRAM_BOT_TOKEN bu serviste tanımlı değil', flush=True)
+        return False, 'Sunucuda TELEGRAM_BOT_TOKEN tanımlı değil.'
+    if not chat_id:
+        print('TELEGRAM | send SKIPPED | chat_id boş', flush=True)
+        return False, 'chat_id boş.'
     try:
         r = _api('sendMessage', {'chat_id': chat_id, 'text': text}, timeout=15)
         if r.status_code != 200:
             print(f'TELEGRAM | send ERROR | chat_id={chat_id} | HTTP {r.status_code} | {r.text[:300]}', flush=True)
-            return False
+            try:
+                desc = r.json().get('description') or r.text[:200]
+            except Exception:
+                desc = r.text[:200]
+            return False, f'Telegram HTTP {r.status_code}: {desc}'
         data = r.json()
         if not data.get('ok'):
             print(f'TELEGRAM | send ERROR | chat_id={chat_id} | {data}', flush=True)
-            return False
-        return True
+            return False, f'Telegram yanıtı: {data.get("description") or data}'
+        return True, None
     except requests.RequestException as e:
         print(f'TELEGRAM | send ERROR | chat_id={chat_id} | {type(e).__name__} | {e}', flush=True)
-        return False
+        return False, f'Bağlantı hatası: {type(e).__name__}'
     except Exception as e:
         print(f'TELEGRAM | send ERROR | chat_id={chat_id} | {type(e).__name__} | {e}', flush=True)
-        return False
+        return False, f'{type(e).__name__}: {e}'
+
+
+def send_to(chat_id, text: str) -> bool:
+    """Sends a message to an arbitrary chat_id (a per-user linked Telegram
+    chat, or the admin's own). Only needs TELEGRAM_BOT_TOKEN — unlike the
+    original send_message(), it does not require TELEGRAM_CHAT_ID."""
+    ok, _err = send_to_detailed(chat_id, text)
+    return ok
 
 
 def verify_connection() -> bool:

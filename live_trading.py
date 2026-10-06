@@ -59,11 +59,23 @@ _lock = threading.Lock()
 
 def _notify_user(username, text):
     """Best-effort personal Telegram message — never allowed to raise, since
-    this is called from inside the order-placement path."""
+    this is called from inside the order-placement path.
+
+    `text` may be a plain string OR a zero-argument callable that builds the
+    string. Passing a callable means a bug while BUILDING the message (bad
+    number format, missing field...) is caught and logged here too, instead
+    of escaping and silently skipping the notification. Every skip/failure
+    path prints a log line so a missing Telegram message can be diagnosed."""
     try:
         chat_id = auth.get_telegram_chat_id(username)
-        if chat_id:
-            tg.send_to(chat_id, text)
+        if not chat_id:
+            print(f'LIVE | TELEGRAM SKIP | {username} | Telegram bağlı değil (chat_id kayıtlı değil)', flush=True)
+            return
+        message = text() if callable(text) else text
+        if tg.send_to(chat_id, message):
+            print(f'LIVE | TELEGRAM SENT | {username} | chat_id={chat_id}', flush=True)
+        else:
+            print(f'LIVE | TELEGRAM SEND FAILED | {username} | chat_id={chat_id} | ayrıntı için yukarıdaki TELEGRAM | send satırlarına bakın', flush=True)
     except Exception as e:
         print(f'LIVE | TELEGRAM NOTIFY ERROR | {username} | {type(e).__name__}: {e}', flush=True)
 
@@ -150,6 +162,17 @@ def get_runtime_status(username):
         'open_position_count': len(rec.get('positions', {})),
         'last_error': rec.get('last_error'),
     }
+
+
+def clear_last_error(username):
+    """Canlı işlem açılıp/kapatıldığında eski hata yazısını temizler.
+    Yalnızca last_error alanlarına dokunur; pozisyon ve P&L kayıtları korunur."""
+    with _lock:
+        runtime = _load_runtime()
+        rec = _get_user_runtime(runtime, username)
+        rec['last_error'] = None
+        rec['last_error_notified'] = None
+        _save_runtime(runtime)
 
 
 # ---------------------------------------------------------------------------
@@ -264,9 +287,9 @@ def close_position_now(username, symbol):
         _save_runtime(runtime)
 
     print(f'LIVE EXIT | {username} | {side} {symbol} | reason=manual_close_by_user | qty={qty} | price~{fill_price} | pnl~{gross:.2f}', flush=True)
-    _notify_user(username, tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, 'Kullanıcı panelden manuel kapattı'))
+    _notify_user(username, lambda: tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, 'Kullanıcı panelden manuel kapattı'))
     if just_paused:
-        _notify_user(username, tg.live_risk_alert(
+        _notify_user(username, lambda: tg.live_risk_alert(
             f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {urec["realized_loss_usd"]:.2f} USD, limit: {daily_limit:.2f} USD).\n'
             f'Yeni canlı işlem bugün (UTC) için durduruldu; yarın otomatik olarak tekrar açılacak.'
         ))
@@ -317,7 +340,7 @@ def on_entry_signal(symbol, side, price, source='eth_bot'):
                 print(f'LIVE | {username} | ENTRY FAILED | {symbol} {side} | {result}', flush=True)
                 if urec.get('last_error_notified') != str(result):
                     urec['last_error_notified'] = str(result)
-                    _notify_user(username, tg.live_risk_alert(f'{symbol} {side} canlı emri başarısız oldu:\n{result}\n\nBakiye/marj yetersizliği, API izin sorunu vb. olabilir — Binance hesabınızı kontrol edin.'))
+                    _notify_user(username, lambda s=symbol, sd=side, r=result: tg.live_risk_alert(f'{s} {sd} canlı emri başarısız oldu:\n{r}\n\nBakiye/marj yetersizliği, API izin sorunu vb. olabilir — Binance hesabınızı kontrol edin.'))
                 continue
             fill_price = blive.fill_price_from_order(result, price)
             urec['positions'][symbol] = {
@@ -328,7 +351,7 @@ def on_entry_signal(symbol, side, price, source='eth_bot'):
             urec['last_error'] = None
             urec['last_error_notified'] = None
             print(f'LIVE ENTRY | {username} | {side} {symbol} | qty={qty} | price~{fill_price} | leverage={leverage}x', flush=True)
-            _notify_user(username, tg.live_entry_message(side, symbol, qty, fill_price, leverage, position_usd))
+            _notify_user(username, lambda sd=side, s=symbol, q=qty, fp=fill_price, lv=leverage, pu=position_usd: tg.live_entry_message(sd, s, q, fp, lv, pu))
         _save_runtime(runtime)
 
 
@@ -362,7 +385,7 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
                 print(f'LIVE | {username} | EXIT FAILED | {symbol} {side} | {result} | pozisyon Binance hesabında AÇIK kalmış olabilir, lütfen manuel kontrol edin.', flush=True)
                 if urec.get('last_error_notified') != str(result):
                     urec['last_error_notified'] = str(result)
-                    _notify_user(username, tg.live_risk_alert(f'{symbol} {side} pozisyonunu kapatma emri BAŞARISIZ OLDU:\n{result}\n\nPozisyon Binance hesabınızda AÇIK kalmış olabilir — lütfen hemen manuel kontrol edin.'))
+                    _notify_user(username, lambda s=symbol, sd=side, r=result: tg.live_risk_alert(f'{s} {sd} pozisyonunu kapatma emri BAŞARISIZ OLDU:\n{r}\n\nPozisyon Binance hesabınızda AÇIK kalmış olabilir — lütfen hemen manuel kontrol edin.'))
                 changed = True
                 continue
             fill_price = blive.fill_price_from_order(result, price)
@@ -388,10 +411,10 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
             urec['last_error_notified'] = None
             changed = True
             print(f'LIVE EXIT | {username} | {side} {symbol} | reason={reason} | qty={qty} | price~{fill_price} | pnl~{gross:.2f}', flush=True)
-            _notify_user(username, tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, reason))
+            _notify_user(username, lambda sd=side, s=symbol, q=qty, ep=entry_price, fp=fill_price, g=gross, rs=reason: tg.live_exit_message(sd, s, q, ep, fp, g, rs))
             if just_paused:
-                _notify_user(username, tg.live_risk_alert(
-                    f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {urec["realized_loss_usd"]:.2f} USD, limit: {daily_limit:.2f} USD).\n'
+                _notify_user(username, lambda rl=urec["realized_loss_usd"], dl=daily_limit: tg.live_risk_alert(
+                    f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {rl:.2f} USD, limit: {dl:.2f} USD).\n'
                     f'Yeni canlı işlem bugün (UTC) için durduruldu; yarın otomatik olarak tekrar açılacak. Ayarları hesap panelinizden istediğiniz an değiştirebilirsiniz.'
                 ))
         if changed:
@@ -459,23 +482,26 @@ def maybe_send_daily_reports(now):
         changed = False
         for u in linked:
             username, chat_id = u['username'], u['chat_id']
-            urec = _get_user_runtime(runtime, username)
-            if urec.get('last_daily_report_date') == report_date:
-                continue
-            day_trades = [t for t in all_trades if t.get('username') == username and _in_previous_istanbul_day(t.get('exit_time'))]
-            if not day_trades and not urec.get('positions') and not (auth.get_user(username) or {}).get('live_trading_enabled'):
-                # Never enabled live trading and nothing to report — skip silently, don't spam.
-                urec['last_daily_report_date'] = report_date
-                changed = True
-                continue
-            text = tg.live_daily_report(username, previous_date, day_trades, urec.get('realized_pnl_usd', 0.0), urec.get('positions', {}))
             try:
+                urec = _get_user_runtime(runtime, username)
+                if urec.get('last_daily_report_date') == report_date:
+                    continue
+                day_trades = [t for t in all_trades if t.get('username') == username and _in_previous_istanbul_day(t.get('exit_time'))]
+                if not day_trades and not urec.get('positions') and not (auth.get_user(username) or {}).get('live_trading_enabled'):
+                    # Never enabled live trading and nothing to report — skip silently, don't spam.
+                    urec['last_daily_report_date'] = report_date
+                    changed = True
+                    continue
+                text = tg.live_daily_report(username, previous_date, day_trades, urec.get('realized_pnl_usd', 0.0), urec.get('positions', {}))
                 ok = tg.send_to(chat_id, text)
+                if ok:
+                    urec['last_daily_report_date'] = report_date
+                    changed = True
+                    print(f'LIVE | DAILY REPORT SENT | {username} | {previous_date}', flush=True)
+                else:
+                    print(f'LIVE | DAILY REPORT FAILED | {username} | chat_id={chat_id}', flush=True)
             except Exception as e:
-                print(f'LIVE | TELEGRAM DAILY REPORT ERROR | {username} | {type(e).__name__}: {e}', flush=True)
-                ok = False
-            if ok:
-                urec['last_daily_report_date'] = report_date
-                changed = True
+                # One user's problem must not stop the report for everyone else.
+                print(f'LIVE | DAILY REPORT ERROR | {username} | {type(e).__name__}: {e}', flush=True)
         if changed:
             _save_runtime(runtime)
