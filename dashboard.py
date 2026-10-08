@@ -6445,6 +6445,7 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
     <label style="display:flex;flex-direction:column;gap:4px;font-size:12px"><span id="ctLblSize">Per page</span><select id="ctSize" style="background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:6px;padding:6px 8px"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label>
     <button class="btn" type="button" id="ctApply" onclick="ctApplyFilter()">Filter</button>
     <button class="btn" type="button" id="ctClear" onclick="ctClearFilter()">Clear</button>
+    <button class="btn" type="button" id="ctCsv" onclick="ctDownloadCsv()">CSV</button>
   </div>
   <div id="ctInfo" class="text-faint" style="font-size:12px;padding:0 2px 10px;line-height:1.5"></div>
   <div class="table-scroll">
@@ -6512,12 +6513,12 @@ function renderClosedSummary(d){
   else { totalPnlEl.textContent='—'; totalPnlEl.className='kpi-value'; }
 }
 const CT_TEXT={
-  tr:{from:'Başlangıç',to:'Bitiş',size:'Sayfa başına',filter:'Filtrele',clear:'Temizle',page:'Sayfa',of:'/',total:'toplam',trades:'işlem',range:'Kayıtlı işlem aralığı',period:'Seçili dönem',win:'kârlı',loss:'zararlı',net:'Net K/Z',prev:'‹ Önceki',next:'Sonraki ›',first:'« İlk',last:'Son »'},
-  en:{from:'From',to:'To',size:'Per page',filter:'Filter',clear:'Clear',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades on record',period:'Selected period',win:'wins',loss:'losses',net:'Net P&L',prev:'‹ Prev',next:'Next ›',first:'« First',last:'Last »'},
-  de:{from:'Von',to:'Bis',size:'Pro Seite',filter:'Filtern',clear:'Zurücksetzen',page:'Seite',of:'/',total:'gesamt',trades:'Trades',range:'Gespeicherte Trades',period:'Gewählter Zeitraum',win:'Gewinne',loss:'Verluste',net:'Netto-G/V',prev:'‹ Zurück',next:'Weiter ›',first:'« Erste',last:'Letzte »'},
-  fr:{from:'Du',to:'Au',size:'Par page',filter:'Filtrer',clear:'Effacer',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades enregistrés',period:'Période choisie',win:'gagnants',loss:'perdants',net:'P&L net',prev:'‹ Préc.',next:'Suiv. ›',first:'« Début',last:'Fin »'},
-  es:{from:'Desde',to:'Hasta',size:'Por página',filter:'Filtrar',clear:'Limpiar',page:'Página',of:'/',total:'total',trades:'operaciones',range:'Operaciones registradas',period:'Periodo elegido',win:'ganadoras',loss:'perdedoras',net:'P&L neto',prev:'‹ Anterior',next:'Siguiente ›',first:'« Primera',last:'Última »'},
-  zh:{from:'开始',to:'结束',size:'每页',filter:'筛选',clear:'清除',page:'页',of:'/',total:'共',trades:'笔交易',range:'已记录交易区间',period:'所选时段',win:'盈利',loss:'亏损',net:'净盈亏',prev:'‹ 上一页',next:'下一页 ›',first:'« 首页',last:'末页 »'}
+  tr:{from:'Başlangıç',to:'Bitiş',size:'Sayfa başına',filter:'Filtrele',clear:'Temizle',csv:'CSV indir',page:'Sayfa',of:'/',total:'toplam',trades:'işlem',range:'Kayıtlı işlem aralığı',period:'Seçili dönem',win:'kârlı',loss:'zararlı',net:'Net K/Z',prev:'‹ Önceki',next:'Sonraki ›',first:'« İlk',last:'Son »'},
+  en:{from:'From',to:'To',size:'Per page',filter:'Filter',clear:'Clear',csv:'Download CSV',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades on record',period:'Selected period',win:'wins',loss:'losses',net:'Net P&L',prev:'‹ Prev',next:'Next ›',first:'« First',last:'Last »'},
+  de:{from:'Von',to:'Bis',size:'Pro Seite',filter:'Filtern',clear:'Zurücksetzen',csv:'CSV herunterladen',page:'Seite',of:'/',total:'gesamt',trades:'Trades',range:'Gespeicherte Trades',period:'Gewählter Zeitraum',win:'Gewinne',loss:'Verluste',net:'Netto-G/V',prev:'‹ Zurück',next:'Weiter ›',first:'« Erste',last:'Letzte »'},
+  fr:{from:'Du',to:'Au',size:'Par page',filter:'Filtrer',clear:'Effacer',csv:'Télécharger CSV',page:'Page',of:'/',total:'total',trades:'trades',range:'Trades enregistrés',period:'Période choisie',win:'gagnants',loss:'perdants',net:'P&L net',prev:'‹ Préc.',next:'Suiv. ›',first:'« Début',last:'Fin »'},
+  es:{from:'Desde',to:'Hasta',size:'Por página',filter:'Filtrar',clear:'Limpiar',csv:'Descargar CSV',page:'Página',of:'/',total:'total',trades:'operaciones',range:'Operaciones registradas',period:'Periodo elegido',win:'ganadoras',loss:'perdedoras',net:'P&L neto',prev:'‹ Anterior',next:'Siguiente ›',first:'« Primera',last:'Última »'},
+  zh:{from:'开始',to:'结束',size:'每页',filter:'筛选',clear:'清除',csv:'下载 CSV',page:'页',of:'/',total:'共',trades:'笔交易',range:'已记录交易区间',period:'所选时段',win:'盈利',loss:'亏损',net:'净盈亏',prev:'‹ 上一页',next:'下一页 ›',first:'« 首页',last:'末页 »'}
 };
 function ctT(){ return CT_TEXT[currentLang] || CT_TEXT.en; }
 const ctState={from:'',to:'',page:1,size:20};
@@ -6526,7 +6527,7 @@ function ctRenderChrome(d){
   const x=ctT();
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
   set('ctLblFrom',x.from); set('ctLblTo',x.to); set('ctLblSize',x.size);
-  set('ctApply',x.filter); set('ctClear',x.clear);
+  set('ctApply',x.filter); set('ctClear',x.clear); set('ctCsv',x.csv||'CSV');
   const info=document.getElementById('ctInfo');
   if(info && d){
     const st=d.period_stats||{};
@@ -6554,6 +6555,12 @@ function ctApplyFilter(){
   ctState.to=document.getElementById('ctTo').value||'';
   ctState.size=parseInt(document.getElementById('ctSize').value,10)||20;
   ctState.page=1; refreshHistory();
+}
+function ctDownloadCsv(){
+  const qs=new URLSearchParams();
+  const f=document.getElementById('ctFrom').value, t2=document.getElementById('ctTo').value;
+  if(f) qs.set('from',f); if(t2) qs.set('to',t2);
+  window.location.href='/api/closed-trades.csv'+(qs.toString()?('?'+qs.toString()):'');
 }
 function ctClearFilter(){
   document.getElementById('ctFrom').value=''; document.getElementById('ctTo').value='';
@@ -7891,7 +7898,7 @@ def status():
 
 _DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
-def closed_trades_page(q):
+def closed_trades_page(q, all_rows=False):
     """Paginated + date-range filtered closed trades (newest first).
     Query params: from=YYYY-MM-DD, to=YYYY-MM-DD (inclusive, matched against
     the first 10 chars of exit_time — the same date the table shows),
@@ -7938,7 +7945,7 @@ def closed_trades_page(q):
     pages = max(1, -(-total // page_size))
     page = min(page, pages)
     start = (page - 1) * page_size
-    items = filtered[start:start + page_size]
+    items = list(filtered) if all_rows else filtered[start:start + page_size]
 
     wins = sum(1 for t in filtered if t.get('net_pnl', 0) > 0)
     losses = sum(1 for t in filtered if t.get('net_pnl', 0) < 0)
@@ -7952,6 +7959,25 @@ def closed_trades_page(q):
                          'gross_win': gross_win, 'gross_loss': gross_loss,
                          'net': gross_win - gross_loss},
     }
+
+def closed_trades_csv(q):
+    """All closed trades matching the same from/to filter as the table,
+    oldest first, as UTF-8 CSV with a BOM so Excel opens Turkish text
+    correctly. Returns (csv_bytes, filename)."""
+    data = closed_trades_page(q, all_rows=True)
+    rows = list(reversed(data['history']))  # oldest first, handy for analysis
+    cols = []
+    for r in rows:
+        for k in r.keys():
+            if k not in cols: cols.append(k)
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=cols or ['exit_time'], extrasaction='ignore')
+    w.writeheader()
+    for r in rows: w.writerow(r)
+    parts = ['closed_trades']
+    if data.get('from'): parts.append(data['from'])
+    if data.get('to'): parts.append(data['to'])
+    return ('\ufeff' + buf.getvalue()).encode('utf-8'), '_'.join(parts) + '.csv'
 
 def watchlist_status():
     s = read_state()
@@ -8418,6 +8444,10 @@ class Handler(BaseHTTPRequestHandler):
 
             self._send_json(out); return
 
+        if path=='/api/closed-trades.csv':
+            q=parse_qs(urlparse(self.path).query)
+            body, fname = closed_trades_csv(q)
+            self.send_response(200); self.send_header('Content-Type','text/csv; charset=utf-8'); self.send_header('Content-Disposition',f'attachment; filename="{fname}"'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/closed-trades':
             q=parse_qs(urlparse(self.path).query)
             body=json.dumps(closed_trades_page(q),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
