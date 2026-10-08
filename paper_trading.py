@@ -1,5 +1,5 @@
 import json, os, time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import requests
 import pandas as pd
 
@@ -22,6 +22,46 @@ POLL_SECONDS = int(os.environ.get('POLL_SECONDS', '30'))
 # exists on disk keeps its own persisted equity regardless of this value
 # (see state_store._defaults) — an admin can reset it from /admin.
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_ACCOUNT_INITIAL_CAPITAL)))
+
+# ---------------------------------------------------------------------------
+# ENTRY GUARDS — two protective locks on NEW crypto-watchlist entries (paper
+# AND the live orders mirrored from them). Neither touches exits: open
+# positions keep being managed by their own SL/TP/trailing logic.
+#
+#  1) BTC LOCK  — blocks new LONG entries while Bitcoin is falling. Altcoins
+#     follow BTC, so a BTC drop turns many "independent" longs into one
+#     correlated bet. Triggers on a fast 1h drop or a 4h drop; releases only
+#     after a minimum hold time AND once the 4h move has stabilised.
+#  2) LOSS BRAKE — if N stop-losses hit within a short window, ALL new
+#     entries pause for a few hours (a cluster of stops usually means the
+#     market just turned against the whole book).
+#
+# Every setting is an environment variable (Railway -> Variables). Each guard
+# has a MODE: 'on' (enforce), 'log' (only log what it WOULD have blocked —
+# good for trying thresholds safely) or 'off'.
+# ---------------------------------------------------------------------------
+def _env_float(name, default):
+    try:
+        return float(os.environ.get(name, str(default)))
+    except ValueError:
+        return float(default)
+
+def _env_mode(name, default='on'):
+    v = os.environ.get(name, default).strip().lower()
+    return v if v in ('on', 'log', 'off') else default
+
+BTC_LOCK_MODE = _env_mode('BTC_LOCK_MODE', 'on')
+BTC_LOCK_1H_DROP_PCT = _env_float('BTC_LOCK_1H_DROP_PCT', 1.0)     # lock if BTC fell >= this % in ~1h
+BTC_LOCK_4H_DROP_PCT = _env_float('BTC_LOCK_4H_DROP_PCT', 2.0)     # ...or >= this % in ~4h
+BTC_LOCK_RELEASE_PCT = _env_float('BTC_LOCK_RELEASE_PCT', 0.5)     # release when 4h change is back above -this %
+BTC_LOCK_MIN_HOURS = _env_float('BTC_LOCK_MIN_HOURS', 2.0)         # never release before this many hours
+
+LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
+LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))      # this many stops...
+LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)          # ...within this many minutes
+LOSS_BRAKE_PAUSE_HOURS = _env_float('LOSS_BRAKE_PAUSE_HOURS', 12)        # ...pauses new entries this long
+
+_btc_cache = {'ts': 0.0, 'data': None}
 
 
 def watchlist_position_usd():
@@ -73,6 +113,140 @@ def close_price(raw, side):
 
 def fee(notional):
     return abs(notional) * cfg.FEE_RATE
+
+
+# ---------------------------------------------------------------------------
+# Entry guards (BTC lock + loss brake)
+# ---------------------------------------------------------------------------
+
+def _parse_iso(s):
+    dt = datetime.fromisoformat(str(s).replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def btc_snapshot(force=False):
+    """BTCUSDT price + ~1h and ~4h % change from 15-minute klines (the last
+    candle is still forming, so its close is the current price). Cached for
+    60s so the 30s polling loop makes at most one extra request per minute.
+    Returns None if Binance can't be reached — callers must fail OPEN."""
+    now = time.time()
+    if not force and _btc_cache['data'] and now - _btc_cache['ts'] < 60:
+        return _btc_cache['data']
+    try:
+        df = fetch('BTCUSDT', 'USD_M', 20, interval='15m')
+        closes = df['close'].astype(float).tolist()
+        price = closes[-1]
+        data = {
+            'price': price,
+            'change_1h': (price / closes[-5] - 1) * 100,    # 4 candles back ~ 1h
+            'change_4h': (price / closes[-17] - 1) * 100,   # 16 candles back ~ 4h
+        }
+    except Exception as e:
+        print(f'BTC LOCK | fetch ERROR | {type(e).__name__}: {e}', flush=True)
+        return None
+    _btc_cache['ts'] = now
+    _btc_cache['data'] = data
+    return data
+
+
+def update_btc_lock(state, now):
+    """Re-evaluates the BTC lock once per polling cycle and stores it in
+    state['btc_lock']. Admin Telegram message on every lock/release."""
+    if BTC_LOCK_MODE == 'off':
+        state.pop('btc_lock', None)
+        return
+    snap = btc_snapshot()
+    lock = state.get('btc_lock') or {'active': False}
+    if snap is None:
+        return  # keep the last known state; never block (or release) on missing data
+    c1, c4, px = snap['change_1h'], snap['change_4h'], snap['price']
+    lock['change_1h'] = round(c1, 2); lock['change_4h'] = round(c4, 2); lock['price'] = round(px, 2)
+    lock['checked_at'] = now.isoformat()
+    lock['enforced'] = (BTC_LOCK_MODE == 'on')
+    triggered = c1 <= -BTC_LOCK_1H_DROP_PCT or c4 <= -BTC_LOCK_4H_DROP_PCT
+    if not lock.get('active'):
+        if triggered:
+            lock['active'] = True
+            lock['since'] = now.isoformat()
+            lock['reason'] = f'BTC 1s {c1:+.2f}% / 4s {c4:+.2f}%'
+            print(f"BTC LOCK | ACTIVATED ({BTC_LOCK_MODE}) | {lock['reason']} | BTC={px:,.0f}", flush=True)
+            try:
+                send_message(f"🔒 BTC KİLİDİ AÇILDI\n\n{lock['reason']} | BTC {px:,.0f}\n"
+                             + ('Yeni LONG girişleri durduruldu (açık pozisyonlar yönetilmeye devam eder).' if BTC_LOCK_MODE == 'on'
+                                else 'TEST MODU: sadece loglanıyor, giriş engellenmiyor.'))
+            except Exception:
+                pass
+    else:
+        held_h = (now - _parse_iso(lock.get('since', now.isoformat()))).total_seconds() / 3600
+        if held_h >= BTC_LOCK_MIN_HOURS and c4 > -BTC_LOCK_RELEASE_PCT and not triggered:
+            lock['active'] = False
+            lock['released_at'] = now.isoformat()
+            print(f"BTC LOCK | RELEASED | BTC 1s {c1:+.2f}% / 4s {c4:+.2f}% | held {held_h:.1f}h", flush=True)
+            try:
+                send_message(f"🔓 BTC KİLİDİ KALKTI\n\nBTC 1s {c1:+.2f}% / 4s {c4:+.2f}% | {held_h:.1f} saat sürdü.\nYeni LONG girişleri tekrar serbest.")
+            except Exception:
+                pass
+    state['btc_lock'] = lock
+
+
+def brake_active(state, now):
+    lb = state.get('loss_brake') or {}
+    try:
+        return bool(lb.get('until')) and _parse_iso(lb['until']) > now
+    except Exception:
+        return False
+
+
+def record_stop_and_maybe_brake(state, now):
+    """Called when a crypto watchlist position closes at a LOSS via a stop.
+    N such stops within the window start a pause on all new entries."""
+    if LOSS_BRAKE_MODE == 'off':
+        return
+    cutoff = now - timedelta(hours=24)
+    stops = [t for t in state.get('recent_stops', []) if _parse_iso(t) >= cutoff]
+    stops.append(now.isoformat())
+    state['recent_stops'] = stops
+    window_start = now - timedelta(minutes=LOSS_BRAKE_WINDOW_MIN)
+    n = sum(1 for t in stops if _parse_iso(t) >= window_start)
+    if n >= LOSS_BRAKE_STOP_COUNT and not brake_active(state, now):
+        until = now + timedelta(hours=LOSS_BRAKE_PAUSE_HOURS)
+        state['loss_brake'] = {'until': until.isoformat(), 'triggered_at': now.isoformat(),
+                               'stops': n, 'enforced': LOSS_BRAKE_MODE == 'on'}
+        print(f'LOSS BRAKE | TRIGGERED ({LOSS_BRAKE_MODE}) | {n} stops in {LOSS_BRAKE_WINDOW_MIN:.0f} min | new entries paused until {until.isoformat()}', flush=True)
+        try:
+            send_message(f"⛔ ZARAR FRENİ DEVREDE\n\n{LOSS_BRAKE_WINDOW_MIN:.0f} dakika içinde {n} stop oldu.\n"
+                         + (f"Yeni girişler {LOSS_BRAKE_PAUSE_HOURS:g} saat durduruldu." if LOSS_BRAKE_MODE == 'on'
+                            else 'TEST MODU: sadece loglanıyor, giriş engellenmiyor.'))
+        except Exception:
+            pass
+
+
+def entry_guard_check(state, symbol, side, now):
+    """Returns (allowed, reason). Fails OPEN on any internal error so a bug
+    here can never stop the trading loop."""
+    try:
+        hits = []  # (guard_name, mode, text)
+        if LOSS_BRAKE_MODE != 'off' and brake_active(state, now):
+            until = (state.get('loss_brake') or {}).get('until', '')
+            hits.append(('LOSS_BRAKE', LOSS_BRAKE_MODE, f'zarar freni aktif (bitiş {until})'))
+        if side == 'LONG' and BTC_LOCK_MODE != 'off':
+            lock = state.get('btc_lock') or {}
+            if lock.get('active'):
+                hits.append(('BTC_LOCK', BTC_LOCK_MODE, f"BTC kilidi aktif ({lock.get('reason', '')})"))
+        if not hits:
+            return True, None
+        enforcing = [h for h in hits if h[1] == 'on']
+        text = ' + '.join(h[2] for h in hits)
+        if enforcing:
+            print(f'ENTRY BLOCKED | {side} {symbol} | {text}', flush=True)
+            return False, text
+        print(f'ENTRY GUARD (log modu, engellenmedi) | {side} {symbol} | {text}', flush=True)
+        return True, None
+    except Exception as e:
+        print(f'ENTRY GUARD | ERROR (fail-open) | {type(e).__name__}: {e}', flush=True)
+        return True, None
 
 
 def enter(state, position, price, signal_row, now):
@@ -243,6 +417,13 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
     print(f"WATCHLIST EXIT  | {side} {symbol} | reason={reason} | price={price:.6f} | net={net:.2f} | equity={state['equity']:.2f}", flush=True)
     send_message(exit_message(trade))
     state['positions'].pop(symbol, None)
+    # Loss brake bookkeeping: a crypto watchlist position that closed at a
+    # LOSS via a stop counts toward the "N stops in a short window" trigger.
+    if live_eligible and net < 0 and reason in ('ATR_SL', 'ATR_TRAILING_SL'):
+        try:
+            record_stop_and_maybe_brake(state, event_time)
+        except Exception as e:
+            print(f'LOSS BRAKE | ERROR | {type(e).__name__}: {e}', flush=True)
     save_state(state)
     if live_eligible:
         try:
@@ -351,11 +532,15 @@ def run_watchlist_symbol(state, symbol, now):
             if blocked:
                 go_long = go_short = False
             if go_long and not go_short:
-                px = exec_price(float(df.iloc[-1]['open']), 'BUY')
-                enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
+                allowed, _why = entry_guard_check(state, symbol, 'LONG', now)
+                if allowed:
+                    px = exec_price(float(df.iloc[-1]['open']), 'BUY')
+                    enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
             elif go_short and not go_long:
-                px = exec_price(float(df.iloc[-1]['open']), 'SELL')
-                enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
+                allowed, _why = entry_guard_check(state, symbol, 'SHORT', now)
+                if allowed:
+                    px = exec_price(float(df.iloc[-1]['open']), 'SELL')
+                    enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
     save_state(state)
 
 
@@ -481,6 +666,8 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
+    print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
+          f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
@@ -575,6 +762,12 @@ def main():
                 'atrp_percentile_1d': fmt(atrp_pct),
                 'final': 'VOLATILE_BLOCK' if (cfg.USE_VOLATILE_FILTER and volatile_now) else ('LONG' if long_signal(enriched, len(enriched)-1, cfg) else ('SHORT' if short_signal(enriched, len(enriched)-1, cfg) else 'NONE'))
             }
+            # Refresh the BTC lock once per cycle (cheap: cached 60s). Wrapped
+            # so a problem here can never stop the trading loop.
+            try:
+                update_btc_lock(state, now)
+            except Exception as e:
+                print(f'BTC LOCK | ERROR | {type(e).__name__}: {e}', flush=True)
             save_state(state)
 
             # Manage current position using the live execution candle first.
