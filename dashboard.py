@@ -6316,7 +6316,19 @@ async function refreshWatchlist(){
   renderWatchlistTable();
 }
 async function removeFromWatchlist(symbol){
-  try{ await fetch(`/api/watchlist/remove?symbol=${encodeURIComponent(symbol)}`,{cache:'no-store'}); }catch(e){}
+  const LIVE_BLOCK={
+    tr:n=>`${symbol} için ${n} üyenin canlı pozisyonu açık. Canlı pozisyon kapanmadan bu coin kaldırılamaz.`,
+    en:n=>`${n} member(s) still have an open live position in ${symbol}. It cannot be removed until the live position is closed.`,
+    de:n=>`${n} Mitglied(er) haben noch eine offene Live-Position in ${symbol}. Entfernen erst nach dem Schließen möglich.`,
+    fr:n=>`${n} membre(s) ont encore une position réelle ouverte sur ${symbol}. Retrait impossible avant sa clôture.`,
+    es:n=>`${n} miembro(s) aún tienen una posición real abierta en ${symbol}. No se puede quitar hasta que se cierre.`,
+    zh:n=>`${n} 位会员在 ${symbol} 仍有未平仓的实盘仓位,平仓前无法移除。`
+  };
+  try{
+    const r=await fetch(`/api/watchlist/remove?symbol=${encodeURIComponent(symbol)}`,{cache:'no-store'});
+    if(r.status===409){ let d={}; try{ d=await r.json(); }catch(e){}
+      alert((LIVE_BLOCK[currentLang]||LIVE_BLOCK.en)(d.count||1)); }
+  }catch(e){}
   await refreshWatchlist();
 }
 
@@ -8938,6 +8950,19 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/watchlist/remove':
             q=parse_qs(urlparse(self.path).query)
             symbol=(q.get('symbol',[''])[0] or '').strip().upper()
+            holders=[]
+            if symbol:
+                try:
+                    holders=live_trading.get_open_live_holders().get(symbol, [])
+                except Exception:
+                    holders=[]
+            if holders:
+                # A member still has a REAL open position in this coin: the demo
+                # position is what carries its SL/TP/trailing and its exit
+                # signal, so the coin must stay until the live position closes.
+                body=json.dumps({'ok':False,'error':'live_position_open','count':len(holders),
+                                 'message':f'{symbol} için {len(holders)} üyenin canlı pozisyonu açık. Canlı pozisyon kapanmadan bu coin kaldırılamaz.'},ensure_ascii=False).encode()
+                self.send_response(409); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
             if symbol: _remove_from_watchlist(symbol)
             body=json.dumps({'ok':bool(symbol)}).encode(); self.send_response(200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/ai-analysis':

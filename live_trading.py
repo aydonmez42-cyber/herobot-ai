@@ -261,6 +261,26 @@ def get_binance_account_summary(username):
     return data
 
 
+def get_open_live_holders():
+    """Every REAL open position across all members, grouped by symbol:
+    {symbol: [{'username','side','entry_price','qty','entry_time'}, ...]}.
+    Used to (a) refuse removing a watchlist coin somebody is still live in and
+    (b) re-create the demo position that carries SL/TP/trailing for it."""
+    with _lock:
+        runtime = _load_runtime()
+    out = {}
+    for username, rec in runtime.items():
+        if not isinstance(rec, dict):
+            continue
+        for symbol, p in (rec.get('positions') or {}).items():
+            out.setdefault(symbol, []).append({
+                'username': username, 'side': p.get('side'),
+                'entry_price': float(p.get('entry_price') or 0),
+                'qty': float(p.get('qty') or 0), 'entry_time': p.get('entry_time'),
+            })
+    return out
+
+
 def get_my_live_summary(username):
     """Everything the dashboard's per-user live panel needs in one call."""
     return {

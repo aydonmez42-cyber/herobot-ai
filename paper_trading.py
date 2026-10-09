@@ -593,6 +593,89 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     return False
 
 
+def restore_orphaned_live_positions(state, now):
+    """A member's REAL Binance position is only ever managed (stop / take
+    profit / trailing / exit signal) through the demo position of the same
+    coin. If that demo position is gone (coin removed from the watchlist,
+    state reset...), or lost its SL/TP, the real position would sit on
+    Binance unprotected. Re-create the demo position so protection resumes:
+    side and entry come from the real position, ATR / SL / TP are recomputed
+    with the normal strategy multipliers. If price already ran through the
+    entry-based stop, the stop is re-based on the current price instead of
+    closing a position that was left unprotected through no fault of its own.
+    Entry fee is 0 and equity untouched: this is bookkeeping, not a new trade."""
+    try:
+        holders_by_symbol = live_trading.get_open_live_holders()
+    except Exception as e:
+        print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
+        return
+    for symbol, holders in holders_by_symbol.items():
+        if symbol == cfg.SIGNAL_SYMBOL:
+            continue  # the main ETH bot manages its own position
+        existing = state.get('positions', {}).get(symbol)
+        if existing and existing.get('sl') is not None and existing.get('tp') is not None:
+            continue  # protected already
+        sides = [h['side'] for h in holders if h.get('side') in ('LONG', 'SHORT')]
+        if not sides:
+            continue
+        side = max(set(sides), key=sides.count)
+        same = [h for h in holders if h.get('side') == side and h.get('entry_price', 0) > 0]
+        if not same:
+            continue
+        if existing and existing.get('side') != side:
+            continue  # conflicting demo position: do not touch it
+        entry = sum(h['entry_price'] for h in same) / len(same)
+        entry_time = min((h.get('entry_time') or now.isoformat()) for h in same)
+        try:
+            df = fetch_cached(symbol, 'USD_M', cfg.INTERVAL, 300)
+            enriched = add_indicators(df.iloc[:-1].copy(), cfg)
+            atr_val = float(enriched.iloc[-1]['atr'])
+            sig_time = enriched.iloc[-1]['close_time'].isoformat()
+            cur = float(df.iloc[-1]['close'])
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                print('LIVE RESTORE | Binance bekleme süresi aktif, geri yükleme sonraki tura bırakıldı', flush=True)
+                return
+            print(f'LIVE RESTORE | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+            continue
+        if not atr_val or atr_val != atr_val:
+            continue
+        if side == 'LONG':
+            sl = entry - cfg.ATR_SL_MULTIPLIER * atr_val
+            tp = entry + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
+            if cur <= sl:
+                sl = cur - cfg.ATR_SL_MULTIPLIER * atr_val
+                tp = cur + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
+        else:
+            sl = entry + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
+            tp = entry - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
+            if cur >= sl:
+                sl = cur + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
+                tp = cur - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
+        pos = dict(existing or {})
+        pos.update({
+            'side': side, 'symbol': symbol,
+            'qty_eth': pos.get('qty_eth') or ((watchlist_position_usd() / entry) if entry else 0.0),
+            'entry_price': pos.get('entry_price') or entry,
+            'entry_time': pos.get('entry_time') or entry_time,
+            'signal_time': pos.get('signal_time') or sig_time,
+            'atr': atr_val, 'sl': sl, 'tp': tp,
+            'trail_active': bool(pos.get('trail_active')) and pos.get('trail_stop') is not None,
+            'trail_stop': pos.get('trail_stop') if pos.get('trail_active') else None,
+            'highest_high': max(float(pos.get('highest_high') or entry), cur, entry),
+            'lowest_low': min(float(pos.get('lowest_low') or entry), cur, entry),
+            'entry_fee': pos.get('entry_fee') or 0.0,
+            'source': pos.get('source') or 'restored_live',
+        })
+        state.setdefault('positions', {})[symbol] = pos
+        wl = state.setdefault('watchlist', {})
+        if symbol not in wl:
+            wl[symbol] = {'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': side, 'restored_for_live': True}
+        save_state(state)
+        print(f'LIVE RESTORE | {side} {symbol} | entry={entry:.6f} | ATR={atr_val:.6f} | SL={sl:.6f} | TP={tp:.6f} | '
+              f'{len(same)} üyenin canlı pozisyonu için SL/TP yeniden kuruldu', flush=True)
+
+
 def run_watchlist_symbol(state, symbol, now):
     """Fetch data, refresh the signal snapshot, and manage a paper position for
     one manually-added crypto watchlist symbol using the exact same strategy
@@ -948,6 +1031,10 @@ def main():
             # Crypto and US stock symbols each get a full, independent paper
             # position using the same strategy; BIST symbols are signal-only
             # (bist_scanner never trades).
+            try:
+                restore_orphaned_live_positions(state, now)
+            except Exception as e:
+                print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
             for wsym, w in list(state.get('watchlist', {}).items()):
                 market = w.get('market')
                 try:
