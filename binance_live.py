@@ -188,3 +188,83 @@ def fill_price_from_order(order, fallback):
     except Exception:
         pass
     return fallback
+
+
+def _json_or_error(r):
+    """Returns (data, error) for a signed GET response."""
+    if r.status_code != 200:
+        try:
+            msg = r.json().get('msg', r.text[:200])
+        except Exception:
+            msg = r.text[:200]
+        return None, f'Binance HTTP {r.status_code}: {msg}'
+    try:
+        return r.json(), None
+    except Exception:
+        return None, 'Binance yanıtı okunamadı'
+
+
+def get_account_overview(api_key, api_secret):
+    """READ-ONLY. The user's real USD-M futures wallet numbers straight from
+    Binance (GET /fapi/v2/account) plus realized P&L / fees / funding from the
+    income history (GET /fapi/v1/income) for today (UTC), last 7 and 30 days.
+    Returns (dict, None) or (None, error_string). Never places or changes
+    anything."""
+    try:
+        r = _signed_request('GET', '/fapi/v2/account', api_key, api_secret)
+    except requests.RequestException as e:
+        return None, f'Bağlantı hatası: {type(e).__name__}'
+    acc, err = _json_or_error(r)
+    if err:
+        return None, err
+
+    def f(key):
+        try:
+            return float(acc.get(key) or 0)
+        except Exception:
+            return 0.0
+
+    out = {
+        'wallet_balance': f('totalWalletBalance'),
+        'margin_balance': f('totalMarginBalance'),
+        'available_balance': f('availableBalance'),
+        'unrealized_pnl': f('totalUnrealizedProfit'),
+        'position_margin': f('totalPositionInitialMargin'),
+        'open_positions_exchange': sum(1 for p in acc.get('positions', []) if abs(float(p.get('positionAmt') or 0)) > 0),
+    }
+
+    # Income history is best-effort: if it fails the balance numbers are
+    # still shown (income is a heavier endpoint and is the one that would be
+    # rate limited first).
+    now_ms = int(time.time() * 1000)
+    start_ms = now_ms - 30 * 86400 * 1000
+    today_start_ms = int((now_ms // 86400000) * 86400000)
+    week_start_ms = now_ms - 7 * 86400 * 1000
+    periods = {'today': 0.0, 'week': 0.0, 'month': 0.0}
+    fees = {'today': 0.0, 'week': 0.0, 'month': 0.0}
+    try:
+        kinds = {'REALIZED_PNL': periods, 'COMMISSION': fees, 'FUNDING_FEE': fees}
+        for kind, bucket in kinds.items():
+            cursor = start_ms
+            for _ in range(5):  # at most 5 pages x 1000 rows per kind
+                r2 = _signed_request('GET', '/fapi/v1/income', api_key, api_secret,
+                                     {'incomeType': kind, 'startTime': cursor, 'limit': 1000})
+                rows, err2 = _json_or_error(r2)
+                if err2 or not isinstance(rows, list):
+                    raise RuntimeError(err2 or 'income')
+                for row in rows:
+                    t_ms = int(row.get('time') or 0)
+                    amt = float(row.get('income') or 0)
+                    bucket['month'] += amt
+                    if t_ms >= week_start_ms:
+                        bucket['week'] += amt
+                    if t_ms >= today_start_ms:
+                        bucket['today'] += amt
+                if len(rows) < 1000:
+                    break
+                cursor = int(rows[-1].get('time') or cursor) + 1
+        out['realized_pnl'] = periods
+        out['fees_funding'] = fees
+    except Exception as e:
+        out['income_error'] = str(e)[:160]
+    return out, None

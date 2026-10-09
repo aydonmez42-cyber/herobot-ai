@@ -34,6 +34,7 @@ import csv
 import json
 import os
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import auth
@@ -221,11 +222,51 @@ def get_user_closed_trades(username, limit=20):
     return rows[:limit]
 
 
+_account_cache = {}  # username -> {'ts': float, 'data': dict}
+_account_cache_lock = threading.Lock()
+ACCOUNT_CACHE_SECONDS = 20
+
+
+def get_binance_account_summary(username):
+    """The user's real Binance Futures wallet numbers (balance, unrealized
+    P&L, realized P&L today/7d/30d, fees). Read-only and cached for a few
+    seconds per user so a dashboard that refreshes often does not hammer
+    Binance (which is already rate limited). Always returns a dict; on any
+    problem it carries an 'error' string instead of numbers."""
+    now = time.time()
+    with _account_cache_lock:
+        c = _account_cache.get(username)
+        if c and now - c['ts'] < ACCOUNT_CACHE_SECONDS:
+            return c['data']
+    try:
+        api_key, api_secret = auth.get_decrypted_binance_credentials(username)
+    except Exception:
+        api_key = api_secret = None
+    if not api_key or not api_secret:
+        data = {'error': 'Binance API anahtarı bağlı değil.'}
+    else:
+        try:
+            result, err = blive.get_account_overview(api_key, api_secret)
+        except Exception as e:
+            result, err = None, f'{type(e).__name__}'
+        data = result if result else {'error': err or 'Bilinmeyen hata'}
+        data['fetched_at'] = datetime.now(timezone.utc).isoformat()
+    with _account_cache_lock:
+        old = _account_cache.get(username)
+        # keep the last good numbers visible if a refresh fails (e.g. 429)
+        if 'error' in data and old and 'error' not in old['data']:
+            stale = dict(old['data']); stale['stale_error'] = data['error']
+            data = stale
+        _account_cache[username] = {'ts': now, 'data': data}
+    return data
+
+
 def get_my_live_summary(username):
     """Everything the dashboard's per-user live panel needs in one call."""
     return {
         'open': get_user_open_positions_detailed(username),
         'closed': get_user_closed_trades(username),
+        'binance': get_binance_account_summary(username),
     }
 
 
