@@ -245,7 +245,7 @@ def record_stop_and_maybe_brake(state, now):
             pass
 
 
-def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, current_price=None):
+def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, current_price=None, skip_direction_limit=False):
     """Returns (allowed, reason). Fails OPEN on any internal error so a bug
     here can never stop the trading loop."""
     try:
@@ -257,7 +257,7 @@ def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, cur
             lock = state.get('btc_lock') or {}
             if lock.get('active'):
                 hits.append(('BTC_LOCK', BTC_LOCK_MODE, f"BTC kilidi aktif ({lock.get('reason', '')})"))
-        if DIRECTION_LIMIT_MODE != 'off':
+        if DIRECTION_LIMIT_MODE != 'off' and not skip_direction_limit:
             same = sum(1 for p in (state.get('positions') or {}).values() if p.get('side') == side)
             if same >= MAX_SAME_DIRECTION:
                 hits.append(('DIRECTION_LIMIT', DIRECTION_LIMIT_MODE, f'aynı yönde {same} açık {side} var (limit {MAX_SAME_DIRECTION})'))
@@ -618,12 +618,14 @@ def run_watchlist_symbol(state, symbol, now):
             if go_long and not go_short:
                 allowed, _why = entry_guard_check(state, symbol, 'LONG', now, sig_close, sig_atr, cur_px)
                 if allowed:
-                    px = exec_price(float(df.iloc[-1]['open']), 'BUY')
+                    # Fill at the CURRENT price (the moment of entry), not the forming 4H
+                    # candle's open, which can be hours old when a coin is added mid-candle.
+                    px = exec_price(cur_px, 'BUY')
                     enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
             elif go_short and not go_long:
                 allowed, _why = entry_guard_check(state, symbol, 'SHORT', now, sig_close, sig_atr, cur_px)
                 if allowed:
-                    px = exec_price(float(df.iloc[-1]['open']), 'SELL')
+                    px = exec_price(cur_px, 'SELL')
                     enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
     save_state(state)
 
@@ -876,12 +878,25 @@ def main():
                         go_long = False
                         go_short = False
                         print(f'CANDLE {latest_closed_time} | VOLATILE BLOCK | 1D ATRP percentile={atrp_pct}', flush=True)
+                    # Main ETH engine: the same BTC lock / loss brake / late-entry
+                    # checks as the watchlist apply to NEW entries only (the
+                    # watchlist-wide direction limit does not apply to ETH, and
+                    # ETH's own exits are untouched). Fails open on any error.
+                    g_close = float(latest['close']); g_atr = float(latest['atr']); g_px = float(short_df.iloc[-1]['close'])
                     if go_long and not go_short:
-                        px = exec_price(float(long_df.iloc[-1]['open']), 'BUY')
-                        enter(state, 'LONG', px, latest, now)
+                        allowed, _why = entry_guard_check(state, cfg.SIGNAL_SYMBOL, 'LONG', now, g_close, g_atr, g_px, skip_direction_limit=True)
+                        if allowed:
+                            px = exec_price(float(long_df.iloc[-1]['open']), 'BUY')
+                            enter(state, 'LONG', px, latest, now)
+                        else:
+                            print(f"CANDLE {latest_closed_time} | LONG signal blocked by entry guard", flush=True)
                     elif go_short and not go_long:
-                        px = exec_price(float(short_df.iloc[-1]['open']), 'SELL')
-                        enter(state, 'SHORT', px, latest, now)
+                        allowed, _why = entry_guard_check(state, cfg.SIGNAL_SYMBOL, 'SHORT', now, g_close, g_atr, g_px, skip_direction_limit=True)
+                        if allowed:
+                            px = exec_price(float(short_df.iloc[-1]['open']), 'SELL')
+                            enter(state, 'SHORT', px, latest, now)
+                        else:
+                            print(f"CANDLE {latest_closed_time} | SHORT signal blocked by entry guard", flush=True)
                     else:
                         print(f"CANDLE {latest_closed_time} | no signal", flush=True)
                 else:

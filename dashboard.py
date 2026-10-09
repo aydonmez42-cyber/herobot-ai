@@ -1134,6 +1134,8 @@ const translations = {
   "faq.a8": "You can use the “Close Now” button next to the relevant position in the “Binance Live Account” panel; this instantly sends a real market order and closes the position.",
   "faq.q9": "I have another question, who can I reach?",
   "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
+  "faq.q10": "How does the bot protect me when the market suddenly reverses?",
+  "faq.a10": "New entries pass through several safety checks: (1) BTC lock — if Bitcoin drops sharply in a short time, new LONG entries are paused; (2) Loss brake — if several stop-losses hit within a short window, new entries pause for a few hours; (3) Direction limit — the number of open positions in the same direction is capped; (4) Late-entry filter — no entry if price already ran far from the signal or moved against it; (5) Break-even stop — once a position is far enough in profit, its stop moves to the entry price. These apply to both demo and live trading; open positions are managed only by their own stop-loss / take-profit / trailing rules. They reduce risk but cannot prevent losses, and this is not investment advice.",
   "panel.openPosition": "Open position",
   "panel.loading": "Loading…",
   "pos.noOpenPosition": "No open paper position. It will appear here once a signal is generated.",
@@ -1403,6 +1405,8 @@ const translations = {
   "faq.a8": "“Binance Gerçek Hesap” panelindeki ilgili pozisyonun yanındaki “Şimdi Kapat” butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.",
   "faq.q9": "Başka bir sorum var, kime ulaşabilirim?",
   "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
+  "faq.q10": "Piyasa aniden tersine döndüğünde bot beni nasıl koruyor?",
+  "faq.a10": "Yeni girişler birkaç güvenlik kontrolünden geçer: (1) BTC kilidi — Bitcoin kısa sürede sert düşerse yeni LONG girişleri durur; (2) Zarar freni — kısa sürede üst üste birkaç stop olursa yeni girişler birkaç saat durur; (3) Yön limiti — aynı yönde açılabilecek pozisyon sayısı sınırlıdır; (4) Geç giriş filtresi — fiyat sinyalden çok uzaklaştıysa veya sinyalin tersine gittiyse giriş yapılmaz; (5) Başabaş stop — pozisyon yeterince kâra geçince stop giriş fiyatına çekilir. Bu korumalar hem deneme hem canlı işlemlerde geçerlidir; açık pozisyonları yalnızca kendi stop / kâr al / trailing kuralları yönetir. Riski azaltır ama kaybı tamamen önleyemez ve yatırım tavsiyesi değildir.",
   "panel.openPosition": "Açık pozisyon",
   "panel.loading": "Yükleniyor…",
   "pos.noOpenPosition": "Açık paper pozisyon yok. Sinyal oluştuğunda burada görünecek.",
@@ -1672,6 +1676,8 @@ const translations = {
   "faq.a8": "可在“Binance 实盘账户”面板中对应仓位旁点击“立即平仓”按钮；这将立即发送一笔真实市价单并平仓。",
   "faq.q9": "我还有其他问题，应联系谁？",
   "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
+  "faq.q10": "市场突然反转时，机器人如何保护我？",
+  "faq.a10": "新的入场会经过多项安全检查：(1) BTC 锁——比特币短时间内大幅下跌时，暂停新的做多入场；(2) 亏损刹车——短时间内连续触发多次止损，新入场暂停数小时；(3) 方向限制——同方向的持仓数量有上限；(4) 迟到入场过滤——价格已远离信号或与信号相反时不入场；(5) 保本止损——持仓盈利达到一定程度后，止损移至入场价。这些保护同时适用于模拟和实盘；已有持仓仅由各自的止损/止盈/移动止损规则管理。它们可以降低风险，但无法完全避免亏损，也不构成投资建议。",
   "panel.openPosition": "持仓",
   "panel.loading": "加载中…",
   "pos.noOpenPosition": "当前无模拟持仓。信号生成后将在此显示。",
@@ -1941,6 +1947,8 @@ const translations = {
   "faq.a8": "Sie können die Schaltfläche „Jetzt schließen“ neben der betreffenden Position im Panel „Binance Live-Konto“ verwenden; dies sendet sofort eine echte Market-Order und schließt die Position.",
   "faq.q9": "Ich habe eine andere Frage, an wen kann ich mich wenden?",
   "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
+  "faq.q10": "Wie schützt mich der Bot, wenn der Markt plötzlich dreht?",
+  "faq.a10": "Neue Einstiege durchlaufen mehrere Sicherheitsprüfungen: (1) BTC-Sperre – fällt Bitcoin kurzfristig stark, werden neue LONG-Einstiege pausiert; (2) Verlustbremse – lösen innerhalb kurzer Zeit mehrere Stop-Losses aus, pausieren neue Einstiege einige Stunden; (3) Richtungslimit – die Zahl offener Positionen in dieselbe Richtung ist begrenzt; (4) Spät-Einstiegs-Filter – kein Einstieg, wenn der Kurs sich bereits weit vom Signal entfernt oder dagegen bewegt hat; (5) Break-even-Stop – ist eine Position weit genug im Plus, wird der Stop auf den Einstiegspreis gezogen. Diese Schutzmechanismen gelten für Demo- und Live-Handel; offene Positionen werden nur durch ihre eigenen Stop-Loss-/Take-Profit-/Trailing-Regeln verwaltet. Sie senken das Risiko, können Verluste aber nicht verhindern, und sind keine Anlageberatung.",
   "panel.openPosition": "Offene Position",
   "panel.loading": "Wird geladen…",
   "pos.noOpenPosition": "Keine offene Paper-Position. Erscheint hier, sobald ein Signal generiert wird.",
@@ -2210,6 +2218,8 @@ const translations = {
   "faq.a8": "Vous pouvez utiliser le bouton « Fermer maintenant » à côté de la position concernée dans le panneau « Compte réel Binance » ; cela envoie instantanément un ordre au marché réel et ferme la position.",
   "faq.q9": "J'ai une autre question, qui puis-je contacter ?",
   "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
+  "faq.q10": "Comment le bot me protège-t-il en cas de retournement soudain du marché ?",
+  "faq.a10": "Les nouvelles entrées passent par plusieurs contrôles : (1) Verrou BTC — si Bitcoin chute fortement en peu de temps, les nouvelles entrées LONG sont suspendues ; (2) Frein de pertes — si plusieurs stop-loss sont touchés en peu de temps, les nouvelles entrées sont suspendues quelques heures ; (3) Limite de direction — le nombre de positions ouvertes dans le même sens est plafonné ; (4) Filtre d’entrée tardive — pas d’entrée si le prix s’est déjà éloigné du signal ou a évolué à l’opposé ; (5) Stop au point mort — une fois la position suffisamment en gain, le stop est ramené au prix d’entrée. Ces protections s’appliquent au mode démo comme au réel ; les positions ouvertes ne sont gérées que par leurs propres règles de stop-loss / take-profit / trailing. Elles réduisent le risque sans empêcher les pertes et ne constituent pas un conseil en investissement.",
   "panel.openPosition": "Position ouverte",
   "panel.loading": "Chargement…",
   "pos.noOpenPosition": "Aucune position paper ouverte. Elle apparaîtra ici dès qu'un signal sera généré.",
@@ -2479,6 +2489,8 @@ const translations = {
   "faq.a8": "Puedes usar el botón “Cerrar ahora” junto a la posición correspondiente en el panel “Cuenta real de Binance”; esto envía al instante una orden de mercado real y cierra la posición.",
   "faq.q9": "Tengo otra pregunta, ¿a quién puedo contactar?",
   "faq.a9": "Simplemente haz clic en el botón “Preguntar al admin” de arriba y escribe tu mensaje — se enviará directamente al equipo de administración.",
+  "faq.q10": "¿Cómo me protege el bot cuando el mercado se revierte de repente?",
+  "faq.a10": "Las nuevas entradas pasan por varios controles: (1) Bloqueo BTC — si Bitcoin cae con fuerza en poco tiempo, se pausan las nuevas entradas LONG; (2) Freno de pérdidas — si saltan varios stop-loss en poco tiempo, las nuevas entradas se pausan unas horas; (3) Límite de dirección — se limita el número de posiciones abiertas en la misma dirección; (4) Filtro de entrada tardía — no se entra si el precio ya se alejó de la señal o se movió en contra; (5) Stop en punto de equilibrio — cuando la posición lleva suficiente ganancia, el stop se mueve al precio de entrada. Estas protecciones se aplican tanto en demo como en real; las posiciones abiertas solo las gestionan sus propias reglas de stop-loss / take-profit / trailing. Reducen el riesgo, pero no evitan las pérdidas y no son asesoramiento de inversión.",
   "panel.openPosition": "Posición abierta",
   "panel.loading": "Cargando…",
   "pos.noOpenPosition": "No hay posición paper abierta. Aparecerá aquí en cuanto se genere una señal.",
@@ -3571,8 +3583,8 @@ attachSort('usScannerTable',()=>usScannerCache,renderUsScanner);
 
 async function refreshBistScanner(){
   let d=await bistScannerData();bistScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`${t('scanner.tabBist')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  let st=d.status||'IDLE';let src=d.universe_source?` · ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.tabBist')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} · ${t('scanner.lastScan4h')}: ${fmtCandleTime(d.last_scan_candle)}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
 }
 async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent=t('scanner.startingBistScan');try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
@@ -3593,9 +3605,18 @@ function renderUsScanner(){
 }
 async function refreshUsScanner(){
   let d=await usScannerData();usScannerCache=d;
-  let st=d.status||'IDLE';let src=d.universe_source?` &middot; ${t('scanner.universe')}: ${d.universe_source}`:'';
-  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  let st=d.status||'IDLE';let src=d.universe_source?` · ${t('scanner.universe')}: ${d.universe_source}`:'';
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} · ${t('scanner.lastScan4h')}: ${fmtCandleTime(d.last_scan_candle)}${src}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('usScannerStatus').textContent=txt;renderUsScanner();
+}
+function fmtCandleTime(s){
+  if(!s) return '—';
+  try{
+    const d=new Date(new Date(s).getTime()+1);            // candle close 23:59:59.999 -> next boundary 00:00
+    if(isNaN(d)) return s;
+    const local=d.toLocaleString([],{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return local+' (UTC '+d.toISOString().slice(11,16)+')';
+  }catch(e){ return s; }
 }
 async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent=t('scanner.startingUsScan');try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
 refreshUsScanner();setInterval(refreshUsScanner,10000);
@@ -3603,7 +3624,7 @@ refreshUsScanner();setInterval(refreshUsScanner,10000);
 async function refreshScanner(){
   let d=await scannerData();scannerCache=d;
   let st=d.status||'IDLE';
-  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} &middot; ${t('scanner.lastScan4h')}: ${d.last_scan_candle||'—'}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} · ${t('scanner.lastScan4h')}: ${fmtCandleTime(d.last_scan_candle)}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('scannerStatus').textContent=txt;renderScanner();
 }
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
@@ -4113,6 +4134,10 @@ FAQ_HTML = r'''<!doctype html>
         <p data-i18n="faq.a8">You can use the "Close Now" button next to the relevant position in the "Binance Live Account" panel; this instantly sends a real market order and closes the position.</p>
       </details>
       <details class="faq-item">
+        <summary data-i18n="faq.q10">How does the bot protect me when the market suddenly reverses?</summary>
+        <p data-i18n="faq.a10">New entries pass through several safety checks: (1) BTC lock — if Bitcoin drops sharply in a short time, new LONG entries are paused; (2) Loss brake — if several stop-losses hit within a short window, new entries pause for a few hours; (3) Direction limit — the number of open positions in the same direction is capped; (4) Late-entry filter — no entry if price already ran far from the signal or moved against it; (5) Break-even stop — once a position is far enough in profit, its stop moves to the entry price. These apply to both demo and live trading; open positions are managed only by their own stop-loss / take-profit / trailing rules. They reduce risk but cannot prevent losses, and this is not investment advice.</p>
+      </details>
+      <details class="faq-item">
         <summary data-i18n="faq.q9">I have another question, who can I reach?</summary>
         <p data-i18n="faq.a9">Just click the "Ask Admin" button above and write your message — it goes straight to the admin team.</p>
       </details>
@@ -4146,6 +4171,8 @@ const translations = {
     "faq.a8": "You can use the “Close Now” button next to the relevant position in the “Binance Live Account” panel; this instantly sends a real market order and closes the position.",
     "faq.q9": "I have another question, who can I reach?",
     "faq.a9": "Just click the “Ask Admin” button above and write your message — it goes straight to the admin team.",
+    "faq.q10": "How does the bot protect me when the market suddenly reverses?",
+    "faq.a10": "New entries pass through several safety checks: (1) BTC lock — if Bitcoin drops sharply in a short time, new LONG entries are paused; (2) Loss brake — if several stop-losses hit within a short window, new entries pause for a few hours; (3) Direction limit — the number of open positions in the same direction is capped; (4) Late-entry filter — no entry if price already ran far from the signal or moved against it; (5) Break-even stop — once a position is far enough in profit, its stop moves to the entry price. These apply to both demo and live trading; open positions are managed only by their own stop-loss / take-profit / trailing rules. They reduce risk but cannot prevent losses, and this is not investment advice.",
   },
   tr: {
     "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
@@ -4169,6 +4196,8 @@ const translations = {
     "faq.a8": "“Binance Gerçek Hesap” panelindeki ilgili pozisyonun yanındaki “Şimdi Kapat” butonunu kullanabilirsiniz; bu işlem anında gerçek bir market emri gönderip pozisyonu kapatır.",
     "faq.q9": "Başka bir sorum var, kime ulaşabilirim?",
     "faq.a9": "Yukarıdaki “Admin'e Soru Sor” butonuna tıklayıp mesajınızı yazmanız yeterli — doğrudan yönetici ekibine iletilir.",
+    "faq.q10": "Piyasa aniden tersine döndüğünde bot beni nasıl koruyor?",
+    "faq.a10": "Yeni girişler birkaç güvenlik kontrolünden geçer: (1) BTC kilidi — Bitcoin kısa sürede sert düşerse yeni LONG girişleri durur; (2) Zarar freni — kısa sürede üst üste birkaç stop olursa yeni girişler birkaç saat durur; (3) Yön limiti — aynı yönde açılabilecek pozisyon sayısı sınırlıdır; (4) Geç giriş filtresi — fiyat sinyalden çok uzaklaştıysa veya sinyalin tersine gittiyse giriş yapılmaz; (5) Başabaş stop — pozisyon yeterince kâra geçince stop giriş fiyatına çekilir. Bu korumalar hem deneme hem canlı işlemlerde geçerlidir; açık pozisyonları yalnızca kendi stop / kâr al / trailing kuralları yönetir. Riski azaltır ama kaybı tamamen önleyemez ve yatırım tavsiyesi değildir.",
   },
   zh: {
     "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
@@ -4192,6 +4221,8 @@ const translations = {
     "faq.a8": "可在“Binance 实盘账户”面板中对应仓位旁点击“立即平仓”按钮；这将立即发送一笔真实市价单并平仓。",
     "faq.q9": "我还有其他问题，应联系谁？",
     "faq.a9": "只需点击上方的“联系管理员”按钮并写下您的消息 — 将直接发送给管理团队。",
+    "faq.q10": "市场突然反转时，机器人如何保护我？",
+    "faq.a10": "新的入场会经过多项安全检查：(1) BTC 锁——比特币短时间内大幅下跌时，暂停新的做多入场；(2) 亏损刹车——短时间内连续触发多次止损，新入场暂停数小时；(3) 方向限制——同方向的持仓数量有上限；(4) 迟到入场过滤——价格已远离信号或与信号相反时不入场；(5) 保本止损——持仓盈利达到一定程度后，止损移至入场价。这些保护同时适用于模拟和实盘；已有持仓仅由各自的止损/止盈/移动止损规则管理。它们可以降低风险，但无法完全避免亏损，也不构成投资建议。",
   },
   de: {
     "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
@@ -4215,6 +4246,8 @@ const translations = {
     "faq.a8": "Sie können die Schaltfläche „Jetzt schließen“ neben der betreffenden Position im Panel „Binance Live-Konto“ verwenden; dies sendet sofort eine echte Market-Order und schließt die Position.",
     "faq.q9": "Ich habe eine andere Frage, an wen kann ich mich wenden?",
     "faq.a9": "Klicken Sie einfach oben auf „Admin fragen“ und schreiben Sie Ihre Nachricht — sie geht direkt an das Admin-Team.",
+    "faq.q10": "Wie schützt mich der Bot, wenn der Markt plötzlich dreht?",
+    "faq.a10": "Neue Einstiege durchlaufen mehrere Sicherheitsprüfungen: (1) BTC-Sperre – fällt Bitcoin kurzfristig stark, werden neue LONG-Einstiege pausiert; (2) Verlustbremse – lösen innerhalb kurzer Zeit mehrere Stop-Losses aus, pausieren neue Einstiege einige Stunden; (3) Richtungslimit – die Zahl offener Positionen in dieselbe Richtung ist begrenzt; (4) Spät-Einstiegs-Filter – kein Einstieg, wenn der Kurs sich bereits weit vom Signal entfernt oder dagegen bewegt hat; (5) Break-even-Stop – ist eine Position weit genug im Plus, wird der Stop auf den Einstiegspreis gezogen. Diese Schutzmechanismen gelten für Demo- und Live-Handel; offene Positionen werden nur durch ihre eigenen Stop-Loss-/Take-Profit-/Trailing-Regeln verwaltet. Sie senken das Risiko, können Verluste aber nicht verhindern, und sind keine Anlageberatung.",
   },
   fr: {
     "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
@@ -4238,6 +4271,8 @@ const translations = {
     "faq.a8": "Vous pouvez utiliser le bouton « Fermer maintenant » à côté de la position concernée dans le panneau « Compte réel Binance » ; cela envoie instantanément un ordre au marché réel et ferme la position.",
     "faq.q9": "J'ai une autre question, qui puis-je contacter ?",
     "faq.a9": "Cliquez simplement sur le bouton « Contacter l'admin » ci-dessus et écrivez votre message — il sera transmis directement à l'équipe d'administration.",
+    "faq.q10": "Comment le bot me protège-t-il en cas de retournement soudain du marché ?",
+    "faq.a10": "Les nouvelles entrées passent par plusieurs contrôles : (1) Verrou BTC — si Bitcoin chute fortement en peu de temps, les nouvelles entrées LONG sont suspendues ; (2) Frein de pertes — si plusieurs stop-loss sont touchés en peu de temps, les nouvelles entrées sont suspendues quelques heures ; (3) Limite de direction — le nombre de positions ouvertes dans le même sens est plafonné ; (4) Filtre d’entrée tardive — pas d’entrée si le prix s’est déjà éloigné du signal ou a évolué à l’opposé ; (5) Stop au point mort — une fois la position suffisamment en gain, le stop est ramené au prix d’entrée. Ces protections s’appliquent au mode démo comme au réel ; les positions ouvertes ne sont gérées que par leurs propres règles de stop-loss / take-profit / trailing. Elles réduisent le risque sans empêcher les pertes et ne constituent pas un conseil en investissement.",
   },
   es: {
     "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
@@ -4261,6 +4296,8 @@ const translations = {
     "faq.a8": "Puedes usar el botón “Cerrar ahora” junto a la posición correspondiente en el panel “Cuenta real de Binance”; esto envía al instante una orden de mercado real y cierra la posición.",
     "faq.q9": "Tengo otra pregunta, ¿a quién puedo contactar?",
     "faq.a9": "Simplemente haz clic en el botón “Preguntar al admin” de arriba y escribe tu mensaje — se enviará directamente al equipo de administración.",
+    "faq.q10": "¿Cómo me protege el bot cuando el mercado se revierte de repente?",
+    "faq.a10": "Las nuevas entradas pasan por varios controles: (1) Bloqueo BTC — si Bitcoin cae con fuerza en poco tiempo, se pausan las nuevas entradas LONG; (2) Freno de pérdidas — si saltan varios stop-loss en poco tiempo, las nuevas entradas se pausan unas horas; (3) Límite de dirección — se limita el número de posiciones abiertas en la misma dirección; (4) Filtro de entrada tardía — no se entra si el precio ya se alejó de la señal o se movió en contra; (5) Stop en punto de equilibrio — cuando la posición lleva suficiente ganancia, el stop se mueve al precio de entrada. Estas protecciones se aplican tanto en demo como en real; las posiciones abiertas solo las gestionan sus propias reglas de stop-loss / take-profit / trailing. Reducen el riesgo, pero no evitan las pérdidas y no son asesoramiento de inversión.",
   },
 };
 let currentLang = 'en';
@@ -6007,7 +6044,11 @@ function renderWatchlistTable(){
       sideCell=sigPill(x.current_signal||'NO SIGNAL');
       pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
     }
-    const added=(x.added_at||'').replace('T',' ').slice(0,16);
+    const added=(()=>{ const raw=x.added_at||''; if(!raw) return '';
+      try{ const iso=/[zZ]|[+-]\d\d:?\d\d$/.test(raw)?raw:raw.replace(' ','T')+'Z';   // stored values are UTC
+        const d=new Date(iso); if(isNaN(d)) return raw.replace('T',' ').slice(0,16);
+        return d.toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+      catch(e){ return raw.replace('T',' ').slice(0,16); } })();
     const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
     const closeBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_${x.symbol}" onclick="event.stopPropagation();closePosition('${x.symbol}',false)">${t('watchlist.closeBtn')}</button> `:'';
     return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
