@@ -224,7 +224,7 @@ def get_user_closed_trades(username, limit=20):
 
 _account_cache = {}  # username -> {'ts': float, 'data': dict}
 _account_cache_lock = threading.Lock()
-ACCOUNT_CACHE_SECONDS = 20
+ACCOUNT_CACHE_SECONDS = 45
 
 
 def get_binance_account_summary(username):

@@ -38,9 +38,41 @@ BINANCE_FAPI_URL = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com'
 _exchange_info_cache = {'data': None, 'ts': 0.0}
 _cache_lock = threading.Lock()
 
-_price_cache = {}  # symbol -> {'price': float, 'ts': float}
+_price_cache = {'prices': {}, 'ts': 0.0}   # ONE bulk call covers every symbol
 _price_cache_lock = threading.Lock()
 PRICE_CACHE_SECONDS = 5
+
+# Shared Binance rate-limit state. The limit is per server IP (all members
+# share it, together with the scanner and the bot loop), so once Binance says
+# 429/418 every READ call in this module backs off until it passes — hammering
+# on is exactly what escalates a 429 into a 418 IP ban. Order placement is
+# never blocked by this: closing a real position always gets tried.
+_rl_until = 0.0
+_rl_lock = threading.Lock()
+
+
+def _note_rate_limit(r):
+    global _rl_until
+    try:
+        code = r.status_code
+    except Exception:
+        return
+    if code in (429, 418):
+        try:
+            wait = float(r.headers.get('Retry-After') or 0)
+        except Exception:
+            wait = 0
+        wait = wait if wait > 0 else (300 if code == 418 else 60)
+        with _rl_lock:
+            _rl_until = max(_rl_until, time.time() + min(wait, 600))
+
+
+def in_rate_limit_cooldown():
+    with _rl_lock:
+        return time.time() < _rl_until
+
+_income_cache = {}  # sha256(api_key) -> {'ts': float, 'data': dict}
+INCOME_CACHE_SECONDS = 300
 
 
 def _signed_request(method, path, api_key, api_secret, params=None, timeout=15):
@@ -52,37 +84,46 @@ def _signed_request(method, path, api_key, api_secret, params=None, timeout=15):
     url = f'{BINANCE_FAPI_URL}{path}?{query}&signature={signature}'
     headers = {'X-MBX-APIKEY': api_key}
     if method == 'GET':
-        return requests.get(url, headers=headers, timeout=timeout)
-    if method == 'POST':
-        return requests.post(url, headers=headers, timeout=timeout)
-    if method == 'DELETE':
-        return requests.delete(url, headers=headers, timeout=timeout)
-    raise ValueError(f'unsupported method {method}')
+        r = requests.get(url, headers=headers, timeout=timeout)
+    elif method == 'POST':
+        r = requests.post(url, headers=headers, timeout=timeout)
+    elif method == 'DELETE':
+        r = requests.delete(url, headers=headers, timeout=timeout)
+    else:
+        raise ValueError(f'unsupported method {method}')
+    _note_rate_limit(r)
+    return r
 
 
 def get_mark_price(symbol):
     """Public (unsigned) last-price lookup for a USD-M futures symbol, used
     only to show a user their own live position's current unrealized P&L —
     never to size or price an order (real fills always happen at Binance's
-    own live market price via the MARKET order itself). Cached for a few
-    seconds so a dashboard refreshing every few seconds across several open
-    positions doesn't hammer Binance's public endpoint. Returns None on any
-    failure — callers must fall back to the position's entry price rather
-    than showing a wrong number."""
+    own live market price via the MARKET order itself).
+
+    One call WITHOUT a symbol returns every price (weight 2), so the whole
+    dashboard — any number of members and positions — costs one request per
+    PRICE_CACHE_SECONDS instead of one per position. Returns None on any
+    failure (or during a rate-limit cooldown) — callers must fall back to the
+    position's entry price rather than showing a wrong number."""
     now = time.time()
     with _price_cache_lock:
-        cached = _price_cache.get(symbol)
-        if cached and now - cached['ts'] < PRICE_CACHE_SECONDS:
-            return cached['price']
+        if now - _price_cache['ts'] < PRICE_CACHE_SECONDS and symbol in _price_cache['prices']:
+            return _price_cache['prices'][symbol]
+        stale = _price_cache['prices'].get(symbol)
+    if in_rate_limit_cooldown():
+        return stale
     try:
-        r = requests.get(f'{BINANCE_FAPI_URL}/fapi/v1/ticker/price', params={'symbol': symbol}, timeout=10)
+        r = requests.get(f'{BINANCE_FAPI_URL}/fapi/v1/ticker/price', timeout=10)
+        _note_rate_limit(r)
         r.raise_for_status()
-        price = float(r.json()['price'])
+        prices = {row['symbol']: float(row['price']) for row in r.json()}
     except Exception:
-        return None
+        return stale
     with _price_cache_lock:
-        _price_cache[symbol] = {'price': price, 'ts': now}
-    return price
+        _price_cache['prices'] = prices
+        _price_cache['ts'] = now
+    return prices.get(symbol)
 
 
 def get_exchange_info(force=False):
@@ -204,12 +245,57 @@ def _json_or_error(r):
         return None, 'Binance yanıtı okunamadı'
 
 
+def _get_income_summary(api_key, api_secret):
+    """Realized P&L / fees+funding for today (UTC), 7d, 30d. Heavy endpoint
+    (weight 30 per call, 3 calls), so the result is cached for 5 minutes per
+    API key. Returns (dict, None) or (None, error)."""
+    ckey = hashlib.sha256(api_key.encode('utf-8')).hexdigest()
+    now = time.time()
+    c = _income_cache.get(ckey)
+    if c and now - c['ts'] < INCOME_CACHE_SECONDS:
+        return c['data'], None
+    if in_rate_limit_cooldown():
+        return (c['data'], None) if c else (None, 'rate-limit cooldown')
+    now_ms = int(now * 1000)
+    start_ms = now_ms - 30 * 86400 * 1000
+    today_start_ms = int((now_ms // 86400000) * 86400000)
+    week_start_ms = now_ms - 7 * 86400 * 1000
+    realized = {'today': 0.0, 'week': 0.0, 'month': 0.0}
+    fees = {'today': 0.0, 'week': 0.0, 'month': 0.0}
+    try:
+        for kind, bucket in (('REALIZED_PNL', realized), ('COMMISSION', fees), ('FUNDING_FEE', fees)):
+            cursor = start_ms
+            for _ in range(5):  # at most 5 pages x 1000 rows per kind
+                r = _signed_request('GET', '/fapi/v1/income', api_key, api_secret,
+                                    {'incomeType': kind, 'startTime': cursor, 'limit': 1000})
+                rows, err = _json_or_error(r)
+                if err or not isinstance(rows, list):
+                    raise RuntimeError(err or 'income')
+                for row in rows:
+                    t_ms = int(row.get('time') or 0)
+                    amt = float(row.get('income') or 0)
+                    bucket['month'] += amt
+                    if t_ms >= week_start_ms:
+                        bucket['week'] += amt
+                    if t_ms >= today_start_ms:
+                        bucket['today'] += amt
+                if len(rows) < 1000:
+                    break
+                cursor = int(rows[-1].get('time') or cursor) + 1
+    except Exception as e:
+        return (c['data'], None) if c else (None, str(e)[:160])
+    data = {'realized_pnl': realized, 'fees_funding': fees}
+    _income_cache[ckey] = {'ts': now, 'data': data}
+    return data, None
+
+
 def get_account_overview(api_key, api_secret):
     """READ-ONLY. The user's real USD-M futures wallet numbers straight from
-    Binance (GET /fapi/v2/account) plus realized P&L / fees / funding from the
-    income history (GET /fapi/v1/income) for today (UTC), last 7 and 30 days.
+    Binance (GET /fapi/v2/account, weight 5) plus the cached income summary.
     Returns (dict, None) or (None, error_string). Never places or changes
-    anything."""
+    anything. Backs off completely while Binance rate-limits this server."""
+    if in_rate_limit_cooldown():
+        return None, 'Binance HTTP 429: istek sınırı doldu, otomatik bekleniyor'
     try:
         r = _signed_request('GET', '/fapi/v2/account', api_key, api_secret)
     except requests.RequestException as e:
@@ -232,39 +318,9 @@ def get_account_overview(api_key, api_secret):
         'position_margin': f('totalPositionInitialMargin'),
         'open_positions_exchange': sum(1 for p in acc.get('positions', []) if abs(float(p.get('positionAmt') or 0)) > 0),
     }
-
-    # Income history is best-effort: if it fails the balance numbers are
-    # still shown (income is a heavier endpoint and is the one that would be
-    # rate limited first).
-    now_ms = int(time.time() * 1000)
-    start_ms = now_ms - 30 * 86400 * 1000
-    today_start_ms = int((now_ms // 86400000) * 86400000)
-    week_start_ms = now_ms - 7 * 86400 * 1000
-    periods = {'today': 0.0, 'week': 0.0, 'month': 0.0}
-    fees = {'today': 0.0, 'week': 0.0, 'month': 0.0}
-    try:
-        kinds = {'REALIZED_PNL': periods, 'COMMISSION': fees, 'FUNDING_FEE': fees}
-        for kind, bucket in kinds.items():
-            cursor = start_ms
-            for _ in range(5):  # at most 5 pages x 1000 rows per kind
-                r2 = _signed_request('GET', '/fapi/v1/income', api_key, api_secret,
-                                     {'incomeType': kind, 'startTime': cursor, 'limit': 1000})
-                rows, err2 = _json_or_error(r2)
-                if err2 or not isinstance(rows, list):
-                    raise RuntimeError(err2 or 'income')
-                for row in rows:
-                    t_ms = int(row.get('time') or 0)
-                    amt = float(row.get('income') or 0)
-                    bucket['month'] += amt
-                    if t_ms >= week_start_ms:
-                        bucket['week'] += amt
-                    if t_ms >= today_start_ms:
-                        bucket['today'] += amt
-                if len(rows) < 1000:
-                    break
-                cursor = int(rows[-1].get('time') or cursor) + 1
-        out['realized_pnl'] = periods
-        out['fees_funding'] = fees
-    except Exception as e:
-        out['income_error'] = str(e)[:160]
+    inc, ierr = _get_income_summary(api_key, api_secret)
+    if inc:
+        out.update(inc)
+    elif ierr:
+        out['income_error'] = ierr
     return out, None

@@ -7188,7 +7188,7 @@ LIVE_HTML = r'''<!doctype html>
 <section class="panel" id="liveWalletPanel">
   <div class="panel-head"><h2 data-i18n="liveWallet.title">Binance Futures Wallet</h2><span class="text-faint" id="liveWalletUpdated">—</span></div>
   <div id="liveWalletBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
-  <div class="footnote" data-i18n="liveWallet.note">Read straight from your Binance USD-M Futures account (read-only).</div>
+  <div class="footnote" style="font-size:12px;line-height:1.5;opacity:.7;margin-top:10px" data-i18n="liveWallet.note">Read straight from your Binance USD-M Futures account (read-only).</div>
 </section>
 
 <section class="panel">
@@ -7220,11 +7220,17 @@ const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFrac
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 
+const WALLET_RL={tr:'Binance istek sınırı geçici olarak doldu. Bakiye bilgisi birkaç dakika içinde otomatik yenilenecek.',en:'Binance rate limit reached temporarily. Balances will refresh automatically in a few minutes.',de:'Binance-Anfragelimit vorübergehend erreicht. Die Werte werden in wenigen Minuten automatisch aktualisiert.',fr:'Limite de requêtes Binance atteinte temporairement. Les soldes se mettront à jour automatiquement dans quelques minutes.',es:'Límite de solicitudes de Binance alcanzado temporalmente. Los saldos se actualizarán automáticamente en unos minutos.',zh:'币安请求频率暂时达到上限,余额将在几分钟内自动刷新。'};
+function walletErrText(err){
+  const e=String(err||'');
+  if(/429|418|rate limit|Too many/i.test(e)) return WALLET_RL[currentLang]||WALLET_RL.en;
+  return t('liveWallet.error')+' '+e;
+}
 function renderWallet(b){
   const el=document.getElementById('liveWalletBody'); if(!el) return;
   const upd=document.getElementById('liveWalletUpdated');
   if(!b || (b.error && b.wallet_balance==null)){
-    el.innerHTML=`<div class="pos-empty">${t('liveWallet.error')} ${(b&&b.error)||''}</div>`; if(upd) upd.textContent='—'; return;
+    el.innerHTML=`<div class="pos-empty" style="font-size:13px">${walletErrText(b&&b.error)}</div>`; if(upd) upd.textContent='—'; return;
   }
   const box=(label,val,colored)=>`<div style="flex:1 1 150px;min-width:140px;padding:10px 12px;border:1px solid rgba(128,128,128,.25);border-radius:10px"><div class="text-faint" style="font-size:12px">${label}</div><div class="num ${colored?cls(val):''}" style="font-size:18px;font-weight:600;margin-top:2px">${money(val)}</div></div>`;
   const rp=b.realized_pnl||{}, ff=b.fees_funding||{};
@@ -7238,7 +7244,7 @@ function renderWallet(b){
       +box(t('liveWallet.today'),rp.today,true)+box(t('liveWallet.week'),rp.week,true)+box(t('liveWallet.month'),rp.month,true)
       +box(t('liveWallet.fees'),ff.month,true)+'</div>';
   }
-  if(b.stale_error) html+=`<div class="text-faint" style="margin-top:8px;font-size:12px">${t('liveWallet.stale')} ${b.stale_error}</div>`;
+  if(b.stale_error) html+=`<div class="text-faint" style="margin-top:8px;font-size:12px">${t('liveWallet.stale')} ${walletErrText(b.stale_error)}</div>`;
   el.innerHTML=html;
   if(upd && b.fetched_at){ const d=new Date(b.fetched_at); upd.textContent=t('liveWallet.updated')+' '+d.toLocaleTimeString(); }
 }
