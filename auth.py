@@ -366,7 +366,7 @@ def ack_risk(username):
 # have new live orders placed for them".
 # ---------------------------------------------------------------------------
 LIVE_MAX_LEVERAGE_CAP = 50
-LIVE_MAX_POSITIONS_CAP = 10
+LIVE_MAX_POSITIONS_CAP = 20
 
 KILL_SWITCH_FILE = os.environ.get(
     'KILL_SWITCH_FILE',
