@@ -35,6 +35,14 @@ STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_AC
 #  2) LOSS BRAKE — if N stop-losses hit within a short window, ALL new
 #     entries pause for a few hours (a cluster of stops usually means the
 #     market just turned against the whole book).
+#  3) DIRECTION LIMIT — cap on how many crypto/stock watchlist positions can
+#     be open in the SAME direction at once (generous by default).
+#  4) LATE-ENTRY FILTER — skips an entry when price has already run away from
+#     the signal (chasing) or moved against it (stale signal).
+#  5) BREAK-EVEN STOP — once a position is +BREAKEVEN_ATR in profit its stop
+#     moves to entry (+ a small fee buffer) so it can't turn into a full loss.
+#  6) EARLY EXIT (default 'log' = observe only) — while the BTC lock is
+#     active, closes LONG positions that are already well under water.
 #
 # Every setting is an environment variable (Railway -> Variables). Each guard
 # has a MODE: 'on' (enforce), 'log' (only log what it WOULD have blocked —
@@ -60,6 +68,20 @@ LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))      # this many stops...
 LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)          # ...within this many minutes
 LOSS_BRAKE_PAUSE_HOURS = _env_float('LOSS_BRAKE_PAUSE_HOURS', 12)        # ...pauses new entries this long
+
+DIRECTION_LIMIT_MODE = _env_mode('DIRECTION_LIMIT_MODE', 'on')
+MAX_SAME_DIRECTION = int(_env_float('MAX_SAME_DIRECTION', 10))     # max simultaneous LONG (and, separately, SHORT) watchlist positions
+
+LATE_ENTRY_MODE = _env_mode('LATE_ENTRY_MODE', 'on')
+LATE_ENTRY_CHASE_ATR = _env_float('LATE_ENTRY_CHASE_ATR', 1.5)      # skip if price already ran this many ATR in the signal's favour
+LATE_ENTRY_ADVERSE_ATR = _env_float('LATE_ENTRY_ADVERSE_ATR', 1.0)  # skip if price moved this many ATR AGAINST the signal
+
+BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
+BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
+BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus this buffer (covers fees)
+
+EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')               # 'log' = only report what it would close
+EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
 
 _btc_cache = {'ts': 0.0, 'data': None}
 
@@ -223,7 +245,7 @@ def record_stop_and_maybe_brake(state, now):
             pass
 
 
-def entry_guard_check(state, symbol, side, now):
+def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, current_price=None):
     """Returns (allowed, reason). Fails OPEN on any internal error so a bug
     here can never stop the trading loop."""
     try:
@@ -235,6 +257,16 @@ def entry_guard_check(state, symbol, side, now):
             lock = state.get('btc_lock') or {}
             if lock.get('active'):
                 hits.append(('BTC_LOCK', BTC_LOCK_MODE, f"BTC kilidi aktif ({lock.get('reason', '')})"))
+        if DIRECTION_LIMIT_MODE != 'off':
+            same = sum(1 for p in (state.get('positions') or {}).values() if p.get('side') == side)
+            if same >= MAX_SAME_DIRECTION:
+                hits.append(('DIRECTION_LIMIT', DIRECTION_LIMIT_MODE, f'aynı yönde {same} açık {side} var (limit {MAX_SAME_DIRECTION})'))
+        if LATE_ENTRY_MODE != 'off' and signal_close and atr and current_price:
+            move = (current_price - signal_close) / atr if side == 'LONG' else (signal_close - current_price) / atr
+            if move > LATE_ENTRY_CHASE_ATR:
+                hits.append(('LATE_ENTRY', LATE_ENTRY_MODE, f'fiyat sinyalden {move:.1f} ATR uzaklaştı (kovalama)'))
+            elif move < -LATE_ENTRY_ADVERSE_ATR:
+                hits.append(('LATE_ENTRY', LATE_ENTRY_MODE, f'fiyat sinyalin tersine {abs(move):.1f} ATR gitti (sinyal bayatladı)'))
         if not hits:
             return True, None
         enforcing = [h for h in hits if h[1] == 'on']
@@ -247,6 +279,33 @@ def entry_guard_check(state, symbol, side, now):
     except Exception as e:
         print(f'ENTRY GUARD | ERROR (fail-open) | {type(e).__name__}: {e}', flush=True)
         return True, None
+
+
+def check_early_exit(state, symbol, price, now):
+    """While the BTC lock is active, closes a LONG watchlist position that is
+    already down EARLY_EXIT_LOSS_ATR (well before its far-away ATR stop).
+    'log' mode only reports it (once per position). Returns True if closed."""
+    if EARLY_EXIT_MODE == 'off':
+        return False
+    p = (state.get('positions') or {}).get(symbol)
+    if not p or p.get('side') != 'LONG':
+        return False
+    if not (state.get('btc_lock') or {}).get('active'):
+        return False
+    atr = float(p.get('atr') or 0)
+    if atr <= 0:
+        return False
+    loss_atr = (float(p['entry_price']) - price) / atr
+    if loss_atr < EARLY_EXIT_LOSS_ATR:
+        return False
+    if EARLY_EXIT_MODE == 'log':
+        if not p.get('early_exit_logged'):
+            p['early_exit_logged'] = True
+            print(f'EARLY EXIT (log modu, kapatılmadı) | LONG {symbol} | BTC kilidi aktif, pozisyon {loss_atr:.1f} ATR zararda', flush=True)
+        return False
+    print(f'EARLY EXIT | LONG {symbol} | BTC kilidi aktif, pozisyon {loss_atr:.1f} ATR zararda -> kapatılıyor', flush=True)
+    exit_symbol_position(state, symbol, price, 'EARLY_EXIT_BTC', now, live_eligible=True)
+    return True
 
 
 def enter(state, position, price, signal_row, now):
@@ -432,20 +491,35 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
             print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
 
+def _stop_reason(p):
+    if p['trail_active']:
+        return 'ATR_TRAILING_SL'
+    return 'BREAKEVEN_SL' if p.get('be_active') else 'ATR_SL'
+
+
 def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     p = state.get('positions', {}).get(symbol)
     if not p:
         return False
     high, low = float(candle['high']), float(candle['low'])
+    last = float(candle['close'])
     entry, atr_val = p['entry_price'], p['atr']
+    # Once the break-even stop is armed it is checked against the CURRENT
+    # price, not the forming candle's low: that low may have printed before
+    # the move that armed the stop, and a phantom exit would close a winner.
+    be_on = bool(p.get('be_active')) and not p['trail_active']
     if p['side'] == 'LONG':
         stop = p['trail_stop'] if p['trail_active'] and p['trail_stop'] is not None else p['sl']
-        if low <= stop:
-            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now, live_eligible=live_eligible)
+        if (last if be_on else low) <= stop:
+            exit_symbol_position(state, symbol, stop, _stop_reason(p), now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TP and high >= p['tp']:
             exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now, live_eligible=live_eligible)
             return True
+        if BREAKEVEN_MODE == 'on' and not p['trail_active'] and not p.get('be_active') and high >= entry + BREAKEVEN_ATR * atr_val:
+            p['be_active'] = True
+            p['sl'] = max(p['sl'], entry + BREAKEVEN_BUFFER_ATR * atr_val)
+            print(f"BREAKEVEN | LONG {symbol} | stop girişe çekildi -> {p['sl']:.6f}", flush=True)
         if cfg.USE_ATR_TRAILING and high >= entry + cfg.ATR_TRAIL_ACTIVATION * atr_val:
             if not p['trail_active']:
                 p['trail_active'] = True
@@ -456,12 +530,16 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
                 p['trail_stop'] = max(p['trail_stop'], p['highest_high'] - cfg.ATR_TRAIL_MULTIPLIER * atr_val)
     else:
         stop = p['trail_stop'] if p['trail_active'] and p['trail_stop'] is not None else p['sl']
-        if high >= stop:
-            exit_symbol_position(state, symbol, stop, 'ATR_TRAILING_SL' if p['trail_active'] else 'ATR_SL', now, live_eligible=live_eligible)
+        if (last if be_on else high) >= stop:
+            exit_symbol_position(state, symbol, stop, _stop_reason(p), now, live_eligible=live_eligible)
             return True
         if cfg.USE_ATR_TP and low <= p['tp']:
             exit_symbol_position(state, symbol, p['tp'], 'ATR_TP', now, live_eligible=live_eligible)
             return True
+        if BREAKEVEN_MODE == 'on' and not p['trail_active'] and not p.get('be_active') and low <= entry - BREAKEVEN_ATR * atr_val:
+            p['be_active'] = True
+            p['sl'] = min(p['sl'], entry - BREAKEVEN_BUFFER_ATR * atr_val)
+            print(f"BREAKEVEN | SHORT {symbol} | stop girişe çekildi -> {p['sl']:.6f}", flush=True)
         if cfg.USE_ATR_TRAILING and low <= entry - cfg.ATR_TRAIL_ACTIVATION * atr_val:
             if not p['trail_active']:
                 p['trail_active'] = True
@@ -523,6 +601,11 @@ def run_watchlist_symbol(state, symbol, now):
     # Manage an existing paper position first, on the live (still-forming) candle.
     if symbol in state.get('positions', {}):
         process_intrabar_symbol(state, symbol, df.iloc[-1], now, live_eligible=True)
+    if symbol in state.get('positions', {}):
+        try:
+            check_early_exit(state, symbol, float(df.iloc[-1]['close']), now)
+        except Exception as e:
+            print(f'EARLY EXIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
@@ -531,13 +614,14 @@ def run_watchlist_symbol(state, symbol, now):
         if symbol not in state.get('positions', {}):
             if blocked:
                 go_long = go_short = False
+            sig_close = float(latest['close']); sig_atr = float(latest['atr']); cur_px = float(df.iloc[-1]['close'])
             if go_long and not go_short:
-                allowed, _why = entry_guard_check(state, symbol, 'LONG', now)
+                allowed, _why = entry_guard_check(state, symbol, 'LONG', now, sig_close, sig_atr, cur_px)
                 if allowed:
                     px = exec_price(float(df.iloc[-1]['open']), 'BUY')
                     enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
             elif go_short and not go_long:
-                allowed, _why = entry_guard_check(state, symbol, 'SHORT', now)
+                allowed, _why = entry_guard_check(state, symbol, 'SHORT', now, sig_close, sig_atr, cur_px)
                 if allowed:
                     px = exec_price(float(df.iloc[-1]['open']), 'SELL')
                     enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
@@ -668,6 +752,8 @@ def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
+    print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
+          f'BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):

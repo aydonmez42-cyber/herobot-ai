@@ -1001,6 +1001,7 @@ th.sort-active{color:var(--accent)}
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
+<div id="guardBanner" style="display:none;margin:10px 0;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,170,0,.55);background:rgba(255,170,0,.09);font-size:13px;line-height:1.55"></div>
 <section class="kpistrip">
   <div class="kpi kpi-equity">
     <div class="kpi-label" data-i18n="kpi.equity">Current balance</div>
@@ -2826,8 +2827,31 @@ async function refreshWatchlist(){
   if(selectedSymbol!=='ETHUSDT') renderDetail();
 }
 
+const GUARD_TEXT={
+  tr:{lock:'🔒 BTC kilidi aktif',lockTail:'Yeni LONG girişleri durduruldu.',brake:'⛔ Zarar freni aktif',brakeTail:'Yeni girişler şu saate kadar durduruldu:',test:'(test modu: engellemiyor)'},
+  en:{lock:'🔒 BTC lock active',lockTail:'New LONG entries are paused.',brake:'⛔ Loss brake active',brakeTail:'New entries are paused until',test:'(test mode: not blocking)'},
+  de:{lock:'🔒 BTC-Sperre aktiv',lockTail:'Neue LONG-Einstiege pausiert.',brake:'⛔ Verlustbremse aktiv',brakeTail:'Neue Einstiege pausiert bis',test:'(Testmodus: blockiert nicht)'},
+  fr:{lock:'🔒 Verrou BTC actif',lockTail:'Nouvelles entrées LONG suspendues.',brake:'⛔ Frein de pertes actif',brakeTail:'Nouvelles entrées suspendues jusqu’à',test:'(mode test : ne bloque pas)'},
+  es:{lock:'🔒 Bloqueo BTC activo',lockTail:'Nuevas entradas LONG en pausa.',brake:'⛔ Freno de pérdidas activo',brakeTail:'Nuevas entradas en pausa hasta',test:'(modo prueba: no bloquea)'},
+  zh:{lock:'🔒 BTC 锁已启用',lockTail:'已暂停新的做多入场。',brake:'⛔ 亏损刹车已启用',brakeTail:'暂停新入场至',test:'（测试模式：不拦截）'}
+};
+function renderGuardBanner(g){
+  const el=document.getElementById('guardBanner'); if(!el) return;
+  const x=GUARD_TEXT[currentLang]||GUARD_TEXT.en, parts=[];
+  if(g && g.btc_lock){
+    const l=g.btc_lock;
+    parts.push(`<b>${x.lock}</b> — ${l.reason||''}. ${x.lockTail}${l.enforced===false?' '+x.test:''}`);
+  }
+  if(g && g.loss_brake){
+    const b=g.loss_brake; let when=b.until;
+    try{ when=new Date(b.until).toLocaleString(); }catch(e){}
+    parts.push(`<b>${x.brake}</b> — ${x.brakeTail} ${when}${b.enforced===false?' '+x.test:''}`);
+  }
+  el.style.display=parts.length?'block':'none';
+  el.innerHTML=parts.join('<br>');
+}
 async function refresh(){
-  try{let r=await fetch('/api/status',{cache:'no-store'});let d=await r.json();render(d)}
+  try{let r=await fetch('/api/status',{cache:'no-store'});let d=await r.json();render(d);try{renderGuardBanner(d.entry_guard)}catch(e){}}
   catch(e){const st=document.getElementById('status');st.className='status-pill err';st.innerHTML='<span class="dot"></span>'+t('nav.connectionError');}
 }
 refresh();setInterval(refresh,5000);
@@ -7896,6 +7920,29 @@ def status():
     indicators=s.get('indicators',{})
     return {'bot_alive': bool(s.get('last_heartbeat')),'heartbeat':s.get('last_heartbeat'),'equity':equity,'net_pnl':net,'return_pct':net/start*100,'price':f(s.get('market_prices',{}).get('ETHUSDT',0)),'price_time':s.get('market_price_time'),'last_closed_time':s.get('last_closed_time'),'position':pos,'signals':s.get('signals',indicators),'total_open_pnl':total_open_pnl,'stats':{'trades':len(closed),'wins':wins,'losses':losses,'win_rate':wins/len(closed)*100 if closed else 0,'profit_factor':pf,'avg_trade':avg,'max_drawdown':maxdd,'gross_win':gross_win,'gross_loss':gross_loss,'net_closed':net_closed,'start_date':start_date},'history':list(reversed(closed[-20:]))}
 
+def guard_view(s):
+    """Compact view of the bot's entry guards (BTC lock / loss brake) for the
+    dashboard banner. Only active guards are returned."""
+    out = {}
+    try:
+        from datetime import datetime, timezone
+        lock = s.get('btc_lock') or {}
+        if lock.get('active'):
+            out['btc_lock'] = {'reason': lock.get('reason'), 'since': lock.get('since'),
+                               'change_1h': lock.get('change_1h'), 'change_4h': lock.get('change_4h'),
+                               'enforced': bool(lock.get('enforced', True))}
+        lb = s.get('loss_brake') or {}
+        if lb.get('until'):
+            until = datetime.fromisoformat(str(lb['until']).replace('Z', '+00:00'))
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=timezone.utc)
+            if until > datetime.now(timezone.utc):
+                out['loss_brake'] = {'until': lb['until'], 'stops': lb.get('stops'),
+                                     'enforced': bool(lb.get('enforced', True))}
+    except Exception:
+        pass
+    return out
+
 _DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 def closed_trades_page(q, all_rows=False):
@@ -8452,7 +8499,8 @@ class Handler(BaseHTTPRequestHandler):
             q=parse_qs(urlparse(self.path).query)
             body=json.dumps(closed_trades_page(q),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/status':
-            body=json.dumps(status(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+            _st=status(); _st['entry_guard']=guard_view(read_state())
+            body=json.dumps(_st,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/health':
             body=b'OK'; self.send_response(200); self.send_header('Content-Type','text/plain; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/bist-scanner':
