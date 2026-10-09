@@ -119,6 +119,47 @@ def fetch(symbol, market_type, limit=250, interval=None):
     return df
 
 
+_kline_cache = {}
+
+
+def fetch_cached(symbol, market_type, interval, limit):
+    """Binance klines with far fewer requests (the bot was hitting HTTP 429).
+    - Daily ('1d') candles: fetched once per UTC day per symbol; the strategy
+      only uses fully closed daily candles, which cannot change intraday. If a
+      refresh fails, the previous copy is used instead of skipping the coin.
+    - Intraday candles: the full history is fetched only when a new candle has
+      started; in between, only the last 2 candles are requested (the forming
+      candle drives stops / current price) and merged into the cached history.
+    Signals and indicators are computed on exactly the same data as before."""
+    key = (symbol, market_type, interval)
+    now = pd.Timestamp.now(tz='UTC')
+    c = _kline_cache.get(key)
+    if interval == '1d':
+        today = now.date()
+        if c and c['day'] == today:
+            return c['df'].copy()
+        try:
+            df = fetch(symbol, market_type, limit, interval=interval)
+        except Exception:
+            if c:
+                return c['df'].copy()
+            raise
+        _kline_cache[key] = {'day': today, 'df': df}
+        return df.copy()
+    if c is not None and now < c['df'].iloc[-1]['close_time']:
+        tail = fetch(symbol, market_type, 2, interval=interval)
+        df = c['df']
+        df = df[df['open_time'] < tail.iloc[0]['open_time']]
+        df = pd.concat([df, tail], ignore_index=True)
+        if len(df) > limit:
+            df = df.iloc[-limit:].reset_index(drop=True)
+        c['df'] = df
+        return df.copy()
+    df = fetch(symbol, market_type, limit, interval=interval)
+    _kline_cache[key] = {'df': df}
+    return df.copy()
+
+
 def log_trade(t):
     exists = os.path.exists(TRADES_FILE)
     pd.DataFrame([t]).to_csv(TRADES_FILE, mode='a', header=not exists, index=False)
@@ -556,8 +597,8 @@ def run_watchlist_symbol(state, symbol, now):
     """Fetch data, refresh the signal snapshot, and manage a paper position for
     one manually-added crypto watchlist symbol using the exact same strategy
     and indicators as the main ETH engine (USD-M Binance Futures klines)."""
-    df = fetch(symbol, 'USD_M', 300)
-    daily_df = fetch(symbol, 'USD_M', 400, interval='1d')
+    df = fetch_cached(symbol, 'USD_M', cfg.INTERVAL, 300)
+    daily_df = fetch_cached(symbol, 'USD_M', '1d', 400)
     daily_closed = daily_df.iloc[:-1].copy()
     volatile_now, atrp_pct, _ = is_volatile_daily(
         daily_closed, cfg.VOLATILITY_ATR_LENGTH, cfg.VOLATILITY_PERCENTILE_LENGTH,
@@ -776,11 +817,11 @@ def main():
             # file from another thread, and without a reload here this loop's
             # next save would silently overwrite those changes.
             state = load_state()
-            signal_df = fetch(cfg.SIGNAL_SYMBOL, 'USD_M', 300)
-            long_df = fetch(cfg.LONG_SYMBOL, 'COIN_M', 100)
-            short_df = fetch(cfg.SHORT_SYMBOL, 'USD_M', 100)
+            signal_df = fetch_cached(cfg.SIGNAL_SYMBOL, 'USD_M', cfg.INTERVAL, 300)
+            long_df = fetch(cfg.LONG_SYMBOL, 'COIN_M', 2)     # only the latest candle is used
+            short_df = fetch(cfg.SHORT_SYMBOL, 'USD_M', 2)
             # Daily volatility veto uses only the latest fully closed 1D candle.
-            daily_df = fetch(cfg.SIGNAL_SYMBOL, 'USD_M', 400, interval='1d')
+            daily_df = fetch_cached(cfg.SIGNAL_SYMBOL, 'USD_M', '1d', 400)
             daily_closed = daily_df.iloc[:-1].copy()
             volatile_now, atrp_pct, atrp_value = is_volatile_daily(
                 daily_closed,
@@ -915,6 +956,11 @@ def main():
                     elif market == 'us_stock':
                         run_us_stock_watchlist_symbol(state, wsym, now)
                 except Exception as e:
+                    if type(e).__name__ == 'BinanceCooldown':
+                        # Binance asked us to slow down: skip the rest of this cycle
+                        # (one log line instead of one per coin).
+                        print(f'WATCHLIST | Binance bekleme süresi aktif, kalan semboller bu turda atlandı ({wsym} ve sonrası)', flush=True)
+                        break
                     print(f'WATCHLIST ERROR | {wsym} | {type(e).__name__}: {e}', flush=True)
             sync_bist_watchlist_signals(state, now)
 
