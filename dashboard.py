@@ -38,6 +38,18 @@ SESSION_COOKIE = 'session_token'
 # in deployment config, not hardcoded in source.
 SUBSCRIPTION_USDT_ADDRESS = os.environ.get('SUBSCRIPTION_USDT_ADDRESS', '0xe217e113fa475b8e4b5e1d1f5e35ddb04b13cffc')
 SUBSCRIPTION_USDT_NETWORK = os.environ.get('SUBSCRIPTION_USDT_NETWORK', 'BNB Smart Chain (BEP20)')
+# All USDT deposit networks offered on the subscription page. The BNB entry
+# keeps using the two variables above; the others can each be overridden with
+# their own environment variable. ETH (ERC20) and AVAX C-Chain use the same
+# EVM address; Tron (TRC20) has its own base58 address.
+_EVM_DEPOSIT_ADDRESS = '0xe217e113fa475b8e4b5e1d1f5e35ddb04b13cffc'
+SUBSCRIPTION_USDT_NETWORKS = [
+    {'id': 'bsc',  'name': SUBSCRIPTION_USDT_NETWORK, 'address': SUBSCRIPTION_USDT_ADDRESS},
+    {'id': 'eth',  'name': 'Ethereum (ERC20)', 'address': os.environ.get('SUBSCRIPTION_USDT_ADDRESS_ETH', _EVM_DEPOSIT_ADDRESS)},
+    {'id': 'avax', 'name': 'AVAX C-Chain',     'address': os.environ.get('SUBSCRIPTION_USDT_ADDRESS_AVAX', _EVM_DEPOSIT_ADDRESS)},
+    {'id': 'trx',  'name': 'Tron (TRC20)',     'address': os.environ.get('SUBSCRIPTION_USDT_ADDRESS_TRX', 'TDbCHFnjmaJZCqNvDTuivC71EK2RvUXsSa')},
+]
+SUBSCRIPTION_USDT_NETWORKS_JSON = json.dumps(SUBSCRIPTION_USDT_NETWORKS, ensure_ascii=False)
 
 # ---------------------------------------------------------------------------
 # Per-IP rate limiting for the auth-adjacent endpoints (login, register,
@@ -641,7 +653,8 @@ ACCOUNT_EXTRAS_HTML = r'''
       <div class="iban-box">
         <div class="account-row text-faint"><span data-i18n="subscription.selectedPlanLabel">Selected plan:</span> <b id="planSelectedLabel" style="color:var(--text)">—</b></div>
         <div class="account-row" style="margin-top:8px" data-i18n="subscription.networkLabel">Network:</div>
-        <div class="iban-num">__USDT_NETWORK__</div>
+        <select id="usdtNetworkSel" onchange="selectUsdtNetwork(this.value)" style="margin-top:4px;padding:8px 10px;border-radius:8px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:14px;max-width:100%"></select>
+        <div class="iban-num" id="usdtNetworkText">__USDT_NETWORK__</div>
         <div class="account-row" style="margin-top:8px" data-i18n="subscription.addressLabel">USDT Wallet Address:</div>
         <div class="iban-num" id="usdtAddressText">__USDT_ADDRESS__</div>
         <div class="account-row" style="margin-top:10px">
@@ -689,6 +702,19 @@ function renderUsdtQr(){
   }catch(e){}
 }
 renderUsdtQr();
+const USDT_NETWORKS=__USDT_NETWORKS_JSON__;
+function selectUsdtNetwork(id){
+  const n=USDT_NETWORKS.find(x=>x.id===id)||USDT_NETWORKS[0];
+  document.getElementById('usdtNetworkText').textContent=n.name;
+  document.getElementById('usdtAddressText').textContent=n.address;
+  const sel=document.getElementById('usdtNetworkSel'); if(sel) sel.value=n.id;
+  renderUsdtQr();
+}
+(function(){
+  const sel=document.getElementById('usdtNetworkSel'); if(!sel) return;
+  sel.innerHTML=USDT_NETWORKS.map(n=>`<option value="${n.id}">${n.name}</option>`).join('');
+  sel.value=USDT_NETWORKS[0].id;
+})();
 let _selectedPlan=null;
 function selectPlan(plan){
   _selectedPlan=plan;
@@ -720,7 +746,7 @@ async function confirmPaymentSent(){
   const btn=document.getElementById('paySentBtn');
   btn.disabled=true; btn.textContent=t('subscription.sending');
   try{
-    const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan})});
+    const r=await fetch('/api/account/subscription-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:_selectedPlan,network:(document.getElementById('usdtNetworkSel')||{}).value||'bsc'})});
     const d=await r.json();
     document.getElementById('paySentMsg').innerHTML = d.ok
       ? '<span style="color:var(--bull)">'+t('subscription.successMsg')+'</span>'
@@ -2785,10 +2811,31 @@ function selectSymbol(symbol){
   if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+const CHART_TITLE={tr:'Grafiği aç (TradingView)',en:'Open chart (TradingView)',de:'Chart öffnen (TradingView)',fr:'Ouvrir le graphique (TradingView)',es:'Abrir gráfico (TradingView)',zh:'打开图表 (TradingView)'};
+function chartUrlFor(symbol){
+  const item=(typeof watchlistCache!=='undefined'&&watchlistCache.items||[]).find(x=>x.symbol===symbol);
+  const m=item?item.market:'crypto';
+  let tv;
+  if(m==='bist') tv='BIST:'+String(symbol).replace(/\.IS$/i,'');
+  else if(m==='us_stock') tv=String(symbol);
+  else tv='BINANCE:'+symbol+'.P';                       // Binance USDT-M perpetual
+  return 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv);
+}
+function renderDetailSymbol(){
+  const el=document.getElementById('detailSymbol'); if(!el) return;
+  el.textContent='— ';
+  const a=document.createElement('a');                  // built with the DOM API: the symbol can come from the URL
+  a.href=chartUrlFor(selectedSymbol); a.target='_blank'; a.rel='noopener noreferrer';
+  a.title=CHART_TITLE[currentLang]||CHART_TITLE.en;
+  a.style.cssText='color:inherit;text-decoration:underline dotted;cursor:pointer';
+  a.textContent=selectedSymbol+' 📈';
+  el.appendChild(a);
+}
+
 function renderDetail(){
   const posEl=document.getElementById('position');
   const sigEl=document.getElementById('signals');
-  document.getElementById('detailSymbol').textContent='— '+selectedSymbol;
+  renderDetailSymbol();
   if(selectedSymbol==='ETHUSDT'){
     if(!statusCache){posEl.innerHTML=t('panel.loading');sigEl.innerHTML='—';return;}
     renderPositionCard(posEl,statusCache.position);
@@ -8374,7 +8421,7 @@ class Handler(BaseHTTPRequestHandler):
                 if path.startswith('/api/'):
                     self._send_json({'error': 'subscription required', 'subscription_status': 'expired'}, status=402); return
                 html = (TRIAL_EXPIRED_HTML.replace('__USERNAME__', user)
-                        .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
+                        .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORKS_JSON__', SUBSCRIPTION_USDT_NETWORKS_JSON).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
                 self._send_html(html); return
 
         if path=='/admin':
@@ -8397,7 +8444,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path=='/account':
             html=(ACCOUNT_HTML.replace('__USERNAME__', user)
-                  .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
+                  .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORKS_JSON__', SUBSCRIPTION_USDT_NETWORKS_JSON).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
             self._send_html(html); return
 
         if path=='/trades':
@@ -8601,7 +8648,7 @@ class Handler(BaseHTTPRequestHandler):
             summary['live_trading_enabled']=bool((auth.get_user(user) or {}).get('live_trading_enabled'))
             body=json.dumps(summary,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         html=(HTML.replace('__USERNAME__', self._current_user() or '')
-              .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
+              .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORKS_JSON__', SUBSCRIPTION_USDT_NETWORKS_JSON).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))
         body=html.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
 
     # -- auth / account POST routes ---------------------------------------
@@ -8802,9 +8849,13 @@ class Handler(BaseHTTPRequestHandler):
             if plan not in plans:
                 self._send_json({'ok': False, 'error': 'Geçersiz plan.'}, status=400); return
             plan_label, amount_usd = plans[plan]
+            net_id=(data.get('network') or 'bsc').strip().lower()
+            net=next((n for n in SUBSCRIPTION_USDT_NETWORKS if n['id']==net_id), SUBSCRIPTION_USDT_NETWORKS[0])
             auth.record_subscription_request(user, plan, amount_usd)
+            print(f"SUBSCRIPTION REQUEST | {user} | {plan} | {amount_usd} USD | network={net['name']} | address={net['address']}", flush=True)
             acct = auth.get_account_status(user)
-            ok, err = email_notifier.send_subscription_payment_notice(user, acct.get('email'), plan_label, amount_usd)
+            # The chosen network is appended to the plan label so it shows up in the admin e-mail.
+            ok, err = email_notifier.send_subscription_payment_notice(user, acct.get('email'), f"{plan_label} — {net['name']}", amount_usd)
             if not ok and err == 'not configured':
                 # The request is still recorded (visible in the admin panel)
                 # even if outbound e-mail isn't set up on this server.
