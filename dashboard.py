@@ -2910,6 +2910,44 @@ function renderDetailSymbol(){
   el.appendChild(a);
 }
 
+const LIVE_FB_TEXT={
+  tr:{tag:'CANLI POZİSYON',note:'Bu coin demo takip listesinde değil; aşağıda Binance hesabınızdaki gerçek pozisyon gösteriliyor. Sinyal matrisi yalnızca takip listesindeki coinler için hesaplanır.',noSig:'Bu coin takip listesinde olmadığı için sinyal matrisi yok.',lev:'Kaldıraç'},
+  en:{tag:'LIVE POSITION',note:'This coin is not in the demo watchlist; your real Binance position is shown below. The signal matrix is only computed for watchlist coins.',noSig:'No signal matrix: this coin is not in the watchlist.',lev:'Leverage'},
+  de:{tag:'LIVE-POSITION',note:'Dieser Coin ist nicht in der Demo-Watchlist; unten sehen Sie Ihre echte Binance-Position. Die Signalmatrix wird nur für Watchlist-Coins berechnet.',noSig:'Keine Signalmatrix: Coin nicht in der Watchlist.',lev:'Hebel'},
+  fr:{tag:'POSITION RÉELLE',note:'Ce coin n’est pas dans la liste de suivi démo ; votre position Binance réelle est affichée ci-dessous. La matrice de signaux n’est calculée que pour les coins suivis.',noSig:'Pas de matrice de signaux : coin hors liste de suivi.',lev:'Levier'},
+  es:{tag:'POSICIÓN REAL',note:'Esta moneda no está en la lista demo; abajo se muestra tu posición real de Binance. La matriz de señales solo se calcula para monedas de la lista.',noSig:'Sin matriz de señales: la moneda no está en la lista.',lev:'Apalancamiento'},
+  zh:{tag:'实盘仓位',note:'该币种不在模拟自选列表中;下方显示您币安账户的真实仓位。信号矩阵仅为自选列表中的币种计算。',noSig:'无信号矩阵:该币种不在自选列表中。',lev:'杠杆'}
+};
+let _liveFbCache={ts:0,data:null};
+async function renderLiveFallback(posEl,sigEl,symbol,keepSig){
+  const x=LIVE_FB_TEXT[currentLang]||LIVE_FB_TEXT.en;
+  if(!keepSig) sigEl.innerHTML='<div class="pos-empty">'+x.noSig+'</div>';
+  let d=_liveFbCache.data;
+  if(!d || Date.now()-_liveFbCache.ts>5000){
+    if(!keepSig) posEl.innerHTML=t('panel.loading');
+    try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); _liveFbCache={ts:Date.now(),data:d}; }catch(e){ d=null; }
+  }
+  if(selectedSymbol!==symbol) return;                    // user clicked something else meanwhile
+  const p=d&&(d.open||[]).find(o=>o.symbol===symbol);
+  if(!p){ if(keepSig) renderPositionCard(posEl,null); else posEl.innerHTML='<div class="pos-empty">'+t('watchlist.symbolRemoved')+'</div>'; return; }
+  const entry=Number(p.entry_price),cur=Number(p.current_price),qty=Number(p.qty);
+  const sideCls=p.side==='LONG'?'long':'short';
+  const size=(!isNaN(qty)&&!isNaN(entry))?qty*entry:null;
+  const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+  posEl.innerHTML=`
+    <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span><span class="text-faint" style="margin-left:8px;font-size:12px">${x.tag}</span></div>
+    <div class="pos-grid">
+      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${num(entry)}</div></div>
+      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${num(cur)}</div></div>
+      <div><div class="kpi-label">${t('pos.unrealizedPnl')}</div><div class="val ${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</div></div>
+      <div><div class="kpi-label">${t('pos.qty')}</div><div class="val">${qtyNum(qty)}</div></div>
+      <div><div class="kpi-label">${t('pos.positionSize')}</div><div class="val">${money(size)}</div></div>
+      <div><div class="kpi-label">${x.lev}</div><div class="val">${p.leverage||1}x</div></div>
+    </div>
+    <div class="pos-foot">${t('pos.entryTimeLabel')} ${opened}</div>
+    <div class="text-faint" style="margin-top:8px;font-size:12px">${x.note}</div>`;
+}
+
 function renderDetail(){
   const posEl=document.getElementById('position');
   const sigEl=document.getElementById('signals');
@@ -2918,16 +2956,21 @@ function renderDetail(){
     if(!statusCache){posEl.innerHTML=t('panel.loading');sigEl.innerHTML='—';return;}
     renderPositionCard(posEl,statusCache.position);
     renderSignalCard(sigEl,statusCache.signals);
+    if(!statusCache.position) renderLiveFallback(posEl,sigEl,'ETHUSDT',true);
     return;
   }
   const item=(watchlistCache.items||[]).find(x=>x.symbol===selectedSymbol);
   if(!item){
-    posEl.innerHTML='<div class="pos-empty">'+t('watchlist.symbolRemoved')+'</div>';
-    sigEl.innerHTML='—';
+    // Not in the shared demo watchlist (removed, or never added). The user may
+    // still hold a REAL Binance position in it, so show that instead of a
+    // dead end.
+    renderLiveFallback(posEl,sigEl,selectedSymbol);
     return;
   }
   renderPositionCard(posEl,item.position);
   renderSignalCard(sigEl,item.indicators);
+  // Demo position already closed but the REAL Binance one may still be open.
+  if(!item.position) renderLiveFallback(posEl,sigEl,selectedSymbol,true);
 }
 
 function render(d){
