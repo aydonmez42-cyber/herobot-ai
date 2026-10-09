@@ -1280,6 +1280,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Close Now",
   "liveOpen.closing": "Closing…",
   "liveWallet.title": "Binance Futures Wallet",
+  "liveSec.open": "Open Live Positions",
+  "liveSec.closed": "Closed Live Trades",
   "liveWallet.wallet": "Wallet balance",
   "liveWallet.equity": "Total equity",
   "liveWallet.available": "Available",
@@ -1564,6 +1566,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Şimdi Kapat",
   "liveOpen.closing": "Kapatılıyor…",
   "liveWallet.title": "Binance Futures Cüzdanı",
+  "liveSec.open": "Açık Canlı İşlemler",
+  "liveSec.closed": "Kapanan Canlı İşlemler",
   "liveWallet.wallet": "Cüzdan bakiyesi",
   "liveWallet.equity": "Toplam varlık",
   "liveWallet.available": "Kullanılabilir",
@@ -1848,6 +1852,8 @@ const translations = {
   "liveOpen.closeNowBtn": "立即平仓",
   "liveOpen.closing": "平仓中…",
   "liveWallet.title": "币安合约钱包",
+  "liveSec.open": "未平仓实盘仓位",
+  "liveSec.closed": "已平仓实盘交易",
   "liveWallet.wallet": "钱包余额",
   "liveWallet.equity": "总权益",
   "liveWallet.available": "可用余额",
@@ -2132,6 +2138,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Jetzt schließen",
   "liveOpen.closing": "Wird geschlossen…",
   "liveWallet.title": "Binance-Futures-Wallet",
+  "liveSec.open": "Offene Live-Positionen",
+  "liveSec.closed": "Geschlossene Live-Trades",
   "liveWallet.wallet": "Wallet-Guthaben",
   "liveWallet.equity": "Gesamtkapital",
   "liveWallet.available": "Verfügbar",
@@ -2416,6 +2424,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Fermer maintenant",
   "liveOpen.closing": "Fermeture en cours…",
   "liveWallet.title": "Portefeuille Binance Futures",
+  "liveSec.open": "Positions réelles ouvertes",
+  "liveSec.closed": "Trades réels clôturés",
   "liveWallet.wallet": "Solde du portefeuille",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
@@ -2700,6 +2710,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Cerrar ahora",
   "liveOpen.closing": "Cerrando…",
   "liveWallet.title": "Billetera Binance Futures",
+  "liveSec.open": "Posiciones reales abiertas",
+  "liveSec.closed": "Operaciones reales cerradas",
   "liveWallet.wallet": "Saldo de la billetera",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
@@ -5292,6 +5304,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Close Now",
   "liveOpen.closing": "Closing…",
   "liveWallet.title": "Binance Futures Wallet",
+  "liveSec.open": "Open Live Positions",
+  "liveSec.closed": "Closed Live Trades",
   "liveWallet.wallet": "Wallet balance",
   "liveWallet.equity": "Total equity",
   "liveWallet.available": "Available",
@@ -5440,6 +5454,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Şimdi Kapat",
   "liveOpen.closing": "Kapatılıyor…",
   "liveWallet.title": "Binance Futures Cüzdanı",
+  "liveSec.open": "Açık Canlı İşlemler",
+  "liveSec.closed": "Kapanan Canlı İşlemler",
   "liveWallet.wallet": "Cüzdan bakiyesi",
   "liveWallet.equity": "Toplam varlık",
   "liveWallet.available": "Kullanılabilir",
@@ -5588,6 +5604,8 @@ const translations = {
   "liveOpen.closeNowBtn": "立即平仓",
   "liveOpen.closing": "平仓中…",
   "liveWallet.title": "币安合约钱包",
+  "liveSec.open": "未平仓实盘仓位",
+  "liveSec.closed": "已平仓实盘交易",
   "liveWallet.wallet": "钱包余额",
   "liveWallet.equity": "总权益",
   "liveWallet.available": "可用余额",
@@ -5736,6 +5754,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Jetzt schließen",
   "liveOpen.closing": "Wird geschlossen…",
   "liveWallet.title": "Binance-Futures-Wallet",
+  "liveSec.open": "Offene Live-Positionen",
+  "liveSec.closed": "Geschlossene Live-Trades",
   "liveWallet.wallet": "Wallet-Guthaben",
   "liveWallet.equity": "Gesamtkapital",
   "liveWallet.available": "Verfügbar",
@@ -5884,6 +5904,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Fermer maintenant",
   "liveOpen.closing": "Fermeture en cours…",
   "liveWallet.title": "Portefeuille Binance Futures",
+  "liveSec.open": "Positions réelles ouvertes",
+  "liveSec.closed": "Trades réels clôturés",
   "liveWallet.wallet": "Solde du portefeuille",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
@@ -6032,6 +6054,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Cerrar ahora",
   "liveOpen.closing": "Cerrando…",
   "liveWallet.title": "Billetera Binance Futures",
+  "liveSec.open": "Posiciones reales abiertas",
+  "liveSec.closed": "Operaciones reales cerradas",
   "liveWallet.wallet": "Saldo de la billetera",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
@@ -7178,13 +7202,6 @@ LIVE_HTML = r'''<!doctype html>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
-  <div class="position-body" id="accountBody">
-    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
-  </div>
-</section>
-
 <section class="panel" id="liveWalletPanel">
   <div class="panel-head"><h2 data-i18n="liveWallet.title">Binance Futures Wallet</h2><span class="text-faint" id="liveWalletUpdated">—</span></div>
   <div id="liveWalletBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
@@ -7192,24 +7209,38 @@ LIVE_HTML = r'''<!doctype html>
 </section>
 
 <section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.liveAccount">Binance Live Account</h2><span class="text-faint" id="liveMineCount">—</span></div>
-  <div class="live-panel" style="margin-top:0">
-    <h4 data-i18n="liveAccount.title">Live Trading (Real Money)</h4>
-    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
-  </div>
-  <div class="table-scroll" style="margin-top:14px">
+  <div class="panel-head"><h2 data-i18n="liveSec.open">Open Live Positions</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div class="table-scroll" style="margin-top:0">
     <table class="datatable">
       <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
       <tbody id="liveMineOpenRows"><tr><td colspan="9" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
-  <div class="table-scroll" style="margin-top:14px">
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="liveSec.closed">Closed Live Trades</h2></div>
+  <div class="table-scroll" style="margin-top:0">
     <table class="datatable">
       <thead><tr><th data-i18n="history.headerDate">Date</th><th data-i18n="history.headerDirection">Direction</th><th data-i18n="watchlist.headerSymbol">Symbol</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="history.headerExit">Exit</th><th class="num" data-i18n="history.headerPnl">P&amp;L</th><th data-i18n="history.headerReason">Reason</th></tr></thead>
       <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
   <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="liveAccount.title">Live Trading (Real Money)</h2></div>
+  <div class="live-panel" style="margin-top:0">
+    <div id="livePanelBody"><div class="pos-empty" data-i18n="panel.loading">Loading…</div></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2 data-i18n="panel.binanceConnection">Binance Connection</h2><span class="text-faint" id="binanceStatusPill">—</span></div>
+  <div class="position-body" id="accountBody">
+    <div class="pos-empty" data-i18n="panel.loading">Loading…</div>
+  </div>
 </section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
@@ -7501,6 +7532,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Close Now",
   "liveOpen.closing": "Closing…",
   "liveWallet.title": "Binance Futures Wallet",
+  "liveSec.open": "Open Live Positions",
+  "liveSec.closed": "Closed Live Trades",
   "liveWallet.wallet": "Wallet balance",
   "liveWallet.equity": "Total equity",
   "liveWallet.available": "Available",
@@ -7596,6 +7629,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Şimdi Kapat",
   "liveOpen.closing": "Kapatılıyor…",
   "liveWallet.title": "Binance Futures Cüzdanı",
+  "liveSec.open": "Açık Canlı İşlemler",
+  "liveSec.closed": "Kapanan Canlı İşlemler",
   "liveWallet.wallet": "Cüzdan bakiyesi",
   "liveWallet.equity": "Toplam varlık",
   "liveWallet.available": "Kullanılabilir",
@@ -7691,6 +7726,8 @@ const translations = {
   "liveOpen.closeNowBtn": "立即平仓",
   "liveOpen.closing": "正在平仓…",
   "liveWallet.title": "币安合约钱包",
+  "liveSec.open": "未平仓实盘仓位",
+  "liveSec.closed": "已平仓实盘交易",
   "liveWallet.wallet": "钱包余额",
   "liveWallet.equity": "总权益",
   "liveWallet.available": "可用余额",
@@ -7786,6 +7823,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Jetzt schließen",
   "liveOpen.closing": "Wird geschlossen…",
   "liveWallet.title": "Binance-Futures-Wallet",
+  "liveSec.open": "Offene Live-Positionen",
+  "liveSec.closed": "Geschlossene Live-Trades",
   "liveWallet.wallet": "Wallet-Guthaben",
   "liveWallet.equity": "Gesamtkapital",
   "liveWallet.available": "Verfügbar",
@@ -7881,6 +7920,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Fermer maintenant",
   "liveOpen.closing": "Fermeture…",
   "liveWallet.title": "Portefeuille Binance Futures",
+  "liveSec.open": "Positions réelles ouvertes",
+  "liveSec.closed": "Trades réels clôturés",
   "liveWallet.wallet": "Solde du portefeuille",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
@@ -7976,6 +8017,8 @@ const translations = {
   "liveOpen.closeNowBtn": "Cerrar ahora",
   "liveOpen.closing": "Cerrando…",
   "liveWallet.title": "Billetera Binance Futures",
+  "liveSec.open": "Posiciones reales abiertas",
+  "liveSec.closed": "Operaciones reales cerradas",
   "liveWallet.wallet": "Saldo de la billetera",
   "liveWallet.equity": "Capital total",
   "liveWallet.available": "Disponible",
