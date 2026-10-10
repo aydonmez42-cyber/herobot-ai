@@ -6289,6 +6289,19 @@ function goToSymbol(symbol){
 }
 
 
+const BLOCK_TEXT={
+  tr:{DIRECTION_LIMIT:'aynı yönde pozisyon limiti dolu',BTC_LOCK:'BTC kilidi aktif',LOSS_BRAKE:'zarar freni aktif',LATE_ENTRY:'fiyat sinyalden uzaklaştı',other:'giriş engellendi'},
+  en:{DIRECTION_LIMIT:'same-direction position limit reached',BTC_LOCK:'BTC lock active',LOSS_BRAKE:'loss brake active',LATE_ENTRY:'price moved away from signal',other:'entry blocked'},
+  de:{DIRECTION_LIMIT:'Limit gleichgerichteter Positionen erreicht',BTC_LOCK:'BTC-Sperre aktiv',LOSS_BRAKE:'Verlustbremse aktiv',LATE_ENTRY:'Preis hat sich vom Signal entfernt',other:'Einstieg blockiert'},
+  fr:{DIRECTION_LIMIT:'limite de positions dans le même sens atteinte',BTC_LOCK:'verrou BTC actif',LOSS_BRAKE:'frein de pertes actif',LATE_ENTRY:'prix éloigné du signal',other:'entrée bloquée'},
+  es:{DIRECTION_LIMIT:'límite de posiciones en la misma dirección alcanzado',BTC_LOCK:'bloqueo BTC activo',LOSS_BRAKE:'freno de pérdidas activo',LATE_ENTRY:'el precio se alejó de la señal',other:'entrada bloqueada'},
+  zh:{DIRECTION_LIMIT:'同向持仓数量已达上限',BTC_LOCK:'BTC 锁已启用',LOSS_BRAKE:'亏损刹车已启用',LATE_ENTRY:'价格已偏离信号',other:'入场被拦截'}
+};
+function blockText(b){
+  const m=BLOCK_TEXT[currentLang]||BLOCK_TEXT.en;
+  const codes=(b&&b.codes)||[];
+  return codes.length?codes.map(c=>m[c]||m.other).join(' + '):m.other;
+}
 function renderWatchlistTable(){
   const d=watchlistCache;
   document.getElementById('wlUsd').textContent=Number(d.position_usd||0).toLocaleString('en-US');
@@ -6313,6 +6326,7 @@ function renderWatchlistTable(){
     } else {
       sideCell=sigPill(x.current_signal||'NO SIGNAL');
       pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
+      if(x.entry_block) pnlCell+=`<div class="text-faint" style="font-size:11px;line-height:1.35;margin-top:2px;color:var(--bear,#e5534b)">⛔ ${blockText(x.entry_block)}</div>`;
     }
     const added=(()=>{ const raw=x.added_at||''; if(!raw) return '';
       try{ const iso=/[zZ]|[+-]\d\d:?\d\d$/.test(raw)?raw:raw.replace(' ','T')+'Z';   // stored values are UTC
@@ -8504,6 +8518,7 @@ def watchlist_status():
             'current_price': sig.get('price'), 'atrp_percentile_1d': sig.get('atrp_percentile_1d'),
             'updated_at': sig.get('updated_at'), 'position': pos,
             'indicators': sig.get('indicators'),
+            'entry_block': ((s.get('entry_blocked') or {}).get(symbol) if symbol not in positions else None),
         })
     items.sort(key=lambda x: x.get('added_at') or '', reverse=True)
     ws = auth.get_watchlist_settings()

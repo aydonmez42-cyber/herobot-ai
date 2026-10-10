@@ -286,9 +286,14 @@ def record_stop_and_maybe_brake(state, now):
             pass
 
 
-def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, current_price=None, skip_direction_limit=False):
+LAST_BLOCK_CODES = []   # guard names behind the most recent block (read right after entry_guard_check)
+
+
+def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, current_price=None, skip_direction_limit=False, quiet=False):
     """Returns (allowed, reason). Fails OPEN on any internal error so a bug
     here can never stop the trading loop."""
+    global LAST_BLOCK_CODES
+    LAST_BLOCK_CODES = []
     try:
         hits = []  # (guard_name, mode, text)
         if LOSS_BRAKE_MODE != 'off' and brake_active(state, now):
@@ -313,9 +318,12 @@ def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, cur
         enforcing = [h for h in hits if h[1] == 'on']
         text = ' + '.join(h[2] for h in hits)
         if enforcing:
-            print(f'ENTRY BLOCKED | {side} {symbol} | {text}', flush=True)
+            LAST_BLOCK_CODES = [h[0] for h in enforcing]
+            if not quiet:
+                print(f'ENTRY BLOCKED | {side} {symbol} | {text}', flush=True)
             return False, text
-        print(f'ENTRY GUARD (log modu, engellenmedi) | {side} {symbol} | {text}', flush=True)
+        if not quiet:
+            print(f'ENTRY GUARD (log modu, engellenmedi) | {side} {symbol} | {text}', flush=True)
         return True, None
     except Exception as e:
         print(f'ENTRY GUARD | ERROR (fail-open) | {type(e).__name__}: {e}', flush=True)
@@ -733,24 +741,38 @@ def run_watchlist_symbol(state, symbol, now):
 
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
-    if last_ts is None or latest_closed_time > last_ts:
+    is_new_candle = last_ts is None or latest_closed_time > last_ts
+    blocked_map = state.setdefault('entry_blocked', {})
+    pend = blocked_map.get(symbol)
+    # A signal that was refused by an entry guard is re-tried every cycle for
+    # the rest of that candle (guards can lift: BTC lock released, a slot frees
+    # up, price comes back), instead of waiting for the next 4H close.
+    is_retry = (not is_new_candle) and bool(pend) and pend.get('candle') == latest_closed_time.isoformat()
+    if is_new_candle or is_retry:
         last_map[symbol] = latest_closed_time.isoformat()
-        if symbol not in state.get('positions', {}):
+        if symbol in state.get('positions', {}):
+            blocked_map.pop(symbol, None)
+        else:
             if blocked:
                 go_long = go_short = False
             sig_close = float(latest['close']); sig_atr = float(latest['atr']); cur_px = float(df.iloc[-1]['close'])
-            if go_long and not go_short:
-                allowed, _why = entry_guard_check(state, symbol, 'LONG', now, sig_close, sig_atr, cur_px)
+            side_wanted = 'LONG' if (go_long and not go_short) else ('SHORT' if (go_short and not go_long) else None)
+            if side_wanted is None:
+                blocked_map.pop(symbol, None)
+            else:
+                allowed, why = entry_guard_check(state, symbol, side_wanted, now, sig_close, sig_atr, cur_px, quiet=is_retry)
                 if allowed:
                     # Fill at the CURRENT price (the moment of entry), not the forming 4H
                     # candle's open, which can be hours old when a coin is added mid-candle.
-                    px = exec_price(cur_px, 'BUY')
-                    enter_symbol(state, symbol, 'LONG', px, latest, now, live_eligible=True)
-            elif go_short and not go_long:
-                allowed, _why = entry_guard_check(state, symbol, 'SHORT', now, sig_close, sig_atr, cur_px)
-                if allowed:
-                    px = exec_price(cur_px, 'SELL')
-                    enter_symbol(state, symbol, 'SHORT', px, latest, now, live_eligible=True)
+                    px = exec_price(cur_px, 'BUY' if side_wanted == 'LONG' else 'SELL')
+                    blocked_map.pop(symbol, None)
+                    enter_symbol(state, symbol, side_wanted, px, latest, now, live_eligible=True)
+                else:
+                    rec = {'candle': latest_closed_time.isoformat(), 'side': side_wanted,
+                           'codes': list(LAST_BLOCK_CODES), 'reason': why, 'at': now.isoformat()}
+                    if is_new_candle:
+                        print(f"ENTRY RETRY | {symbol} | {side_wanted} engelli, aynı mum içinde her turda yeniden denenecek", flush=True)
+                    blocked_map[symbol] = rec
     save_state(state)
 
 
