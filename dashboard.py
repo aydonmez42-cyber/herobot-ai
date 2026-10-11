@@ -3461,7 +3461,8 @@ SCANNER_HTML = r'''<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _SCANNER_STYLE_EXTRA + r'''</head>
+''' + _AUTH_STYLE + _NAV_PAGE_STYLE_EXTRA + _SCANNER_STYLE_EXTRA + r'''<style>.tag-click{cursor:pointer;user-select:none;transition:filter .15s,box-shadow .15s}.tag-click:hover{filter:brightness(1.25)}.tag-click:focus-visible{outline:2px solid currentColor;outline-offset:2px}.tag-active{box-shadow:0 0 0 2px currentColor}</style>
+</head>
 <body><div class="app">
 
 <header class="topbar">
@@ -3512,7 +3513,7 @@ SCANNER_HTML = r'''<!doctype html>
       <button class="btn" onclick="startScanner(true)" data-i18n="scanner.scanAll">Scan all</button>
       <span class="scanner-status" id="scannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long" id="longCount">LONG 0</span><span class="tag tag-short" id="shortCount">SHORT 0</span><span class="tag tag-flat" id="noCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long tag-click" id="longCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','LONG',renderScanner)">LONG 0</span><span class="tag tag-short tag-click" id="shortCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','SHORT',renderScanner)">SHORT 0</span><span class="tag tag-flat tag-click" id="noCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','NO SIGNAL',renderScanner)">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="scannerTable">
         <thead><tr>
@@ -3545,7 +3546,7 @@ SCANNER_HTML = r'''<!doctype html>
       <button class="btn" onclick="startBistScanner(true)" data-i18n="scanner.scanBist">Scan Borsa Istanbul</button>
       <span class="scanner-status" id="bistScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="bistCount">0 stocks</span><span class="tag tag-long" id="bistLongCount">LONG 0</span><span class="tag tag-short" id="bistShortCount">SHORT 0</span><span class="tag tag-flat" id="bistNoCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="bistCount">0 stocks</span><span class="tag tag-long tag-click" id="bistLongCount" role="button" tabindex="0" onclick="toggleSigFilter('bistSignalFilter','LONG',renderBistScanner)">LONG 0</span><span class="tag tag-short tag-click" id="bistShortCount" role="button" tabindex="0" onclick="toggleSigFilter('bistSignalFilter','SHORT',renderBistScanner)">SHORT 0</span><span class="tag tag-flat tag-click" id="bistNoCount" role="button" tabindex="0" onclick="toggleSigFilter('bistSignalFilter','NO SIGNAL',renderBistScanner)">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="bistScannerTable">
         <thead><tr>
@@ -3579,7 +3580,7 @@ SCANNER_HTML = r'''<!doctype html>
       <button class="btn" onclick="startUsScanner(true)" data-i18n="scanner.scanUs">Scan S&amp;P500/Nasdaq-100</button>
       <span class="scanner-status" id="usScannerStatus" data-i18n="scanner.preparing">Preparing…</span>
     </div>
-    <div class="scanner-summary"><span id="usCount">0 stocks</span><span class="tag tag-long" id="usLongCount">LONG 0</span><span class="tag tag-short" id="usShortCount">SHORT 0</span><span class="tag tag-flat" id="usNoCount">NO SIGNAL 0</span></div>
+    <div class="scanner-summary"><span id="usCount">0 stocks</span><span class="tag tag-long tag-click" id="usLongCount" role="button" tabindex="0" onclick="toggleSigFilter('usSignalFilter','LONG',renderUsScanner)">LONG 0</span><span class="tag tag-short tag-click" id="usShortCount" role="button" tabindex="0" onclick="toggleSigFilter('usSignalFilter','SHORT',renderUsScanner)">SHORT 0</span><span class="tag tag-flat tag-click" id="usNoCount" role="button" tabindex="0" onclick="toggleSigFilter('usSignalFilter','NO SIGNAL',renderUsScanner)">NO SIGNAL 0</span></div>
     <div class="table-scroll tall">
       <table class="datatable" id="usScannerTable">
         <thead><tr>
@@ -3614,6 +3615,19 @@ SCANNER_HTML = r'''<!doctype html>
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
 <script>
+function toggleSigFilter(selId,val,fn){
+  const el=document.getElementById(selId); if(!el) return;
+  el.value=(el.value===val)?'ALL':val;      // click again to clear
+  fn();
+}
+function markSigTags(longId,shortId,noId,selId){
+  const f=document.getElementById(selId)?.value||'ALL';
+  [[longId,'LONG'],[shortId,'SHORT'],[noId,'NO SIGNAL']].forEach(([id,v])=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('tag-active',f===v);
+  });
+}
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('tag-click')){ e.preventDefault(); e.target.click(); } });
+
 const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=x=>Number(x)>=0?'pos':'neg';
@@ -3740,9 +3754,11 @@ function renderScanner(){
   rows=sortRows(rows,'scanner');
   document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
-  document.getElementById('longCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('shortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('noCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+  const _q=(document.getElementById('coinSearch')?.value||'').toUpperCase();
+  document.getElementById('longCount').textContent='LONG '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='LONG').length;
+  document.getElementById('shortCount').textContent='SHORT '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='SHORT').length;
+  document.getElementById('noCount').textContent='NO SIGNAL '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='NO SIGNAL').length;
+  markSigTags('longCount','shortCount','noCount','signalFilter');
 }
 async function bistScannerData(){try{let r=await fetch('/api/bist-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
 let bistScannerCache={results:[]};
@@ -3753,9 +3769,11 @@ function renderBistScanner(){
   rows=sortRows(rows,'bist');
   document.getElementById('bistScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BIST:${x.symbol}','${x.symbol} · Borsa Istanbul')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'bist',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('bistCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
-  document.getElementById('bistLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('bistShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('bistNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+  const _q=(document.getElementById('bistSearch')?.value||'').toUpperCase();
+  document.getElementById('bistLongCount').textContent='LONG '+(bistScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='LONG').length;
+  document.getElementById('bistShortCount').textContent='SHORT '+(bistScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='SHORT').length;
+  document.getElementById('bistNoCount').textContent='NO SIGNAL '+(bistScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='NO SIGNAL').length;
+  markSigTags('bistLongCount','bistShortCount','bistNoCount','bistSignalFilter');
 }
 attachSort('scannerTable',()=>scannerCache,renderScanner);
 attachSort('bistScannerTable',()=>bistScannerCache,renderBistScanner);
@@ -3779,9 +3797,11 @@ function renderUsScanner(){
   rows=sortRows(rows,'us');
   document.getElementById('usScannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · US Stock')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.stoch_k??'—'} / ${x.stoch_d??'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'us_stock',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('usCount').textContent=rows.length+' '+t('scanner.stockCountSuffix');
-  document.getElementById('usLongCount').textContent='LONG '+rows.filter(x=>x.signal==='LONG').length;
-  document.getElementById('usShortCount').textContent='SHORT '+rows.filter(x=>x.signal==='SHORT').length;
-  document.getElementById('usNoCount').textContent='NO SIGNAL '+rows.filter(x=>x.signal==='NO SIGNAL').length;
+  const _q=(document.getElementById('usSearch')?.value||'').toUpperCase();
+  document.getElementById('usLongCount').textContent='LONG '+(usScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='LONG').length;
+  document.getElementById('usShortCount').textContent='SHORT '+(usScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='SHORT').length;
+  document.getElementById('usNoCount').textContent='NO SIGNAL '+(usScannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='NO SIGNAL').length;
+  markSigTags('usLongCount','usShortCount','usNoCount','usSignalFilter');
 }
 async function refreshUsScanner(){
   let d=await usScannerData();usScannerCache=d;
