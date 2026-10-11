@@ -24,8 +24,11 @@ POLL_SECONDS = int(os.environ.get('POLL_SECONDS', '30'))
 STARTING_EQUITY = float(os.environ.get('PAPER_INITIAL_CAPITAL', str(cfg.PAPER_ACCOUNT_INITIAL_CAPITAL)))
 
 # ---------------------------------------------------------------------------
-# ENTRY GUARDS — two protective locks on NEW crypto-watchlist entries (paper
-# AND the live orders mirrored from them). Neither touches exits: open
+# ENTRY GUARDS — protective locks on NEW entries. They now apply ONLY to LIVE
+# (real-money) copies, PER MEMBER (see live_trading.py); the demo/paper account
+# trades every signal unprotected (set DEMO_ENTRY_GUARDS=on to bring the old
+# demo behaviour back). The BTC lock state itself is still computed here and
+# handed to live_trading with every entry signal. Neither touches exits: open
 # positions keep being managed by their own SL/TP/trailing logic.
 #
 #  1) BTC LOCK  — blocks new LONG entries while Bitcoin is falling. Altcoins
@@ -82,6 +85,10 @@ BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus th
 
 EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')               # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
+
+# Demo/paper account: guards OFF by default (all locks and limits are live-only,
+# per member). 'on' restores the previous behaviour for the demo as well.
+DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
 
 _btc_cache = {'ts': 0.0, 'data': None}
 
@@ -265,8 +272,8 @@ def brake_active(state, now):
 def record_stop_and_maybe_brake(state, now):
     """Called when a crypto watchlist position closes at a LOSS via a stop.
     N such stops within the window start a pause on all new entries."""
-    if LOSS_BRAKE_MODE == 'off':
-        return
+    if LOSS_BRAKE_MODE == 'off' or not DEMO_ENTRY_GUARDS:
+        return  # the loss brake is per-member and live-only now (live_trading.py)
     cutoff = now - timedelta(hours=24)
     stops = [t for t in state.get('recent_stops', []) if _parse_iso(t) >= cutoff]
     stops.append(now.isoformat())
@@ -294,6 +301,8 @@ def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, cur
     here can never stop the trading loop."""
     global LAST_BLOCK_CODES
     LAST_BLOCK_CODES = []
+    if not DEMO_ENTRY_GUARDS:
+        return True, None  # demo trades every signal; guards are enforced per member on the live copy
     try:
         hits = []  # (guard_name, mode, text)
         if LOSS_BRAKE_MODE != 'off' and brake_active(state, now):
@@ -357,6 +366,20 @@ def check_early_exit(state, symbol, price, now):
     return True
 
 
+def live_guard_ctx(state, signal_row, price):
+    """Dynamic inputs the PER-MEMBER live guards need (BTC lock state, the
+    signal bar's close and ATR for the late-entry filter). Thresholds/modes are
+    read from the same environment variables inside live_trading.py."""
+    try:
+        lock = state.get('btc_lock') or {}
+        return {
+            'btc_lock_active': bool(lock.get('active')), 'btc_lock_reason': lock.get('reason'),
+            'signal_close': float(signal_row['close']), 'atr': float(signal_row['atr']), 'price': float(price),
+        }
+    except Exception:
+        return None
+
+
 def enter(state, position, price, signal_row, now):
     side = position
     atr = float(signal_row['atr'])
@@ -387,7 +410,7 @@ def enter(state, position, price, signal_row, now):
     # used for this side — see binance_live.py's module docstring for why.
     # Wrapped so a live-trading failure can never break the paper engine.
     try:
-        live_trading.on_entry_signal(cfg.SIGNAL_SYMBOL, side, price, source='eth_bot')
+        live_trading.on_entry_signal(cfg.SIGNAL_SYMBOL, side, price, source='eth_bot', guard_ctx=live_guard_ctx(state, signal_row, price))
     except Exception as e:
         print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 
@@ -499,7 +522,7 @@ def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=Fals
     print(f"WATCHLIST ENTRY | {side} {symbol} | price={price:.6f} | ATR={atr_val:.6f} | SL={sl:.6f} | TP={tp:.6f}", flush=True)
     if live_eligible:
         try:
-            live_trading.on_entry_signal(symbol, side, price, source='watchlist')
+            live_trading.on_entry_signal(symbol, side, price, source='watchlist', guard_ctx=live_guard_ctx(state, signal_row, price))
         except Exception as e:
             print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
 

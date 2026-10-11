@@ -3020,12 +3020,12 @@ async function refreshWatchlist(){
 }
 
 const GUARD_TEXT={
-  tr:{lock:'🔒 BTC kilidi aktif',lockTail:'Yeni LONG girişleri durduruldu.',brake:'⛔ Zarar freni aktif',brakeTail:'Yeni girişler şu saate kadar durduruldu:',test:'(test modu: engellemiyor)'},
-  en:{lock:'🔒 BTC lock active',lockTail:'New LONG entries are paused.',brake:'⛔ Loss brake active',brakeTail:'New entries are paused until',test:'(test mode: not blocking)'},
-  de:{lock:'🔒 BTC-Sperre aktiv',lockTail:'Neue LONG-Einstiege pausiert.',brake:'⛔ Verlustbremse aktiv',brakeTail:'Neue Einstiege pausiert bis',test:'(Testmodus: blockiert nicht)'},
-  fr:{lock:'🔒 Verrou BTC actif',lockTail:'Nouvelles entrées LONG suspendues.',brake:'⛔ Frein de pertes actif',brakeTail:'Nouvelles entrées suspendues jusqu’à',test:'(mode test : ne bloque pas)'},
-  es:{lock:'🔒 Bloqueo BTC activo',lockTail:'Nuevas entradas LONG en pausa.',brake:'⛔ Freno de pérdidas activo',brakeTail:'Nuevas entradas en pausa hasta',test:'(modo prueba: no bloquea)'},
-  zh:{lock:'🔒 BTC 锁已启用',lockTail:'已暂停新的做多入场。',brake:'⛔ 亏损刹车已启用',brakeTail:'暂停新入场至',test:'（测试模式：不拦截）'}
+  tr:{lock:'🔒 BTC kilidi aktif',lockTail:'Canlı hesaplarda yeni LONG kopyalama durduruldu (demo etkilenmez).',brake:'⛔ Zarar freni aktif',brakeTail:'Yeni girişler şu saate kadar durduruldu:',test:'(test modu: engellemiyor)'},
+  en:{lock:'🔒 BTC lock active',lockTail:'New LONG copies on live accounts are paused (demo unaffected).',brake:'⛔ Loss brake active',brakeTail:'New entries are paused until',test:'(test mode: not blocking)'},
+  de:{lock:'🔒 BTC-Sperre aktiv',lockTail:'Neue LONG-Kopien auf Live-Konten pausiert (Demo unberührt).',brake:'⛔ Verlustbremse aktiv',brakeTail:'Neue Einstiege pausiert bis',test:'(Testmodus: blockiert nicht)'},
+  fr:{lock:'🔒 Verrou BTC actif',lockTail:'Nouvelles copies LONG suspendues sur les comptes réels (démo non affectée).',brake:'⛔ Frein de pertes actif',brakeTail:'Nouvelles entrées suspendues jusqu’à',test:'(mode test : ne bloque pas)'},
+  es:{lock:'🔒 Bloqueo BTC activo',lockTail:'Nuevas copias LONG en cuentas reales en pausa (demo sin afectar).',brake:'⛔ Freno de pérdidas activo',brakeTail:'Nuevas entradas en pausa hasta',test:'(modo prueba: no bloquea)'},
+  zh:{lock:'🔒 BTC 锁已启用',lockTail:'实盘账户已暂停新的做多跟单(模拟盘不受影响)。',brake:'⛔ 亏损刹车已启用',brakeTail:'暂停新入场至',test:'（测试模式：不拦截）'}
 };
 function renderGuardBanner(g){
   const el=document.getElementById('guardBanner'); if(!el) return;
@@ -7224,6 +7224,7 @@ LIVE_HTML = r'''<!doctype html>
 
 <section class="panel">
   <div class="panel-head"><h2 data-i18n="liveSec.open">Open Live Positions</h2><span class="text-faint" id="liveMineCount">—</span></div>
+  <div id="liveGuardBox" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,170,0,.55);background:rgba(255,170,0,.09);font-size:13px;line-height:1.55"></div>
   <div class="table-scroll" style="margin-top:0">
     <table class="datatable">
       <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="history.headerDirection">Direction</th><th class="num" data-i18n="liveOpen.headerQty">Qty</th><th class="num" data-i18n="pos.entry">Entry</th><th class="num" data-i18n="liveOpen.headerCurrent">Current</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="liveOpen.headerLeverage">Leverage</th><th data-i18n="liveOpen.headerOpened">Opened</th><th></th></tr></thead>
@@ -7240,6 +7241,7 @@ LIVE_HTML = r'''<!doctype html>
       <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
+  <div id="liveSkipBox" style="display:none;margin-top:12px;font-size:12.5px"></div>
   <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
 </section>
 
@@ -7293,9 +7295,34 @@ function renderWallet(b){
   el.innerHTML=html;
   if(upd && b.fetched_at){ const d=new Date(b.fetched_at); upd.textContent=t('liveWallet.updated')+' '+d.toLocaleTimeString(); }
 }
+const LIVE_GUARD_TEXT={
+  tr:{lock:'🔒 BTC kilidi aktif — hesabınızda yeni LONG girişleri durduruldu.',brake:'⛔ Zarar freniniz aktif — yeni girişler şu saate kadar durduruldu:',skipTitle:'Son atlanan işlemler (koruma nedeniyle kopyalanmadı)',codes:{DIRECTION_LIMIT:'aynı yön limiti dolu',BTC_LOCK:'BTC kilidi',LOSS_BRAKE:'zarar freni',LATE_ENTRY:'fiyat sinyalden uzaklaştı'}},
+  en:{lock:'🔒 BTC lock active — new LONG entries on your account are paused.',brake:'⛔ Your loss brake is active — new entries are paused until:',skipTitle:'Recently skipped trades (not copied because of a guard)',codes:{DIRECTION_LIMIT:'same-direction limit reached',BTC_LOCK:'BTC lock',LOSS_BRAKE:'loss brake',LATE_ENTRY:'price moved away from signal'}},
+  de:{lock:'🔒 BTC-Sperre aktiv — neue LONG-Einstiege auf Ihrem Konto pausiert.',brake:'⛔ Ihre Verlustbremse ist aktiv — neue Einstiege pausiert bis:',skipTitle:'Zuletzt übersprungene Trades (wegen Schutzregel nicht kopiert)',codes:{DIRECTION_LIMIT:'Richtungslimit erreicht',BTC_LOCK:'BTC-Sperre',LOSS_BRAKE:'Verlustbremse',LATE_ENTRY:'Preis vom Signal entfernt'}},
+  fr:{lock:'🔒 Verrou BTC actif — nouvelles entrées LONG suspendues sur votre compte.',brake:'⛔ Votre frein de pertes est actif — nouvelles entrées suspendues jusqu’à :',skipTitle:'Trades récemment ignorés (non copiés à cause d’une protection)',codes:{DIRECTION_LIMIT:'limite de même sens atteinte',BTC_LOCK:'verrou BTC',LOSS_BRAKE:'frein de pertes',LATE_ENTRY:'prix éloigné du signal'}},
+  es:{lock:'🔒 Bloqueo BTC activo — nuevas entradas LONG en tu cuenta en pausa.',brake:'⛔ Tu freno de pérdidas está activo — nuevas entradas en pausa hasta:',skipTitle:'Operaciones omitidas recientemente (no copiadas por una protección)',codes:{DIRECTION_LIMIT:'límite de misma dirección alcanzado',BTC_LOCK:'bloqueo BTC',LOSS_BRAKE:'freno de pérdidas',LATE_ENTRY:'el precio se alejó de la señal'}},
+  zh:{lock:'🔒 BTC 锁已启用 — 您的账户已暂停新的做多入场。',brake:'⛔ 您的亏损刹车已启用 — 暂停新入场至:',skipTitle:'最近跳过的交易(因保护规则未跟单)',codes:{DIRECTION_LIMIT:'同向数量已达上限',BTC_LOCK:'BTC 锁',LOSS_BRAKE:'亏损刹车',LATE_ENTRY:'价格已偏离信号'}}
+};
+function renderLiveGuards(d){
+  const x=LIVE_GUARD_TEXT[currentLang]||LIVE_GUARD_TEXT.en, g=d.guards||{};
+  const box=document.getElementById('liveGuardBox'), skipBox=document.getElementById('liveSkipBox');
+  const parts=[];
+  if(d.btc_lock) parts.push(`<b>${x.lock}</b>${d.btc_lock.reason?' <span class="text-faint">('+d.btc_lock.reason+')</span>':''}`);
+  if(g.brake_until){ let w=g.brake_until; try{ w=new Date(g.brake_until).toLocaleString(); }catch(e){} parts.push(`<b>${x.brake}</b> ${w}`); }
+  if(box){ box.style.display=parts.length?'block':'none'; box.innerHTML=parts.join('<br>'); }
+  const sk=g.skips||[];
+  if(skipBox){
+    skipBox.style.display=sk.length?'block':'none';
+    skipBox.innerHTML=sk.length?`<div class="text-faint" style="margin-bottom:4px">${x.skipTitle}</div>`+sk.map(k=>{
+      let when=k.at; try{ when=new Date(k.at).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){}
+      return `<div class="text-faint">${when} · <b>${k.symbol}</b> ${k.side} — ${(k.codes||[]).map(c=>x.codes[c]||c).join(' + ')}</div>`;
+    }).join(''):'';
+  }
+}
 let liveMineCache=null;
 function renderMyLive(d){
   liveMineCache=d;
+  try{ renderLiveGuards(d); }catch(e){}
   renderWallet(d.binance);
   const open=d.open||[], closed=d.closed||[];
   document.getElementById('liveMineCount').textContent = d.live_trading_enabled
@@ -8401,14 +8428,6 @@ def guard_view(s):
             out['btc_lock'] = {'reason': lock.get('reason'), 'since': lock.get('since'),
                                'change_1h': lock.get('change_1h'), 'change_4h': lock.get('change_4h'),
                                'enforced': bool(lock.get('enforced', True))}
-        lb = s.get('loss_brake') or {}
-        if lb.get('until'):
-            until = datetime.fromisoformat(str(lb['until']).replace('Z', '+00:00'))
-            if until.tzinfo is None:
-                until = until.replace(tzinfo=timezone.utc)
-            if until > datetime.now(timezone.utc):
-                out['loss_brake'] = {'until': lb['until'], 'stops': lb.get('stops'),
-                                     'enforced': bool(lb.get('enforced', True))}
     except Exception:
         pass
     return out
@@ -9042,6 +9061,8 @@ class Handler(BaseHTTPRequestHandler):
             user=self._current_user()
             summary=live_trading.get_my_live_summary(user)
             summary['live_trading_enabled']=bool((auth.get_user(user) or {}).get('live_trading_enabled'))
+            try: summary['btc_lock']=guard_view(read_state()).get('btc_lock')
+            except Exception: summary['btc_lock']=None
             body=json.dumps(summary,ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         html=(HTML.replace('__USERNAME__', self._current_user() or '')
               .replace('__USDT_ADDRESS__', SUBSCRIPTION_USDT_ADDRESS).replace('__USDT_NETWORKS_JSON__', SUBSCRIPTION_USDT_NETWORKS_JSON).replace('__USDT_NETWORK__', SUBSCRIPTION_USDT_NETWORK))

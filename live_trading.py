@@ -55,6 +55,111 @@ LIVE_TRADES_FIELDS = ['username', 'side', 'symbol', 'qty', 'entry_price', 'exit_
 
 HARD_MAX_LEVERAGE = 10  # absolute ceiling regardless of any per-user setting
 
+
+# ---------------------------------------------------------------------------
+# PER-MEMBER ENTRY GUARDS (live only). The demo/paper account trades every
+# signal; before a signal is copied to a member's real Binance account these
+# checks run FOR THAT MEMBER:
+#   BTC lock      - no new LONG copies while Bitcoin is falling (state computed
+#                   by paper_trading.update_btc_lock, passed in guard_ctx)
+#   loss brake    - N of THIS member's own live stop-outs inside a short window
+#                   pause THIS member's new copies for a few hours
+#   direction cap - at most LIVE_MAX_SAME_DIRECTION open live positions in the
+#                   same direction (0 = off), counted on THIS member's account
+#   late entry    - skip when price already ran away from / against the signal
+# Same environment variables (Railway -> Variables) as before; each mode is
+# 'on' | 'log' | 'off'.
+# ---------------------------------------------------------------------------
+def _env_float(name, default):
+    try:
+        return float(os.environ.get(name, str(default)))
+    except ValueError:
+        return float(default)
+
+
+def _env_mode(name, default='on'):
+    v = os.environ.get(name, default).strip().lower()
+    return v if v in ('on', 'log', 'off') else default
+
+
+BTC_LOCK_MODE = _env_mode('BTC_LOCK_MODE', 'on')
+LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
+LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))
+LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)
+LOSS_BRAKE_PAUSE_HOURS = _env_float('LOSS_BRAKE_PAUSE_HOURS', 12)
+LIVE_MAX_SAME_DIRECTION = int(_env_float('LIVE_MAX_SAME_DIRECTION', _env_float('MAX_SAME_DIRECTION', 10)))
+LATE_ENTRY_MODE = _env_mode('LATE_ENTRY_MODE', 'on')
+LATE_ENTRY_CHASE_ATR = _env_float('LATE_ENTRY_CHASE_ATR', 1.5)
+LATE_ENTRY_ADVERSE_ATR = _env_float('LATE_ENTRY_ADVERSE_ATR', 1.0)
+MAX_RECENT_SKIPS = 20
+
+
+def _parse_iso_utc(v):
+    d = datetime.fromisoformat(str(v).replace('Z', '+00:00'))
+    return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+
+
+def _brake_until(urec, now):
+    """Active loss-brake end time for this member, or None."""
+    try:
+        u = urec.get('brake_until')
+        if u and _parse_iso_utc(u) > now:
+            return _parse_iso_utc(u)
+    except Exception:
+        pass
+    return None
+
+
+def _entry_guard_for_user(urec, symbol, side, ctx, now):
+    """Returns a list of blocking guard codes for this member (empty = allowed).
+    Fails OPEN on any error so a bug here can never stop live copying."""
+    try:
+        codes = []
+        if LOSS_BRAKE_MODE == 'on' and _brake_until(urec, now):
+            codes.append('LOSS_BRAKE')
+        if side == 'LONG' and BTC_LOCK_MODE == 'on' and ctx and ctx.get('btc_lock_active'):
+            codes.append('BTC_LOCK')
+        if LIVE_MAX_SAME_DIRECTION > 0:
+            same = sum(1 for p in urec['positions'].values() if p.get('side') == side)
+            if same >= LIVE_MAX_SAME_DIRECTION:
+                codes.append('DIRECTION_LIMIT')
+        if LATE_ENTRY_MODE == 'on' and ctx and ctx.get('signal_close') and ctx.get('atr') and ctx.get('price'):
+            sc, atr, px = float(ctx['signal_close']), float(ctx['atr']), float(ctx['price'])
+            move = (px - sc) / atr if side == 'LONG' else (sc - px) / atr
+            if move > LATE_ENTRY_CHASE_ATR or move < -LATE_ENTRY_ADVERSE_ATR:
+                codes.append('LATE_ENTRY')
+        return codes
+    except Exception as e:
+        print(f'LIVE GUARD | ERROR (fail-open) | {type(e).__name__}: {e}', flush=True)
+        return []
+
+
+def _record_skip(urec, symbol, side, codes, now):
+    skips = urec.setdefault('skips', [])
+    skips.append({'symbol': symbol, 'side': side, 'codes': codes, 'at': now.isoformat()})
+    del skips[:-MAX_RECENT_SKIPS]
+
+
+def _record_user_stop(username, urec, now):
+    """A live position of THIS member just closed at a loss via a stop. N such
+    stops inside the window pause this member's new live copies."""
+    if LOSS_BRAKE_MODE == 'off':
+        return
+    cutoff = now - timedelta(hours=24)
+    stops = [t for t in urec.get('recent_stops', []) if _parse_iso_utc(t) >= cutoff]
+    stops.append(now.isoformat())
+    urec['recent_stops'] = stops
+    window_start = now - timedelta(minutes=LOSS_BRAKE_WINDOW_MIN)
+    n = sum(1 for t in stops if _parse_iso_utc(t) >= window_start)
+    if n >= LOSS_BRAKE_STOP_COUNT and not _brake_until(urec, now):
+        until = now + timedelta(hours=LOSS_BRAKE_PAUSE_HOURS)
+        print(f'LIVE | {username} | LOSS BRAKE TRIGGERED ({LOSS_BRAKE_MODE}) | {n} stops in {LOSS_BRAKE_WINDOW_MIN:.0f} min | new live entries paused until {until.isoformat()}', flush=True)
+        if LOSS_BRAKE_MODE == 'on':
+            urec['brake_until'] = until.isoformat()
+            _notify_user(username, lambda n=n: tg.live_risk_alert(
+                f'⛔ Zarar freni devrede: {LOSS_BRAKE_WINDOW_MIN:.0f} dakika içinde {n} stop oldu.\n'
+                f'Hesabınızda yeni canlı girişler {LOSS_BRAKE_PAUSE_HOURS:g} saat durduruldu. Açık pozisyonlar yönetilmeye devam eder.'))
+
 _lock = threading.Lock()
 
 
@@ -281,12 +386,30 @@ def get_open_live_holders():
     return out
 
 
+def get_my_guard_status(username):
+    """This member's own guard state for the dashboard: active loss brake and
+    the most recent skipped copies. (BTC lock is global and added by the
+    dashboard.)"""
+    now = datetime.now(timezone.utc)
+    with _lock:
+        runtime = _load_runtime()
+        urec = _get_user_runtime(runtime, username)
+        until = _brake_until(urec, now)
+        skips = list(urec.get('skips', []))[-8:]
+    return {
+        'brake_until': until.isoformat() if until else None,
+        'skips': list(reversed(skips)),
+        'max_same_direction': LIVE_MAX_SAME_DIRECTION,
+    }
+
+
 def get_my_live_summary(username):
     """Everything the dashboard's per-user live panel needs in one call."""
     return {
         'open': get_user_open_positions_detailed(username),
         'closed': get_user_closed_trades(username),
         'binance': get_binance_account_summary(username),
+        'guards': get_my_guard_status(username),
     }
 
 
@@ -357,7 +480,7 @@ def close_position_now(username, symbol):
     return True, None
 
 
-def on_entry_signal(symbol, side, price, source='eth_bot'):
+def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
     """side: 'LONG' or 'SHORT'. Called right after the shared strategy opens
     a paper position, at that same signal price, so live orders mirror the
     exact signal the paper account is trading."""
@@ -379,6 +502,12 @@ def on_entry_signal(symbol, side, price, source='eth_bot'):
                 continue  # already have a live position open on this symbol
             max_positions = int(rec.get('live_max_open_positions') or 1)
             if len(urec['positions']) >= max_positions:
+                continue
+            now_utc = datetime.now(timezone.utc)
+            codes = _entry_guard_for_user(urec, symbol, side, guard_ctx, now_utc)
+            if codes:
+                _record_skip(urec, symbol, side, codes, now_utc)
+                print(f'LIVE | {username} | ENTRY SKIPPED BY GUARD | {side} {symbol} | {",".join(codes)}', flush=True)
                 continue
             position_usd = float(rec.get('live_position_usd') or 0)
             if position_usd <= 0:
@@ -462,6 +591,11 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
                 'reason': reason, 'entry_time': pos.get('entry_time'),
                 'exit_time': datetime.now(timezone.utc).isoformat(), 'source': source,
             })
+            if gross < 0 and reason in ('ATR_SL', 'ATR_TRAILING_SL'):
+                try:
+                    _record_user_stop(username, urec, datetime.now(timezone.utc))
+                except Exception as e:
+                    print(f'LIVE | {username} | LOSS BRAKE ERROR | {type(e).__name__}: {e}', flush=True)
             daily_limit = float(rec.get('live_daily_loss_limit_usd') or 0)
             just_paused = False
             if daily_limit > 0 and urec['realized_loss_usd'] <= -abs(daily_limit) and not urec.get('paused_today'):
