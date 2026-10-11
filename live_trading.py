@@ -413,6 +413,81 @@ def get_my_live_summary(username):
     }
 
 
+def get_my_open_symbols(username):
+    """Symbols this member currently holds a REAL position in (light call for
+    the Paper Trades page buttons) plus whether live trading is switched on."""
+    with _lock:
+        runtime = _load_runtime()
+        rec = (runtime.get(username) or {})
+        symbols = sorted((rec.get('positions') or {}).keys())
+    live_on = any(u['username'] == username for u in auth.list_live_enabled_users())
+    return {'symbols': symbols, 'live_enabled': live_on}
+
+
+def open_position_now(username, symbol, side, demo_price=None):
+    """Member-initiated 'Open live' for a coin whose DEMO position is already
+    open: copies that demo position onto THIS member's own Binance account at
+    the current market price. From then on it is managed exactly like any
+    other live copy (the demo position's SL / TP / trailing / exit signal close
+    it, because exits match on symbol + side).
+
+    This is an explicit decision by the member, so the market guards (BTC lock,
+    loss brake, late-entry) are skipped; the hard risk limits are NOT: global
+    emergency stop, live switch + verified key + active subscription, daily
+    loss limit pause, max open positions, same-direction cap and position size
+    all still apply. Returns (ok, message_or_error)."""
+    kill = auth.get_global_kill_switch()
+    if kill.get('active'):
+        return False, 'Yönetici tüm canlı işlemleri acil olarak durdurdu.'
+    rec = next((u for u in auth.list_live_enabled_users() if u['username'] == username), None)
+    if not rec:
+        return False, 'Canlı işlem sizin için kapalı. Hesabım → Canlı İşlem bölümünden açın (Binance bağlı ve doğrulanmış olmalı).'
+    if side not in ('LONG', 'SHORT'):
+        return False, 'Geçersiz yön.'
+    with _lock:
+        runtime = _load_runtime()
+        urec = _get_user_runtime(runtime, username)
+        if urec.get('paused_today'):
+            return False, 'Günlük maksimum kayıp limitine ulaşıldığı için canlı işlem bugün durduruldu.'
+        if symbol in urec['positions']:
+            return False, f'{symbol} için zaten açık bir canlı pozisyonunuz var.'
+        max_positions = int(rec.get('live_max_open_positions') or 1)
+        if len(urec['positions']) >= max_positions:
+            return False, f'Maksimum açık pozisyon sayınıza ulaştınız ({max_positions}).'
+        if LIVE_MAX_SAME_DIRECTION > 0 and sum(1 for p in urec['positions'].values() if p.get('side') == side) >= LIVE_MAX_SAME_DIRECTION:
+            return False, f'Aynı yönde en fazla {LIVE_MAX_SAME_DIRECTION} canlı pozisyon açılabilir.'
+        position_usd = float(rec.get('live_position_usd') or 0)
+        if position_usd <= 0:
+            return False, 'Canlı işlem tutarınız ayarlanmamış.'
+        api_key, api_secret = auth.get_decrypted_binance_credentials(username)
+        if not api_key or not api_secret:
+            return False, 'Binance anahtarınız okunamadı — Binance bağlantınızı kontrol edin.'
+        price = blive.get_mark_price(symbol) or demo_price
+        qty, err = blive.compute_quantity(symbol, position_usd, price)
+        if err:
+            return False, err
+        leverage = max(1, min(int(rec.get('live_max_leverage') or 1), HARD_MAX_LEVERAGE))
+        blive.set_leverage(api_key, api_secret, symbol, leverage)
+        ok, result = blive.place_market_order(api_key, api_secret, symbol, 'BUY' if side == 'LONG' else 'SELL', qty, reduce_only=False)
+        if not ok:
+            urec['last_error'] = result
+            _save_runtime(runtime)
+            print(f'LIVE | {username} | MANUAL OPEN FAILED | {symbol} {side} | {result}', flush=True)
+            return False, f'Emir başarısız oldu: {result}'
+        fill_price = blive.fill_price_from_order(result, price)
+        urec['positions'][symbol] = {
+            'side': side, 'qty': qty, 'entry_price': fill_price,
+            'entry_time': datetime.now(timezone.utc).isoformat(), 'source': 'manual_join',
+            'leverage': leverage,
+        }
+        urec['last_error'] = None
+        urec['last_error_notified'] = None
+        _save_runtime(runtime)
+        print(f'LIVE ENTRY | {username} | {side} {symbol} | qty={qty} | price~{fill_price} | leverage={leverage}x | manual_join', flush=True)
+        _notify_user(username, lambda: tg.live_entry_message(side, symbol, qty, fill_price, leverage, position_usd))
+    return True, f'{symbol} {side} canlı pozisyonu açıldı (~{fill_price}).'
+
+
 def close_position_now(username, symbol):
     """User-initiated manual close (the dashboard's 'Pozisyonu Şimdi Kapat'
     button) — the one case where an open real position is closed WITHOUT

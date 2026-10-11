@@ -6313,8 +6313,9 @@ function renderWatchlistTable(){
     const p=statusCache.position;
     const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
     const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
+    const mainLiveBtn=liveJoinBtn('ETHUSDT',p);
     const mainCloseBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_ETHUSDT" onclick="event.stopPropagation();closePosition('ETHUSDT',true)">${t('watchlist.closeBtn')}</button>`:'';
-    rowsHtml+=`<tr class="row-clickable" onclick="goToSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td>${mainCloseBtn}</td></tr>`;
+    rowsHtml+=`<tr class="row-clickable" onclick="goToSymbol('ETHUSDT')"><td><b>ETHUSDT</b></td><td>${t('market.binance')}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:statusCache.price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${t('watchlist.mainEngine')}</td><td>${mainLiveBtn}${mainCloseBtn}</td></tr>`;
   }
 
   rowsHtml+=items.map(x=>{
@@ -6334,13 +6335,46 @@ function renderWatchlistTable(){
         return d.toLocaleString([],{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
       catch(e){ return raw.replace('T',' ').slice(0,16); } })();
     const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
+    const liveBtn=(p&&x.market==='crypto')?liveJoinBtn(x.symbol,p):'';
     const closeBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_${x.symbol}" onclick="event.stopPropagation();closePosition('${x.symbol}',false)">${t('watchlist.closeBtn')}</button> `:'';
-    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
+    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${liveBtn}${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
   }).join('');
 
   document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
 }
 
+const LIVE_JOIN_TEXT={
+  tr:{btn:'Canlı aç',inLive:'Canlıda ✓',confirm:(s,side,e,sl,tp)=>`${s} ${side} için KENDİ Binance hesabınızda, şu anki piyasa fiyatından GERÇEK emir açılacak.\n\nDemo giriş: ${e}\nDemo SL: ${sl}\nDemo TP: ${tp}\n\nPozisyon, demo pozisyonun stop/TP'sine göre otomatik kapanır. Devam edilsin mi?`,fail:'Canlı pozisyon açılamadı.',conn:'Bağlantı hatası.'},
+  en:{btn:'Open live',inLive:'In live ✓',confirm:(s,side,e,sl,tp)=>`A REAL ${side} order on ${s} will be placed on YOUR OWN Binance account at the current market price.\n\nDemo entry: ${e}\nDemo SL: ${sl}\nDemo TP: ${tp}\n\nThe position closes automatically with the demo position's stop/TP. Continue?`,fail:'Could not open the live position.',conn:'Connection error.'},
+  de:{btn:'Live öffnen',inLive:'Live ✓',confirm:(s,side,e,sl,tp)=>`Auf IHREM Binance-Konto wird eine ECHTE ${side}-Order für ${s} zum aktuellen Marktpreis platziert.\n\nDemo-Einstieg: ${e}\nDemo-SL: ${sl}\nDemo-TP: ${tp}\n\nDie Position schließt automatisch mit Stop/TP der Demo-Position. Fortfahren?`,fail:'Live-Position konnte nicht eröffnet werden.',conn:'Verbindungsfehler.'},
+  fr:{btn:'Ouvrir en réel',inLive:'En réel ✓',confirm:(s,side,e,sl,tp)=>`Un ordre RÉEL ${side} sur ${s} sera passé sur VOTRE compte Binance au prix du marché actuel.\n\nEntrée démo : ${e}\nSL démo : ${sl}\nTP démo : ${tp}\n\nLa position se ferme automatiquement avec le stop/TP de la position démo. Continuer ?`,fail:'Impossible d’ouvrir la position réelle.',conn:'Erreur de connexion.'},
+  es:{btn:'Abrir en real',inLive:'En real ✓',confirm:(s,side,e,sl,tp)=>`Se enviará una orden REAL ${side} en ${s} a TU cuenta de Binance al precio actual de mercado.\n\nEntrada demo: ${e}\nSL demo: ${sl}\nTP demo: ${tp}\n\nLa posición se cierra automáticamente con el stop/TP de la posición demo. ¿Continuar?`,fail:'No se pudo abrir la posición real.',conn:'Error de conexión.'},
+  zh:{btn:'开实盘',inLive:'已在实盘 ✓',confirm:(s,side,e,sl,tp)=>`将在您自己的币安账户以当前市价下达 ${s} ${side} 的真实订单。\n\n模拟入场: ${e}\n模拟止损: ${sl}\n模拟止盈: ${tp}\n\n仓位将随模拟仓位的止损/止盈自动平仓。是否继续?`,fail:'无法开立实盘仓位。',conn:'连接错误。'}
+};
+let liveMine={symbols:[],live_enabled:false};
+async function refreshLiveMine(){
+  try{ const r=await fetch('/api/live/my-symbols',{cache:'no-store'}); if(r.ok){ liveMine=await r.json(); renderWatchlistTable(); } }catch(e){}
+}
+function liveJoinBtn(symbol,p){
+  if(!p) return '';
+  const x=LIVE_JOIN_TEXT[currentLang]||LIVE_JOIN_TEXT.en;
+  if((liveMine.symbols||[]).includes(symbol)) return `<span class="text-faint" style="margin-right:6px">${x.inLive}</span>`;
+  return `<button class="btn btn-primary" onclick="event.stopPropagation();openLiveFor('${symbol}')">${x.btn}</button> `;
+}
+async function openLiveFor(symbol){
+  const x=LIVE_JOIN_TEXT[currentLang]||LIVE_JOIN_TEXT.en;
+  const isMain=symbol==='ETHUSDT';
+  const item=isMain?null:(watchlistCache.items||[]).find(i=>i.symbol===symbol);
+  const p=isMain?(statusCache&&statusCache.position):(item&&item.position);
+  if(!p) return;
+  if(!confirm(x.confirm(symbol,p.side,num(p.entry_price),num(p.sl),num(p.tp)))) return;
+  try{
+    const r=await fetch('/api/live/open-position',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    const d=await r.json();
+    if(!d.ok) alert(d.error||x.fail); else alert(d.message||'OK');
+  }catch(e){ alert(x.conn); }
+  await refreshLiveMine();
+}
 async function refreshStatus(){
   let d;
   try{ const r=await fetch('/api/status',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
@@ -6730,6 +6764,7 @@ async function resetPaperTrading(){
 checkAdminForReset();
 refreshStatus(); setInterval(refreshStatus,5000);
 refreshWatchlist(); setInterval(refreshWatchlist,10000);
+refreshLiveMine(); setInterval(refreshLiveMine,15000);
 </script>
 </body></html>'''
 
@@ -9053,6 +9088,8 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/ai-analysis/run':
             result=ai_analyst.run_now()
             body=json.dumps(result,ensure_ascii=False).encode(); self.send_response(200 if result.get('ok') else 400); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path=='/api/live/my-symbols':
+            self._send_json(live_trading.get_my_open_symbols(self._current_user())); return
         if path=='/api/live/my-positions':
             # Scoped to the logged-in user's OWN live Binance positions/trades
             # only — never the shared paper/demo panel and never another
@@ -9217,6 +9254,22 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     print(f'LIVE | CLEAR LAST ERROR FAILED | {user} | {type(e).__name__}: {e}', flush=True)
             self._send_json({'ok': ok, 'error': err}); return
+
+        if path=='/api/live/open-position':
+            data=self._read_json_body()
+            symbol=(data.get('symbol') or '').strip().upper()
+            if not symbol:
+                self._send_json({'ok': False, 'error': 'Sembol gerekli'}, status=400); return
+            st=read_state()
+            if symbol==cfg.SIGNAL_SYMBOL:
+                pos=st.get('position')
+            else:
+                wl=(st.get('watchlist') or {}).get(symbol) or {}
+                pos=(st.get('positions') or {}).get(symbol) if wl.get('market')=='crypto' else None
+            if not pos:
+                self._send_json({'ok': False, 'error': f'{symbol} için açık bir demo pozisyonu yok. Canlıya yalnızca açık demo pozisyonu olan coinler eklenebilir.'}, status=400); return
+            ok, msg = live_trading.open_position_now(user, symbol, pos.get('side'), f(pos.get('entry_price')))
+            self._send_json({'ok': ok, 'error': None if ok else msg, 'message': msg if ok else None}, status=200 if ok else 400); return
 
         if path=='/api/live/close-position':
             # Deliberately NOT gated by has_active_access/trial status — a
