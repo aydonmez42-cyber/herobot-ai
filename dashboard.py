@@ -7277,6 +7277,19 @@ LIVE_HTML = r'''<!doctype html>
   <div class="footnote" style="font-size:12px;line-height:1.5;opacity:.7;margin-top:10px" data-i18n="liveWallet.note">Read straight from your Binance USD-M Futures account (read-only).</div>
 </section>
 
+<section class="panel" id="liveChartPanel">
+  <div class="panel-head"><h2 id="liveChartTitle">Live P&amp;L</h2>
+    <span id="liveChartRanges" style="display:flex;gap:6px;flex-wrap:wrap"></span></div>
+  <div id="liveChartStats" style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-bottom:8px"></div>
+  <div id="liveChartWrap" style="position:relative;height:190px">
+    <svg id="liveChartSvg" viewBox="0 0 600 190" preserveAspectRatio="none" style="width:100%;height:100%;display:block;cursor:crosshair"></svg>
+    <div id="liveChartMax" class="text-faint" style="position:absolute;left:4px;top:0;font-size:11px;pointer-events:none"></div>
+    <div id="liveChartMin" class="text-faint" style="position:absolute;left:4px;bottom:0;font-size:11px;pointer-events:none"></div>
+    <div id="liveChartTip" style="display:none;position:absolute;top:4px;padding:4px 8px;border-radius:6px;background:rgba(20,24,28,.92);border:1px solid rgba(128,128,128,.4);font-size:12px;pointer-events:none;white-space:nowrap"></div>
+    <div id="liveChartEmpty" class="pos-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center"></div>
+  </div>
+</section>
+
 <section class="panel">
   <div class="panel-head"><h2 data-i18n="liveSec.open">Open Live Positions</h2><span class="text-faint" id="liveMineCount">—</span></div>
   <div id="liveGuardBox" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,170,0,.55);background:rgba(255,170,0,.09);font-size:13px;line-height:1.55"></div>
@@ -7374,9 +7387,78 @@ function renderLiveGuards(d){
     }).join(''):'';
   }
 }
+const LIVE_CHART_TEXT={
+  tr:{title:'Canlı Kâr/Zarar Grafiği',r:{today:'Bugün',d7:'7 Gün',d30:'30 Gün',all:'Tümü'},realized:'Gerçekleşen K/Z',open:'Açık pozisyonlar',total:'Toplam',trades:'işlem',empty:'Bu dönemde kapanan canlı işlem yok.'},
+  en:{title:'Live Profit/Loss Chart',r:{today:'Today',d7:'7 Days',d30:'30 Days',all:'All'},realized:'Realized P&L',open:'Open positions',total:'Total',trades:'trades',empty:'No closed live trades in this period.'},
+  de:{title:'Live-Gewinn/Verlust-Diagramm',r:{today:'Heute',d7:'7 Tage',d30:'30 Tage',all:'Alle'},realized:'Realisierter G/V',open:'Offene Positionen',total:'Gesamt',trades:'Trades',empty:'Keine geschlossenen Live-Trades in diesem Zeitraum.'},
+  fr:{title:'Graphique des gains/pertes réels',r:{today:'Aujourd’hui',d7:'7 jours',d30:'30 jours',all:'Tout'},realized:'P&L réalisé',open:'Positions ouvertes',total:'Total',trades:'trades',empty:'Aucun trade réel clôturé sur cette période.'},
+  es:{title:'Gráfico de ganancias/pérdidas reales',r:{today:'Hoy',d7:'7 días',d30:'30 días',all:'Todo'},realized:'P&L realizado',open:'Posiciones abiertas',total:'Total',trades:'operaciones',empty:'Sin operaciones reales cerradas en este período.'},
+  zh:{title:'实盘盈亏图表',r:{today:'今天',d7:'7天',d30:'30天',all:'全部'},realized:'已实现盈亏',open:'未平仓',total:'合计',trades:'笔交易',empty:'此期间没有已平仓的实盘交易。'}
+};
+let liveChartRange='all', liveChartPts=[];
+function setLiveChartRange(r){ liveChartRange=r; if(liveMineCache) renderLiveChart(liveMineCache); }
+function renderLiveChart(d){
+  const x=LIVE_CHART_TEXT[currentLang]||LIVE_CHART_TEXT.en;
+  const svg=document.getElementById('liveChartSvg'); if(!svg) return;
+  document.getElementById('liveChartTitle').textContent=x.title;
+  document.getElementById('liveChartRanges').innerHTML=['today','d7','d30','all'].map(k=>
+    `<button class="btn${liveChartRange===k?' btn-primary':''}" style="padding:3px 10px;font-size:12px" onclick="setLiveChartRange('${k}')">${x.r[k]}</button>`).join('');
+  const series=(d.pnl_series||[]).map(r=>({t:new Date(r[0]).getTime(),cum:Number(r[1]),pnl:Number(r[2])})).filter(r=>!isNaN(r.t));
+  const now=Date.now(), dayStart=new Date(); dayStart.setHours(0,0,0,0);
+  const cutoff=liveChartRange==='today'?dayStart.getTime():liveChartRange==='d7'?now-7*864e5:liveChartRange==='d30'?now-30*864e5:-Infinity;
+  const inRange=series.filter(r=>r.t>=cutoff);
+  const base=series.filter(r=>r.t<cutoff).reduce((_,r)=>r.cum,0);       // P&L accumulated before the period
+  const pts=inRange.map(r=>({t:r.t,v:r.cum-base,pnl:r.pnl}));
+  const openPnl=(d.open||[]).reduce((a,p)=>a+(Number(p.unrealized_pnl)||0),0);
+  const realized=pts.length?pts[pts.length-1].v:0;
+  const wins=pts.filter(p=>p.pnl>0).length;
+  document.getElementById('liveChartStats').innerHTML=
+    `<span>${x.realized}: <b class="${cls(realized)}">${money(realized)}</b> <span class="text-faint">(${pts.length} ${x.trades}${pts.length?' · '+Math.round(wins/pts.length*100)+'%':''})</span></span>`
+    +`<span>${x.open}: <b class="${cls(openPnl)}">${money(openPnl)}</b></span>`
+    +`<span>${x.total}: <b class="${cls(realized+openPnl)}">${money(realized+openPnl)}</b></span>`;
+  const empty=document.getElementById('liveChartEmpty'), tip=document.getElementById('liveChartTip');
+  tip.style.display='none';
+  if(!pts.length){ svg.innerHTML=''; liveChartPts=[]; empty.textContent=x.empty; empty.style.display='flex';
+    document.getElementById('liveChartMax').textContent=''; document.getElementById('liveChartMin').textContent=''; return; }
+  empty.style.display='none';
+  const W=600,H=190,padY=14;
+  const first={t:(cutoff===-Infinity?pts[0].t-36e5:Math.max(cutoff,pts[0].t-36e5)),v:0,pnl:0};   // start the line at 0 just before the first trade
+  const all=[first,...pts];
+  const t0=all[0].t, t1=Math.max(all[all.length-1].t,t0+1);
+  const vals=all.map(p=>p.v).concat(0);
+  let lo=Math.min(...vals), hi=Math.max(...vals); if(hi===lo){hi+=1;lo-=1;}
+  const X=t=>((t-t0)/(t1-t0))*W, Y=v=>H-padY-((v-lo)/(hi-lo))*(H-padY*2);
+  const line=all.map(p=>X(p.t).toFixed(1)+','+Y(p.v).toFixed(1)).join(' ');
+  const color=realized>=0?'var(--bull)':'var(--bear)';
+  const area=`0,${Y(0).toFixed(1)} ${line} ${W},${Y(all[all.length-1].v).toFixed(1)} ${W},${Y(0).toFixed(1)}`;
+  svg.innerHTML=`<line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="currentColor" stroke-opacity=".3" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>`
+    +`<polygon points="${area}" fill="${color}" fill-opacity=".12"/>`
+    +`<polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`
+    +`<line id="liveChartCursor" x1="0" x2="0" y1="0" y2="${H}" stroke="currentColor" stroke-opacity=".4" style="display:none" vector-effect="non-scaling-stroke"/>`;
+  liveChartPts=all.map(p=>({x:X(p.t)/W,t:p.t,v:p.v,pnl:p.pnl}));
+  document.getElementById('liveChartMax').textContent=money(hi);
+  document.getElementById('liveChartMin').textContent=money(lo);
+}
+(function(){
+  const svg=document.getElementById('liveChartSvg'); if(!svg) return;
+  const tip=document.getElementById('liveChartTip');
+  const move=ev=>{
+    if(!liveChartPts.length) return;
+    const r=svg.getBoundingClientRect(); const px=((ev.touches?ev.touches[0].clientX:ev.clientX)-r.left)/r.width;
+    let best=liveChartPts[0]; for(const p of liveChartPts) if(Math.abs(p.x-px)<Math.abs(best.x-px)) best=p;
+    const cur=document.getElementById('liveChartCursor'); if(cur){ cur.setAttribute('x1',best.x*600); cur.setAttribute('x2',best.x*600); cur.style.display=''; }
+    tip.style.display='block';
+    tip.innerHTML=`${new Date(best.t).toLocaleString([],{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})} · <b class="${cls(best.v)}">${money(best.v)}</b>`;
+    tip.style.left=Math.min(Math.max(best.x*r.width-60,0),r.width-150)+'px';
+  };
+  const leave=()=>{ tip.style.display='none'; const cur=document.getElementById('liveChartCursor'); if(cur) cur.style.display='none'; };
+  svg.addEventListener('mousemove',move); svg.addEventListener('touchmove',move,{passive:true});
+  svg.addEventListener('mouseleave',leave); svg.addEventListener('touchend',leave);
+})();
 let liveMineCache=null;
 function renderMyLive(d){
   liveMineCache=d;
+  try{ renderLiveChart(d); }catch(e){ console.error(e); }
   try{ renderLiveGuards(d); }catch(e){}
   renderWallet(d.binance);
   const open=d.open||[], closed=d.closed||[];

@@ -386,6 +386,26 @@ def get_open_live_holders():
     return out
 
 
+def get_my_pnl_series(username, max_points=1000):
+    """Cumulative realized P&L of THIS member's closed live trades, oldest to
+    newest, as [[exit_time_iso, cumulative_pnl, trade_pnl], ...] for the
+    dashboard's line chart (only this member's own rows, never anyone else's)."""
+    rows = []
+    for r in _read_live_trades():
+        if r.get('username') != username:
+            continue
+        try:
+            rows.append((r.get('exit_time') or '', float(r.get('pnl') or 0)))
+        except ValueError:
+            continue
+    rows.sort(key=lambda x: x[0])
+    out, cum = [], 0.0
+    for t, pnl in rows:
+        cum += pnl
+        out.append([t, round(cum, 4), round(pnl, 4)])
+    return out[-max_points:]
+
+
 def get_my_guard_status(username):
     """This member's own guard state for the dashboard: active loss brake and
     the most recent skipped copies. (BTC lock is global and added by the
@@ -410,6 +430,7 @@ def get_my_live_summary(username):
         'closed': get_user_closed_trades(username),
         'binance': get_binance_account_summary(username),
         'guards': get_my_guard_status(username),
+        'pnl_series': get_my_pnl_series(username),
     }
 
 
