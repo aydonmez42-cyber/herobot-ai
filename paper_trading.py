@@ -576,6 +576,14 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     high, low = float(candle['high']), float(candle['low'])
     last = float(candle['close'])
     entry, atr_val = p['entry_price'], p['atr']
+    # Safety net: a take-profit must sit on the PROFIT side of the entry. A TP on
+    # the losing side would "take profit" at a loss (labelled ATR_TP), so repair it.
+    if p['side'] == 'LONG' and p.get('tp') is not None and p['tp'] <= entry:
+        p['tp'] = entry + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
+        print(f"TP REPAIR | LONG {symbol} | TP girişin altındaydı, yeniden hesaplandı -> {p['tp']:.6f}", flush=True)
+    elif p['side'] == 'SHORT' and p.get('tp') is not None and p['tp'] >= entry:
+        p['tp'] = entry - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
+        print(f"TP REPAIR | SHORT {symbol} | TP girişin üstündeydi, yeniden hesaplandı -> {p['tp']:.6f}", flush=True)
     # Once the break-even stop is armed it is checked against the CURRENT
     # price, not the forming candle's low: that low may have printed before
     # the move that armed the stop, and a phantom exit would close a winner.
@@ -675,14 +683,12 @@ def restore_orphaned_live_positions(state, now):
             sl = entry - cfg.ATR_SL_MULTIPLIER * atr_val
             tp = entry + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
             if cur <= sl:
-                sl = cur - cfg.ATR_SL_MULTIPLIER * atr_val
-                tp = cur + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
+                sl = cur - cfg.ATR_SL_MULTIPLIER * atr_val   # only the STOP is re-based; TP stays entry-based (never on the losing side)
         else:
             sl = entry + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
             tp = entry - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
             if cur >= sl:
                 sl = cur + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
-                tp = cur - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
         pos = dict(existing or {})
         pos.update({
             'side': side, 'symbol': symbol,
