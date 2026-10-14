@@ -83,14 +83,34 @@ BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
 BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
 BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus this buffer (covers fees)
 
-# "Double touch" profit lock (USD, measured on the demo position size):
+# Tiered profit lock (USD, measured on the demo position size).
+# Tier 1 is a "double touch" (filters the first noisy spike):
 #   1) profit reaches ARM_USD            -> first touch (nothing is closed)
-#   2) profit then falls below LOCK_USD  -> dip is tolerated, normal SL keeps protecting
-#   3) profit reaches ARM_USD again      -> lock is armed
-#   4) profit falls back to LOCK_USD     -> position is closed (reason PROFIT_LOCK)
+#   2) profit then falls below LOCK_USD  -> dip tolerated, normal SL keeps protecting
+#   3) profit reaches ARM_USD again      -> lock armed
+#   4) profit falls back to LOCK_USD     -> position closed (reason PROFIT_LOCK)
+# Higher tiers ("arm:lock", single touch) engage as soon as the peak profit
+# has reached their arm level, and ratchet the lock up: once a position has
+# seen 100 it closes at 75, once it has seen 150 it closes at 125.
 PROFIT_LOCK_MODE = _env_mode('PROFIT_LOCK_MODE', 'on')
 PROFIT_LOCK_ARM_USD = _env_float('PROFIT_LOCK_ARM_USD', 50.0)
-PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 20.0)
+PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 30.0)
+
+
+def _parse_lock_tiers(raw):
+    tiers = []
+    for part in str(raw or '').split(','):
+        try:
+            arm, lock = part.strip().split(':')
+            arm, lock = float(arm), float(lock)
+            if arm > 0 and 0 < lock < arm:
+                tiers.append((arm, lock))
+        except Exception:
+            continue
+    return sorted(tiers)
+
+
+PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '100:75,150:125'))
 
 EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
@@ -579,8 +599,8 @@ def _stop_reason(p):
 
 
 def _profit_lock_step(state, symbol, p, last, now, live_eligible):
-    """Double-touch profit lock. Uses the CURRENT price (not candle high/low,
-    whose order inside the candle is unknown). Returns True if it closed."""
+    """Tiered profit lock. Uses the CURRENT price (not candle high/low, whose
+    order inside the candle is unknown). Returns True if it closed."""
     if PROFIT_LOCK_MODE != 'on' or p.get('source') == 'restored_live':
         return False
     qty = p.get('qty_eth') or 0.0
@@ -588,6 +608,21 @@ def _profit_lock_step(state, symbol, p, last, now, live_eligible):
         return False
     entry = p['entry_price']
     pnl = (last - entry) * qty if p['side'] == 'LONG' else (entry - last) * qty
+    peak = max(float(p.get('pl_peak') or 0.0), pnl)
+    p['pl_peak'] = peak
+    # Higher tiers: lock = highest tier already reached (single touch).
+    tier_lock = None
+    for arm, lock in PROFIT_LOCK_TIERS:
+        if peak >= arm:
+            tier_lock = lock
+    if tier_lock is not None:
+        if pnl <= tier_lock:
+            p['pl_stage'] = 4
+            print(f"PROFIT LOCK | {symbol} | tepe ${peak:.1f}, ${tier_lock:.0f} kilidine düştü (${pnl:.1f}) -> kapat", flush=True)
+            exit_symbol_position(state, symbol, last, 'PROFIT_LOCK', now, live_eligible=live_eligible)
+            return True
+        return False   # never True here: True means "position was closed"
+    # Tier 1: double touch.
     stage = int(p.get('pl_stage') or 0)
     if stage == 0 and pnl >= PROFIT_LOCK_ARM_USD:
         stage = 1
