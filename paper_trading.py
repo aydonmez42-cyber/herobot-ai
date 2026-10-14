@@ -83,7 +83,16 @@ BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
 BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
 BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus this buffer (covers fees)
 
-EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')               # 'log' = only report what it would close
+# "Double touch" profit lock (USD, measured on the demo position size):
+#   1) profit reaches ARM_USD            -> first touch (nothing is closed)
+#   2) profit then falls below LOCK_USD  -> dip is tolerated, normal SL keeps protecting
+#   3) profit reaches ARM_USD again      -> lock is armed
+#   4) profit falls back to LOCK_USD     -> position is closed (reason PROFIT_LOCK)
+PROFIT_LOCK_MODE = _env_mode('PROFIT_LOCK_MODE', 'on')
+PROFIT_LOCK_ARM_USD = _env_float('PROFIT_LOCK_ARM_USD', 50.0)
+PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 20.0)
+
+EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
 
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
@@ -569,6 +578,35 @@ def _stop_reason(p):
     return 'BREAKEVEN_SL' if p.get('be_active') else 'ATR_SL'
 
 
+def _profit_lock_step(state, symbol, p, last, now, live_eligible):
+    """Double-touch profit lock. Uses the CURRENT price (not candle high/low,
+    whose order inside the candle is unknown). Returns True if it closed."""
+    if PROFIT_LOCK_MODE != 'on' or p.get('source') == 'restored_live':
+        return False
+    qty = p.get('qty_eth') or 0.0
+    if qty <= 0:
+        return False
+    entry = p['entry_price']
+    pnl = (last - entry) * qty if p['side'] == 'LONG' else (entry - last) * qty
+    stage = int(p.get('pl_stage') or 0)
+    if stage == 0 and pnl >= PROFIT_LOCK_ARM_USD:
+        stage = 1
+        print(f"PROFIT LOCK | {symbol} | 1. dokunuş (${pnl:.1f})", flush=True)
+    elif stage == 1 and pnl < PROFIT_LOCK_USD:
+        stage = 2
+        print(f"PROFIT LOCK | {symbol} | ${PROFIT_LOCK_USD:.0f} altına düştü (${pnl:.1f}), normal SL beklenir", flush=True)
+    elif stage == 2 and pnl >= PROFIT_LOCK_ARM_USD:
+        stage = 3
+        print(f"PROFIT LOCK | {symbol} | 2. dokunuş (${pnl:.1f}), kilit aktif", flush=True)
+    elif stage == 3 and pnl <= PROFIT_LOCK_USD:
+        p['pl_stage'] = 4
+        exit_symbol_position(state, symbol, last, 'PROFIT_LOCK', now, live_eligible=live_eligible)
+        return True
+    if stage != int(p.get('pl_stage') or 0):
+        p['pl_stage'] = stage
+    return False
+
+
 def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     p = state.get('positions', {}).get(symbol)
     if not p:
@@ -628,6 +666,8 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
             else:
                 p['lowest_low'] = min(p['lowest_low'], low)
                 p['trail_stop'] = min(p['trail_stop'], p['lowest_low'] + cfg.ATR_TRAIL_MULTIPLIER * atr_val)
+    if _profit_lock_step(state, symbol, p, last, now, live_eligible):
+        return True
     save_state(state)
     return False
 
