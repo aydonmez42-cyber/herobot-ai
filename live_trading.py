@@ -431,6 +431,7 @@ def get_my_live_summary(username):
         'binance': get_binance_account_summary(username),
         'guards': get_my_guard_status(username),
         'pnl_series': get_my_pnl_series(username),
+        'price_status': blive.get_price_status(),
     }
 
 

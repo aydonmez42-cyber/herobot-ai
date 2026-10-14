@@ -7469,7 +7469,7 @@ function renderMyLive(d){
   document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
     const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
     return `<tr><td><a href="/?symbol=${encodeURIComponent(p.symbol)}" style="color:var(--accent);text-decoration:none" title="${t('panel.openPosition')}"><b>${p.symbol}</b> ↗</a></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
-      +`<td class="num">${num(p.qty)}</td><td class="num">${num(p.entry_price)}</td><td class="num">${num(p.current_price)}</td>`
+      +`<td class="num">${num(p.qty)}</td><td class="num">${livePxFmt(p.entry_price)}</td><td class="num">${livePxFmt(p.current_price)}</td>`
       +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
       +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
   }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
@@ -7480,10 +7480,46 @@ function renderMyLive(d){
       +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
   }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
 }
+function livePxFmt(x){
+  if(x==null||x==='') return '—';
+  const n=Number(x), a=Math.abs(n);
+  const dec=a>=100?2:a>=1?3:a>=0.1?4:a>=0.01?5:6;
+  return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:dec});
+}
+function liveFreshness(msg){
+  let el=document.getElementById('livePriceWarn');
+  if(!el){
+    const anchor=document.getElementById('liveGuardBox');
+    if(!anchor) return;
+    el=document.createElement('div'); el.id='livePriceWarn';
+    el.style.cssText='margin:8px 0;padding:10px 14px;border-radius:10px;border:1px solid #b8860b;background:rgba(184,134,11,.12);font-size:13px;display:none';
+    anchor.insertAdjacentElement('beforebegin',el);
+  }
+  if(msg){ el.textContent=msg; el.style.display='block'; } else { el.style.display='none'; }
+}
+let _liveLastOk=0;
 async function refreshMyLive(){
   let d;
-  try{ const r=await fetch('/api/live/my-positions',{cache:'no-store'}); d=await r.json(); }catch(e){ return; }
+  try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),20000);
+    const r=await fetch('/api/live/my-positions',{cache:'no-store',signal:ctl.signal}); clearTimeout(to);
+    if(!r.ok) throw new Error('http '+r.status);
+    d=await r.json();
+  }catch(e){
+    const mins=_liveLastOk?Math.round((Date.now()-_liveLastOk)/60000):null;
+    liveFreshness('⚠ Sunucuya ulaşılamıyor; gösterilen veriler'+(mins!=null?` ${mins} dk önceki`:'')+' olabilir. Sayfa otomatik yeniden denenecek.');
+    return;
+  }
+  _liveLastOk=Date.now();
   renderMyLive(d);
+  const ps=d.price_status||{};
+  if(ps.rate_limited){
+    liveFreshness(`⚠ Binance istek sınırı nedeniyle fiyatlar güncellenemiyor (~${Math.ceil((ps.cooldown_left_s||0)/60)} dk içinde yeniden denenecek). Gösterilen fiyat ve kâr/zarar eski olabilir.`);
+  } else if(ps.age_s!=null && ps.age_s>90){
+    liveFreshness(`⚠ Fiyat verisi ${Math.round(ps.age_s/60)} dk önce alındı; Binance'ten yenisi alınamadı. Kâr/zarar eski olabilir.`);
+  } else if(ps.age_s==null && (d.open||[]).length){
+    liveFreshness('⚠ Güncel fiyat henüz alınamadı; gösterilen kâr/zarar giriş fiyatına göre hesaplanmıştır.');
+  } else { liveFreshness(null); }
 }
 
 async function closeLivePosition(symbol,btn){

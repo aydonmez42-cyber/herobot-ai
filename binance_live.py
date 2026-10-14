@@ -126,6 +126,20 @@ def get_mark_price(symbol):
     return prices.get(symbol)
 
 
+def get_price_status():
+    """How fresh the prices shown on the dashboard are. age_s is None when no
+    price has ever been fetched since the server started."""
+    with _price_cache_lock:
+        ts = _price_cache['ts']
+    with _rl_lock:
+        left = max(0.0, _rl_until - time.time())
+    return {
+        'age_s': (time.time() - ts) if ts else None,
+        'rate_limited': left > 0,
+        'cooldown_left_s': left,
+    }
+
+
 def get_exchange_info(force=False):
     """Cached for 1h. Returns {symbol: symbolInfoDict} or None on failure
     (callers must treat None/missing-symbol as "cannot safely size this
