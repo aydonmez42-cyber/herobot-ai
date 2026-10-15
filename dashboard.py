@@ -7514,13 +7514,16 @@ async function refreshMyLive(){
   }
   _liveLastOk=Date.now();
   renderMyLive(d);
-  const ps=d.price_status||{};
-  if(ps.rate_limited){
-    liveFreshness(`⚠ Binance istek sınırı nedeniyle fiyatlar güncellenemiyor (~${Math.ceil((ps.cooldown_left_s||0)/60)} dk içinde yeniden denenecek). Gösterilen fiyat ve kâr/zarar eski olabilir.`);
-  } else if(ps.age_s!=null && ps.age_s>90){
-    liveFreshness(`⚠ Fiyat verisi ${Math.round(ps.age_s/60)} dk önce alındı; Binance'ten yenisi alınamadı. Kâr/zarar eski olabilir.`);
-  } else if(ps.age_s==null && (d.open||[]).length){
-    liveFreshness('⚠ Güncel fiyat henüz alınamadı; gösterilen kâr/zarar giriş fiyatına göre hesaplanmıştır.');
+  const ps=d.price_status||{}, op=d.open||[];
+  const noPrice=op.filter(x=>x.price_src==='entry').length;
+  const viaBinance=op.some(x=>x.price_src==='binance');
+  const errTxt=ps.error?` (${ps.error})`:'';
+  if(noPrice){
+    liveFreshness(`⚠ ${noPrice} pozisyon için güncel fiyat alınamadı${errTxt}; kâr/zarar giriş fiyatına göre gösteriliyor.`);
+  } else if(ps.rate_limited && viaBinance){
+    liveFreshness(`⚠ Binance istek sınırı nedeniyle fiyatlar güncellenemiyor (~${Math.ceil((ps.cooldown_left_s||0)/60)} dk içinde yeniden denenecek). Kâr/zarar eski olabilir.`);
+  } else if(viaBinance && ps.age_s!=null && ps.age_s>90){
+    liveFreshness(`⚠ Fiyat verisi ${Math.round(ps.age_s/60)} dk önce alındı; Binance'ten yenisi alınamadı${errTxt}. Kâr/zarar eski olabilir.`);
   } else { liveFreshness(null); }
 }
 
@@ -8531,6 +8534,20 @@ def read_state():
         return _load_shared_state(STARTING_EQUITY)
     except Exception:
         return {}
+
+def _state_price(symbol):
+    """Latest price the bot loop already stored (no extra Binance call)."""
+    s=read_state()
+    v=(s.get('market_prices',{}) or {}).get(symbol)
+    if not v:
+        v=((s.get('watchlist_signals',{}) or {}).get(symbol,{}) or {}).get('price')
+    try:
+        v=float(v)
+        return v if v>0 else None
+    except Exception:
+        return None
+try: live_trading.set_price_fallback(_state_price)
+except Exception as _e: print('price fallback registration failed:',_e,flush=True)
 
 def read_trades():
     if not os.path.exists(TRADES_FILE): return []

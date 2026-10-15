@@ -288,6 +288,17 @@ def clear_last_error(username):
 # own data only — never another user's, and never the shared paper engine.
 # ---------------------------------------------------------------------------
 
+_price_fallback = None   # callable(symbol) -> float | None, registered by the dashboard
+
+
+def set_price_fallback(fn):
+    """The dashboard registers a function that returns the latest price the
+    BOT itself already has (shared state written by the bot loop), used when
+    the direct Binance price lookup is unavailable."""
+    global _price_fallback
+    _price_fallback = fn
+
+
 def get_user_open_positions_detailed(username):
     with _lock:
         runtime = _load_runtime()
@@ -299,13 +310,21 @@ def get_user_open_positions_detailed(username):
         entry = float(p.get('entry_price') or 0)
         qty = float(p.get('qty') or 0)
         side = p.get('side')
+        src = 'binance'
         current = blive.get_mark_price(symbol)
-        if current is None:
-            current = entry  # public price lookup failed — show entry rather than a wrong number
+        if current is None and _price_fallback:
+            try:
+                current = _price_fallback(symbol)
+                src = 'bot'
+            except Exception:
+                current = None
+        if current is None or current <= 0:
+            current = entry  # no price source worked — show entry rather than a wrong number
+            src = 'entry'
         unreal = (current - entry) * qty if side == 'LONG' else (entry - current) * qty
         out.append({
             'symbol': symbol, 'side': side, 'qty': qty, 'entry_price': entry,
-            'current_price': current, 'unrealized_pnl': unreal,
+            'current_price': current, 'unrealized_pnl': unreal, 'price_src': src,
             'leverage': p.get('leverage'), 'entry_time': p.get('entry_time'),
         })
     out.sort(key=lambda x: x.get('entry_time') or '', reverse=True)

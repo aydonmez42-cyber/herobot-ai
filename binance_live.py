@@ -118,11 +118,17 @@ def get_mark_price(symbol):
         _note_rate_limit(r)
         r.raise_for_status()
         prices = {row['symbol']: float(row['price']) for row in r.json()}
-    except Exception:
+    except Exception as e:
+        code = getattr(getattr(e, 'response', None), 'status_code', None)
+        with _price_cache_lock:
+            _price_cache['err'] = (f'HTTP {code}' if code else type(e).__name__)
+            _price_cache['err_ts'] = time.time()
+        print(f'BINANCE PRICE | ERROR | {_price_cache["err"]}: {str(e)[:160]}', flush=True)
         return stale
     with _price_cache_lock:
         _price_cache['prices'] = prices
         _price_cache['ts'] = now
+        _price_cache['err'] = None
     return prices.get(symbol)
 
 
@@ -131,9 +137,11 @@ def get_price_status():
     price has ever been fetched since the server started."""
     with _price_cache_lock:
         ts = _price_cache['ts']
+        err = _price_cache.get('err')
     with _rl_lock:
         left = max(0.0, _rl_until - time.time())
     return {
+        'error': err,
         'age_s': (time.time() - ts) if ts else None,
         'rate_limited': left > 0,
         'cooldown_left_s': left,
