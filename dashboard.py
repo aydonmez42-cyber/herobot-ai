@@ -2816,6 +2816,8 @@ try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const qtyNum=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:6});
+// Prices: always at least 4 decimals (6 for sub-cent coins) so small coins are readable.
+const px4=x=>{ if(x==null||x===''||isNaN(Number(x))) return '—'; const n=Number(x); const d=Math.abs(n)<0.01&&n!==0?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 // live clock
@@ -2862,15 +2864,15 @@ function renderPositionCard(posEl,p){
   posEl.innerHTML=`
     <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span></div>
     <div class="pos-grid">
-      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${num(entry)}</div></div>
-      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${num(cur)}</div></div>
+      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${px4(entry)}</div></div>
+      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${px4(cur)}</div></div>
       <div><div class="kpi-label">${t('pos.unrealizedPnl')}</div><div class="val ${cls(pnl)}">${money(pnl)}</div></div>
       <div><div class="kpi-label">${t('pos.qty')}</div><div class="val">${qtyNum(qty)}</div></div>
       <div><div class="kpi-label">${t('pos.positionSize')}</div><div class="val">${money(positionSizeUsd)}</div></div>
-      <div><div class="kpi-label">${t('pos.atr')}</div><div class="val">${num(p.atr)}</div></div>
+      <div><div class="kpi-label">${t('pos.atr')}</div><div class="val">${px4(p.atr)}</div></div>
     </div>
     <div class="bar-wrap">
-      <div class="bar-labels"><span>SL ${num(stop)}</span><span>TP ${num(tp)}</span></div>
+      <div class="bar-labels"><span>SL ${px4(stop)}</span><span>TP ${px4(tp)}</span></div>
       <div class="bar-track">
         <div class="bar-fill" style="left:0%;right:0%"></div>
         <div class="bar-dot sl" style="left:${pct(stop)}%"></div>
@@ -2878,7 +2880,7 @@ function renderPositionCard(posEl,p){
         <div class="bar-dot cur" style="left:${pct(cur)}%" title="${t('pos.currentPriceTitle')}"></div>
       </div>
     </div>
-    <div class="pos-foot">${t('pos.trailingLabel')} ${p.trail_active?(t('pos.trailingActive')+' '+num(p.trail_stop)):t('pos.trailingStandby')} &middot; ${t('pos.entryTimeLabel')} ${p.entry_time}</div>`;
+    <div class="pos-foot">${t('pos.trailingLabel')} ${p.trail_active?(t('pos.trailingActive')+' '+px4(p.trail_stop)):t('pos.trailingStandby')} &middot; ${t('pos.entryTimeLabel')} ${p.entry_time}</div>`;
 }
 function renderSignalCard(sigEl,s){
   s=s||{};
@@ -2949,8 +2951,8 @@ async function renderLiveFallback(posEl,sigEl,symbol,keepSig){
   posEl.innerHTML=`
     <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span><span class="text-faint" style="margin-left:8px;font-size:12px">${x.tag}</span></div>
     <div class="pos-grid">
-      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${num(entry)}</div></div>
-      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${num(cur)}</div></div>
+      <div><div class="kpi-label">${t('pos.entry')}</div><div class="val">${px4(entry)}</div></div>
+      <div><div class="kpi-label">${t('pos.current')}</div><div class="val">${px4(cur)}</div></div>
       <div><div class="kpi-label">${t('pos.unrealizedPnl')}</div><div class="val ${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</div></div>
       <div><div class="kpi-label">${t('pos.qty')}</div><div class="val">${qtyNum(qty)}</div></div>
       <div><div class="kpi-label">${t('pos.positionSize')}</div><div class="val">${money(size)}</div></div>
@@ -7483,8 +7485,8 @@ function renderMyLive(d){
 function livePxFmt(x){
   if(x==null||x==='') return '—';
   const n=Number(x), a=Math.abs(n);
-  const dec=a>=100?2:a>=1?3:a>=0.1?4:a>=0.01?5:6;
-  return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:dec});
+  const dec=a<0.01&&n!==0?6:4;
+  return n.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
 }
 function liveFreshness(msg){
   let el=document.getElementById('livePriceWarn');
