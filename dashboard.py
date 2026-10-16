@@ -3508,6 +3508,23 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
 
   <div class="tabpane active" id="tab-crypto">
+
+    <div id="scan15Card" style="margin:0 0 18px 0;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div class="scanner-controls">
+        <button class="btn" id="scan15Btn" onclick="scan15Start()">⏱ 15 dk tara (manuel)</button>
+        <select id="scan15Filter" onchange="renderScan15()">
+          <option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option>
+        </select>
+        <span class="scanner-status" id="scan15Status"></span>
+      </div>
+      <div class="scanner-note" id="scan15Note" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="scan15Table">
+          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th>ST</th><th class="num">ADX</th><th class="num">RSI</th><th class="num">CCI</th><th>MACD</th><th>Signal</th><th>Add</th></tr></thead>
+          <tbody id="scan15Rows"><tr><td colspan="11" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
     <div class="scanner-controls">
       <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
       <select id="signalFilter" onchange="renderScanner()">
@@ -3539,22 +3556,6 @@ SCANNER_HTML = r'''<!doctype html>
       </table>
     </div>
 
-    <div id="scan15Card" style="margin-top:18px">
-      <div class="scanner-controls">
-        <button class="btn" id="scan15Btn" onclick="scan15Start()">⏱ 15 dk tara (manuel)</button>
-        <select id="scan15Filter" onchange="renderScan15()">
-          <option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option>
-        </select>
-        <span class="scanner-status" id="scan15Status"></span>
-      </div>
-      <div class="scanner-note" id="scan15Note" style="margin:0 0 8px 0"></div>
-      <div class="table-scroll">
-        <table class="datatable" id="scan15Table">
-          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th>ST</th><th class="num">ADX</th><th class="num">RSI</th><th class="num">CCI</th><th>MACD</th><th>Signal</th><th>Add</th></tr></thead>
-          <tbody id="scan15Rows"><tr><td colspan="11" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
