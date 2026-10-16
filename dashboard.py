@@ -3628,7 +3628,7 @@ SCANNER_HTML = r'''<!doctype html>
 </section>
 
 <section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2><span data-i18n="tvChart.title">TradingView Chart</span> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
+  <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
   <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
   <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
 </section>
@@ -3676,7 +3676,24 @@ function addCell(symbol,market,signal){
 // can be requested via the "studies" config key. Each click rebuilds the widget
 // container + script tag from scratch, which is TradingView's documented way to
 // swap symbols/config on an embedded widget after the initial page load.
-function openTvChart(tvSymbol,label){
+let _tvCur={symbol:null,interval:'240'};
+function openTvExternal(){
+  const base='https://www.tradingview.com/chart/';
+  const q=_tvCur.symbol?('?symbol='+encodeURIComponent(_tvCur.symbol)+'&interval='+encodeURIComponent(_tvCur.interval)):'';
+  const url=base+q;
+  const ua=navigator.userAgent||'';
+  if(/Android/i.test(ua)){
+    // Opens the TradingView app if it is installed, otherwise falls back to the website.
+    location.href='intent://www.tradingview.com/chart/'+q+'#Intent;scheme=https;package=com.tradingview.tradingviewapp;S.browser_fallback_url='+encodeURIComponent(url)+';end';
+  } else if(/iPhone|iPad|iPod/i.test(ua)){
+    // iOS universal link: the TradingView app opens it when installed, Safari otherwise.
+    location.href=url;
+  } else {
+    window.open(url,'_blank','noopener,noreferrer');
+  }
+}
+function openTvChart(tvSymbol,label,interval){
+  _tvCur={symbol:tvSymbol,interval:String(interval||'240')};
   document.getElementById('tvChartSymbol').textContent='— '+label;
   const outer=document.getElementById('tvChartOuter');
   outer.innerHTML='<div class="tradingview-widget-container" style="height:100%;width:100%">'
@@ -3685,7 +3702,7 @@ function openTvChart(tvSymbol,label){
   const config={
     autosize:true,
     symbol:tvSymbol,
-    interval:"240",
+    interval:String(interval||"240"),
     timezone:"Etc/UTC",
     theme:"dark",
     style:"1",
@@ -3870,7 +3887,7 @@ function renderScan15(){
   }
   if(note) note.textContent=(scan15Cache.last_error?('⚠ '+scan15Cache.last_error+' '):'')+T15('15 dk kapanmış mum · en likit '+(scan15Cache.total||200)+' USDT-M coin · yalnızca sinyal amaçlı.','15m closed candle · most liquid '+(scan15Cache.total||200)+' USDT-M coins · signal purposes only.');
   const body=document.getElementById('scan15Rows'); if(!body) return;
-  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 15m')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 15m','15')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="11" class="empty">${scan15Cache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
 }
 async function refreshScan15(){
