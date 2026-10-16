@@ -79,6 +79,26 @@ LATE_ENTRY_MODE = _env_mode('LATE_ENTRY_MODE', 'on')
 LATE_ENTRY_CHASE_ATR = _env_float('LATE_ENTRY_CHASE_ATR', 1.5)      # skip if price already ran this many ATR in the signal's favour
 LATE_ENTRY_ADVERSE_ATR = _env_float('LATE_ENTRY_ADVERSE_ATR', 1.0)  # skip if price moved this many ATR AGAINST the signal
 
+# Risk/reward tuning ------------------------------------------------------
+# Optional Railway overrides of the strategy multipliers (unset = config.py values).
+for _n in ('ATR_SL_MULTIPLIER', 'ATR_SHORT_SL_MULTIPLIER', 'ATR_LONG_TP_MULTIPLIER', 'ATR_SHORT_TP_MULTIPLIER'):
+    if os.environ.get(_n):
+        setattr(cfg, _n, _env_float(_n, getattr(cfg, _n)))
+# Per-trade loss cap in USD (demo position size; members' losses scale with their size).
+# The stop distance is the smaller of "ATR x multiplier" and "MAX_LOSS_USD / quantity",
+# but never tighter than MIN_SL_ATR x ATR (a stop inside normal noise only gets hit at random).
+# MAX_LOSS_USD=0 turns the cap off.
+MAX_LOSS_USD = _env_float('MAX_LOSS_USD', 70.0)
+MIN_SL_ATR = _env_float('MIN_SL_ATR', 1.0)
+
+
+def _sl_distance(mult, atr, qty):
+    d = mult * atr
+    if MAX_LOSS_USD > 0 and qty and qty > 0:
+        d = min(d, max(MAX_LOSS_USD / qty, MIN_SL_ATR * atr))
+    return d
+
+
 BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
 BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
 BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus this buffer (covers fees)
@@ -529,13 +549,13 @@ def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=Fals
     (see run_watchlist_symbol); US-stock/BIST watchlist symbols are never
     live-tradable through this bot and must never reach live_trading.py."""
     atr_val = float(signal_row['atr'])
+    qty = (watchlist_position_usd() / price) if price else 0.0
     if side == 'LONG':
-        sl = price - cfg.ATR_SL_MULTIPLIER * atr_val
+        sl = price - _sl_distance(cfg.ATR_SL_MULTIPLIER, atr_val, qty)
         tp = price + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
     else:
-        sl = price + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
+        sl = price + _sl_distance(cfg.ATR_SHORT_SL_MULTIPLIER, atr_val, qty)
         tp = price - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
-    qty = (watchlist_position_usd() / price) if price else 0.0
     pos = {
         'side': side, 'symbol': symbol, 'qty_eth': qty,
         'entry_price': price, 'entry_time': now.isoformat(),
@@ -754,16 +774,19 @@ def restore_orphaned_live_positions(state, now):
             continue
         if not atr_val or atr_val != atr_val:
             continue
+        r_qty = (existing or {}).get('qty_eth') or ((watchlist_position_usd() / entry) if entry else 0.0)
         if side == 'LONG':
-            sl = entry - cfg.ATR_SL_MULTIPLIER * atr_val
+            d = _sl_distance(cfg.ATR_SL_MULTIPLIER, atr_val, r_qty)
+            sl = entry - d
             tp = entry + cfg.ATR_LONG_TP_MULTIPLIER * atr_val
             if cur <= sl:
-                sl = cur - cfg.ATR_SL_MULTIPLIER * atr_val   # only the STOP is re-based; TP stays entry-based (never on the losing side)
+                sl = cur - d   # only the STOP is re-based; TP stays entry-based (never on the losing side)
         else:
-            sl = entry + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
+            d = _sl_distance(cfg.ATR_SHORT_SL_MULTIPLIER, atr_val, r_qty)
+            sl = entry + d
             tp = entry - cfg.ATR_SHORT_TP_MULTIPLIER * atr_val
             if cur >= sl:
-                sl = cur + cfg.ATR_SHORT_SL_MULTIPLIER * atr_val
+                sl = cur + d
         pos = dict(existing or {})
         pos.update({
             'side': side, 'symbol': symbol,

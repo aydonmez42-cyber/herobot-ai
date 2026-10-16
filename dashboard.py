@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 import config as cfg
+import scanner_15m
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
 from us_scanner import snapshot as us_scanner_snapshot, start_scan as us_scanner_start, background_loop as us_background_loop
@@ -3537,6 +3538,23 @@ SCANNER_HTML = r'''<!doctype html>
         <tbody id="scannerRows"><tr><td colspan="14" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
       </table>
     </div>
+
+    <div id="scan15Card" style="margin-top:18px">
+      <div class="scanner-controls">
+        <button class="btn" id="scan15Btn" onclick="scan15Start()">⏱ 15 dk tara (manuel)</button>
+        <select id="scan15Filter" onchange="renderScan15()">
+          <option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option>
+        </select>
+        <span class="scanner-status" id="scan15Status"></span>
+      </div>
+      <div class="scanner-note" id="scan15Note" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="scan15Table">
+          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th>ST</th><th class="num">ADX</th><th class="num">RSI</th><th class="num">CCI</th><th>MACD</th><th>Signal</th><th>Add</th></tr></thead>
+          <tbody id="scan15Rows"><tr><td colspan="11" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
@@ -3831,6 +3849,44 @@ async function refreshScanner(){
 }
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
 refreshScanner();setInterval(refreshScanner,10000);
+
+// ---- 15-minute scan: MANUAL only (no timer starts it) ----
+const T15=(tr,en)=>((typeof currentLang!=='undefined'&&currentLang==='tr')?tr:en);
+let scan15Cache={results:[],status:'IDLE'}, scan15Timer=null;
+const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
+function renderScan15(){
+  const f=document.getElementById('scan15Filter')?.value||'LONG';
+  const all=scan15Cache.results||[];
+  const rows=all.filter(x=>f==='ALL'||x.signal===f);
+  const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
+  const st=document.getElementById('scan15Status'), note=document.getElementById('scan15Note'), btn=document.getElementById('scan15Btn');
+  const busy=scan15Cache.status==='SCANNING';
+  if(btn) btn.disabled=busy;
+  if(st){
+    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(scan15Cache.progress||0)+'/'+(scan15Cache.total||'?');
+    else if(scan15Cache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+scan15Cache.finished_at.replace('T',' ').slice(0,16)+' UTC · LONG '+nL+' · SHORT '+nS;
+    else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
+  }
+  if(note) note.textContent=(scan15Cache.last_error?('⚠ '+scan15Cache.last_error+' '):'')+T15('15 dk kapanmış mum · en likit '+(scan15Cache.total||200)+' USDT-M coin · yalnızca sinyal amaçlı.','15m closed candle · most liquid '+(scan15Cache.total||200)+' USDT-M coins · signal purposes only.');
+  const body=document.getElementById('scan15Rows'); if(!body) return;
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 15m')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
+    ||`<tr><td colspan="11" class="empty">${scan15Cache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
+}
+async function refreshScan15(){
+  try{ const r=await fetch('/api/scanner15',{cache:'no-store'}); scan15Cache=await r.json(); }catch(e){ return; }
+  renderScan15();
+  if(scan15Cache.status==='SCANNING'){ if(!scan15Timer) scan15Timer=setInterval(refreshScan15,3000); }
+  else if(scan15Timer){ clearInterval(scan15Timer); scan15Timer=null; }
+}
+async function scan15Start(){
+  try{
+    const r=await fetch('/api/scanner15/scan',{cache:'no-store'}); const d=await r.json();
+    if(!d.started && d.message) alert(d.message);
+    if(d.snapshot) scan15Cache=d.snapshot;
+  }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
+  renderScan15(); refreshScan15();
+}
+refreshScan15();   // one cheap read of the last result; it never starts a scan
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -9197,6 +9253,12 @@ class Handler(BaseHTTPRequestHandler):
             q=parse_qs(urlparse(self.path).query); force=q.get('force',['0'])[0]=='1'
             started=us_scanner_start(force=force)
             body=json.dumps({'started':started,'status':us_scanner_snapshot().get('status')}).encode(); self.send_response(202 if started else 200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path=='/api/scanner15':
+            self._send_json(scanner_15m.snapshot()); return
+        if path=='/api/scanner15/scan':
+            # MANUAL trigger only - there is deliberately no background loop for the 15m scan.
+            started,msg=scanner_15m.start_scan()
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_15m.snapshot()}); return
         if path=='/api/scanner':
             body=json.dumps(scanner_snapshot(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/scanner/scan':
