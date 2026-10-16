@@ -239,6 +239,37 @@ def place_market_order(api_key, api_secret, symbol, side, quantity, reduce_only=
         return True, {}
 
 
+def get_open_position_amounts(api_key, api_secret):
+    """{symbol: absolute open position size} for the account's REAL open
+    positions (both hedge-mode sides summed), or (None, error). One call, all
+    symbols (weight 5). A symbol missing from the dict is flat."""
+    if in_rate_limit_cooldown():
+        return None, 'Binance istek sınırı bekleme süresi'
+    try:
+        r = _signed_request('GET', '/fapi/v2/positionRisk', api_key, api_secret)
+    except requests.RequestException as e:
+        return None, f'Bağlantı hatası: {type(e).__name__}'
+    data, err = _json_or_error(r)
+    if err:
+        return None, err
+    out = {}
+    try:
+        for row in data:
+            amt = abs(float(row.get('positionAmt') or 0))
+            if amt > 0:
+                out[row['symbol']] = out.get(row['symbol'], 0.0) + amt
+    except Exception:
+        return None, 'Binance yanıtı okunamadı'
+    return out, None
+
+
+def is_reduce_only_rejection(result):
+    """True when a reduce-only close was refused because there is nothing to
+    reduce (Binance error -2022 'ReduceOnly Order is rejected')."""
+    t = str(result or '')
+    return '-2022' in t or 'reduceonly' in t.replace(' ', '').lower()
+
+
 def fill_price_from_order(order, fallback):
     """Best-effort average fill price from a MARKET order response; falls
     back to the strategy's own estimated price if Binance didn't report one

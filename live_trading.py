@@ -442,8 +442,91 @@ def get_my_guard_status(username):
     }
 
 
+def _already_flat_on_binance(api_key, api_secret, symbol, result):
+    """A close order was rejected. If Binance says the REAL position is gone
+    (the member closed it by hand on Binance), return True so the bot's own
+    record can be cleaned up instead of failing forever. Verified with a
+    separate positions lookup — a rejection alone is never trusted."""
+    if not blive.is_reduce_only_rejection(result):
+        return False
+    amounts, err = blive.get_open_position_amounts(api_key, api_secret)
+    return amounts is not None and symbol not in amounts
+
+
+def reconcile_user_positions(username, min_age_s=45):
+    """Drop bot records of positions the member already closed by hand on
+    Binance (one positions call, only when the member has local positions).
+    The trade is logged with reason 'closed_on_binance'; its P&L is an
+    ESTIMATE from the current price (Binance's own history has the exact
+    number). Returns the list of symbols that were cleaned up."""
+    with _lock:
+        runtime = _load_runtime()
+        urec = _get_user_runtime(runtime, username)
+        local = dict(urec.get('positions', {}))
+    if not local:
+        return []
+    rec = auth.get_user(username)
+    if not rec:
+        return []
+    api_key, api_secret = auth.get_decrypted_binance_credentials(username)
+    if not api_key or not api_secret:
+        return []
+    amounts, err = blive.get_open_position_amounts(api_key, api_secret)
+    if amounts is None:
+        return []
+    now = datetime.now(timezone.utc)
+    gone = []
+    for symbol, pos in local.items():
+        if symbol in amounts:
+            continue
+        opened = _parse_iso_utc(pos.get('entry_time'))
+        if opened and (now - opened).total_seconds() < min_age_s:
+            continue   # just opened: give Binance time to show it
+        gone.append(symbol)
+    cleaned = []
+    for symbol in gone:
+        with _lock:
+            runtime = _load_runtime()
+            urec = _get_user_runtime(runtime, username)
+            pos = urec['positions'].get(symbol)
+            if not pos:
+                continue
+            side, qty, entry = pos['side'], pos['qty'], pos['entry_price']
+            px = blive.get_mark_price(symbol) or entry
+            gross = (px - entry) * qty if side == 'LONG' else (entry - px) * qty
+            urec['realized_pnl_usd'] += gross
+            if gross < 0:
+                urec['realized_loss_usd'] += gross
+            urec['positions'].pop(symbol, None)
+            _log_live_trade({
+                'username': username, 'side': side, 'symbol': symbol, 'qty': qty,
+                'entry_price': entry, 'exit_price': px, 'pnl': gross,
+                'reason': 'closed_on_binance', 'entry_time': pos.get('entry_time'),
+                'exit_time': now.isoformat(), 'source': 'reconcile',
+            })
+            _save_runtime(runtime)
+        print(f'LIVE RECONCILE | {username} | {side} {symbol} Binance\'te kapalı, kayıt temizlendi | tahmini pnl={gross:.2f}', flush=True)
+        cleaned.append(symbol)
+    return cleaned
+
+
+_reconcile_last = {}
+
+
+def _maybe_reconcile(username, every_s=60):
+    t = time.time()
+    if t - _reconcile_last.get(username, 0) < every_s:
+        return
+    _reconcile_last[username] = t
+    try:
+        reconcile_user_positions(username)
+    except Exception as e:
+        print(f'LIVE RECONCILE | ERROR | {username} | {type(e).__name__}: {e}', flush=True)
+
+
 def get_my_live_summary(username):
     """Everything the dashboard's per-user live panel needs in one call."""
+    _maybe_reconcile(username)
     return {
         'open': get_user_open_positions_detailed(username),
         'closed': get_user_closed_trades(username),
@@ -557,6 +640,9 @@ def close_position_now(username, symbol):
         qty = pos['qty']
         order_side = 'SELL' if side == 'LONG' else 'BUY'
         ok, result = blive.place_market_order(api_key, api_secret, symbol, order_side, qty, reduce_only=True)
+        external = False
+        if not ok and _already_flat_on_binance(api_key, api_secret, symbol, result):
+            ok, result, external = True, {}, True   # member already closed it on Binance
         if not ok:
             urec['last_error'] = result
             _save_runtime(runtime)
@@ -574,7 +660,7 @@ def close_position_now(username, symbol):
         _log_live_trade({
             'username': username, 'side': side, 'symbol': symbol, 'qty': qty,
             'entry_price': entry_price, 'exit_price': fill_price, 'pnl': gross,
-            'reason': 'manual_close_by_user', 'entry_time': pos.get('entry_time'),
+            'reason': ('closed_on_binance' if external else 'manual_close_by_user'), 'entry_time': pos.get('entry_time'),
             'exit_time': datetime.now(timezone.utc).isoformat(), 'source': 'dashboard_manual',
         })
         daily_limit = float(rec.get('live_daily_loss_limit_usd') or 0)
@@ -587,7 +673,7 @@ def close_position_now(username, symbol):
         _save_runtime(runtime)
 
     print(f'LIVE EXIT | {username} | {side} {symbol} | reason=manual_close_by_user | qty={qty} | price~{fill_price} | pnl~{gross:.2f}', flush=True)
-    _notify_user(username, lambda: tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, 'Kullanıcı panelden manuel kapattı'))
+    _notify_user(username, lambda: tg.live_exit_message(side, symbol, qty, entry_price, fill_price, gross, 'Binance\'te zaten kapatılmıştı (kayıt temizlendi, K/Z tahmini)' if external else 'Kullanıcı panelden manuel kapattı'))
     if just_paused:
         _notify_user(username, lambda: tg.live_risk_alert(
             f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {urec["realized_loss_usd"]:.2f} USD, limit: {daily_limit:.2f} USD).\n'
@@ -686,6 +772,9 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
             qty = pos['qty']
             order_side = 'SELL' if side == 'LONG' else 'BUY'
             ok, result = blive.place_market_order(api_key, api_secret, symbol, order_side, qty, reduce_only=True)
+            exit_reason = reason
+            if not ok and _already_flat_on_binance(api_key, api_secret, symbol, result):
+                ok, result, exit_reason = True, {}, 'closed_on_binance'   # member closed it by hand
             if not ok:
                 urec['last_error'] = result
                 print(f'LIVE | {username} | EXIT FAILED | {symbol} {side} | {result} | pozisyon Binance hesabında AÇIK kalmış olabilir, lütfen manuel kontrol edin.', flush=True)
@@ -704,10 +793,10 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
             _log_live_trade({
                 'username': username, 'side': side, 'symbol': symbol, 'qty': qty,
                 'entry_price': entry_price, 'exit_price': fill_price, 'pnl': gross,
-                'reason': reason, 'entry_time': pos.get('entry_time'),
+                'reason': exit_reason, 'entry_time': pos.get('entry_time'),
                 'exit_time': datetime.now(timezone.utc).isoformat(), 'source': source,
             })
-            if gross < 0 and reason in ('ATR_SL', 'ATR_TRAILING_SL'):
+            if gross < 0 and exit_reason in ('ATR_SL', 'ATR_TRAILING_SL'):
                 try:
                     _record_user_stop(username, urec, datetime.now(timezone.utc))
                 except Exception as e:
@@ -722,7 +811,7 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
             urec['last_error_notified'] = None
             changed = True
             print(f'LIVE EXIT | {username} | {side} {symbol} | reason={reason} | qty={qty} | price~{fill_price} | pnl~{gross:.2f}', flush=True)
-            _notify_user(username, lambda sd=side, s=symbol, q=qty, ep=entry_price, fp=fill_price, g=gross, rs=reason: tg.live_exit_message(sd, s, q, ep, fp, g, rs))
+            _notify_user(username, lambda sd=side, s=symbol, q=qty, ep=entry_price, fp=fill_price, g=gross, rs=exit_reason: tg.live_exit_message(sd, s, q, ep, fp, g, rs))
             if just_paused:
                 _notify_user(username, lambda rl=urec["realized_loss_usd"], dl=daily_limit: tg.live_risk_alert(
                     f'Günlük maksimum kayıp limitinize ulaşıldı (bugünkü tahmini kayıp: {rl:.2f} USD, limit: {dl:.2f} USD).\n'
