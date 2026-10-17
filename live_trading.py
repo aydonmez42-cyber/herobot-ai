@@ -905,3 +905,106 @@ def maybe_send_daily_reports(now):
                 print(f'LIVE | DAILY REPORT ERROR | {username} | {type(e).__name__}: {e}', flush=True)
         if changed:
             _save_runtime(runtime)
+
+
+# ---------------------------------------------------------------------------
+# One-time corrections of closed-trade records that were written with a wrong
+# exit price (before resolve_fill_price existed, a position closed seconds after
+# entry was booked at the demo STOP price instead of its real market fill:
+# SIRENUSDT showed -90/-92 USD where Binance shows -1.98/-1.78).
+# Each fix runs once per server (marker file next to the runtime file) and:
+#   * rewrites exit price + P&L of the matching rows in live_trades.csv
+#     (P&L = price difference x qty minus ~0.05% taker fee per side, which is
+#      how Binance's own "Realized PNL" is reported),
+#   * repairs the member's realized P&L / daily-loss counters, the loss-brake
+#     stop list and a daily-limit pause those phantom losses may have caused.
+# 'overrides' pins the exact Binance numbers for the known account.
+# ---------------------------------------------------------------------------
+_KNOWN_FIXES = [
+    {'id': 'siren-20261017-0644', 'symbol': 'SIRENUSDT', 'exit_prefix': '2026-10-17T06:44:38', 'exit_price': 0.03821,
+     'overrides': [{'qty': 26118.0, 'entry': 0.0382473, 'exit': 0.03821, 'pnl': -1.98}]},
+    {'id': 'siren-20261017-0618', 'symbol': 'SIRENUSDT', 'exit_prefix': '2026-10-17T06:18:48', 'exit_price': 0.0375183,
+     'overrides': [{'qty': 26647.0, 'entry': 0.0375474, 'exit': 0.0375183, 'pnl': -1.78}]},
+]
+_FIX_FEE_RATE = 0.0005
+
+
+def apply_known_corrections():
+    marker_path = LIVE_RUNTIME_FILE + '.fixes'
+    with _lock:
+        done = set(_read_json(marker_path, []))
+        todo = [f for f in _KNOWN_FIXES if f['id'] not in done]
+        if not todo or not os.path.exists(LIVE_TRADES_FILE):
+            return 0
+        try:
+            with open(LIVE_TRADES_FILE, 'r', encoding='utf-8', newline='') as fh:
+                reader = csv.DictReader(fh)
+                fields = reader.fieldnames or LIVE_TRADES_FIELDS
+                rows = list(reader)
+        except Exception as e:
+            print(f'LIVE FIX | read error {type(e).__name__}: {e}', flush=True)
+            return 0
+        runtime = _load_runtime()
+        changed_rows = changed_rt = 0
+        fixed_ids = set()
+        for fx in todo:
+            for row in rows:
+                if row.get('symbol') != fx['symbol'] or not str(row.get('exit_time', '')).startswith(fx['exit_prefix']):
+                    continue
+                try:
+                    qty, entry = float(row['qty']), float(row['entry_price'])
+                    old = float(row['pnl'])
+                    exit_p = fx['exit_price']
+                    new = None
+                    for o in fx.get('overrides', []):
+                        if abs(qty - o['qty']) < 1:
+                            entry, exit_p, new = o['entry'], o['exit'], o['pnl']
+                    if new is None:
+                        gross = (exit_p - entry) * qty if row.get('side') == 'LONG' else (entry - exit_p) * qty
+                        new = round(gross - _FIX_FEE_RATE * (entry + exit_p) * qty, 2)
+                    if abs(old - new) < 0.005 and abs(float(row['exit_price']) - exit_p) < 1e-12:
+                        continue
+                    row['entry_price'], row['exit_price'], row['pnl'] = entry, exit_p, new
+                    changed_rows += 1
+                    fixed_ids.add(fx['id'])
+                    urec = runtime.get(row.get('username'))
+                    if not isinstance(urec, dict):
+                        continue
+                    urec['realized_pnl_usd'] = float(urec.get('realized_pnl_usd') or 0) + (new - old)
+                    exit_dt = _parse_iso_utc(row['exit_time'])
+                    if exit_dt.date().isoformat() == urec.get('day'):
+                        urec['realized_loss_usd'] = min(0.0, float(urec.get('realized_loss_usd') or 0) + (min(new, 0) - min(old, 0)))
+                        rec = auth.get_user(row.get('username')) or {}
+                        lim = float(rec.get('live_daily_loss_limit_usd') or 0)
+                        if urec.get('paused_today') and (lim <= 0 or urec['realized_loss_usd'] > -abs(lim)):
+                            urec['paused_today'] = False
+                    # the phantom stop must not count towards the loss brake
+                    urec['recent_stops'] = [t for t in urec.get('recent_stops', [])
+                                            if abs((_parse_iso_utc(t) - exit_dt).total_seconds()) > 120]
+                    bu = urec.get('brake_until')
+                    if bu:
+                        trig = _parse_iso_utc(bu) - timedelta(hours=LOSS_BRAKE_PAUSE_HOURS)
+                        if abs((trig - exit_dt).total_seconds()) < 300:
+                            urec.pop('brake_until', None)
+                    changed_rt += 1
+                except Exception as e:
+                    print(f'LIVE FIX | row error {type(e).__name__}: {e}', flush=True)
+        if changed_rows:
+            tmp = LIVE_TRADES_FILE + '.tmp'
+            with open(tmp, 'w', encoding='utf-8', newline='') as fh:
+                w = csv.DictWriter(fh, fieldnames=fields)
+                w.writeheader()
+                w.writerows(rows)
+            os.replace(tmp, LIVE_TRADES_FILE)
+            if changed_rt:
+                _save_runtime(runtime)
+            print(f'LIVE FIX | {changed_rows} kapanan işlem kaydı düzeltildi, {changed_rt} üye sayacı güncellendi', flush=True)
+        if fixed_ids:
+            _write_json(marker_path, sorted(done | fixed_ids))
+        return changed_rows
+
+
+try:
+    apply_known_corrections()
+except Exception as _e:
+    print(f'LIVE FIX | ERROR {type(_e).__name__}: {_e}', flush=True)
