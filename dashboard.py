@@ -3881,7 +3881,7 @@ async function startScanner(force=false){document.getElementById('scannerStatus'
 refreshScanner();setInterval(refreshScanner,10000);
 
 // ---- 15-minute scan: MANUAL only (no timer starts it) ----
-const T15=(tr,en)=>((typeof currentLang!=='undefined'&&currentLang==='tr')?tr:en);
+const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
 let scan15Cache={results:[],status:'IDLE'}, scan15Timer=null;
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 function renderScan15(){
@@ -3936,7 +3936,6 @@ function renderIntersect(){
     ||`<tr><td colspan="9" class="empty">${have15?T15('Kesişimde coin yok.','No coins in the intersection.'):'—'}</td></tr>`;
 }
 refreshScan15();   // one cheap read of the last result; it never starts a scan
-renderIntersect();
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
