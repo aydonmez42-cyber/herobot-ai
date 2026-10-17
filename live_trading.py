@@ -598,7 +598,7 @@ def open_position_now(username, symbol, side, demo_price=None):
             _save_runtime(runtime)
             print(f'LIVE | {username} | MANUAL OPEN FAILED | {symbol} {side} | {result}', flush=True)
             return False, f'Emir başarısız oldu: {result}'
-        fill_price = blive.fill_price_from_order(result, price)
+        fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, price)
         urec['positions'][symbol] = {
             'side': side, 'qty': qty, 'entry_price': fill_price,
             'entry_time': datetime.now(timezone.utc).isoformat(), 'source': 'manual_join',
@@ -650,7 +650,7 @@ def close_position_now(username, symbol):
             return False, f'Kapatma emri başarısız oldu: {result}'
 
         fallback_price = blive.get_mark_price(symbol) or pos['entry_price']
-        fill_price = blive.fill_price_from_order(result, fallback_price)
+        fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, fallback_price)
         entry_price = pos['entry_price']
         gross = (fill_price - entry_price) * qty if side == 'LONG' else (entry_price - fill_price) * qty
         urec['realized_pnl_usd'] += gross
@@ -734,7 +734,7 @@ def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
                     urec['last_error_notified'] = str(result)
                     _notify_user(username, lambda s=symbol, sd=side, r=result: tg.live_risk_alert(f'{s} {sd} canlı emri başarısız oldu:\n{r}\n\nBakiye/marj yetersizliği, API izin sorunu vb. olabilir — Binance hesabınızı kontrol edin.'))
                 continue
-            fill_price = blive.fill_price_from_order(result, price)
+            fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, price)
             urec['positions'][symbol] = {
                 'side': side, 'qty': qty, 'entry_price': fill_price,
                 'entry_time': datetime.now(timezone.utc).isoformat(), 'source': source,
@@ -783,7 +783,7 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
                     _notify_user(username, lambda s=symbol, sd=side, r=result: tg.live_risk_alert(f'{s} {sd} pozisyonunu kapatma emri BAŞARISIZ OLDU:\n{r}\n\nPozisyon Binance hesabınızda AÇIK kalmış olabilir — lütfen hemen manuel kontrol edin.'))
                 changed = True
                 continue
-            fill_price = blive.fill_price_from_order(result, price)
+            fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, price)
             entry_price = pos['entry_price']
             gross = (fill_price - entry_price) * qty if side == 'LONG' else (entry_price - fill_price) * qty
             urec['realized_pnl_usd'] += gross

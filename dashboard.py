@@ -2948,7 +2948,7 @@ async function renderLiveFallback(posEl,sigEl,symbol,keepSig){
   const entry=Number(p.entry_price),cur=Number(p.current_price),qty=Number(p.qty);
   const sideCls=p.side==='LONG'?'long':'short';
   const size=(!isNaN(qty)&&!isNaN(entry))?qty*entry:null;
-  const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+  const opened=(()=>{ try{ let z=String(p.entry_time||''); if(!z) return '—'; if(!/[zZ]|[+-]\d\d:?\d\d$/.test(z)) z=z.replace(' ','T')+'Z'; return new Date(z).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(0,16); }catch(e){ return '—'; } })();
   posEl.innerHTML=`
     <div class="pos-top"><span class="side-tag ${sideCls}">${p.side}</span><span class="pos-symbol">${p.symbol}</span><span class="text-faint" style="margin-left:8px;font-size:12px">${x.tag}</span></div>
     <div class="pos-grid">
@@ -3556,6 +3556,17 @@ SCANNER_HTML = r'''<!doctype html>
       </table>
     </div>
 
+
+    <div id="interCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b id="interTitle">15Dk-4Saat Kesişim</b><span class="scanner-status" id="interStatus"></span></div>
+      <div class="scanner-note" id="interNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="interTable">
+          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">ADX 4H</th><th class="num">RSI 4H</th><th class="num">ADX 15m</th><th class="num">RSI 15m</th><th>Score 4H</th><th>Add</th></tr></thead>
+          <tbody id="interRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
@@ -3797,6 +3808,7 @@ function renderScanner(){
   document.getElementById('shortCount').textContent='SHORT '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='SHORT').length;
   document.getElementById('noCount').textContent='NO SIGNAL '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='NO SIGNAL').length;
   markSigTags('longCount','shortCount','noCount','signalFilter');
+  try{ renderIntersect(); }catch(e){}
 }
 async function bistScannerData(){try{let r=await fetch('/api/bist-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
 let bistScannerCache={results:[]};
@@ -3886,6 +3898,7 @@ function renderScan15(){
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(scan15Cache.last_error?('⚠ '+scan15Cache.last_error+' '):'')+T15('15 dk kapanmış mum · en likit '+(scan15Cache.total||200)+' USDT-M coin · yalnızca sinyal amaçlı.','15m closed candle · most liquid '+(scan15Cache.total||200)+' USDT-M coins · signal purposes only.');
+  try{ renderIntersect(); }catch(e){}
   const body=document.getElementById('scan15Rows'); if(!body) return;
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 15m','15')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="11" class="empty">${scan15Cache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
@@ -3904,7 +3917,26 @@ async function scan15Start(){
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   renderScan15(); refreshScan15();
 }
+
+// ---- 15m x 4H intersection: coins that are LONG in BOTH scans ----
+function renderIntersect(){
+  const body=document.getElementById('interRows'); if(!body) return;
+  const h4=new Map(((scannerCache&&scannerCache.results)||[]).filter(x=>x.signal==='LONG').map(x=>[x.symbol,x]));
+  const m15=((scan15Cache&&scan15Cache.results)||[]).filter(x=>x.signal==='LONG');
+  const rows=m15.filter(x=>h4.has(x.symbol)).map(x=>({a:h4.get(x.symbol),b:x}));
+  rows.sort((p,q)=>Number(q.b.change_pct||0)-Number(p.b.change_pct||0));
+  const st=document.getElementById('interStatus'), note=document.getElementById('interNote'), title=document.getElementById('interTitle');
+  if(title) title.textContent=T15('15Dk-4Saat Kesişim','15m-4H Intersection');
+  const have15=!!(scan15Cache&&scan15Cache.finished_at);
+  if(st) st.textContent=have15?(rows.length+' '+T15('coin','coins')):'';
+  if(note) note.textContent=have15
+    ? T15('Hem 4 saatlik hem 15 dakikalık taramada LONG veren coinler. 15 dk taraması: ','Coins that are LONG in both the 4H and the 15m scan. 15m scan: ')+scan15Cache.finished_at.replace('T',' ').slice(0,16)+' UTC'
+    : T15('Önce yukarıdaki “15 dk tara” butonuyla 15 dakikalık taramayı çalıştırın; kesişim burada listelenir.','Run the 15m scan above first; the intersection will be listed here.');
+  body.innerHTML=rows.map(({a,b})=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${b.symbol}.P','${b.symbol} · 15m','15')"><td><b>${b.symbol}</b></td><td class="num">${p15(b.price)}</td><td class="num ${Number(b.change_pct)>=0?'pos':'neg'}">${Number(b.change_pct||0).toFixed(2)}%</td><td class="num">${a.adx??'—'}</td><td class="num">${a.rsi??'—'}</td><td class="num">${b.adx??'—'}</td><td class="num">${b.rsi??'—'}</td><td>${a.score!=null?a.score+'/'+(a.score_max||8):'—'}</td><td>${addCell(b.symbol,'crypto','LONG')}</td></tr>`).join('')
+    ||`<tr><td colspan="9" class="empty">${have15?T15('Kesişimde coin yok.','No coins in the intersection.'):'—'}</td></tr>`;
+}
 refreshScan15();   // one cheap read of the last result; it never starts a scan
+renderIntersect();
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -7543,7 +7575,7 @@ function renderMyLive(d){
     : t('liveAccount.liveOff');
 
   document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
-    const opened=(p.entry_time||'').replace('T',' ').slice(0,16);
+    const opened=fmtTR(p.entry_time);
     return `<tr><td><a href="/?symbol=${encodeURIComponent(p.symbol)}" style="color:var(--accent);text-decoration:none" title="${t('panel.openPosition')}"><b>${p.symbol}</b> ↗</a></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
       +`<td class="num">${num(p.qty)}</td><td class="num">${livePxFmt(p.entry_price)}</td><td class="num">${livePxFmt(p.current_price)}</td>`
       +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
@@ -7551,10 +7583,17 @@ function renderMyLive(d){
   }).join('') || `<tr><td colspan="9" class="empty">${t('liveOpen.noOpenPositions')}</td></tr>`;
 
   document.getElementById('liveMineClosedRows').innerHTML = closed.map(tr=>{
-    return `<tr><td>${(tr.exit_time||'—')}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
-      +`<td class="num">${num(tr.entry_price)}</td><td class="num">${num(tr.exit_price)}</td>`
+    return `<tr><td>${fmtTR(tr.exit_time)}</td><td><span class="pill ${String(tr.side).toLowerCase()}">${tr.side}</span></td><td>${tr.symbol}</td>`
+      +`<td class="num">${livePxFmt(tr.entry_price)}</td><td class="num">${livePxFmt(tr.exit_price)}</td>`
       +`<td class="num ${cls(tr.pnl)}"><b>${money(tr.pnl)}</b></td><td class="wrap-cell">${tr.reason||''}</td></tr>`;
   }).join('') || `<tr><td colspan="7" class="empty">${t('history.noClosedLiveTrades')}</td></tr>`;
+}
+function fmtTR(v){
+  // UTC timestamps -> Turkey time (UTC+3), YYYY-MM-DD HH:MM
+  if(!v) return '—';
+  let str=String(v); if(!/[zZ]|[+-]\d\d:?\d\d$/.test(str)) str=str.replace(' ','T')+'Z';
+  const d=new Date(str); if(isNaN(d)) return String(v).replace('T',' ').slice(0,16);
+  try{ return d.toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(0,16); }catch(e){ return String(v).replace('T',' ').slice(0,16); }
 }
 function livePxFmt(x){
   if(x==null||x==='') return '—';

@@ -270,6 +270,39 @@ def is_reduce_only_rejection(result):
     return '-2022' in t or 'reduceonly' in t.replace(' ', '').lower()
 
 
+def resolve_fill_price(api_key, api_secret, symbol, order, fallback):
+    """Real average fill price of a MARKET order. Binance often answers the
+    order request with avgPrice 0 (not filled yet), so the old code fell back
+    to the strategy's estimated price - for an exit that is the demo STOP
+    price, which made a position closed seconds after entry look like a huge
+    loss. Order of preference: avgPrice in the response -> query the order ->
+    current market price -> the fallback."""
+    try:
+        avg = float((order or {}).get('avgPrice') or 0)
+        if avg > 0:
+            return avg
+    except Exception:
+        pass
+    order_id = (order or {}).get('orderId')
+    if order_id and not in_rate_limit_cooldown():
+        for attempt in range(3):
+            time.sleep(0.25 * (attempt + 1))
+            try:
+                r = _signed_request('GET', '/fapi/v1/order', api_key, api_secret,
+                                    {'symbol': symbol, 'orderId': order_id}, timeout=10)
+                data, err = _json_or_error(r)
+                if data:
+                    avg = float(data.get('avgPrice') or 0)
+                    if avg > 0:
+                        return avg
+            except Exception:
+                pass
+    mark = get_mark_price(symbol)
+    if mark:
+        return mark
+    return fallback
+
+
 def fill_price_from_order(order, fallback):
     """Best-effort average fill price from a MARKET order response; falls
     back to the strategy's own estimated price if Binance didn't report one

@@ -669,6 +669,21 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
     high, low = float(candle['high']), float(candle['low'])
     last = float(candle['close'])
     entry, atr_val = p['entry_price'], p['atr']
+    # The forming candle's high/low may have printed BEFORE this position was
+    # opened (e.g. a coin added mid-candle after a pump: the candle low is far
+    # below the entry). Those extremes are not part of the trade and used to
+    # trigger phantom stop-outs seconds after entry. While the candle started
+    # before the entry, only prices actually seen since entry count.
+    try:
+        _opened = pd.Timestamp(p['entry_time'])
+        if _opened.tzinfo is None:
+            _opened = _opened.tz_localize('UTC')
+        if pd.Timestamp(candle['open_time']) < _opened:
+            p['seen_high'] = max(float(p.get('seen_high') or last), last)
+            p['seen_low'] = min(float(p.get('seen_low') or last), last)
+            high, low = p['seen_high'], p['seen_low']
+    except Exception:
+        pass
     # Safety net: a take-profit must sit on the PROFIT side of the entry. A TP on
     # the losing side would "take profit" at a loss (labelled ATR_TP), so repair it.
     if p['side'] == 'LONG' and p.get('tp') is not None and p['tp'] <= entry:
