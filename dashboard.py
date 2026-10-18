@@ -7,6 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 import config as cfg
 import scanner_15m
+import scanner_st
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
 from us_scanner import snapshot as us_scanner_snapshot, start_scan as us_scanner_start, background_loop as us_background_loop
@@ -3567,6 +3568,23 @@ SCANNER_HTML = r'''<!doctype html>
         </table>
       </div>
     </div>
+
+    <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
+      <div class="scanner-controls">
+        <button class="btn" id="stBtn" onclick="stStart()">⏱ Supertrend tara (manuel)</button>
+        <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="6">Son 6 mum</option></select>
+        <span class="scanner-status" id="stStatus"></span>
+      </div>
+      <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="stTable">
+          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th class="num">Supertrend</th><th class="num">Distance %</th><th>Flip (TR)</th><th>Signal</th><th>Add</th></tr></thead>
+          <tbody id="stRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
@@ -3936,6 +3954,45 @@ function renderIntersect(){
     ||`<tr><td colspan="9" class="empty">${have15?T15('Kesişimde coin yok.','No coins in the intersection.'):'—'}</td></tr>`;
 }
 refreshScan15();   // one cheap read of the last result; it never starts a scan
+
+// ---- Supertrend scan (4H, 10 / 7.8): MANUAL only ----
+let stCache={results:[],status:'IDLE'}, stTimer=null;
+function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
+function renderSt(){
+  const f=document.getElementById('stFilter')?.value||'LONG';
+  const n=Number(document.getElementById('stBars')?.value||1);
+  const all=(stCache.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
+  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
+  const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
+  const st=document.getElementById('stStatus'), note=document.getElementById('stNote'), btn=document.getElementById('stBtn');
+  const busy=stCache.status==='SCANNING'; if(btn) btn.disabled=busy;
+  if(st){
+    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
+    else if(stCache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
+    else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
+  }
+  if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
+    '4 saatlik kapanmış mum · Supertrend ('+(stCache.period||10)+', '+(stCache.factor||7.8)+') · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
+    '4H closed candle · Supertrend ('+(stCache.period||10)+', '+(stCache.factor||7.8)+') · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
+  const body=document.getElementById('stRows'); if(!body) return;
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 4H')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stFmtTR(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
+    ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
+}
+async function refreshSt(){
+  try{ const r=await fetch('/api/scanner_st',{cache:'no-store'}); stCache=await r.json(); }catch(e){ return; }
+  renderSt();
+  if(stCache.status==='SCANNING'){ if(!stTimer) stTimer=setInterval(refreshSt,3000); }
+  else if(stTimer){ clearInterval(stTimer); stTimer=null; }
+}
+async function stStart(){
+  try{
+    const r=await fetch('/api/scanner_st/scan',{cache:'no-store'}); const d=await r.json();
+    if(!d.started && d.message) alert(d.message);
+    if(d.snapshot) stCache=d.snapshot;
+  }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
+  renderSt(); refreshSt();
+}
+refreshSt();   // one cheap read of the last result; it never starts a scan
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -9309,6 +9366,12 @@ class Handler(BaseHTTPRequestHandler):
             q=parse_qs(urlparse(self.path).query); force=q.get('force',['0'])[0]=='1'
             started=us_scanner_start(force=force)
             body=json.dumps({'started':started,'status':us_scanner_snapshot().get('status')}).encode(); self.send_response(202 if started else 200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path=='/api/scanner_st':
+            self._send_json(scanner_st.snapshot()); return
+        if path=='/api/scanner_st/scan':
+            # MANUAL trigger only - the Supertrend scan has no background loop.
+            started,msg=scanner_st.start_scan()
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st.snapshot()}); return
         if path=='/api/scanner15':
             self._send_json(scanner_15m.snapshot()); return
         if path=='/api/scanner15/scan':

@@ -65,7 +65,11 @@ def _get(url, params=None, timeout=15):
 
 
 def _universe():
-    """[(symbol, quote_volume_usd, change_pct)] for the TOP_N most liquid
+    return _universe_n(TOP_N)
+
+
+def _universe_n(top_n):
+    """[(symbol, quote_volume_usd, change_pct)] for the top_n most liquid
     USDT perpetuals, from one exchangeInfo (cached 1h) + one 24h ticker call."""
     info = blive.get_exchange_info() or {}
     ok = {s for s, i in info.items()
@@ -80,7 +84,7 @@ def _universe():
             except Exception:
                 continue
     rows.sort(key=lambda r: r[1], reverse=True)
-    return rows[:TOP_N]
+    return rows[:top_n]
 
 
 def _klines(symbol):
