@@ -7084,10 +7084,13 @@ function renderClosedSummary(d){
   const st=(d && d.stats) || {};
   document.getElementById('csStartDate').textContent = st.start_date ? String(st.start_date).replace('T',' ').slice(0,16) : '—';
   document.getElementById('csTotalTrades').textContent = st.trades!=null ? st.trades : '—';
-  document.getElementById('csWonCount').textContent = st.wins!=null ? st.wins : '—';
-  document.getElementById('csWonAmount').textContent = st.gross_win!=null ? money(st.gross_win) : '—';
-  document.getElementById('csLostCount').textContent = st.losses!=null ? st.losses : '—';
-  document.getElementById('csLostAmount').textContent = st.gross_loss!=null ? '-'+money(st.gross_loss) : '—';
+  const csPct=(part,whole)=>{ const a=Number(part), b=Number(whole); return (isFinite(a)&&isFinite(b)&&b>0) ? ' ('+(a/b*100).toFixed(1)+'%)' : ''; };
+  const csCntBase=Number(st.trades)||((Number(st.wins)||0)+(Number(st.losses)||0));
+  const csAmtBase=(Number(st.gross_win)||0)+(Number(st.gross_loss)||0);
+  document.getElementById('csWonCount').textContent = st.wins!=null ? st.wins+csPct(st.wins,csCntBase) : '—';
+  document.getElementById('csWonAmount').textContent = st.gross_win!=null ? money(st.gross_win)+csPct(st.gross_win,csAmtBase) : '—';
+  document.getElementById('csLostCount').textContent = st.losses!=null ? st.losses+csPct(st.losses,csCntBase) : '—';
+  document.getElementById('csLostAmount').textContent = st.gross_loss!=null ? '-'+money(st.gross_loss)+csPct(st.gross_loss,csAmtBase) : '—';
   const totalPnlEl=document.getElementById('csTotalPnl');
   if(st.net_closed!=null){ totalPnlEl.textContent=money(st.net_closed); totalPnlEl.className='kpi-value '+cls(st.net_closed); }
   else { totalPnlEl.textContent='—'; totalPnlEl.className='kpi-value'; }
