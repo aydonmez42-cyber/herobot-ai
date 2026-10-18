@@ -140,7 +140,8 @@ EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG alrea
 # 15m strategy gives SHORT_COUNT SHORT signals in a row (no LONG signal in
 # between; a LONG signal resets the count). A SHORT is closed symmetrically on
 # LONG signals. Candles without any signal neither count nor reset. The exit is
-# taken only after the confirming candle has CLOSED (never on a forming candle).
+# taken only after the confirming candle has CLOSED (never on a forming candle),
+# and ONLY while the position is at a loss (price beyond the entry).
 # 'log' = only report, 'off' = disabled.
 M15_EXIT_MODE = _env_mode('M15_EXIT_MODE', 'on')
 M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
@@ -452,7 +453,6 @@ def check_m15_reversal_exit(state, symbol, now):
     enriched = add_indicators(closed, cfg)
     against = 'SHORT' if p['side'] == 'LONG' else 'LONG'
     count = int(p.get('m15_against') or 0)
-    fire_time = None
     for i in range(max(0, len(enriched) - 8), len(enriched)):
         ct = enriched.iloc[i]['close_time']
         if ct <= entry_ts or (last_seen is not None and ct <= last_seen):
@@ -462,25 +462,30 @@ def check_m15_reversal_exit(state, symbol, now):
         if sig == against:
             count += 1
             print(f'M15 | {p["side"]} {symbol} | {ct.isoformat()[:16]} UTC kapanışında 15dk {against} sinyali ({count}/{M15_EXIT_COUNT})', flush=True)
-            if count >= M15_EXIT_COUNT and fire_time is None:
-                fire_time = ct
         elif sig == p['side']:
             if count:
                 print(f'M15 | {p["side"]} {symbol} | {ct.isoformat()[:16]} UTC kapanışında 15dk {sig} sinyali, sayaç sıfırlandı', flush=True)
             count = 0
-            fire_time = None
+            p.pop('m15_logged', None)
         p['m15_last_close'] = ct.isoformat()
     p['m15_against'] = count
     p['m15_boundary'] = boundary
-    if fire_time is None:
+    if count < M15_EXIT_COUNT:
         return False
+    # Armed: enough opposite signals. Only a position that is currently at a
+    # LOSS is closed; a profitable one is left to TP / trailing / profit lock
+    # and is closed here as soon as it slips into loss while still armed.
     px = float(df.iloc[-1]['close'])
+    entry = float(p['entry_price'])
+    in_loss = px < entry if p['side'] == 'LONG' else px > entry
+    if not in_loss:
+        return False
     if M15_EXIT_MODE == 'log':
         if not p.get('m15_logged'):
             p['m15_logged'] = True
-            print(f'M15 EXIT (log modu, kapatılmadı) | {p["side"]} {symbol} | {M15_EXIT_COUNT}. {against} sinyali kapanışı gerçekleşti', flush=True)
+            print(f'M15 EXIT (log modu, kapatılmadı) | {p["side"]} {symbol} | {count} ters 15dk sinyal + zararda ({px:.6f} / giriş {entry:.6f})', flush=True)
         return False
-    print(f'M15 EXIT | {p["side"]} {symbol} | {M15_EXIT_COUNT}. {against} sinyali mum kapanışı ({fire_time.isoformat()[:16]} UTC) -> kapatılıyor @ {px:.6f}', flush=True)
+    print(f'M15 EXIT | {p["side"]} {symbol} | {count} ters 15dk sinyal (mum kapanışı) + pozisyon zararda -> kapatılıyor @ {px:.6f} (giriş {entry:.6f})', flush=True)
     exit_symbol_position(state, symbol, px, 'EXIT_15M_SIGNAL', now, live_eligible=True)
     return True
 
