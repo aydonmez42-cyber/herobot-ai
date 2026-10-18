@@ -135,6 +135,16 @@ PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '100:7
 EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
 
+# 15-minute reversal exit. The position is opened on a 4H signal, but once it is
+# open the 15m chart is watched on CLOSED 15m candles: a LONG is closed when the
+# 15m strategy gives SHORT_COUNT SHORT signals in a row (no LONG signal in
+# between; a LONG signal resets the count). A SHORT is closed symmetrically on
+# LONG signals. Candles without any signal neither count nor reset. The exit is
+# taken only after the confirming candle has CLOSED (never on a forming candle).
+# 'log' = only report, 'off' = disabled.
+M15_EXIT_MODE = _env_mode('M15_EXIT_MODE', 'on')
+M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -412,6 +422,66 @@ def check_early_exit(state, symbol, price, now):
         return False
     print(f'EARLY EXIT | LONG {symbol} | BTC kilidi aktif, pozisyon {loss_atr:.1f} ATR zararda -> kapatılıyor', flush=True)
     exit_symbol_position(state, symbol, price, 'EARLY_EXIT_BTC', now, live_eligible=True)
+    return True
+
+
+def check_m15_reversal_exit(state, symbol, now):
+    """Closes a watchlist crypto position when the 15m chart reverses against
+    it (see M15_EXIT_MODE). Looks at 15m data only once per closed 15m candle
+    (one klines request per open position per 15 minutes). Returns True if the
+    position was closed."""
+    if M15_EXIT_MODE == 'off':
+        return False
+    p = (state.get('positions') or {}).get(symbol)
+    if not p or p.get('side') not in ('LONG', 'SHORT') or p.get('source') == 'restored_live':
+        return False
+    now_ts = pd.Timestamp(now)
+    if now_ts.tzinfo is None:
+        now_ts = now_ts.tz_localize('UTC')
+    boundary = now_ts.floor('15min').isoformat()
+    if p.get('m15_boundary') == boundary:
+        return False                       # this 15m candle was already evaluated
+    df = fetch(symbol, 'USD_M', 300, interval='15m')
+    closed = df[df['close_time'] < now_ts].copy()
+    if len(closed) < 120:
+        return False
+    entry_ts = pd.Timestamp(p['entry_time'])
+    if entry_ts.tzinfo is None:
+        entry_ts = entry_ts.tz_localize('UTC')
+    last_seen = pd.Timestamp(p['m15_last_close']) if p.get('m15_last_close') else None
+    enriched = add_indicators(closed, cfg)
+    against = 'SHORT' if p['side'] == 'LONG' else 'LONG'
+    count = int(p.get('m15_against') or 0)
+    fire_time = None
+    for i in range(max(0, len(enriched) - 8), len(enriched)):
+        ct = enriched.iloc[i]['close_time']
+        if ct <= entry_ts or (last_seen is not None and ct <= last_seen):
+            continue                       # before the entry, or already counted
+        gl, gs = long_signal(enriched, i, cfg), short_signal(enriched, i, cfg)
+        sig = 'LONG' if (gl and not gs) else ('SHORT' if (gs and not gl) else None)
+        if sig == against:
+            count += 1
+            print(f'M15 | {p["side"]} {symbol} | {ct.isoformat()[:16]} UTC kapanışında 15dk {against} sinyali ({count}/{M15_EXIT_COUNT})', flush=True)
+            if count >= M15_EXIT_COUNT and fire_time is None:
+                fire_time = ct
+        elif sig == p['side']:
+            if count:
+                print(f'M15 | {p["side"]} {symbol} | {ct.isoformat()[:16]} UTC kapanışında 15dk {sig} sinyali, sayaç sıfırlandı', flush=True)
+            count = 0
+            fire_time = None
+        p['m15_last_close'] = ct.isoformat()
+    p['m15_against'] = count
+    p['m15_boundary'] = boundary
+    if fire_time is None:
+        return False
+    px = float(df.iloc[-1]['close'])
+    if M15_EXIT_MODE == 'log':
+        if not p.get('m15_logged'):
+            p['m15_logged'] = True
+            print(f'M15 EXIT (log modu, kapatılmadı) | {p["side"]} {symbol} | {M15_EXIT_COUNT}. {against} sinyali kapanışı gerçekleşti', flush=True)
+        return False
+    print(f'M15 EXIT | {p["side"]} {symbol} | {M15_EXIT_COUNT}. {against} sinyali mum kapanışı ({fire_time.isoformat()[:16]} UTC) -> kapatılıyor @ {px:.6f}', flush=True)
+    exit_symbol_position(state, symbol, px, 'EXIT_15M_SIGNAL', now, live_eligible=True)
     return True
 
 
@@ -880,6 +950,11 @@ def run_watchlist_symbol(state, symbol, now):
             check_early_exit(state, symbol, float(df.iloc[-1]['close']), now)
         except Exception as e:
             print(f'EARLY EXIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    if symbol in state.get('positions', {}):
+        try:
+            check_m15_reversal_exit(state, symbol, now)
+        except Exception as e:
+            print(f'M15 EXIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
@@ -1043,7 +1118,7 @@ def main():
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
