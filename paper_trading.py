@@ -146,6 +146,14 @@ EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG alrea
 M15_EXIT_MODE = _env_mode('M15_EXIT_MODE', 'on')
 M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
 
+# Trend stop (4H, closed candles): a LONG is stopped out when a 4H candle CLOSES
+# below EMA(TREND_SL_EMA) while the Supertrend (scanner_st PERIOD/FACTOR, 10/7.8)
+# is DOWN and flipped down AFTER the entry; a SHORT symmetrically (close above
+# the EMA + Supertrend flipped UP after entry). Works as an extra stop in front
+# of the far ATR stop. 'log' = only report, 'off' = disabled.
+TREND_SL_MODE = _env_mode('TREND_SL_MODE', 'on')
+TREND_SL_EMA = int(_env_float('TREND_SL_EMA', 50))
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -487,6 +495,55 @@ def check_m15_reversal_exit(state, symbol, now):
         return False
     print(f'M15 EXIT | {p["side"]} {symbol} | {count} ters 15dk sinyal (mum kapanışı) + pozisyon zararda -> kapatılıyor @ {px:.6f} (giriş {entry:.6f})', flush=True)
     exit_symbol_position(state, symbol, px, 'EXIT_15M_SIGNAL', now, live_eligible=True)
+    return True
+
+
+def check_trend_stop(state, symbol, closed, now, price):
+    """See TREND_SL_MODE. `closed` = closed candles of the strategy timeframe
+    (4H). Evaluated once per newly closed candle. Returns True if closed."""
+    if TREND_SL_MODE == 'off':
+        return False
+    p = (state.get('positions') or {}).get(symbol)
+    if not p or p.get('side') not in ('LONG', 'SHORT') or p.get('source') == 'restored_live':
+        return False
+    if len(closed) < TREND_SL_EMA + 40:
+        return False
+    last_ct = closed.iloc[-1]['close_time']
+    if p.get('trend_sl_last') == last_ct.isoformat():
+        return False                       # this candle was already evaluated
+    p['trend_sl_last'] = last_ct.isoformat()
+    entry_ts = pd.Timestamp(p['entry_time'])
+    if entry_ts.tzinfo is None:
+        entry_ts = entry_ts.tz_localize('UTC')
+    if last_ct <= entry_ts:
+        return False                       # candle closed before the entry
+    import scanner_st
+    c = closed.reset_index(drop=True)
+    up, line = scanner_st.supertrend(c, scanner_st.PERIOD, scanner_st.FACTOR)
+    last = len(c) - 1
+    if pd.isna(line[last]):
+        return False
+    j = last
+    while j > 0 and up[j - 1] == up[last] and not pd.isna(line[j - 1]):
+        j -= 1
+    flip_ct = c.iloc[j]['close_time']      # candle on which the current Supertrend trend began
+    ema = c['close'].astype(float).ewm(span=TREND_SL_EMA, adjust=False).mean().iloc[-1]
+    close = float(c.iloc[-1]['close'])
+    if p['side'] == 'LONG':
+        hit = (not up[last]) and close < ema
+    else:
+        hit = bool(up[last]) and close > ema
+    if not (hit and flip_ct > entry_ts):
+        return False
+    msg = (f'{p["side"]} {symbol} | 4s mum kapanışı {close:.6f} {"<" if p["side"]=="LONG" else ">"} EMA{TREND_SL_EMA} ({ema:.6f}) '
+           f've Supertrend({scanner_st.PERIOD}-{scanner_st.FACTOR:g}) {"aşağı" if p["side"]=="LONG" else "yukarı"} kırıldı')
+    if TREND_SL_MODE == 'log':
+        if not p.get('trend_sl_logged'):
+            p['trend_sl_logged'] = True
+            print(f'TREND SL (log modu, kapatılmadı) | {msg}', flush=True)
+        return False
+    print(f'TREND SL | {msg} -> kapatılıyor @ {price:.6f}', flush=True)
+    exit_symbol_position(state, symbol, price, 'TREND_SL', now, live_eligible=True)
     return True
 
 
@@ -960,6 +1017,11 @@ def run_watchlist_symbol(state, symbol, now):
             check_m15_reversal_exit(state, symbol, now)
         except Exception as e:
             print(f'M15 EXIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    if symbol in state.get('positions', {}):
+        try:
+            check_trend_stop(state, symbol, closed, now, float(df.iloc[-1]['close']))
+        except Exception as e:
+            print(f'TREND SL | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
@@ -1123,7 +1185,7 @@ def main():
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
