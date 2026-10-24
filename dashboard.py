@@ -6511,6 +6511,10 @@ function renderWatchlistTable(){
     } else {
       sideCell=sigPill(x.current_signal||'NO SIGNAL');
       pnlCell=x.market==='bist'?'<span class="text-faint">'+t('watchlist.watched')+'</span>':'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
+      if(x.entry_wait){ const w=x.entry_wait, tf=w.tf||{}, tr=(currentLang==='tr');
+        const mk=(k,l)=>l+(tf[k]===undefined?'?':(tf[k]?'↑':'↓'));
+        const note=w.blocked?(' · '+(tr?'giriş engelli':'entry blocked')):'';
+        pnlCell+=`<div class="text-faint" style="font-size:11px;line-height:1.35;margin-top:2px">⏳ ${tr?'Giriş bekliyor':'Waiting to enter'} (${w.side}): ${mk('15m',tr?'15dk ':'15m ')} · ${mk('1h',tr?'1s ':'1h ')} · ${mk('4h',tr?'4s ':'4h ')}${note}</div>`; }
       if(x.entry_block) pnlCell+=`<div class="text-faint" style="font-size:11px;line-height:1.35;margin-top:2px;color:var(--bear,#e5534b)">⛔ ${blockText(x.entry_block)}</div>`;
     }
     const added=(()=>{ const raw=x.added_at||''; if(!raw) return '';
@@ -8902,6 +8906,7 @@ def watchlist_status():
             'updated_at': sig.get('updated_at'), 'position': pos,
             'indicators': sig.get('indicators'),
             'entry_block': ((s.get('entry_blocked') or {}).get(symbol) if symbol not in positions else None),
+            'entry_wait': ((s.get('entry_wait') or {}).get(symbol) if symbol not in positions else None),
         })
     items.sort(key=lambda x: x.get('added_at') or '', reverse=True)
     ws = auth.get_watchlist_settings()
