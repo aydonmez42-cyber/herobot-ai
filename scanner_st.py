@@ -7,11 +7,10 @@ For every coin the scan records the current trend and how many closed candles
 ago it last flipped (flip_bars: 0 = on the latest closed candle), so the
 dashboard can show "flipped in the last N candles" without scanning again.
 
-Like scanner_15m this never runs by itself: it starts only from the dashboard
-button, scans the SCAN_ST_TOP_N most liquid USDT-M perpetuals (default 300),
-paces its requests, stops on HTTP 429/418 (sharing the cooldown with
-binance_live) and refuses to start within SCAN_ST_MIN_GAP_S of the last scan or
-while the 15m scan is running.
+It never runs by itself: it starts only from the dashboard button, scans the
+SCAN_ST_TOP_N most liquid USDT-M perpetuals (default 300), paces its requests,
+stops on HTTP 429/418 (sharing the cooldown with binance_live) and refuses to
+start within SCAN_ST_MIN_GAP_S of the last scan.
 """
 import os
 import threading
@@ -23,7 +22,6 @@ import pandas as pd
 import requests
 
 import binance_live as blive
-import scanner_15m as base
 
 PERIOD = int(os.environ.get('SUPERTREND_PERIOD', '10'))
 FACTOR = float(os.environ.get('SUPERTREND_FACTOR', '7.8'))
@@ -32,6 +30,7 @@ TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '300'))
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_MIN_GAP_S', '180'))
 KLINE_LIMIT = 300
+FAPI = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com')
 
 _lock = threading.Lock()
 _state = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None,
@@ -77,6 +76,32 @@ def supertrend(df, period=PERIOD, factor=FACTOR):
     return trend_up, line
 
 
+def _get(url, params=None, timeout=15):
+    r = requests.get(url, params=params, timeout=timeout)
+    blive._note_rate_limit(r)
+    r.raise_for_status()
+    return r.json()
+
+
+def _universe_n(top_n):
+    """[(symbol, quote_volume_usd, change_pct)] for the top_n most liquid
+    USDT perpetuals, from one exchangeInfo (cached 1h) + one 24h ticker call."""
+    info = blive.get_exchange_info() or {}
+    ok = {s for s, i in info.items()
+          if i.get('quoteAsset') == 'USDT' and i.get('contractType') == 'PERPETUAL' and i.get('status') == 'TRADING'}
+    tick = _get(f'{FAPI}/fapi/v1/ticker/24hr', timeout=20)
+    rows = []
+    for t in tick:
+        sym = t.get('symbol')
+        if sym in ok:
+            try:
+                rows.append((sym, float(t.get('quoteVolume') or 0), float(t.get('priceChangePercent') or 0)))
+            except Exception:
+                continue
+    rows.sort(key=lambda r: r[1], reverse=True)
+    return rows[:top_n]
+
+
 def snapshot():
     with _lock:
         out = dict(_state)
@@ -88,7 +113,7 @@ def snapshot():
 
 
 def _klines(symbol):
-    data = base._get(f'{base.FAPI}/fapi/v1/klines', {'symbol': symbol, 'interval': INTERVAL, 'limit': KLINE_LIMIT})
+    data = _get(f'{FAPI}/fapi/v1/klines', {'symbol': symbol, 'interval': INTERVAL, 'limit': KLINE_LIMIT})
     cols = ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume',
             'trades', 'taker_buy_base', 'taker_buy_quote', 'ignore']
     df = pd.DataFrame(data, columns=cols)
@@ -127,7 +152,7 @@ def _run():
     global _last_finish_ts
     results, partial, err = [], False, None
     try:
-        universe = base._universe_n(TOP_N)
+        universe = _universe_n(TOP_N)
         with _lock:
             _state['total'] = len(universe)
         for n, (sym, vol, chg) in enumerate(universe, 1):
@@ -167,8 +192,6 @@ def start_scan():
     with _lock:
         if _state['status'] == 'SCANNING':
             return False, 'Tarama zaten çalışıyor.'
-    if base.snapshot().get('status') == 'SCANNING':
-        return False, '15 dakikalık tarama çalışıyor; bitince tekrar deneyin.'
     if blive.in_rate_limit_cooldown():
         return False, 'Binance istek sınırı bekleme süresi aktif; birkaç dakika sonra deneyin.'
     wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0

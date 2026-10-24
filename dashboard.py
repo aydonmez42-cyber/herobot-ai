@@ -6,7 +6,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 import config as cfg
-import scanner_15m
 import scanner_st
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
@@ -3510,22 +3509,6 @@ SCANNER_HTML = r'''<!doctype html>
 
   <div class="tabpane active" id="tab-crypto">
 
-    <div id="scan15Card" style="margin:0 0 18px 0;padding-bottom:14px;border-bottom:1px solid var(--border)">
-      <div class="scanner-controls">
-        <button class="btn" id="scan15Btn" onclick="scan15Start()">⏱ 15 dk tara (manuel)</button>
-        <select id="scan15Filter" onchange="renderScan15()">
-          <option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option>
-        </select>
-        <span class="scanner-status" id="scan15Status"></span>
-      </div>
-      <div class="scanner-note" id="scan15Note" style="margin:0 0 8px 0"></div>
-      <div class="table-scroll">
-        <table class="datatable" id="scan15Table">
-          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th>ST</th><th class="num">ADX</th><th class="num">RSI</th><th class="num">CCI</th><th>MACD</th><th>Signal</th><th>Add</th></tr></thead>
-          <tbody id="scan15Rows"><tr><td colspan="11" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
     <div class="scanner-controls">
       <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
       <select id="signalFilter" onchange="renderScanner()">
@@ -3557,17 +3540,6 @@ SCANNER_HTML = r'''<!doctype html>
       </table>
     </div>
 
-
-    <div id="interCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b id="interTitle">15Dk-4Saat Kesişim</b><span class="scanner-status" id="interStatus"></span></div>
-      <div class="scanner-note" id="interNote" style="margin:0 0 8px 0"></div>
-      <div class="table-scroll">
-        <table class="datatable" id="interTable">
-          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">ADX 4H</th><th class="num">RSI 4H</th><th class="num">ADX 15m</th><th class="num">RSI 15m</th><th>Score 4H</th><th>Add</th></tr></thead>
-          <tbody id="interRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
 
     <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
@@ -3826,7 +3798,6 @@ function renderScanner(){
   document.getElementById('shortCount').textContent='SHORT '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='SHORT').length;
   document.getElementById('noCount').textContent='NO SIGNAL '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='NO SIGNAL').length;
   markSigTags('longCount','shortCount','noCount','signalFilter');
-  try{ renderIntersect(); }catch(e){}
 }
 async function bistScannerData(){try{let r=await fetch('/api/bist-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
 let bistScannerCache={results:[]};
@@ -3898,62 +3869,9 @@ async function refreshScanner(){
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
 refreshScanner();setInterval(refreshScanner,10000);
 
-// ---- 15-minute scan: MANUAL only (no timer starts it) ----
+// ---- helpers used by the Supertrend scan below ----
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
-let scan15Cache={results:[],status:'IDLE'}, scan15Timer=null;
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
-function renderScan15(){
-  const f=document.getElementById('scan15Filter')?.value||'LONG';
-  const all=scan15Cache.results||[];
-  const rows=all.filter(x=>f==='ALL'||x.signal===f);
-  const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
-  const st=document.getElementById('scan15Status'), note=document.getElementById('scan15Note'), btn=document.getElementById('scan15Btn');
-  const busy=scan15Cache.status==='SCANNING';
-  if(btn) btn.disabled=busy;
-  if(st){
-    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(scan15Cache.progress||0)+'/'+(scan15Cache.total||'?');
-    else if(scan15Cache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+scan15Cache.finished_at.replace('T',' ').slice(0,16)+' UTC · LONG '+nL+' · SHORT '+nS;
-    else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
-  }
-  if(note) note.textContent=(scan15Cache.last_error?('⚠ '+scan15Cache.last_error+' '):'')+T15('15 dk kapanmış mum · en likit '+(scan15Cache.total||200)+' USDT-M coin · yalnızca sinyal amaçlı.','15m closed candle · most liquid '+(scan15Cache.total||200)+' USDT-M coins · signal purposes only.');
-  try{ renderIntersect(); }catch(e){}
-  const body=document.getElementById('scan15Rows'); if(!body) return;
-  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 15m','15')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
-    ||`<tr><td colspan="11" class="empty">${scan15Cache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
-}
-async function refreshScan15(){
-  try{ const r=await fetch('/api/scanner15',{cache:'no-store'}); scan15Cache=await r.json(); }catch(e){ return; }
-  renderScan15();
-  if(scan15Cache.status==='SCANNING'){ if(!scan15Timer) scan15Timer=setInterval(refreshScan15,3000); }
-  else if(scan15Timer){ clearInterval(scan15Timer); scan15Timer=null; }
-}
-async function scan15Start(){
-  try{
-    const r=await fetch('/api/scanner15/scan',{cache:'no-store'}); const d=await r.json();
-    if(!d.started && d.message) alert(d.message);
-    if(d.snapshot) scan15Cache=d.snapshot;
-  }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
-  renderScan15(); refreshScan15();
-}
-
-// ---- 15m x 4H intersection: coins that are LONG in BOTH scans ----
-function renderIntersect(){
-  const body=document.getElementById('interRows'); if(!body) return;
-  const h4=new Map(((scannerCache&&scannerCache.results)||[]).filter(x=>x.signal==='LONG').map(x=>[x.symbol,x]));
-  const m15=((scan15Cache&&scan15Cache.results)||[]).filter(x=>x.signal==='LONG');
-  const rows=m15.filter(x=>h4.has(x.symbol)).map(x=>({a:h4.get(x.symbol),b:x}));
-  rows.sort((p,q)=>Number(q.b.change_pct||0)-Number(p.b.change_pct||0));
-  const st=document.getElementById('interStatus'), note=document.getElementById('interNote'), title=document.getElementById('interTitle');
-  if(title) title.textContent=T15('15Dk-4Saat Kesişim','15m-4H Intersection');
-  const have15=!!(scan15Cache&&scan15Cache.finished_at);
-  if(st) st.textContent=have15?(rows.length+' '+T15('coin','coins')):'';
-  if(note) note.textContent=have15
-    ? T15('Hem 4 saatlik hem 15 dakikalık taramada LONG veren coinler. 15 dk taraması: ','Coins that are LONG in both the 4H and the 15m scan. 15m scan: ')+scan15Cache.finished_at.replace('T',' ').slice(0,16)+' UTC'
-    : T15('Önce yukarıdaki “15 dk tara” butonuyla 15 dakikalık taramayı çalıştırın; kesişim burada listelenir.','Run the 15m scan above first; the intersection will be listed here.');
-  body.innerHTML=rows.map(({a,b})=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${b.symbol}.P','${b.symbol} · 15m','15')"><td><b>${b.symbol}</b></td><td class="num">${p15(b.price)}</td><td class="num ${Number(b.change_pct)>=0?'pos':'neg'}">${Number(b.change_pct||0).toFixed(2)}%</td><td class="num">${a.adx??'—'}</td><td class="num">${a.rsi??'—'}</td><td class="num">${b.adx??'—'}</td><td class="num">${b.rsi??'—'}</td><td>${a.score!=null?a.score+'/'+(a.score_max||8):'—'}</td><td>${addCell(b.symbol,'crypto','LONG')}</td></tr>`).join('')
-    ||`<tr><td colspan="9" class="empty">${have15?T15('Kesişimde coin yok.','No coins in the intersection.'):'—'}</td></tr>`;
-}
-refreshScan15();   // one cheap read of the last result; it never starts a scan
 
 // ---- Supertrend scan (4H, 10 / 7.8): MANUAL only ----
 let stCache={results:[],status:'IDLE'}, stTimer=null;
@@ -9380,12 +9298,6 @@ class Handler(BaseHTTPRequestHandler):
             # MANUAL trigger only - the Supertrend scan has no background loop.
             started,msg=scanner_st.start_scan()
             self._send_json({'started':started,'message':msg,'snapshot':scanner_st.snapshot()}); return
-        if path=='/api/scanner15':
-            self._send_json(scanner_15m.snapshot()); return
-        if path=='/api/scanner15/scan':
-            # MANUAL trigger only - there is deliberately no background loop for the 15m scan.
-            started,msg=scanner_15m.start_scan()
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_15m.snapshot()}); return
         if path=='/api/scanner':
             body=json.dumps(scanner_snapshot(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/scanner/scan':
