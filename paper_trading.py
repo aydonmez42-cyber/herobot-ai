@@ -154,6 +154,17 @@ M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
 TREND_SL_MODE = _env_mode('TREND_SL_MODE', 'on')
 TREND_SL_EMA = int(_env_float('TREND_SL_EMA', 50))
 
+# Entry wait ("Ekle" lock). A coin added from the scanner does NOT open a position
+# at once: the 4H signal may be hours old. The bot waits until the last CLOSED
+# 15m, 1h and 4h candles all point the trade's way (LONG: close > open), then
+# enters (the normal entry guards still apply). The coin is dropped from the
+# watchlist when the last ENTRY_WAIT_RED_COUNT closed 1h candles are all against
+# the trade, when the 4H signal is gone, or after ENTRY_WAIT_MAX_HOURS.
+# 'log' = only report what it would do and enter as before, 'off' = disabled.
+ENTRY_WAIT_MODE = _env_mode('ENTRY_WAIT_MODE', 'on')
+ENTRY_WAIT_MAX_HOURS = _env_float('ENTRY_WAIT_MAX_HOURS', 24)
+ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -545,6 +556,87 @@ def check_trend_stop(state, symbol, closed, now, price):
     print(f'TREND SL | {msg} -> kapatılıyor @ {price:.6f}', flush=True)
     exit_symbol_position(state, symbol, price, 'TREND_SL', now, live_eligible=True)
     return True
+
+
+def _entry_wait_eval(symbol, side, closed4, now):
+    """({'15m': bool, '1h': bool, '4h': bool}, trailing count of closed 1h
+    candles against the trade) from the last CLOSED candles."""
+    now_ts = pd.Timestamp(now)
+    if now_ts.tzinfo is None:
+        now_ts = now_ts.tz_localize('UTC')
+
+    def with_trade(row):
+        o, c = float(row['open']), float(row['close'])
+        return c > o if side == 'LONG' else c < o
+
+    tf = {}
+    d15 = fetch(symbol, 'USD_M', 5, interval='15m')
+    d15 = d15[d15['close_time'] < now_ts]
+    tf['15m'] = bool(len(d15)) and with_trade(d15.iloc[-1])
+    d1h = fetch(symbol, 'USD_M', 8, interval='1h')
+    d1h = d1h[d1h['close_time'] < now_ts].reset_index(drop=True)
+    tf['1h'] = bool(len(d1h)) and with_trade(d1h.iloc[-1])
+    tf['4h'] = bool(len(closed4)) and with_trade(closed4.iloc[-1])
+    streak = 0
+    for k in range(len(d1h) - 1, -1, -1):
+        row = d1h.iloc[k]
+        o, c = float(row['open']), float(row['close'])
+        against = c < o if side == 'LONG' else c > o
+        if not against:
+            break
+        streak += 1
+    return tf, streak
+
+
+def _drop_from_watchlist(state, symbol, why):
+    for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
+        (state.get(k) or {}).pop(symbol, None)
+    print(f'ENTRY WAIT | {symbol} izleme listesinden çıkarıldı: {why}', flush=True)
+    try:
+        send_message(f'⏳ {symbol} giriş beklemesi sona erdi, izleme listesinden çıkarıldı: {why}')
+    except Exception:
+        pass
+
+
+def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_short, blocked, now):
+    """One evaluation of a coin waiting for entry (see ENTRY_WAIT_MODE).
+    Candle data is re-read once per 15 minutes. Returns nothing; the coin ends up
+    entered (position opened), dropped from the watchlist, or still waiting."""
+    side = rec['side']
+    wanted = None if blocked else ('LONG' if (go_long and not go_short) else ('SHORT' if (go_short and not go_long) else None))
+    if wanted != side:
+        return _drop_from_watchlist(state, symbol, f'4s {side} sinyali artık geçerli değil')
+    since = pd.Timestamp(rec['since'])
+    if since.tzinfo is None:
+        since = since.tz_localize('UTC')
+    now_ts = pd.Timestamp(now)
+    if now_ts.tzinfo is None:
+        now_ts = now_ts.tz_localize('UTC')
+    if (now_ts - since).total_seconds() / 3600.0 > ENTRY_WAIT_MAX_HOURS:
+        return _drop_from_watchlist(state, symbol, f'{ENTRY_WAIT_MAX_HOURS:g} saat içinde uygun giriş oluşmadı')
+    boundary = now_ts.floor('15min').isoformat()
+    if rec.get('boundary') == boundary:
+        return
+    tf, streak = _entry_wait_eval(symbol, side, closed4, now)
+    rec['boundary'] = boundary
+    rec['tf'] = tf
+    rec['streak'] = streak
+    if streak >= ENTRY_WAIT_RED_COUNT:
+        return _drop_from_watchlist(state, symbol, f'üst üste {streak} adet 1s mum ters yönde kapandı')
+    if not all(tf.values()):
+        if not rec.get('logged_wait'):
+            rec['logged_wait'] = True
+            print(f'ENTRY WAIT | {side} {symbol} | giriş bekliyor: 15dk={tf["15m"]} 1s={tf["1h"]} 4s={tf["4h"]}', flush=True)
+        return
+    sig_close = float(latest['close']); sig_atr = float(latest['atr']); cur_px = float(df.iloc[-1]['close'])
+    allowed, why = entry_guard_check(state, symbol, side, now, sig_close, sig_atr, cur_px, quiet=True)
+    if not allowed:
+        rec['blocked'] = why
+        return
+    px = exec_price(cur_px, 'BUY' if side == 'LONG' else 'SELL')
+    state.get('entry_wait', {}).pop(symbol, None)
+    print(f'ENTRY WAIT | {side} {symbol} | 15dk/1s/4s uyumlu, pozisyon açılıyor', flush=True)
+    enter_symbol(state, symbol, side, px, latest, now, live_eligible=True)
 
 
 def live_guard_ctx(state, signal_row, price):
@@ -1023,6 +1115,19 @@ def run_watchlist_symbol(state, symbol, now):
         except Exception as e:
             print(f'TREND SL | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
+    waits = state.setdefault('entry_wait', {})
+    if symbol in state.get('positions', {}):
+        waits.pop(symbol, None)
+    elif symbol in waits:
+        try:
+            process_entry_wait(state, symbol, waits[symbol], closed, latest, df, go_long, go_short, blocked, now)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                raise
+            print(f'ENTRY WAIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+        save_state(state)
+        return
+
     last_map = state.setdefault('symbol_last_closed', {})
     last_ts = pd.Timestamp(last_map.get(symbol)) if last_map.get(symbol) else None
     is_new_candle = last_ts is None or latest_closed_time > last_ts
@@ -1043,6 +1148,29 @@ def run_watchlist_symbol(state, symbol, now):
             side_wanted = 'LONG' if (go_long and not go_short) else ('SHORT' if (go_short and not go_long) else None)
             if side_wanted is None:
                 blocked_map.pop(symbol, None)
+            elif ENTRY_WAIT_MODE != 'off' and last_ts is None and is_new_candle:
+                # Just added from the scanner: the signal may be hours old.
+                if ENTRY_WAIT_MODE == 'on':
+                    waits[symbol] = {'side': side_wanted, 'since': now.isoformat(), 'candle': latest_closed_time.isoformat()}
+                    print(f'ENTRY WAIT | {side_wanted} {symbol} | eklendi, 15dk/1s/4s mumları uyumlu olunca pozisyon açılacak', flush=True)
+                    try:
+                        process_entry_wait(state, symbol, waits[symbol], closed, latest, df, go_long, go_short, blocked, now)
+                    except Exception as e:
+                        if type(e).__name__ == 'BinanceCooldown':
+                            raise
+                        print(f'ENTRY WAIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+                    save_state(state)
+                    return
+                try:
+                    tf, streak = _entry_wait_eval(symbol, side_wanted, closed, now)
+                    print(f'ENTRY WAIT (log modu, engellenmedi) | {side_wanted} {symbol} | 15dk={tf["15m"]} 1s={tf["1h"]} 4s={tf["4h"]} ters 1s mum={streak}', flush=True)
+                except Exception as e:
+                    print(f'ENTRY WAIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+                allowed, why = entry_guard_check(state, symbol, side_wanted, now, sig_close, sig_atr, cur_px, quiet=is_retry)
+                if allowed:
+                    px = exec_price(cur_px, 'BUY' if side_wanted == 'LONG' else 'SELL')
+                    blocked_map.pop(symbol, None)
+                    enter_symbol(state, symbol, side_wanted, px, latest, now, live_eligible=True)
             else:
                 allowed, why = entry_guard_check(state, symbol, side_wanted, now, sig_close, sig_atr, cur_px, quiet=is_retry)
                 if allowed:
@@ -1185,7 +1313,7 @@ def main():
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
