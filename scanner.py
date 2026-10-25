@@ -286,13 +286,42 @@ def ensure_background_scan():
             _state['last_error'] = str(e)
 
 
+CANDLE_SCAN_DELAY_S = int(os.environ.get('SCANNER_CANDLE_DELAY_S', '5'))
+CHECK_INTERVAL_S = int(os.environ.get('SCANNER_CHECK_INTERVAL_S', '20'))
+
+
+def candle_due(now=None):
+    """True when a 4H candle has closed since the candle of the last finished scan.
+    last_scan_candle is the close time (hh:59:59.999) of the newest closed candle that
+    scan used; the next candle closes 4h after that boundary. Without this the scan only
+    ran on a ~30 min rhythm counted from the process start, so after a restart the scan
+    could come up to 30 minutes after the candle close."""
+    with _lock:
+        lc = _state.get('last_scan_candle')
+        busy = _state.get('status') == 'SCANNING'
+    if busy or not lc:
+        return False
+    try:
+        boundary = pd.Timestamp(lc) + pd.Timedelta(milliseconds=1)     # hh:00:00 of the last closed candle's end
+        next_close = boundary + pd.Timedelta(hours=4)
+        now = pd.Timestamp(now) if now is not None else pd.Timestamp.now(tz='UTC')
+        if now.tzinfo is None:
+            now = now.tz_localize('UTC')
+        return now >= next_close + pd.Timedelta(seconds=CANDLE_SCAN_DELAY_S)
+    except Exception:
+        return False
+
+
 def background_loop():
-    # Re-check periodically. The signal engine itself uses only the latest closed 4H candle.
+    # Polls every CHECK_INTERVAL_S seconds (cheap: no request is sent unless a scan starts).
+    #  * a new 4H candle has closed  -> scan right away (force, ignores the cache age);
+    #  * otherwise the normal cache-age rule (SCANNER_CACHE_SECONDS) re-scans, which only
+    #    refetches what is missing (closed candles are cached), e.g. coins that hit a 429.
     while True:
         try:
-            start_scan(force=False)
+            start_scan(force=candle_due())
         except Exception as e:
             with _lock:
                 _state['status'] = 'ERROR'
                 _state['last_error'] = str(e)
-        time.sleep(max(60, SCANNER_CACHE_SECONDS))
+        time.sleep(max(5, CHECK_INTERVAL_S))
