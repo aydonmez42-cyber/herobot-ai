@@ -187,6 +187,15 @@ STOP_REMOVE_MODE = _env_mode('STOP_REMOVE_MODE', 'on')
 STOP_REMOVE_COOLDOWN_H = _env_float('STOP_REMOVE_COOLDOWN_H', 24)
 STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL')
 
+# Idle coins: a crypto watchlist coin with NO position, not waiting for entry, no
+# member holding it live and (after IDLE_REMOVE_MIN_AGE_H hours on the list) a
+# signal of NONE is removed - if it was added by auto add (any signal other than
+# LONG) or if it already has closed trades. 'log' only reports. Manual coins that
+# never traded are left alone.
+IDLE_REMOVE_MODE = _env_mode('IDLE_REMOVE_MODE', 'on')
+IDLE_REMOVE_MIN_AGE_H = _env_float('IDLE_REMOVE_MIN_AGE_H', 1)
+_traded_cache = {'ts': 0.0, 'symbols': set()}
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -667,6 +676,69 @@ def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_shor
     enter_symbol(state, symbol, side, px, latest, now, live_eligible=True)
 
 
+def _traded_symbols():
+    """Symbols that have at least one closed trade (cached 5 min)."""
+    if time.time() - _traded_cache['ts'] < 300:
+        return _traded_cache['symbols']
+    syms = set()
+    try:
+        if os.path.exists(TRADES_FILE):
+            syms = set(pd.read_csv(TRADES_FILE, usecols=['symbol'])['symbol'].dropna().astype(str))
+    except Exception as e:
+        print(f'IDLE REMOVE | trade history read failed: {type(e).__name__}: {e}', flush=True)
+        return _traded_cache['symbols']
+    _traded_cache.update(ts=time.time(), symbols=syms)
+    return syms
+
+
+def prune_idle_watchlist(state, now):
+    """See IDLE_REMOVE_MODE (and the auto-added rule below)."""
+    if IDLE_REMOVE_MODE == 'off' and AUTO_ADD_MODE != 'on':
+        return
+    wl = state.get('watchlist') or {}
+    positions = state.get('positions') or {}
+    waits = state.get('entry_wait') or {}
+    signals = state.get('watchlist_signals') or {}
+    try:
+        holders = live_trading.get_open_live_holders()
+    except Exception:
+        return
+    traded = None
+    for sym, w in list(wl.items()):
+        if w.get('market') != 'crypto' or sym in positions or sym in waits or sym in holders:
+            continue
+        final = (signals.get(sym) or {}).get('final')
+        if not final:
+            continue
+        try:
+            added = pd.Timestamp(w.get('added_at'))
+            if added.tzinfo is None:
+                added = added.tz_localize('UTC')
+            if (pd.Timestamp(now) - added).total_seconds() < IDLE_REMOVE_MIN_AGE_H * 3600:
+                continue                   # too fresh to judge
+        except Exception:
+            continue
+        why = None
+        if w.get('auto_added') and final != 'LONG' and AUTO_ADD_MODE == 'on':
+            why = f'otomatik eklenmişti, sinyal artık {final}'
+        elif final == 'NONE' and IDLE_REMOVE_MODE != 'off':
+            if traded is None:
+                traded = _traded_symbols()
+            if sym in traded:
+                why = 'işlem geçmişi var, pozisyon yok ve sinyal NONE'
+        if not why:
+            continue
+        if IDLE_REMOVE_MODE == 'log' and not w.get('auto_added'):
+            if not w.get('idle_logged'):
+                w['idle_logged'] = True
+                print(f'IDLE REMOVE (log modu, silinmedi) | {sym}: {why}', flush=True)
+            continue
+        for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
+            (state.get(k) or {}).pop(sym, None)
+        state.setdefault('auto_add_block', {})[sym] = (pd.Timestamp(now).floor('4h') + pd.Timedelta(hours=4)).isoformat()
+        print(f'IDLE REMOVE | {sym} izleme listesinden çıkarıldı: {why}', flush=True)
+
+
 def auto_add_from_scanner(state, now):
     """See AUTO_ADD_MODE. Called once per bot cycle; acts once per finished 4H scan."""
     if AUTO_ADD_MODE == 'off':
@@ -674,31 +746,7 @@ def auto_add_from_scanner(state, now):
     wl = state.setdefault('watchlist', {})
     positions = state.get('positions') or {}
     waits = state.get('entry_wait') or {}
-    # 1) prune auto-added coins that have nothing to wait for any more
-    if AUTO_ADD_MODE == 'on':
-        try:
-            holders = live_trading.get_open_live_holders()
-        except Exception:
-            holders = None
-        if holders is not None:
-            for sym, w in list(wl.items()):
-                if not w.get('auto_added') or sym in positions or sym in waits or sym in holders:
-                    continue
-                try:
-                    added = pd.Timestamp(w.get('added_at'))
-                    if added.tzinfo is None:
-                        added = added.tz_localize('UTC')
-                    if (pd.Timestamp(now) - added).total_seconds() < 3600:
-                        continue           # too fresh to judge
-                except Exception:
-                    continue
-                known = ((state.get('watchlist_signals') or {}).get(sym) or {}).get('final')
-                if known and known != 'LONG':
-                    for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
-                        (state.get(k) or {}).pop(sym, None)
-                    state.setdefault('auto_add_block', {})[sym] = (pd.Timestamp(now).floor('4h') + pd.Timedelta(hours=4)).isoformat()
-                    print(f'AUTO ADD | {sym} otomatik listeden çıkarıldı (pozisyon yok, LONG sinyali sürmüyor)', flush=True)
-    # 2) add LONG coins of a newly finished scan
+    # add LONG coins of a newly finished scan
     import scanner as _scanner
     snap = _scanner.snapshot()
     if snap.get('status') != 'READY':
@@ -1443,11 +1491,11 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r5 | auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r6 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
@@ -1604,6 +1652,7 @@ def main():
             except Exception as e:
                 print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
             try:
+                prune_idle_watchlist(state, now)
                 auto_add_from_scanner(state, now)
                 save_state(state)
             except Exception as e:
