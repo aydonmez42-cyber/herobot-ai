@@ -177,6 +177,15 @@ AUTO_ADD_MODE = _env_mode('AUTO_ADD_MODE', 'on')
 AUTO_ADD_MAX_PER_SCAN = max(1, int(_env_float('AUTO_ADD_MAX_PER_SCAN', 10)))
 AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 6)
 
+# A watchlist coin whose position was closed at a LOSS by a stop (ATR stop,
+# break-even stop, trailing stop, trend stop) is removed from the watchlist
+# ("Deneme İşlemleri") instead of waiting there. The closed trade stays in the
+# history. Auto add will not bring the coin back for STOP_REMOVE_COOLDOWN_H hours.
+# Skipped while a member still holds a real position in the coin.
+STOP_REMOVE_MODE = _env_mode('STOP_REMOVE_MODE', 'on')
+STOP_REMOVE_COOLDOWN_H = _env_float('STOP_REMOVE_COOLDOWN_H', 24)
+STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL')
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -701,7 +710,15 @@ def auto_add_from_scanner(state, now):
     longs = [r for r in (snap.get('results') or []) if r.get('signal') == 'LONG']
     longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
     free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
-    picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions]
+    blocked_until = state.setdefault('auto_add_block', {})
+    for k, v in list(blocked_until.items()):
+        try:
+            if (pd.Timestamp(now) - pd.Timestamp(v).tz_convert('UTC')).total_seconds() / 3600.0 > STOP_REMOVE_COOLDOWN_H:
+                blocked_until.pop(k, None)
+        except Exception:
+            blocked_until.pop(k, None)
+    picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions
+              and r['symbol'] not in blocked_until]
     take = picked[:min(AUTO_ADD_MAX_PER_SCAN, free)]
     state['auto_add_scan'] = scan_id
     print(f'AUTO ADD | tarama {scan_id}: {len(longs)} LONG, {len(picked)} yeni aday, {free} boş yer -> {len(take)} eklenecek'
@@ -911,6 +928,20 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
             live_trading.on_exit_signal(symbol, side, price, reason, source='watchlist')
         except Exception as e:
             print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
+    if live_eligible and STOP_REMOVE_MODE != 'off' and net < 0 and reason in STOP_REMOVE_REASONS:
+        try:
+            if live_trading.get_open_live_holders().get(symbol):
+                print(f'STOP REMOVE | {symbol} listede bırakıldı: bir üyenin canlı pozisyonu hâlâ açık', flush=True)
+            elif STOP_REMOVE_MODE == 'log':
+                print(f'STOP REMOVE (log modu, silinmedi) | {symbol} zararla {reason} ile kapandı', flush=True)
+            else:
+                for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
+                    (state.get(k) or {}).pop(symbol, None)
+                state.setdefault('auto_add_block', {})[symbol] = event_time.isoformat()
+                save_state(state)
+                print(f'STOP REMOVE | {symbol} zararla {reason} ile kapandı, izleme listesinden silindi', flush=True)
+        except Exception as e:
+            print(f'STOP REMOVE | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
 def _stop_reason(p):
@@ -1191,6 +1222,9 @@ def run_watchlist_symbol(state, symbol, now):
             check_trend_stop(state, symbol, closed, now, float(df.iloc[-1]['close']))
         except Exception as e:
             print(f'TREND SL | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    if symbol not in state.get('watchlist', {}):
+        save_state(state)
+        return                              # removed after a stop-out: nothing more to do for it
 
     waits = state.setdefault('entry_wait', {})
     if symbol in state.get('positions', {}):
@@ -1390,7 +1424,7 @@ def main():
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
