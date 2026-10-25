@@ -732,7 +732,10 @@ def auto_add_from_scanner(state, now):
                 blocked_until.pop(k, None)
         except Exception:
             blocked_until.pop(k, None)
-    longs = [r for r in (snap.get('results') or []) if r.get('signal') == 'LONG']
+    # Only rows computed on the latest candle count: after a 429 the scanner keeps the
+    # PREVIOUS result of a coin it could not refresh (an old candle's LONG).
+    longs = [r for r in (snap.get('results') or [])
+             if r.get('signal') == 'LONG' and (not r.get('candle_time') or str(r.get('candle_time')) == scan_id)]
     longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
     free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
     picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions
