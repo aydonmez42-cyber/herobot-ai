@@ -165,6 +165,18 @@ ENTRY_WAIT_MODE = _env_mode('ENTRY_WAIT_MODE', 'on')
 ENTRY_WAIT_MAX_HOURS = _env_float('ENTRY_WAIT_MAX_HOURS', 24)
 ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
 
+# Auto add: after every 4H scan the coins that give a LONG signal are added to the
+# watchlist by the bot itself (what the "+ Ekle" button did by hand). Each new
+# coin then goes through the entry wait above, so a position opens only when the
+# 15m / 1h / 4h candles agree. At most AUTO_ADD_MAX_PER_SCAN coins are added per
+# scan (best scanner score first, then volume) and never beyond the watchlist
+# limit. Auto-added coins that have no position, are not waiting and no longer
+# show a LONG signal are removed again so the list does not fill up.
+# 'log' = only report what it would add, 'off' = disabled.
+AUTO_ADD_MODE = _env_mode('AUTO_ADD_MODE', 'on')
+AUTO_ADD_MAX_PER_SCAN = max(1, int(_env_float('AUTO_ADD_MAX_PER_SCAN', 10)))
+AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 6)
+
 # Demo/paper account: guards OFF by default (all locks and limits are live-only,
 # per member). 'on' restores the previous behaviour for the demo as well.
 DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -637,6 +649,71 @@ def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_shor
     state.get('entry_wait', {}).pop(symbol, None)
     print(f'ENTRY WAIT | {side} {symbol} | 15dk/1s/4s uyumlu, pozisyon açılıyor', flush=True)
     enter_symbol(state, symbol, side, px, latest, now, live_eligible=True)
+
+
+def auto_add_from_scanner(state, now):
+    """See AUTO_ADD_MODE. Called once per bot cycle; acts once per finished 4H scan."""
+    if AUTO_ADD_MODE == 'off':
+        return
+    wl = state.setdefault('watchlist', {})
+    positions = state.get('positions') or {}
+    waits = state.get('entry_wait') or {}
+    # 1) prune auto-added coins that have nothing to wait for any more
+    if AUTO_ADD_MODE == 'on':
+        try:
+            holders = live_trading.get_open_live_holders()
+        except Exception:
+            holders = None
+        if holders is not None:
+            for sym, w in list(wl.items()):
+                if not w.get('auto_added') or sym in positions or sym in waits or sym in holders:
+                    continue
+                try:
+                    added = pd.Timestamp(w.get('added_at'))
+                    if added.tzinfo is None:
+                        added = added.tz_localize('UTC')
+                    if (pd.Timestamp(now) - added).total_seconds() < 3600:
+                        continue           # too fresh to judge
+                except Exception:
+                    continue
+                known = ((state.get('watchlist_signals') or {}).get(sym) or {}).get('final')
+                if known and known != 'LONG':
+                    for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
+                        (state.get(k) or {}).pop(sym, None)
+                    print(f'AUTO ADD | {sym} otomatik listeden çıkarıldı (pozisyon yok, LONG sinyali sürmüyor)', flush=True)
+    # 2) add LONG coins of a newly finished scan
+    import scanner as _scanner
+    snap = _scanner.snapshot()
+    if snap.get('status') != 'READY':
+        return
+    scan_id = str(snap.get('last_scan_candle') or '')
+    if not scan_id or state.get('auto_add_scan') == scan_id:
+        return
+    try:
+        ts = pd.Timestamp(snap['last_scan_candle'], unit='ms', tz='UTC') if str(scan_id).isdigit() else pd.Timestamp(scan_id)
+        if ts.tzinfo is None:
+            ts = ts.tz_localize('UTC')
+        if (now - ts).total_seconds() / 3600.0 > AUTO_ADD_MAX_SCAN_AGE_H:
+            state['auto_add_scan'] = scan_id   # stale scan (e.g. after a restart): wait for the next one
+            return
+    except Exception:
+        pass
+    longs = [r for r in (snap.get('results') or []) if r.get('signal') == 'LONG']
+    longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
+    free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
+    picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions]
+    take = picked[:min(AUTO_ADD_MAX_PER_SCAN, free)]
+    state['auto_add_scan'] = scan_id
+    print(f'AUTO ADD | tarama {scan_id}: {len(longs)} LONG, {len(picked)} yeni aday, {free} boş yer -> {len(take)} eklenecek'
+          f'{" (log modu, eklenmedi)" if AUTO_ADD_MODE == "log" else ""}: {", ".join(take)}', flush=True)
+    if AUTO_ADD_MODE != 'on' or not take:
+        return
+    for sym in take:
+        wl[sym] = {'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': 'LONG', 'auto_added': True}
+    try:
+        send_message('🤖 4s taramadan otomatik eklenen LONG coinler (giriş bekleme kilidiyle): ' + ', '.join(take))
+    except Exception:
+        pass
 
 
 def live_guard_ctx(state, signal_row, price):
@@ -1313,7 +1390,7 @@ def main():
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
@@ -1469,6 +1546,11 @@ def main():
                 restore_orphaned_live_positions(state, now)
             except Exception as e:
                 print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
+            try:
+                auto_add_from_scanner(state, now)
+                save_state(state)
+            except Exception as e:
+                print(f'AUTO ADD | ERROR | {type(e).__name__}: {e}', flush=True)
             for wsym, w in list(state.get('watchlist', {}).items()):
                 market = w.get('market')
                 try:
