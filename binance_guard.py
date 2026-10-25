@@ -133,7 +133,10 @@ def _after(resp):
             with _lock:
                 if until > _cooldown_until:
                     _cooldown_until = until
-                    print(f'BINANCE GUARD | HTTP {code} | piyasa verisi istekleri {int(secs)} sn durduruldu', flush=True)
+                    # Used weight (X-MBX-USED-WEIGHT-1M) at the moment of the 429: if it is far
+                    # below 2400 the IP's budget is being spent by someone else (shared IP).
+                    wnote = f'{_used_weight}/dk' if (_used_weight and time.time() - _used_weight_at < 120) else 'bilinmiyor'
+                    print(f'BINANCE GUARD | HTTP {code} | piyasa verisi istekleri {int(secs)} sn durduruldu | kullanilan agirlik={wnote} (limit 2400)', flush=True)
     except Exception:
         pass
 
