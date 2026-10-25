@@ -169,7 +169,8 @@ ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
 # watchlist by the bot itself (what the "+ Ekle" button did by hand). Each new
 # coin then goes through the entry wait above, so a position opens only when the
 # 15m / 1h / 4h candles agree. At most AUTO_ADD_MAX_PER_SCAN coins are added per
-# scan (best scanner score first, then volume) and never beyond the watchlist
+# 4H candle (best scanner score first, then volume; the quota counts across the
+# repeated scans of that candle) and never beyond the watchlist
 # limit. Auto-added coins that have no position, are not waiting and no longer
 # show a LONG signal are removed again so the list does not fill up.
 # 'log' = only report what it would add, 'off' = disabled.
@@ -612,6 +613,12 @@ def _entry_wait_eval(symbol, side, closed4, now):
 def _drop_from_watchlist(state, symbol, why):
     for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
         (state.get(k) or {}).pop(symbol, None)
+    # auto add must not bring it straight back within the same 4H candle
+    try:
+        until = pd.Timestamp.now(tz='UTC').floor('4h') + pd.Timedelta(hours=4)
+        state.setdefault('auto_add_block', {})[symbol] = until.isoformat()
+    except Exception:
+        pass
     print(f'ENTRY WAIT | {symbol} izleme listesinden çıkarıldı: {why}', flush=True)
     try:
         send_message(f'⏳ {symbol} giriş beklemesi sona erdi, izleme listesinden çıkarıldı: {why}')
@@ -689,6 +696,7 @@ def auto_add_from_scanner(state, now):
                 if known and known != 'LONG':
                     for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
                         (state.get(k) or {}).pop(sym, None)
+                    state.setdefault('auto_add_block', {})[sym] = (pd.Timestamp(now).floor('4h') + pd.Timedelta(hours=4)).isoformat()
                     print(f'AUTO ADD | {sym} otomatik listeden çıkarıldı (pozisyon yok, LONG sinyali sürmüyor)', flush=True)
     # 2) add LONG coins of a newly finished scan
     import scanner as _scanner
@@ -696,37 +704,48 @@ def auto_add_from_scanner(state, now):
     if snap.get('status') != 'READY':
         return
     scan_id = str(snap.get('last_scan_candle') or '')
-    if not scan_id or state.get('auto_add_scan') == scan_id:
+    if not scan_id:
         return
-    try:
-        ts = pd.Timestamp(snap['last_scan_candle'], unit='ms', tz='UTC') if str(scan_id).isdigit() else pd.Timestamp(scan_id)
-        if ts.tzinfo is None:
-            ts = ts.tz_localize('UTC')
-        if (now - ts).total_seconds() / 3600.0 > AUTO_ADD_MAX_SCAN_AGE_H:
-            state['auto_add_scan'] = scan_id   # stale scan (e.g. after a restart): wait for the next one
-            return
-    except Exception:
-        pass
-    longs = [r for r in (snap.get('results') or []) if r.get('signal') == 'LONG']
-    longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
-    free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
+    first_look = state.get('auto_add_scan') != scan_id
+    if first_look:
+        state['auto_add_scan'] = scan_id
+        state['auto_add_count'] = 0
+        try:
+            ts = pd.Timestamp(snap['last_scan_candle'], unit='ms', tz='UTC') if scan_id.isdigit() else pd.Timestamp(scan_id)
+            if ts.tzinfo is None:
+                ts = ts.tz_localize('UTC')
+            if (pd.Timestamp(now) - ts).total_seconds() / 3600.0 > AUTO_ADD_MAX_SCAN_AGE_H:
+                state['auto_add_count'] = AUTO_ADD_MAX_PER_SCAN   # stale scan (e.g. after a restart): wait for the next candle
+                return
+        except Exception:
+            pass
+    remaining = AUTO_ADD_MAX_PER_SCAN - int(state.get('auto_add_count') or 0)
+    if remaining <= 0 and not first_look:
+        return
+    # Expired cooldowns are dropped; the scan of one candle is re-read every cycle
+    # (the scanner repeats it, and a first pass can be partial after Binance 429s),
+    # so coins missed the first time are picked up by a later pass.
     blocked_until = state.setdefault('auto_add_block', {})
     for k, v in list(blocked_until.items()):
         try:
-            if (pd.Timestamp(now) - pd.Timestamp(v).tz_convert('UTC')).total_seconds() / 3600.0 > STOP_REMOVE_COOLDOWN_H:
+            if pd.Timestamp(now) > pd.Timestamp(v).tz_convert('UTC'):
                 blocked_until.pop(k, None)
         except Exception:
             blocked_until.pop(k, None)
+    longs = [r for r in (snap.get('results') or []) if r.get('signal') == 'LONG']
+    longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
+    free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
     picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions
               and r['symbol'] not in blocked_until]
-    take = picked[:min(AUTO_ADD_MAX_PER_SCAN, free)]
-    state['auto_add_scan'] = scan_id
-    print(f'AUTO ADD | tarama {scan_id}: {len(longs)} LONG, {len(picked)} yeni aday, {free} boş yer -> {len(take)} eklenecek'
-          f'{" (log modu, eklenmedi)" if AUTO_ADD_MODE == "log" else ""}: {", ".join(take)}', flush=True)
+    take = picked[:max(0, min(remaining, free))]
+    if first_look or take:
+        print(f'AUTO ADD | tarama {scan_id}: {len(longs)} LONG, {len(picked)} yeni aday, {free} boş yer, kota {max(0, remaining)} -> {len(take)} eklenecek'
+              f'{" (log modu, eklenmedi)" if AUTO_ADD_MODE == "log" else ""}: {", ".join(take)}', flush=True)
     if AUTO_ADD_MODE != 'on' or not take:
         return
     for sym in take:
         wl[sym] = {'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': 'LONG', 'auto_added': True}
+    state['auto_add_count'] = int(state.get('auto_add_count') or 0) + len(take)
     try:
         send_message('🤖 4s taramadan otomatik eklenen LONG coinler (giriş bekleme kilidiyle): ' + ', '.join(take))
     except Exception:
@@ -937,7 +956,7 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
             else:
                 for k in ('watchlist', 'watchlist_signals', 'entry_blocked', 'symbol_last_closed', 'entry_wait'):
                     (state.get(k) or {}).pop(symbol, None)
-                state.setdefault('auto_add_block', {})[symbol] = event_time.isoformat()
+                state.setdefault('auto_add_block', {})[symbol] = (pd.Timestamp(event_time) + pd.Timedelta(hours=STOP_REMOVE_COOLDOWN_H)).isoformat()
                 save_state(state)
                 print(f'STOP REMOVE | {symbol} zararla {reason} ile kapandı, izleme listesinden silindi', flush=True)
         except Exception as e:
