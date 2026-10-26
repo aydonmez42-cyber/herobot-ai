@@ -7,6 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 import config as cfg
 import scanner_st
+import scanner_st_stocks
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
 from us_scanner import snapshot as us_scanner_snapshot, start_scan as us_scanner_start, background_loop as us_background_loop
@@ -3591,6 +3592,23 @@ SCANNER_HTML = r'''<!doctype html>
       </table>
     </div>
     <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
+
+    <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
+      <div class="scanner-controls">
+        <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Supertrend tara (manuel)</button>
+        <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
+        <span class="scanner-status" id="stBistStatus"></span>
+      </div>
+      <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="stBistTable">
+          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <tbody id="stBistRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div class="tabpane" id="tab-us">
@@ -3625,6 +3643,23 @@ SCANNER_HTML = r'''<!doctype html>
       </table>
     </div>
     <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
+
+    <div id="stUsCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Wall Street (Günlük)</b></div>
+      <div class="scanner-controls">
+        <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Supertrend tara (manuel)</button>
+        <select id="stUsFilter" onchange="stsRender('Us')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stUsBars" onchange="stsRender('Us')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
+        <span class="scanner-status" id="stUsStatus"></span>
+      </div>
+      <div class="scanner-note" id="stUsNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="stUsTable">
+          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <tbody id="stUsRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -3911,6 +3946,47 @@ async function stStart(){
   renderSt(); refreshSt();
 }
 refreshSt();   // one cheap read of the last result; it never starts a scan
+
+// ---- Supertrend scan for BIST / Wall Street (DAILY, 10 / 7.8): MANUAL only ----
+const stsCache={Bist:{results:[],status:'IDLE'},Us:{results:[],status:'IDLE'}}, stsTimer={};
+const stsApi={Bist:'/api/scanner_st_bist',Us:'/api/scanner_st_us'};
+function stsFmtD(v){ try{ return new Date(v).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5); }catch(e){ return '—'; } }
+function stsRender(k){
+  const c=stsCache[k]; const f=document.getElementById('st'+k+'Filter')?.value||'LONG';
+  const n=Number(document.getElementById('st'+k+'Bars')?.value||1);
+  const all=(c.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
+  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
+  const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
+  const st=document.getElementById('st'+k+'Status'), note=document.getElementById('st'+k+'Note'), btn=document.getElementById('st'+k+'Btn');
+  const busy=c.status==='SCANNING'; if(btn) btn.disabled=busy;
+  if(st){
+    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(c.progress||0)+'/'+(c.total||'?');
+    else if(c.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(c.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
+    else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
+  }
+  if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
+    'Günlük kapanmış mum · Supertrend ('+(c.period||10)+', '+(c.factor||7.8)+') · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
+    'Daily closed candle · Supertrend ('+(c.period||10)+', '+(c.factor||7.8)+') · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
+  const body=document.getElementById('st'+k+'Rows'); if(!body) return;
+  const mkt=k==='Bist'?'bist':'us_stock';
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · 1D')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' gün önce',' days ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')
+    ||`<tr><td colspan="9" class="empty">${c.finished_at?T15('Bu filtrede hisse yok.','No stocks for this filter.'):'—'}</td></tr>`;
+}
+async function stsRefresh(k){
+  try{ const r=await fetch(stsApi[k],{cache:'no-store'}); stsCache[k]=await r.json(); }catch(e){ return; }
+  stsRender(k);
+  if(stsCache[k].status==='SCANNING'){ if(!stsTimer[k]) stsTimer[k]=setInterval(()=>stsRefresh(k),3000); }
+  else if(stsTimer[k]){ clearInterval(stsTimer[k]); stsTimer[k]=null; }
+}
+async function stsStart(k){
+  try{
+    const r=await fetch(stsApi[k]+'/scan',{cache:'no-store'}); const d=await r.json();
+    if(!d.started && d.message) alert(d.message);
+    if(d.snapshot) stsCache[k]=d.snapshot;
+  }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
+  stsRender(k); stsRefresh(k);
+}
+stsRefresh('Bist'); stsRefresh('Us');   // cheap read of last result; never starts a scan
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -9292,6 +9368,12 @@ class Handler(BaseHTTPRequestHandler):
             q=parse_qs(urlparse(self.path).query); force=q.get('force',['0'])[0]=='1'
             started=us_scanner_start(force=force)
             body=json.dumps({'started':started,'status':us_scanner_snapshot().get('status')}).encode(); self.send_response(202 if started else 200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path in ('/api/scanner_st_bist','/api/scanner_st_us'):
+            self._send_json(scanner_st_stocks.snapshot('bist' if path.endswith('bist') else 'us')); return
+        if path in ('/api/scanner_st_bist/scan','/api/scanner_st_us/scan'):
+            _k='bist' if 'bist' in path else 'us'
+            started,msg=scanner_st_stocks.start_scan(_k)
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k)}); return
         if path=='/api/scanner_st':
             self._send_json(scanner_st.snapshot()); return
         if path=='/api/scanner_st/scan':
