@@ -693,8 +693,13 @@ def _traded_symbols():
     return syms
 
 
+_idle_diag = {'ts': 0.0}
+
+
 def prune_idle_watchlist(state, now):
-    """See IDLE_REMOVE_MODE (and the auto-added rule below)."""
+    """See IDLE_REMOVE_MODE (and the auto-added rule below). Every 10 minutes a line
+    lists the NONE coins that were kept and why, so a coin that "never goes away"
+    can be explained from the log."""
     if IDLE_REMOVE_MODE == 'off' and AUTO_ADD_MODE != 'on':
         return
     wl = state.get('watchlist') or {}
@@ -703,22 +708,38 @@ def prune_idle_watchlist(state, now):
     signals = state.get('watchlist_signals') or {}
     try:
         holders = live_trading.get_open_live_holders()
-    except Exception:
+    except Exception as e:
+        print(f'IDLE REMOVE | ERROR | canlı pozisyon listesi okunamadı: {type(e).__name__}: {e}', flush=True)
         return
     traded = None
+    kept = []
     for sym, w in list(wl.items()):
-        if w.get('market') != 'crypto' or sym in positions or sym in waits or sym in holders:
-            continue
         final = (signals.get(sym) or {}).get('final')
+        if w.get('market') != 'crypto':
+            continue
+        if sym in positions:
+            if final == 'NONE':
+                kept.append(f'{sym}: pozisyon açık')
+            continue
+        if sym in waits:
+            continue
+        if sym in holders:
+            if final == 'NONE':
+                kept.append(f'{sym}: üyenin canlı pozisyonu açık')
+            continue
         if not final:
+            kept.append(f'{sym}: sinyal bilgisi yok')
             continue
         try:
             added = pd.Timestamp(w.get('added_at'))
             if added.tzinfo is None:
                 added = added.tz_localize('UTC')
             if (pd.Timestamp(now) - added).total_seconds() < IDLE_REMOVE_MIN_AGE_H * 3600:
+                if final == 'NONE':
+                    kept.append(f'{sym}: listede 1 saatten az')
                 continue                   # too fresh to judge
         except Exception:
+            kept.append(f'{sym}: eklenme zamanı okunamadı ({w.get("added_at")})')
             continue
         why = None
         if w.get('auto_added') and final != 'LONG' and AUTO_ADD_MODE == 'on':
@@ -728,6 +749,8 @@ def prune_idle_watchlist(state, now):
                 traded = _traded_symbols()
             if sym in traded or w.get('traded'):
                 why = 'işlem geçmişi var, pozisyon yok ve sinyal NONE'
+            else:
+                kept.append(f'{sym}: işlem geçmişi yok (elle eklenmiş)')
         if not why:
             continue
         if IDLE_REMOVE_MODE == 'log' and not w.get('auto_added'):
@@ -739,6 +762,9 @@ def prune_idle_watchlist(state, now):
             (state.get(k) or {}).pop(sym, None)
         state.setdefault('auto_add_block', {})[sym] = (pd.Timestamp(now).floor('4h') + pd.Timedelta(hours=4)).isoformat()
         print(f'IDLE REMOVE | {sym} izleme listesinden çıkarıldı: {why}', flush=True)
+    if kept and time.time() - _idle_diag['ts'] > 600:
+        _idle_diag['ts'] = time.time()
+        print('IDLE REMOVE | NONE olup listede kalanlar -> ' + ' | '.join(kept[:25]), flush=True)
 
 
 def auto_add_from_scanner(state, now):
@@ -1495,7 +1521,7 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r7 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r8 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
