@@ -683,7 +683,9 @@ def _traded_symbols():
     syms = set()
     try:
         if os.path.exists(TRADES_FILE):
-            syms = set(pd.read_csv(TRADES_FILE, usecols=['symbol'])['symbol'].dropna().astype(str))
+            # tolerant read: the history file may have grown columns over time (ragged rows)
+            df_t = pd.read_csv(TRADES_FILE, engine='python', on_bad_lines='skip')
+            syms = set(df_t['symbol'].dropna().astype(str)) if 'symbol' in df_t.columns else set()
     except Exception as e:
         print(f'IDLE REMOVE | trade history read failed: {type(e).__name__}: {e}', flush=True)
         return _traded_cache['symbols']
@@ -724,7 +726,7 @@ def prune_idle_watchlist(state, now):
         elif final == 'NONE' and IDLE_REMOVE_MODE != 'off':
             if traded is None:
                 traded = _traded_symbols()
-            if sym in traded:
+            if sym in traded or w.get('traded'):
                 why = 'işlem geçmişi var, pozisyon yok ve sinyal NONE'
         if not why:
             continue
@@ -985,6 +987,8 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
     print(f"WATCHLIST EXIT  | {side} {symbol} | reason={reason} | price={price:.6f} | net={net:.2f} | equity={state['equity']:.2f}", flush=True)
     send_message(exit_message(trade))
     state['positions'].pop(symbol, None)
+    if symbol in (state.get('watchlist') or {}):
+        state['watchlist'][symbol]['traded'] = True      # the coin has a closed trade now (idle remove uses this)
     # Loss brake bookkeeping: a crypto watchlist position that closed at a
     # LOSS via a stop counts toward the "N stops in a short window" trigger.
     if live_eligible and net < 0 and reason in ('ATR_SL', 'ATR_TRAILING_SL'):
@@ -1491,7 +1495,7 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r6 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r7 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
