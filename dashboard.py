@@ -3749,10 +3749,7 @@ function openTvChart(tvSymbol,label,interval){
     allow_symbol_change:true,
     withdateranges:true,
     save_image:false,
-    studies:["RSI@tv-basicstudies","MACD@tv-basicstudies","CCI@tv-basicstudies","StochasticRSI@tv-basicstudies","DM@tv-basicstudies","STD;Supertrend"],
-    // Best effort: the free embed cannot be guaranteed to accept study inputs; if it ignores
-    // these, TradingView's default Supertrend (10, 3) is drawn and can be edited by hand.
-    studies_overrides:{"supertrend.length":10,"supertrend.atrPeriod":10,"supertrend.factor":7.8,"supertrend.multiplier":7.8},
+    studies:["RSI@tv-basicstudies","MACD@tv-basicstudies","CCI@tv-basicstudies","StochasticRSI@tv-basicstudies","DM@tv-basicstudies"],
     support_host:"https://www.tradingview.com"
   };
   const script=document.createElement('script');
