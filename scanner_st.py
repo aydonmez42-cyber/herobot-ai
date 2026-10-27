@@ -106,7 +106,7 @@ def snapshot():
     with _lock:
         out = dict(_state)
         out['results'] = list(_state['results'])
-    out.update({'period': PERIOD, 'factor': FACTOR, 'interval': INTERVAL, 'min_gap_s': MIN_GAP_S})
+    out.update({'interval': INTERVAL, 'min_gap_s': MIN_GAP_S})
     wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0
     out['next_allowed_in_s'] = max(0, int(wait))
     return out

@@ -83,7 +83,7 @@ def build(tv, tf):
             dn_pts.append({'time': times[i], 'value': v}); up_pts.append({'time': times[i]})
         if i > 0 and not np.isnan(line[i - 1]) and bool(up[i]) != bool(up[i - 1]):
             flips.append({'time': times[i], 'dir': 'UP' if up[i] else 'DOWN'})
-    out = {'symbol': tv, 'tf': tf, 'period': PERIOD, 'factor': FACTOR,
+    out = {'symbol': tv, 'tf': tf,
            'candles': candles, 'st_up': up_pts, 'st_down': dn_pts, 'flips': flips,
            'trend': 'UP' if up[-1] else 'DOWN'}
     with _lock:

@@ -3685,20 +3685,19 @@ SCANNER_HTML = r'''<!doctype html>
 
 <section class="panel" id="ownChartPanel">
   <div class="panel-head">
-    <h2>Kendi grafiğimiz · Supertrend (10, 7.8)</h2>
+    <h2>Süper Grafik</h2>
     <span class="text-faint" id="ownChartLabel">—</span>
     <select id="ownChartTf" onchange="loadOwnChart()">
       <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option>
     </select>
   </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki tablolardan bir satıra tıklayın; grafik burada da açılır.</div>
-  <div id="ownChart" style="height:460px;display:none"></div>
-  <div class="footnote">Supertrend çizgisi tarama ve botla aynı formülle hesaplanır (ATR 10, çarpan 7.8). Yeşil: yükseliş, kırmızı: düşüş. Oklar trend dönüşlerini gösterir. Saatler UTC.</div>
+  <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
+  <div class="footnote">Yeşil çizgi: yükseliş, kırmızı çizgi: düşüş. Oklar trend dönüşlerini gösterir. Fare tekeri veya iki parmakla yakınlaştırın, sürükleyerek kaydırın. Saatler UTC.</div>
 </section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js"></script>
 <script>
 function toggleSigFilter(selId,val,fn){
   const el=document.getElementById(selId); if(!el) return;
@@ -3761,8 +3760,8 @@ function stTab(k){
   ['crypto','bist','us'].forEach(n=>{ const e=document.getElementById('stPane-'+n); if(e) e.style.display=(n===k)?'':'none'; });
   document.querySelectorAll('[data-sttab]').forEach(b=>b.classList.toggle('active',b.dataset.sttab===k));
 }
-// ---- own candle chart with Supertrend (10, 7.8) ----
-const _own={chart:null,candle:null,up:null,dn:null,tv:null,label:'',seq:0};
+// ---- own candle chart with Supertrend (plain canvas, no external library) ----
+const _own={tv:null,label:'',seq:0,d:null,up:null,dn:null,flips:null,view:{bars:120,end:0},hover:null,wired:false};
 function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d'})[String(i||'240')]||'4h'; }
 function openOwnChart(tv,label,interval){
   _own.tv=tv; _own.label=label||tv;
@@ -3770,34 +3769,128 @@ function openOwnChart(tv,label,interval){
   loadOwnChart();
 }
 async function loadOwnChart(){
-  const msg=document.getElementById('ownChartMsg'), box=document.getElementById('ownChart'), lab=document.getElementById('ownChartLabel');
+  const msg=document.getElementById('ownChartMsg'), cv=document.getElementById('ownChart'), lab=document.getElementById('ownChartLabel');
   if(!_own.tv) return;
   const tf=document.getElementById('ownChartTf').value, my=++_own.seq;
   if(lab) lab.textContent='— '+_own.label;
   msg.style.display=''; msg.textContent='Yükleniyor…';
   let d;
   try{ const r=await fetch('/api/chart-st?tv='+encodeURIComponent(_own.tv)+'&tf='+tf,{cache:'no-store'}); d=await r.json(); }
-  catch(e){ if(my===_own.seq){ msg.textContent='Bağlantı hatası.'; box.style.display='none'; } return; }
+  catch(e){ if(my===_own.seq){ msg.textContent='Bağlantı hatası.'; cv.style.display='none'; } return; }
   if(my!==_own.seq) return;
-  if(d.error||!d.candles){ msg.textContent='Grafik yüklenemedi: '+(d.error||'veri yok'); box.style.display='none'; return; }
-  if(typeof LightweightCharts==='undefined'){ msg.textContent='Grafik kütüphanesi yüklenemedi.'; box.style.display='none'; return; }
-  msg.style.display='none'; box.style.display='block';
-  if(!_own.chart){
-    _own.chart=LightweightCharts.createChart(box,{autoSize:true,
-      layout:{background:{type:'solid',color:'#0D1114'},textColor:'#9aa4af'},
-      grid:{vertLines:{color:'rgba(255,255,255,.05)'},horzLines:{color:'rgba(255,255,255,.05)'}},
-      rightPriceScale:{borderColor:'rgba(255,255,255,.15)'},
-      timeScale:{borderColor:'rgba(255,255,255,.15)',timeVisible:true,secondsVisible:false},
-      crosshair:{mode:0}});
-    _own.candle=_own.chart.addCandlestickSeries({upColor:'#2fbf71',downColor:'#e5534b',borderVisible:false,wickUpColor:'#2fbf71',wickDownColor:'#e5534b'});
-    _own.up=_own.chart.addLineSeries({color:'#2fbf71',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-    _own.dn=_own.chart.addLineSeries({color:'#e5534b',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  if(d.error||!d.candles||!d.candles.length){ msg.textContent='Grafik yüklenemedi: '+(d.error||'veri yok'); cv.style.display='none'; return; }
+  _own.d=d; _own.tf=tf;
+  _own.up=new Map((d.st_up||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
+  _own.dn=new Map((d.st_down||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
+  _own.flips=new Map((d.flips||[]).map(f=>[f.time,f.dir]));
+  _own.view={bars:Math.min(120,d.candles.length),end:d.candles.length}; _own.hover=null;
+  msg.style.display='none'; cv.style.display='block';
+  ownWire(cv); ownDraw();
+}
+function ownFmtPrice(v){ const a=Math.abs(v); return a>=1000?v.toFixed(1):a>=1?v.toFixed(3):a>=0.01?v.toFixed(5):v.toPrecision(4); }
+function ownFmtTime(t,tf){ const x=new Date(t*1000).toISOString(); return tf==='1d'?x.slice(5,10):x.slice(5,10)+' '+x.slice(11,16); }
+function ownGeom(){
+  const cv=document.getElementById('ownChart'), d=_own.d, n=d.candles.length, W=cv.clientWidth, H=cv.clientHeight;
+  const padR=66, padB=22, padT=8, plotW=W-padR, plotH=H-padB-padT;
+  const bars=Math.max(20,Math.min(n,Math.round(_own.view.bars)));
+  const end=Math.max(bars,Math.min(n,Math.round(_own.view.end)));
+  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,step:plotW/bars};
+}
+function ownDraw(){
+  const cv=document.getElementById('ownChart'); if(!cv||!_own.d||cv.style.display==='none') return;
+  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step}=G, C=d.candles, tf=_own.tf;
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle='#0D1114'; g.fillRect(0,0,W,H);
+  let lo=Infinity, hi=-Infinity;
+  for(let i=start;i<end;i++){
+    lo=Math.min(lo,C[i].low); hi=Math.max(hi,C[i].high);
+    const u=_own.up.get(C[i].time), v=_own.dn.get(C[i].time);
+    if(u!=null){ lo=Math.min(lo,u); hi=Math.max(hi,u); }
+    if(v!=null){ lo=Math.min(lo,v); hi=Math.max(hi,v); }
   }
-  _own.candle.setData(d.candles); _own.up.setData(d.st_up); _own.dn.setData(d.st_down);
-  _own.candle.setMarkers((d.flips||[]).map(f=>f.dir==='UP'
-    ?{time:f.time,position:'belowBar',color:'#2fbf71',shape:'arrowUp'}
-    :{time:f.time,position:'aboveBar',color:'#e5534b',shape:'arrowDown'}));
-  _own.chart.timeScale().fitContent();
+  const pad=(hi-lo)*0.06||hi*0.01; lo-=pad; hi+=pad;
+  const X=i=>(i-start+0.5)*step, Y=v=>padT+(hi-v)/(hi-lo)*plotH;
+  g.font='11px system-ui,sans-serif'; g.textBaseline='middle';
+  g.strokeStyle='rgba(255,255,255,.06)'; g.fillStyle='#9aa4af'; g.lineWidth=1;
+  for(let k=0;k<=5;k++){ const v=lo+(hi-lo)*k/5, y=Math.round(Y(v))+.5;
+    g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.textAlign='left'; g.fillText(ownFmtPrice(v),plotW+6,y); }
+  g.textAlign='center'; g.textBaseline='top';
+  const every=Math.max(1,Math.round(bars/5));
+  for(let i=start+Math.floor(every/2);i<end;i+=every){ g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
+  g.save(); g.beginPath(); g.rect(0,0,plotW,padT+plotH); g.clip();
+  const bw=Math.max(1,step*0.7);
+  for(let i=start;i<end;i++){
+    const c=C[i], up=c.close>=c.open, col=up?'#2fbf71':'#e5534b', x=X(i);
+    g.strokeStyle=col; g.fillStyle=col; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Math.round(x)+.5,Y(c.high)); g.lineTo(Math.round(x)+.5,Y(c.low)); g.stroke();
+    const y1=Y(Math.max(c.open,c.close)), y2=Y(Math.min(c.open,c.close));
+    g.fillRect(x-bw/2,y1,bw,Math.max(1,y2-y1));
+  }
+  g.lineWidth=2; g.lineJoin='round';
+  [[_own.up,'#2fbf71'],[_own.dn,'#e5534b']].forEach(([m,col])=>{
+    g.strokeStyle=col; g.beginPath(); let pen=false;
+    for(let i=Math.max(0,start-1);i<end;i++){
+      const v=m.get(C[i].time);
+      if(v==null){ pen=false; continue; }
+      if(!pen){ g.moveTo(X(i),Y(v)); pen=true; } else g.lineTo(X(i),Y(v));
+    }
+    g.stroke();
+  });
+  for(let i=start;i<end;i++){
+    const dir=_own.flips.get(C[i].time); if(!dir) continue;
+    const x=X(i), s=Math.max(4,Math.min(7,step*0.6));
+    g.fillStyle=dir==='UP'?'#2fbf71':'#e5534b'; g.beginPath();
+    if(dir==='UP'){ const y=Y(C[i].low)+10; g.moveTo(x,y-s); g.lineTo(x-s,y+s); g.lineTo(x+s,y+s); }
+    else { const y=Y(C[i].high)-10; g.moveTo(x,y+s); g.lineTo(x-s,y-s); g.lineTo(x+s,y-s); }
+    g.closePath(); g.fill();
+  }
+  g.restore();
+  const h=_own.hover;
+  if(h&&h.x>=0&&h.x<=plotW){
+    const i=Math.max(start,Math.min(end-1,start+Math.floor(h.x/step))), c=C[i];
+    g.strokeStyle='rgba(255,255,255,.25)'; g.lineWidth=1; g.setLineDash([4,4]);
+    g.beginPath(); g.moveTo(X(i),padT); g.lineTo(X(i),padT+plotH); g.moveTo(0,h.y); g.lineTo(plotW,h.y); g.stroke(); g.setLineDash([]);
+    if(h.y>=padT&&h.y<=padT+plotH){ const pv=hi-(h.y-padT)/plotH*(hi-lo), t=ownFmtPrice(pv);
+      g.fillStyle='#2b3440'; g.fillRect(plotW,h.y-9,padR,18); g.fillStyle='#e6edf3'; g.textAlign='left'; g.textBaseline='middle'; g.fillText(t,plotW+6,h.y); }
+    const sv=_own.up.get(c.time)??_own.dn.get(c.time);
+    g.textAlign='left'; g.textBaseline='top'; g.fillStyle='#e6edf3';
+    g.fillText(ownFmtTime(c.time,tf)+'  A '+ownFmtPrice(c.open)+'  Y '+ownFmtPrice(c.high)+'  D '+ownFmtPrice(c.low)+'  K '+ownFmtPrice(c.close)+(sv!=null?'  ST '+ownFmtPrice(sv):''),8,12);
+  }
+}
+function ownWire(cv){
+  if(_own.wired) return; _own.wired=true;
+  const ptrs=new Map(); let lastDist=0;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,pos(e)); lastDist=0; });
+  cv.addEventListener('pointerup',e=>{ ptrs.delete(e.pointerId); });
+  cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); });
+  cv.addEventListener('pointerleave',e=>{ if(!ptrs.size){ _own.hover=null; ownDraw(); } });
+  cv.addEventListener('pointermove',e=>{
+    if(!_own.d) return;
+    const p=pos(e);
+    if(ptrs.has(e.pointerId)){
+      const prev=ptrs.get(e.pointerId); ptrs.set(e.pointerId,p);
+      const G=ownGeom();
+      if(ptrs.size===2){
+        const [a,b]=[...ptrs.values()], dist=Math.hypot(a.x-b.x,a.y-b.y);
+        if(lastDist){ _own.view.bars=Math.max(20,Math.min(G.n,G.bars*lastDist/dist)); }
+        lastDist=dist;
+      } else {
+        _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars;
+        _own.hover=p;
+      }
+    } else _own.hover=p;
+    ownDraw();
+  });
+  cv.addEventListener('wheel',e=>{
+    if(!_own.d) return; e.preventDefault();
+    const G=ownGeom(), f=e.deltaY>0?1.12:1/1.12, nb=Math.max(20,Math.min(G.n,G.bars*f));
+    _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw();
+  },{passive:false});
+  if(window.ResizeObserver) new ResizeObserver(()=>ownDraw()).observe(cv);
+  window.addEventListener('resize',ownDraw);
 }
 function openTvChart(tvSymbol,label,interval){
   _tvCur={symbol:tvSymbol,interval:String(interval||'240')};
@@ -3980,7 +4073,7 @@ refreshScanner();setInterval(refreshScanner,10000);
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 
-// ---- Supertrend scan (4H, 10 / 7.8): MANUAL only ----
+// ---- Supertrend scan (4H): MANUAL only ----
 let stCache={results:[],status:'IDLE'}, stTimer=null;
 function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
 function renderSt(){
@@ -3997,8 +4090,8 @@ function renderSt(){
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    '4 saatlik kapanmış mum · Supertrend ('+(stCache.period||10)+', '+(stCache.factor||7.8)+') · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
-    '4H closed candle · Supertrend ('+(stCache.period||10)+', '+(stCache.factor||7.8)+') · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
+    '4 saatlik kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
+    '4H closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
   const body=document.getElementById('stRows'); if(!body) return;
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 4H')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stFmtTR(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
@@ -4019,7 +4112,7 @@ async function stStart(){
 }
 refreshSt();   // one cheap read of the last result; it never starts a scan
 
-// ---- Supertrend scan for BIST / Wall Street (DAILY, 10 / 7.8): MANUAL only ----
+// ---- Supertrend scan for BIST / Wall Street (DAILY): MANUAL only ----
 const stsCache={Bist:{results:[],status:'IDLE'},Us:{results:[],status:'IDLE'}}, stsTimer={};
 const stsApi={Bist:'/api/scanner_st_bist',Us:'/api/scanner_st_us'};
 function stsFmtD(v){ try{ return new Date(v).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5); }catch(e){ return '—'; } }
@@ -4037,8 +4130,8 @@ function stsRender(k){
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
-    'Günlük kapanmış mum · Supertrend ('+(c.period||10)+', '+(c.factor||7.8)+') · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
-    'Daily closed candle · Supertrend ('+(c.period||10)+', '+(c.factor||7.8)+') · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
+    'Günlük kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
+    'Daily closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · 1D','D')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' gün önce',' days ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')

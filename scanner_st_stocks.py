@@ -119,7 +119,7 @@ class _Scan:
         with self.lock:
             out = dict(self.state)
             out['results'] = list(self.state['results'])
-        out.update({'period': PERIOD, 'factor': FACTOR, 'interval': '1D', 'min_gap_s': MIN_GAP_S})
+        out.update({'interval': '1D', 'min_gap_s': MIN_GAP_S})
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         out['next_allowed_in_s'] = max(0, int(wait))
         return out
