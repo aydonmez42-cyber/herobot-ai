@@ -6386,6 +6386,23 @@ refreshAccount();
 
 _TRADES_STYLE_EXTRA = r'''
 <style>
+.wl-summary{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 0}
+.wl-stat{display:flex;flex-direction:column;gap:2px;background:var(--panel-2,rgba(255,255,255,.04));border:1px solid var(--border-soft);border-radius:8px;padding:6px 10px;min-width:96px;flex:1 1 96px}
+.wl-stat span{font-size:11px;color:var(--text-faint)}
+.wl-stat b{font-family:var(--font-m);font-size:13px}
+#wlLimitBox{gap:6px;align-items:center;flex-wrap:wrap}
+#wlLimitBox input{padding:4px 6px}
+.wl-panel .panel-head{flex-wrap:wrap;gap:8px}
+@media(max-width:760px){
+  .wl-panel .table-scroll{overflow-x:hidden}
+  table.wl-table{width:100%;table-layout:auto}
+  table.wl-table th,table.wl-table td{padding:7px 4px;font-size:11.5px;white-space:normal;word-break:break-word}
+  table.wl-table th:nth-child(2),table.wl-table td:nth-child(2),
+  table.wl-table th:nth-child(6),table.wl-table td:nth-child(6){display:none}
+  table.wl-table td:last-child .btn{padding:4px 6px;font-size:11px;margin:0 2px 2px 0}
+}
+</style>
+<style>
 table.datatable td.empty{color:var(--text-dim);font-family:var(--font-d);white-space:normal;padding:22px 12px;text-align:center}
 table.datatable td.wrap-cell{white-space:normal;font-family:var(--font-d);color:var(--text-dim);font-size:12px}
 .footnote{margin-top:12px;color:var(--text-faint);font-size:11.5px}
@@ -6439,10 +6456,11 @@ TRADES_HTML = r'''<!doctype html>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
-<section class="panel">
-  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span><button class="btn btn-danger" id="resetTradesBtn" type="button" style="display:none" onclick="resetPaperTrading()" data-i18n="trades.resetBtn">Reset Trades</button></div>
+<section class="panel wl-panel">
+  <div class="panel-head"><h2 data-i18n="panel.paperTrades">Paper Trades</h2><span class="text-faint" id="watchlistCount">0 / 10</span><span id="wlLimitBox" style="display:none"></span><button class="btn btn-danger" id="resetTradesBtn" type="button" style="display:none" onclick="resetPaperTrading()" data-i18n="trades.resetBtn">Reset Trades</button></div>
+  <div class="wl-summary" id="wlSummary"></div>
   <div class="table-scroll">
-    <table class="datatable">
+    <table class="datatable wl-table">
       <thead><tr><th data-i18n="watchlist.headerSymbol">Symbol</th><th data-i18n="watchlist.headerMarket">Market</th><th data-i18n="watchlist.headerDirection">Direction / Signal</th><th class="num" data-i18n="watchlist.headerPrice">Price</th><th class="num" data-i18n="watchlist.headerUnrealizedPnl">Unrealized P&amp;L</th><th data-i18n="watchlist.headerAdded">Added</th><th></th></tr></thead>
       <tbody id="watchlistRows"><tr><td colspan="7" class="empty" data-i18n="watchlist.loading">Loading…</td></tr></tbody>
     </table>
@@ -6485,6 +6503,31 @@ function renderWatchlistTable(){
   document.getElementById('wlUsd').textContent=Number(d.position_usd||0).toLocaleString('en-US');
   const items=d.items||[];
   document.getElementById('watchlistCount').textContent=`${items.length} / ${d.max_symbols??'—'}`;
+  (function(){
+    const tr=(currentLang==='tr');
+    const open=items.map(x=>x.position).filter(Boolean);
+    if(statusCache&&statusCache.position) open.push(statusCache.position);
+    const win=open.filter(p=>Number(p.unrealized_pnl)>0), lose=open.filter(p=>Number(p.unrealized_pnl)<0);
+    const sum=a=>a.reduce((t,p)=>t+Number(p.unrealized_pnl||0),0);
+    const net=sum(open), box=document.getElementById('wlSummary');
+    if(box) box.innerHTML=
+      `<div class="wl-stat"><span>${tr?'Aktif pozisyon':'Open positions'}</span><b>${open.length}</b></div>`+
+      `<div class="wl-stat"><span>${tr?'Kârda':'In profit'}</span><b class="pos">${win.length} · ${money(sum(win))}</b></div>`+
+      `<div class="wl-stat"><span>${tr?'Zararda':'In loss'}</span><b class="neg">${lose.length} · ${money(sum(lose))}</b></div>`+
+      `<div class="wl-stat"><span>${tr?'Net durum':'Net'}</span><b class="${cls(net)}">${money(net)}</b></div>`;
+    const lb=document.getElementById('wlLimitBox');
+    if(lb){
+      if(isAdmin){
+        lb.style.display='inline-flex';
+        if(!lb.dataset.ready){
+          lb.dataset.ready='1';
+          lb.innerHTML=`<label class="text-faint" style="font-size:12px">${tr?'Maks coin':'Max coins'}</label><input type="number" min="1" max="500" step="1" id="wlMaxInput" style="width:72px"><button class="btn" type="button" onclick="saveWlMax()">${tr?'Kaydet':'Save'}</button>`;
+        }
+        const inp=document.getElementById('wlMaxInput');
+        if(inp && document.activeElement!==inp) inp.value=d.max_symbols??'';
+      } else lb.style.display='none';
+    }
+  })();
 
   let rowsHtml='';
   if(statusCache){
@@ -6908,6 +6951,15 @@ async function checkAdminForReset(){
     if(isAdmin) document.getElementById('resetTradesBtn').style.display='inline-block';
     renderWatchlistTable();
   }catch(e){}
+}
+async function saveWlMax(){
+  const v=document.getElementById('wlMaxInput').value;
+  try{
+    const r=await fetch('/api/admin/watchlist-max',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_symbols:v})});
+    const d=await r.json();
+    if(!d.ok){ alert(d.error||'Kaydedilemedi.'); return; }
+    watchlistCache.max_symbols=d.max_symbols; renderWatchlistTable();
+  }catch(e){ alert('Bağlantı hatası'); }
 }
 async function closePosition(symbol, isMain){
   if(!confirm(t('watchlist.closeConfirm'))) return;
@@ -8699,6 +8751,37 @@ load();
 </script>
 </body></html>'''
 
+_WL_MAX_FILE = os.path.join(os.path.dirname(os.path.abspath(STATE_FILE)), 'watchlist_max.json')
+_WL_MAX_CAP = int(os.environ.get('WATCHLIST_MAX_CAP', '500'))
+
+
+def watchlist_max_symbols():
+    """Max number of coins on the watchlist: admin-editable override stored next
+    to the state file, falling back to config.WATCHLIST_MAX_SYMBOLS."""
+    try:
+        with open(_WL_MAX_FILE, 'r', encoding='utf-8') as fh:
+            v = int(json.load(fh).get('max_symbols'))
+        if 1 <= v <= _WL_MAX_CAP:
+            return v
+    except Exception:
+        pass
+    return int(cfg.WATCHLIST_MAX_SYMBOLS)
+
+
+def set_watchlist_max_symbols(value):
+    try:
+        v = int(value)
+    except Exception:
+        return False, 'geçerli bir sayı girin'
+    if not (1 <= v <= _WL_MAX_CAP):
+        return False, f'1 ile {_WL_MAX_CAP} arasında olmalı'
+    tmp = _WL_MAX_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        json.dump({'max_symbols': v}, fh)
+    os.replace(tmp, _WL_MAX_FILE)
+    return True, None
+
+
 def read_state():
     try:
         return _load_shared_state(STARTING_EQUITY)
@@ -8905,7 +8988,7 @@ def watchlist_status():
     items.sort(key=lambda x: x.get('added_at') or '', reverse=True)
     ws = auth.get_watchlist_settings()
     position_usd = float(ws.get('position_usd') or cfg.WATCHLIST_POSITION_USD)
-    return {'items': items, 'max_symbols': cfg.WATCHLIST_MAX_SYMBOLS, 'position_usd': position_usd}
+    return {'items': items, 'max_symbols': watchlist_max_symbols(), 'position_usd': position_usd}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -9400,8 +9483,8 @@ class Handler(BaseHTTPRequestHandler):
                 error='sembol gerekli'
             else:
                 cur=read_state().get('watchlist', {}) or {}
-                if symbol not in cur and len(cur) >= cfg.WATCHLIST_MAX_SYMBOLS:
-                    error=f'takip listesi dolu (maks {cfg.WATCHLIST_MAX_SYMBOLS})'
+                if symbol not in cur and len(cur) >= watchlist_max_symbols():
+                    error=f'takip listesi dolu (maks {watchlist_max_symbols()})'
                 else:
                     _add_to_watchlist(symbol, market, signal); ok=True
             body=json.dumps({'ok':ok,'error':error},ensure_ascii=False).encode(); self.send_response(200 if ok else 400); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
@@ -9693,6 +9776,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'ok': False, 'error': err}, status=400); return
             ws = auth.get_watchlist_settings()
             self._send_json({'ok': True, 'position_usd': float(ws.get('position_usd'))}); return
+
+        if path=='/api/admin/watchlist-max':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            data=self._read_json_body()
+            ok, err = set_watchlist_max_symbols(data.get('max_symbols'))
+            if not ok:
+                self._send_json({'ok': False, 'error': err}, status=400); return
+            self._send_json({'ok': True, 'max_symbols': watchlist_max_symbols()}); return
 
         if path=='/api/admin/paper-equity':
             if not auth.is_admin(user):

@@ -8,7 +8,7 @@ from indicators import add_indicators
 from regime import is_volatile_daily
 from tradingview_data import add_close_time
 from strategy import long_signal, short_signal
-from dashboard import start_dashboard
+from dashboard import start_dashboard, watchlist_max_symbols
 from telegram_notifier import send_message, entry_message, exit_message, daily_report, verify_connection
 from state_store import load_state as _load_state, save_state, STATE_FILE, TRADES_FILE
 import ai_analyst
@@ -813,7 +813,7 @@ def auto_add_from_scanner(state, now):
     longs = [r for r in (snap.get('results') or [])
              if r.get('signal') == 'LONG' and (not r.get('candle_time') or str(r.get('candle_time')) == scan_id)]
     longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
-    free = max(0, int(cfg.WATCHLIST_MAX_SYMBOLS) - len(wl))
+    free = max(0, int(watchlist_max_symbols()) - len(wl))
     picked = [r['symbol'] for r in longs if r.get('symbol') and r['symbol'] not in wl and r['symbol'] not in positions
               and r['symbol'] not in blocked_until]
     take = picked[:max(0, min(remaining, free))]
@@ -1521,7 +1521,7 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r8 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r9 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
