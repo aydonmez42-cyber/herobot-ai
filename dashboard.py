@@ -6503,8 +6503,9 @@ function renderWatchlistTable(){
   document.getElementById('wlUsd').textContent=Number(d.position_usd||0).toLocaleString('en-US');
   const items=d.items||[];
   document.getElementById('watchlistCount').textContent=`${items.length} / ${d.max_symbols??'—'}`;
-  (function(){
+  try{(function(){
     const tr=(currentLang==='tr');
+    let adm=false; try{ adm=!!isAdmin; }catch(e){}
     const open=items.map(x=>x.position).filter(Boolean);
     if(statusCache&&statusCache.position) open.push(statusCache.position);
     const win=open.filter(p=>Number(p.unrealized_pnl)>0), lose=open.filter(p=>Number(p.unrealized_pnl)<0);
@@ -6517,7 +6518,7 @@ function renderWatchlistTable(){
       `<div class="wl-stat"><span>${tr?'Net durum':'Net'}</span><b class="${cls(net)}">${money(net)}</b></div>`;
     const lb=document.getElementById('wlLimitBox');
     if(lb){
-      if(isAdmin){
+      if(adm){
         lb.style.display='inline-flex';
         if(!lb.dataset.ready){
           lb.dataset.ready='1';
@@ -6527,7 +6528,7 @@ function renderWatchlistTable(){
         if(inp && document.activeElement!==inp) inp.value=d.max_symbols??'';
       } else lb.style.display='none';
     }
-  })();
+  })();}catch(e){ console.error('wl summary',e); }
 
   let rowsHtml='';
   if(statusCache){
