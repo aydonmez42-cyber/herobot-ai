@@ -3542,22 +3542,6 @@ SCANNER_HTML = r'''<!doctype html>
     </div>
 
 
-    <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
-      <div class="scanner-controls">
-        <button class="btn" id="stBtn" onclick="stStart()">⏱ Supertrend tara (manuel)</button>
-        <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="6">Son 6 mum</option></select>
-        <span class="scanner-status" id="stStatus"></span>
-      </div>
-      <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
-      <div class="table-scroll">
-        <table class="datatable" id="stTable">
-          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th class="num">Supertrend</th><th class="num">Distance %</th><th>Flip (TR)</th><th>Signal</th><th>Add</th></tr></thead>
-          <tbody id="stRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div class="tabpane" id="tab-bist">
@@ -3593,22 +3577,6 @@ SCANNER_HTML = r'''<!doctype html>
     </div>
     <div class="footnote" data-i18n="scanner.bistFootnote">SHORT here is only the strategy's technical signal; it does not mean a direct short-sale order on the BIST spot market.</div>
 
-    <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
-      <div class="scanner-controls">
-        <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Supertrend tara (manuel)</button>
-        <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
-        <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
-        <span class="scanner-status" id="stBistStatus"></span>
-      </div>
-      <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
-      <div class="table-scroll">
-        <table class="datatable" id="stBistTable">
-          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
-          <tbody id="stBistRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div class="tabpane" id="tab-us">
@@ -3644,6 +3612,58 @@ SCANNER_HTML = r'''<!doctype html>
     </div>
     <div class="footnote" data-i18n="scanner.usFootnote">S&amp;P 500 + Nasdaq-100 universe (static list, should be updated periodically). US stocks added to the watchlist open an independent paper position just like the crypto watchlist; the SHORT side is a pure simulation that does not model borrow/margin constraints.</div>
 
+  </div>
+</section>
+
+<section class="panel" id="tvChartPanel">
+  <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
+  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
+  <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
+</section>
+
+<section class="panel" id="stScanPanel">
+  <div class="panel-head scanner-tabs">
+    <button class="tab active" data-sttab="crypto" onclick="stTab('crypto')">Kripto</button>
+    <button class="tab" data-sttab="bist" onclick="stTab('bist')">Borsa İstanbul</button>
+    <button class="tab" data-sttab="us" onclick="stTab('us')">Wall Street</button>
+  </div>
+  <div id="stPane-crypto">
+    <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
+      <div class="scanner-controls">
+        <button class="btn" id="stBtn" onclick="stStart()">⏱ Supertrend tara (manuel)</button>
+        <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="6">Son 6 mum</option></select>
+        <span class="scanner-status" id="stStatus"></span>
+      </div>
+      <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="stTable">
+          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th class="num">Supertrend</th><th class="num">Distance %</th><th>Flip (TR)</th><th>Signal</th><th>Add</th></tr></thead>
+          <tbody id="stRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="stPane-bist" style="display:none">
+    <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
+      <div class="scanner-controls">
+        <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Supertrend tara (manuel)</button>
+        <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
+        <span class="scanner-status" id="stBistStatus"></span>
+      </div>
+      <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
+      <div class="table-scroll">
+        <table class="datatable" id="stBistTable">
+          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <tbody id="stBistRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="stPane-us" style="display:none">
     <div id="stUsCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Wall Street (Günlük)</b></div>
       <div class="scanner-controls">
@@ -3663,14 +3683,22 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
-  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
-  <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
+<section class="panel" id="ownChartPanel">
+  <div class="panel-head">
+    <h2>Kendi grafiğimiz · Supertrend (10, 7.8)</h2>
+    <span class="text-faint" id="ownChartLabel">—</span>
+    <select id="ownChartTf" onchange="loadOwnChart()">
+      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option>
+    </select>
+  </div>
+  <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki tablolardan bir satıra tıklayın; grafik burada da açılır.</div>
+  <div id="ownChart" style="height:460px;display:none"></div>
+  <div class="footnote">Supertrend çizgisi tarama ve botla aynı formülle hesaplanır (ATR 10, çarpan 7.8). Yeşil: yükseliş, kırmızı: düşüş. Oklar trend dönüşlerini gösterir. Saatler UTC.</div>
 </section>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js"></script>
 <script>
 function toggleSigFilter(selId,val,fn){
   const el=document.getElementById(selId); if(!el) return;
@@ -3690,7 +3718,7 @@ const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFrac
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.tab[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
 }
 
@@ -3728,6 +3756,49 @@ function openTvExternal(){
     window.open(url,'_blank','noopener,noreferrer');
   }
 }
+
+function stTab(k){
+  ['crypto','bist','us'].forEach(n=>{ const e=document.getElementById('stPane-'+n); if(e) e.style.display=(n===k)?'':'none'; });
+  document.querySelectorAll('[data-sttab]').forEach(b=>b.classList.toggle('active',b.dataset.sttab===k));
+}
+// ---- own candle chart with Supertrend (10, 7.8) ----
+const _own={chart:null,candle:null,up:null,dn:null,tv:null,label:'',seq:0};
+function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d'})[String(i||'240')]||'4h'; }
+function openOwnChart(tv,label,interval){
+  _own.tv=tv; _own.label=label||tv;
+  const sel=document.getElementById('ownChartTf'); if(sel) sel.value=ownTfFromInterval(interval);
+  loadOwnChart();
+}
+async function loadOwnChart(){
+  const msg=document.getElementById('ownChartMsg'), box=document.getElementById('ownChart'), lab=document.getElementById('ownChartLabel');
+  if(!_own.tv) return;
+  const tf=document.getElementById('ownChartTf').value, my=++_own.seq;
+  if(lab) lab.textContent='— '+_own.label;
+  msg.style.display=''; msg.textContent='Yükleniyor…';
+  let d;
+  try{ const r=await fetch('/api/chart-st?tv='+encodeURIComponent(_own.tv)+'&tf='+tf,{cache:'no-store'}); d=await r.json(); }
+  catch(e){ if(my===_own.seq){ msg.textContent='Bağlantı hatası.'; box.style.display='none'; } return; }
+  if(my!==_own.seq) return;
+  if(d.error||!d.candles){ msg.textContent='Grafik yüklenemedi: '+(d.error||'veri yok'); box.style.display='none'; return; }
+  if(typeof LightweightCharts==='undefined'){ msg.textContent='Grafik kütüphanesi yüklenemedi.'; box.style.display='none'; return; }
+  msg.style.display='none'; box.style.display='block';
+  if(!_own.chart){
+    _own.chart=LightweightCharts.createChart(box,{autoSize:true,
+      layout:{background:{type:'solid',color:'#0D1114'},textColor:'#9aa4af'},
+      grid:{vertLines:{color:'rgba(255,255,255,.05)'},horzLines:{color:'rgba(255,255,255,.05)'}},
+      rightPriceScale:{borderColor:'rgba(255,255,255,.15)'},
+      timeScale:{borderColor:'rgba(255,255,255,.15)',timeVisible:true,secondsVisible:false},
+      crosshair:{mode:0}});
+    _own.candle=_own.chart.addCandlestickSeries({upColor:'#2fbf71',downColor:'#e5534b',borderVisible:false,wickUpColor:'#2fbf71',wickDownColor:'#e5534b'});
+    _own.up=_own.chart.addLineSeries({color:'#2fbf71',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+    _own.dn=_own.chart.addLineSeries({color:'#e5534b',lineWidth:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+  }
+  _own.candle.setData(d.candles); _own.up.setData(d.st_up); _own.dn.setData(d.st_down);
+  _own.candle.setMarkers((d.flips||[]).map(f=>f.dir==='UP'
+    ?{time:f.time,position:'belowBar',color:'#2fbf71',shape:'arrowUp'}
+    :{time:f.time,position:'aboveBar',color:'#e5534b',shape:'arrowDown'}));
+  _own.chart.timeScale().fitContent();
+}
 function openTvChart(tvSymbol,label,interval){
   _tvCur={symbol:tvSymbol,interval:String(interval||'240')};
   document.getElementById('tvChartSymbol').textContent='— '+label;
@@ -3761,6 +3832,7 @@ function openTvChart(tvSymbol,label,interval){
   outer.classList.remove('hidden');
   document.getElementById('tvChartEmpty').style.display='none';
   document.getElementById('tvFullscreenBtn').classList.remove('hidden');
+  try{ openOwnChart(tvSymbol,label,interval); }catch(e){}
   document.getElementById('tvChartPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function toggleTvFullscreen(){
@@ -3969,7 +4041,7 @@ function stsRender(k){
     'Daily closed candle · Supertrend ('+(c.period||10)+', '+(c.factor||7.8)+') · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
-  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · 1D')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' gün önce',' days ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · 1D','D')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' gün önce',' days ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${c.finished_at?T15('Bu filtrede hisse yok.','No stocks for this filter.'):'—'}</td></tr>`;
 }
 async function stsRefresh(k){
@@ -9458,6 +9530,16 @@ class Handler(BaseHTTPRequestHandler):
             _k='bist' if 'bist' in path else 'us'
             started,msg=scanner_st_stocks.start_scan(_k)
             self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k)}); return
+        if path=='/api/chart-st':
+            import chart_st
+            _q=parse_qs(urlparse(self.path).query)
+            try:
+                self._send_json(chart_st.build((_q.get('tv') or [''])[0], (_q.get('tf') or ['4h'])[0]))
+            except chart_st.ChartError as _e:
+                self._send_json({'error': str(_e)}, status=400)
+            except Exception as _e:
+                self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:120]}'}, status=502)
+            return
         if path=='/api/scanner_st':
             self._send_json(scanner_st.snapshot()); return
         if path=='/api/scanner_st/scan':
