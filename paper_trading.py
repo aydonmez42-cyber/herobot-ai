@@ -733,6 +733,13 @@ def prune_idle_watchlist(state, now):
                 kept.append(f'{sym}: pozisyon açık')
             continue
         if sym in waits:
+            # Safety net for a coin still waiting to enter (no position yet): if its latest
+            # 4H signal is no longer the side it was added for, drop it. process_entry_wait
+            # does the same on every cycle; this covers cycles it could not run (e.g. after
+            # Binance 429 cooldowns).
+            wside = (waits.get(sym) or {}).get('side')
+            if wside and final and final != wside:
+                _drop_from_watchlist(state, sym, f'4s {wside} sinyali artık geçerli değil (şu an {final})')
             continue
         if sym in holders:
             if final == 'NONE':
@@ -1575,7 +1582,7 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r11 | pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r12 | wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
