@@ -67,6 +67,12 @@ BTC_LOCK_4H_DROP_PCT = _env_float('BTC_LOCK_4H_DROP_PCT', 2.0)     # ...or >= th
 BTC_LOCK_RELEASE_PCT = _env_float('BTC_LOCK_RELEASE_PCT', 0.5)     # release when 4h change is back above -this %
 BTC_LOCK_MIN_HOURS = _env_float('BTC_LOCK_MIN_HOURS', 2.0)         # never release before this many hours
 
+# BTC Supertrend lock: while BTC is below its 4H Supertrend (trend DOWN on the last closed
+# candle, or the live price under the line) NO new LONG is opened on any coin. Released only
+# when BTC trades above the line AND the closed-candle trend is UP again. Open positions are
+# not touched. 'log' only reports it. Independent of DEMO_ENTRY_GUARDS.
+BTC_ST_LOCK_MODE = _env_mode('BTC_ST_LOCK_MODE', 'on')
+
 LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))      # this many stops...
 LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)          # ...within this many minutes
@@ -382,6 +388,67 @@ def update_btc_lock(state, now):
     state['btc_lock'] = lock
 
 
+def _btc_st_state(state):
+    return state.get('btc_st') or {}
+
+
+def btc_st_locked(state):
+    """True while new LONG entries are blocked by the BTC Supertrend lock."""
+    return BTC_ST_LOCK_MODE == 'on' and bool(_btc_st_state(state).get('locked'))
+
+
+def update_btc_st_lock(state, now):
+    """Once per polling cycle: BTC 4H Supertrend (closed candles) + live price.
+    locked = trend DOWN, or live price below the line. If data can't be read the
+    previous state is kept (never released on missing data)."""
+    if BTC_ST_LOCK_MODE == 'off':
+        state.pop('btc_st', None)
+        return
+    try:
+        from scanner_st import supertrend
+        df = fetch_cached('BTCUSDT', 'USD_M', cfg.INTERVAL, 300)
+        closed = df.iloc[:-1].reset_index(drop=True)
+        if len(closed) < 60:
+            return
+        up, line = supertrend(closed)
+        last_up, last_line = bool(up[-1]), float(line[-1])
+        if last_line != last_line:          # NaN
+            return
+        snap = btc_snapshot()
+        px = float(snap['price']) if snap else float(df.iloc[-1]['close'])
+    except Exception as e:
+        if type(e).__name__ != 'BinanceCooldown':
+            print(f'BTC ST LOCK | ERROR | {type(e).__name__}: {e}', flush=True)
+        return
+    prev = state.get('btc_st') or {}
+    was = prev.get('locked')
+    locked = (not last_up) or (px < last_line)
+    if not last_up:
+        why = 'BTC 4s Supertrend aşağı (kırmızı)'
+    elif px < last_line:
+        why = 'BTC fiyatı 4s Supertrend çizgisinin altında'
+    else:
+        why = 'BTC 4s Supertrend üstünde ve yeşil'
+    rec = {'locked': locked, 'trend': 'UP' if last_up else 'DOWN', 'line': round(last_line, 2),
+           'price': round(px, 2), 'reason': why, 'checked_at': now.isoformat(),
+           'enforced': BTC_ST_LOCK_MODE == 'on', 'since': prev.get('since') if was == locked else now.isoformat()}
+    state['btc_st'] = rec
+    if was is None and not locked:
+        print(f'BTC ST LOCK | açılış durumu: serbest | {why} | BTC={px:,.0f} çizgi={last_line:,.0f}', flush=True)
+    elif was is not None and was != locked or (was is None and locked):
+        word = 'KİLİTLENDİ' if locked else 'SERBEST'
+        print(f'BTC ST LOCK | {word} ({BTC_ST_LOCK_MODE}) | {why} | BTC={px:,.0f} çizgi={last_line:,.0f}', flush=True)
+        try:
+            if locked:
+                send_message(f"🔒 BTC SUPERTREND KİLİDİ\n\n{why}\nBTC {px:,.0f} | çizgi {last_line:,.0f}\n"
+                             + ('Hiçbir coinde yeni LONG açılmayacak (açık pozisyonlar yönetilmeye devam eder).' if BTC_ST_LOCK_MODE == 'on'
+                                else 'TEST MODU: sadece loglanıyor.'))
+            else:
+                send_message(f"🔓 BTC SUPERTREND KİLİDİ KALKTI\n\n{why}\nBTC {px:,.0f} | çizgi {last_line:,.0f}\nYeni LONG girişleri tekrar serbest.")
+        except Exception:
+            pass
+
+
 def brake_active(state, now):
     lb = state.get('loss_brake') or {}
     try:
@@ -422,6 +489,17 @@ def entry_guard_check(state, symbol, side, now, signal_close=None, atr=None, cur
     here can never stop the trading loop."""
     global LAST_BLOCK_CODES
     LAST_BLOCK_CODES = []
+    if side == 'LONG' and BTC_ST_LOCK_MODE != 'off':
+        _bs = _btc_st_state(state)
+        if _bs.get('locked'):
+            _txt = f"BTC Supertrend kilidi ({_bs.get('reason', '')})"
+            if BTC_ST_LOCK_MODE == 'on':
+                LAST_BLOCK_CODES = ['BTC_ST_LOCK']
+                if not quiet:
+                    print(f'ENTRY BLOCKED | LONG {symbol} | {_txt}', flush=True)
+                return False, _txt
+            if not quiet:
+                print(f'ENTRY GUARD (log modu, engellenmedi) | LONG {symbol} | {_txt}', flush=True)
     if not DEMO_ENTRY_GUARDS:
         return True, None  # demo trades every signal; guards are enforced per member on the live copy
     try:
@@ -813,6 +891,11 @@ def auto_add_from_scanner(state, now):
                 return
         except Exception:
             pass
+    if btc_st_locked(state):
+        if state.get('auto_add_btc_note') != scan_id:
+            state['auto_add_btc_note'] = scan_id
+            print('AUTO ADD | BTC Supertrend kilidi aktif, bu taramada otomatik ekleme bekletiliyor', flush=True)
+        return
     remaining = AUTO_ADD_MAX_PER_SCAN - int(state.get('auto_add_count') or 0)
     if remaining <= 0 and not first_look:
         return
@@ -865,8 +948,10 @@ def live_guard_ctx(state, signal_row, price):
     read from the same environment variables inside live_trading.py."""
     try:
         lock = state.get('btc_lock') or {}
+        _st_lock = btc_st_locked(state)
         return {
-            'btc_lock_active': bool(lock.get('active')), 'btc_lock_reason': lock.get('reason'),
+            'btc_lock_active': bool(lock.get('active')) or _st_lock,
+            'btc_lock_reason': ('BTC Supertrend kilidi' if _st_lock else lock.get('reason')),
             'signal_close': float(signal_row['close']), 'atr': float(signal_row['atr']), 'price': float(price),
         }
     except Exception:
@@ -1582,11 +1667,11 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r12 | wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r13 | btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s artış<=%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s artış<=%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
@@ -1687,6 +1772,10 @@ def main():
                 update_btc_lock(state, now)
             except Exception as e:
                 print(f'BTC LOCK | ERROR | {type(e).__name__}: {e}', flush=True)
+            try:
+                update_btc_st_lock(state, now)
+            except Exception as e:
+                print(f'BTC ST LOCK | ERROR | {type(e).__name__}: {e}', flush=True)
             save_state(state)
 
             # Manage current position using the live execution candle first.

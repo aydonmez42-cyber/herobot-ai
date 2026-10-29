@@ -6651,12 +6651,12 @@ function goToSymbol(symbol){
 
 
 const BLOCK_TEXT={
-  tr:{DIRECTION_LIMIT:'aynı yönde pozisyon limiti dolu',BTC_LOCK:'BTC kilidi aktif',LOSS_BRAKE:'zarar freni aktif',LATE_ENTRY:'fiyat sinyalden uzaklaştı',other:'giriş engellendi'},
-  en:{DIRECTION_LIMIT:'same-direction position limit reached',BTC_LOCK:'BTC lock active',LOSS_BRAKE:'loss brake active',LATE_ENTRY:'price moved away from signal',other:'entry blocked'},
-  de:{DIRECTION_LIMIT:'Limit gleichgerichteter Positionen erreicht',BTC_LOCK:'BTC-Sperre aktiv',LOSS_BRAKE:'Verlustbremse aktiv',LATE_ENTRY:'Preis hat sich vom Signal entfernt',other:'Einstieg blockiert'},
-  fr:{DIRECTION_LIMIT:'limite de positions dans le même sens atteinte',BTC_LOCK:'verrou BTC actif',LOSS_BRAKE:'frein de pertes actif',LATE_ENTRY:'prix éloigné du signal',other:'entrée bloquée'},
-  es:{DIRECTION_LIMIT:'límite de posiciones en la misma dirección alcanzado',BTC_LOCK:'bloqueo BTC activo',LOSS_BRAKE:'freno de pérdidas activo',LATE_ENTRY:'el precio se alejó de la señal',other:'entrada bloqueada'},
-  zh:{DIRECTION_LIMIT:'同向持仓数量已达上限',BTC_LOCK:'BTC 锁已启用',LOSS_BRAKE:'亏损刹车已启用',LATE_ENTRY:'价格已偏离信号',other:'入场被拦截'}
+  tr:{DIRECTION_LIMIT:'aynı yönde pozisyon limiti dolu',BTC_LOCK:'BTC kilidi aktif',BTC_ST_LOCK:'BTC Supertrend kilidi aktif',LOSS_BRAKE:'zarar freni aktif',LATE_ENTRY:'fiyat sinyalden uzaklaştı',other:'giriş engellendi'},
+  en:{DIRECTION_LIMIT:'same-direction position limit reached',BTC_LOCK:'BTC lock active',BTC_ST_LOCK:'BTC Supertrend lock active',LOSS_BRAKE:'loss brake active',LATE_ENTRY:'price moved away from signal',other:'entry blocked'},
+  de:{DIRECTION_LIMIT:'Limit gleichgerichteter Positionen erreicht',BTC_LOCK:'BTC-Sperre aktiv',BTC_ST_LOCK:'BTC-Supertrend-Sperre aktiv',LOSS_BRAKE:'Verlustbremse aktiv',LATE_ENTRY:'Preis hat sich vom Signal entfernt',other:'Einstieg blockiert'},
+  fr:{DIRECTION_LIMIT:'limite de positions dans le même sens atteinte',BTC_LOCK:'verrou BTC actif',BTC_ST_LOCK:'verrou Supertrend BTC actif',LOSS_BRAKE:'frein de pertes actif',LATE_ENTRY:'prix éloigné du signal',other:'entrée bloquée'},
+  es:{DIRECTION_LIMIT:'límite de posiciones en la misma dirección alcanzado',BTC_LOCK:'bloqueo BTC activo',BTC_ST_LOCK:'bloqueo Supertrend BTC activo',LOSS_BRAKE:'freno de pérdidas activo',LATE_ENTRY:'el precio se alejó de la señal',other:'entrada bloqueada'},
+  zh:{DIRECTION_LIMIT:'同向持仓数量已达上限',BTC_LOCK:'BTC 锁已启用',BTC_ST_LOCK:'BTC Supertrend 锁已启用',LOSS_BRAKE:'亏损刹车已启用',LATE_ENTRY:'价格已偏离信号',other:'入场被拦截'}
 };
 function blockText(b){
   const m=BLOCK_TEXT[currentLang]||BLOCK_TEXT.en;
