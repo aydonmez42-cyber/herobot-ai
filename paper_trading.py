@@ -88,7 +88,7 @@ for _n in ('ATR_SL_MULTIPLIER', 'ATR_SHORT_SL_MULTIPLIER', 'ATR_LONG_TP_MULTIPLI
 # The stop distance is the smaller of "ATR x multiplier" and "MAX_LOSS_USD / quantity",
 # but never tighter than MIN_SL_ATR x ATR (a stop inside normal noise only gets hit at random).
 # MAX_LOSS_USD=0 turns the cap off.
-MAX_LOSS_USD = _env_float('MAX_LOSS_USD', 70.0)
+MAX_LOSS_USD = _env_float('MAX_LOSS_USD', 60.0)
 MIN_SL_ATR = _env_float('MIN_SL_ATR', 1.0)
 
 
@@ -98,6 +98,14 @@ def _sl_distance(mult, atr, qty):
         d = min(d, max(MAX_LOSS_USD / qty, MIN_SL_ATR * atr))
     return d
 
+
+# Time stop: a position that has been open this long WITHOUT being at least
+# TIME_STOP_MIN_PNL_USD in profit is closed at the current price (reason TIME_STOP).
+# Closed-trade history (Sep-Oct 2026): trades held > 72h lost money overall, the
+# profitable ones were almost all closed within 12h. Winners are left alone.
+TIME_STOP_MODE = _env_mode('TIME_STOP_MODE', 'on')
+TIME_STOP_HOURS = _env_float('TIME_STOP_HOURS', 48.0)
+TIME_STOP_MIN_PNL_USD = _env_float('TIME_STOP_MIN_PNL_USD', 10.0)
 
 BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
 BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
@@ -113,8 +121,8 @@ BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus th
 # has reached their arm level, and ratchet the lock up: once a position has
 # seen 100 it closes at 75, once it has seen 150 it closes at 125.
 PROFIT_LOCK_MODE = _env_mode('PROFIT_LOCK_MODE', 'on')
-PROFIT_LOCK_ARM_USD = _env_float('PROFIT_LOCK_ARM_USD', 50.0)
-PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 30.0)
+PROFIT_LOCK_ARM_USD = _env_float('PROFIT_LOCK_ARM_USD', 60.0)
+PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 42.0)
 
 
 def _parse_lock_tiers(raw):
@@ -130,7 +138,7 @@ def _parse_lock_tiers(raw):
     return sorted(tiers)
 
 
-PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '100:75,150:125'))
+PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '90:65,130:100,180:150'))
 
 EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
@@ -185,7 +193,7 @@ AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 6)
 # Skipped while a member still holds a real position in the coin.
 STOP_REMOVE_MODE = _env_mode('STOP_REMOVE_MODE', 'on')
 STOP_REMOVE_COOLDOWN_H = _env_float('STOP_REMOVE_COOLDOWN_H', 24)
-STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL')
+STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL', 'TIME_STOP')
 
 # Idle coins: a crypto watchlist coin with NO position, not waiting for entry, no
 # member holding it live and (after IDLE_REMOVE_MIN_AGE_H hours on the list) a
@@ -1050,6 +1058,37 @@ def _stop_reason(p):
     return 'BREAKEVEN_SL' if p.get('be_active') else 'ATR_SL'
 
 
+def _time_stop_step(state, symbol, p, last, now, live_eligible):
+    """Close a position that has been open TIME_STOP_HOURS without reaching
+    TIME_STOP_MIN_PNL_USD of profit. Returns True if it closed."""
+    if TIME_STOP_MODE == 'off' or p.get('source') == 'restored_live':
+        return False
+    qty = p.get('qty_eth') or 0.0
+    if qty <= 0:
+        return False
+    try:
+        opened = pd.Timestamp(p['entry_time'])
+        if opened.tzinfo is None:
+            opened = opened.tz_localize('UTC')
+        held_h = (pd.Timestamp(now) - opened).total_seconds() / 3600.0
+    except Exception:
+        return False
+    if held_h < TIME_STOP_HOURS:
+        return False
+    entry = p['entry_price']
+    pnl = (last - entry) * qty if p['side'] == 'LONG' else (entry - last) * qty
+    if pnl >= TIME_STOP_MIN_PNL_USD:
+        return False
+    if TIME_STOP_MODE == 'log':
+        if not p.get('time_stop_logged'):
+            p['time_stop_logged'] = True
+            print(f"TIME STOP (log modu, kapatılmadı) | {symbol} | {held_h:.0f} saat, kâr ${pnl:.1f}", flush=True)
+        return False
+    print(f"TIME STOP | {symbol} | {held_h:.0f} saattir açık, kâr ${pnl:.1f} < ${TIME_STOP_MIN_PNL_USD:.0f} -> kapat", flush=True)
+    exit_symbol_position(state, symbol, last, 'TIME_STOP', now, live_eligible=live_eligible)
+    return True
+
+
 def _profit_lock_step(state, symbol, p, last, now, live_eligible):
     """Tiered profit lock. Uses the CURRENT price (not candle high/low, whose
     order inside the candle is unknown). Returns True if it closed."""
@@ -1169,6 +1208,8 @@ def process_intrabar_symbol(state, symbol, candle, now, live_eligible=False):
                 p['lowest_low'] = min(p['lowest_low'], low)
                 p['trail_stop'] = min(p['trail_stop'], p['lowest_low'] + cfg.ATR_TRAIL_MULTIPLIER * atr_val)
     if _profit_lock_step(state, symbol, p, last, now, live_eligible):
+        return True
+    if _time_stop_step(state, symbol, p, last, now, live_eligible):
         return True
     save_state(state)
     return False
@@ -1521,11 +1562,11 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r9 | idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r10 | time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
