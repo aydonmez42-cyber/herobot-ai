@@ -194,6 +194,9 @@ AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 6)
 # Auto add skips coins already up more than this % in 24h (scanner change_pct): a coin that
 # pumped that much is prone to a sharp correction. 0 = no limit. Manual adds are not affected.
 AUTO_ADD_MAX_CHANGE_PCT = _env_float('AUTO_ADD_MAX_CHANGE_PCT', 20.0)
+# ...and coins whose 24h change is below this % (0 = skip every coin that is down on the day).
+# Set to -100 to turn the lower limit off.
+AUTO_ADD_MIN_CHANGE_PCT = _env_float('AUTO_ADD_MIN_CHANGE_PCT', 0.0)
 
 # A watchlist coin whose position was closed at a LOSS by a stop (ATR stop,
 # break-even stop, trailing stop, trend stop) is removed from the watchlist
@@ -914,13 +917,15 @@ def auto_add_from_scanner(state, now):
     longs = [r for r in (snap.get('results') or [])
              if r.get('signal') == 'LONG' and (not r.get('candle_time') or str(r.get('candle_time')) == scan_id)]
     pumped = []
-    if AUTO_ADD_MAX_CHANGE_PCT > 0:
+    if AUTO_ADD_MAX_CHANGE_PCT > 0 or AUTO_ADD_MIN_CHANGE_PCT > -100:
         def _chg(r):
             try:
                 return float(r.get('change_pct'))
             except Exception:
                 return None
-        pumped = [r['symbol'] for r in longs if _chg(r) is not None and _chg(r) > AUTO_ADD_MAX_CHANGE_PCT]
+        pumped = [r['symbol'] for r in longs if _chg(r) is not None and (
+            (AUTO_ADD_MAX_CHANGE_PCT > 0 and _chg(r) > AUTO_ADD_MAX_CHANGE_PCT)
+            or (AUTO_ADD_MIN_CHANGE_PCT > -100 and _chg(r) < AUTO_ADD_MIN_CHANGE_PCT))]
         longs = [r for r in longs if r['symbol'] not in pumped]
     longs.sort(key=lambda r: (float(r.get('score') or 0), float(r.get('volume') or 0)), reverse=True)
     free = max(0, int(watchlist_max_symbols()) - len(wl))
@@ -930,7 +935,7 @@ def auto_add_from_scanner(state, now):
     if first_look or take:
         print(f'AUTO ADD | tarama {scan_id}: {len(longs)} LONG, {len(picked)} yeni aday, {free} boş yer, kota {max(0, remaining)} -> {len(take)} eklenecek'
               f'{" (log modu, eklenmedi)" if AUTO_ADD_MODE == "log" else ""}: {", ".join(take)}'
-              + (f' | 24s artışı >%{AUTO_ADD_MAX_CHANGE_PCT:g} olduğu için atlanan: ' + ", ".join(pumped) if pumped else ''), flush=True)
+              + (f' | 24s değişimi %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g} dışında kaldığı için atlanan: ' + ", ".join(pumped) if pumped else ''), flush=True)
     if AUTO_ADD_MODE != 'on' or not take:
         return
     for sym in take:
@@ -1667,11 +1672,11 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-10-25 r13 | btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-10-25 r14 | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
-          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s artış<=%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
+          f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s değişim %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} (4s EMA{TREND_SL_EMA}+Supertrend) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     state = load_state()
     if state.get('position'):
