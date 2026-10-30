@@ -15,7 +15,7 @@ ADX_THRESHOLD = 20   # was 25 — ADX lags; 25 waited for the trend to be fully 
 
 # Supertrend filter
 SUPERTREND_PERIOD = 10
-SUPERTREND_MULTIPLIER = 7.8
+SUPERTREND_MULTIPLIER = 3.6   # was 7.8 (changed 2026-10-30)
 # Bollinger Bands (TEST 11: short-side re-entry filter)
 BB_LENGTH = 20
 BB_STD_MULTIPLIER = 2.0
