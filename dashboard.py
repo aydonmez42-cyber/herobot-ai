@@ -8,6 +8,7 @@ from urllib.parse import urlparse, parse_qs
 import config as cfg
 import scanner_st
 import scanner_st_stocks
+import pwa
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
 from bist_scanner import snapshot as bist_scanner_snapshot, start_scan as bist_scanner_start, background_loop as bist_background_loop
 from us_scanner import snapshot as us_scanner_snapshot, start_scan as us_scanner_start, background_loop as us_background_loop
@@ -90,7 +91,7 @@ PUBLIC_PATHS = {'/health', '/login', '/register', '/auth0/login', '/callback', '
 # has expired — they still need to see their billing status, log out, or
 # (for an admin) manage other users' subscriptions.
 ACCOUNT_ALWAYS_ALLOWED = {
-    '/api/account', '/api/account/connect-binance', '/api/account/disconnect-binance',
+    '/api/account', '/api/account/delete-request', '/api/account/connect-binance', '/api/account/disconnect-binance',
     '/api/account/risk-ack', '/logout', '/admin', '/api/admin/users', '/api/admin/set-status',
     '/api/account/live-settings', '/api/account/live-toggle',
     '/api/admin/kill-switch', '/api/admin/kill-switch/toggle', '/api/admin/delete-user',
@@ -450,7 +451,7 @@ LANDING_HTML = r'''<!doctype html>
   </div>
 </div>
 
-</body>
+<div style="text-align:center;margin:22px 0;font-size:13px;opacity:.8"><a href="/privacy">Gizlilik / Privacy</a> &middot; <a href="/terms">Koşullar / Terms</a> &middot; <a href="/delete-account">Hesap silme / Delete account</a></div></body>
 </html>
 '''
 
@@ -3180,7 +3181,7 @@ async function doLogin(ev){
   return false;
 }
 </script>
-</body></html>'''
+<div style="text-align:center;margin:22px 0;font-size:13px;opacity:.8"><a href="/privacy">Gizlilik / Privacy</a> &middot; <a href="/terms">Koşullar / Terms</a> &middot; <a href="/delete-account">Hesap silme / Delete account</a></div></body></html>'''
 
 REGISTER_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3224,7 +3225,7 @@ async function doRegister(ev){
   return false;
 }
 </script>
-</body></html>'''
+<div style="text-align:center;margin:22px 0;font-size:13px;opacity:.8"><a href="/privacy">Gizlilik / Privacy</a> &middot; <a href="/terms">Koşullar / Terms</a> &middot; <a href="/delete-account">Hesap silme / Delete account</a></div></body></html>'''
 
 FORGOT_PASSWORD_HTML = r'''<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -6547,7 +6548,7 @@ try{ _initialLang = localStorage.getItem('lang') || 'en'; }catch(e){}
 applyTranslation(_initialLang);
 refreshAccount();
 </script>
-</body></html>'''
+<div style="text-align:center;margin:22px 0;font-size:13px;opacity:.8"><a href="/privacy">Gizlilik / Privacy</a> &middot; <a href="/terms">Koşullar / Terms</a> &middot; <a href="/delete-account">Hesap silme / Delete account</a></div></body></html>'''
 
 _TRADES_STYLE_EXTRA = r'''
 <style>
@@ -8948,6 +8949,38 @@ def set_watchlist_max_symbols(value):
     return True, None
 
 
+_DELETION_FILE = os.path.join(os.path.dirname(os.path.abspath(STATE_FILE)), 'deletion_requests.json')
+_deletion_lock = threading.Lock()
+
+
+def record_deletion_request(username):
+    """Stores an account-deletion request (Google Play / App Store requirement) and
+    tells the admin by email. The deletion itself is done by the admin."""
+    if not username:
+        return False, 'giriş gerekli'
+    now = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    with _deletion_lock:
+        try:
+            with open(_DELETION_FILE, 'r', encoding='utf-8') as fh:
+                items = json.load(fh)
+        except Exception:
+            items = []
+        if any(i.get('username') == username and i.get('status') == 'pending' for i in items):
+            return True, None            # already requested: nothing more to do
+        items.append({'username': username, 'requested_at': now, 'status': 'pending'})
+        tmp = _DELETION_FILE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as fh:
+            json.dump(items, fh, ensure_ascii=False, indent=1)
+        os.replace(tmp, _DELETION_FILE)
+    print(f'ACCOUNT DELETE REQUEST | {username} | {now}', flush=True)
+    try:
+        acct = auth.get_account_status(username) or {}
+        email_notifier.send_admin_question(username, acct.get('email'), f'[HESAP SİLME TALEBİ] {username} hesabının ve verilerinin silinmesini talep etti ({now}).')
+    except Exception as e:
+        print(f'ACCOUNT DELETE REQUEST | email notice failed: {type(e).__name__}: {e}', flush=True)
+    return True, None
+
+
 def read_state():
     try:
         return _load_shared_state(STARTING_EQUITY)
@@ -9245,7 +9278,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_html(self, html, status=200, extra_headers=None):
-        body = html.encode()
+        body = pwa.inject(html).encode()
         self.send_response(status)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Cache-Control', 'no-store')
@@ -9355,6 +9388,17 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith('/static/'):
             self._serve_static(path); return
+
+        _pwa = pwa.get(path)
+        if _pwa:
+            _st, _ct, _body, _hdr = _pwa
+            self.send_response(_st); self.send_header('Content-Type', _ct)
+            self.send_header('Content-Length', str(len(_body)))
+            for _k, _v in _hdr:
+                self.send_header(_k, _v)
+            self.end_headers(); self.wfile.write(_body); return
+        if path in pwa.PAGES:
+            self._send_html(pwa.PAGES[path]()); return
 
         # Public marketing homepage: a logged-out visitor hitting "/" sees
         # the Herobot-ai landing page instead of being bounced to /login.
@@ -9952,6 +9996,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'ok': False, 'error': err}, status=400); return
             ws = auth.get_watchlist_settings()
             self._send_json({'ok': True, 'position_usd': float(ws.get('position_usd'))}); return
+
+        if path=='/api/account/delete-request':
+            ok, err = record_deletion_request(user)
+            self._send_json({'ok': ok, 'error': err}, status=200 if ok else 400); return
 
         if path=='/api/admin/watchlist-max':
             if not auth.is_admin(user):
