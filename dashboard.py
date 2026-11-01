@@ -8881,7 +8881,7 @@ async function load(){
   const d=await r.json();
   const rows=d.users.map(u=>`
     <tr>
-      <td>${u.username}${u.is_admin?' <span class="text-faint">(admin)</span>':''}</td>
+      <td>${u.username}${u.is_admin?' <span class="text-faint">(admin)</span>':''}${(d.deletion_pending||[]).includes(u.username)?' <b style="color:#e5484d">⚠ SİLME TALEBİ</b>':''}</td>
       <td>${u.email||'—'}</td>
       <td>${u.auth_provider==='auth0'?'Google':'Şifre'}</td>
       <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
@@ -8973,12 +8973,49 @@ def record_deletion_request(username):
             json.dump(items, fh, ensure_ascii=False, indent=1)
         os.replace(tmp, _DELETION_FILE)
     print(f'ACCOUNT DELETE REQUEST | {username} | {now}', flush=True)
+    # Stop NEW live entries right away; open positions stay managed (SL/TP) as
+    # usual. This also lets the admin delete the account without the
+    # "live trading is on" refusal in auth.delete_user().
+    try:
+        auth.set_live_trading_enabled(username, False)
+    except Exception as e:
+        print(f'ACCOUNT DELETE REQUEST | live off failed: {type(e).__name__}: {e}', flush=True)
     try:
         acct = auth.get_account_status(username) or {}
         email_notifier.send_admin_question(username, acct.get('email'), f'[HESAP SİLME TALEBİ] {username} hesabının ve verilerinin silinmesini talep etti ({now}).')
     except Exception as e:
         print(f'ACCOUNT DELETE REQUEST | email notice failed: {type(e).__name__}: {e}', flush=True)
     return True, None
+
+
+def pending_deletion_usernames():
+    try:
+        with _deletion_lock, open(_DELETION_FILE, 'r', encoding='utf-8') as fh:
+            items = json.load(fh)
+        return sorted({i.get('username') for i in items if i.get('status') == 'pending' and i.get('username')})
+    except Exception:
+        return []
+
+
+def mark_deletion_done(username):
+    """Called after the admin really deleted the account."""
+    with _deletion_lock:
+        try:
+            with open(_DELETION_FILE, 'r', encoding='utf-8') as fh:
+                items = json.load(fh)
+        except Exception:
+            return
+        changed = False
+        for i in items:
+            if i.get('username') == username and i.get('status') == 'pending':
+                i['status'] = 'done'
+                i['done_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                changed = True
+        if changed:
+            tmp = _DELETION_FILE + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as fh:
+                json.dump(items, fh, ensure_ascii=False, indent=1)
+            os.replace(tmp, _DELETION_FILE)
 
 
 def read_state():
@@ -9515,7 +9552,7 @@ class Handler(BaseHTTPRequestHandler):
             user = self._current_user()
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
-            self._send_json({'users': auth.list_users_admin()}); return
+            self._send_json({'users': auth.list_users_admin(), 'deletion_pending': pending_deletion_usernames()}); return
 
         if path=='/api/account':
             # NOTE: deliberately not named `status` — this method also has an
@@ -9941,6 +9978,11 @@ class Handler(BaseHTTPRequestHandler):
             if not target:
                 self._send_json({'ok': False, 'error': 'Kullanıcı adı gerekli.'}, status=400); return
             ok, err = auth.delete_user(target)
+            if ok:
+                try:
+                    mark_deletion_done(target)
+                except Exception:
+                    pass
             self._send_json({'ok': ok, 'error': err}, status=200 if ok else 400); return
 
         if path=='/api/account/ask-admin':

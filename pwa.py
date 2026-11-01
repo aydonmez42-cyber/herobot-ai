@@ -127,6 +127,7 @@ def privacy_html():
 <h2>Paylaşılan taraflar</h2>
 <ul><li><b>Binance:</b> canlı işlem emirleri API anahtarlarınızla Binance'e iletilir.</li><li><b>Telegram:</b> bildirimleriniz Telegram üzerinden gönderilir.</li>
 <li><b>TradingView:</b> grafik bileşeni TradingView tarafından sunulur ve kendi politikalarına tabidir.</li><li><b>Altyapı sağlayıcıları:</b> barındırma, e-posta ve kimlik doğrulama hizmetleri.</li></ul>
+<h2>Güvenlik</h2><p>Şifreler düz metin olarak saklanmaz; tuzlanmış PBKDF2-SHA256 ile özetlenir. Binance API anahtarı ve gizli anahtarı sunucuda şifreli (Fernet/AES) saklanır, kayıttan sonra arayüzde yalnızca maskelenmiş olarak görünür ve yalnızca sizin adınıza emir iletmek için sunucu tarafında çözülür. Oturumlar HttpOnly çerez ile yönetilir.</p>
 <h2>Saklama ve silme</h2>
 <p>Verilerinizi hesabınız açık olduğu sürece saklarız. Hesabınızın ve ilişkili verilerin silinmesini <a href="/delete-account">Hesap silme</a> sayfasından isteyebilirsiniz. Yasal yükümlülükler gerektirmedikçe veriler silinir.</p>
 <h2>Haklarınız</h2><p>Verilerinize erişme, düzeltme ve silme talep edebilirsiniz. {_contact_tr()}</p>
@@ -137,6 +138,7 @@ def privacy_html():
 <li>If you use live trading: your Binance API keys, position size and risk settings.</li><li>Trade records, profit/loss and notification preferences.</li>
 <li>Your Telegram chat id if you link notifications.</li><li>Subscription payment notices and status (crypto transfer; we do not collect card data).</li><li>Session cookie and technical logs.</li></ul>
 <h2>Use and sharing</h2><p>Data is used to run the service, place and show your trades, send notifications, manage subscriptions and keep the service secure. We do not sell data or use it for advertising. Orders are sent to Binance with your API keys; notifications go through Telegram; charts are provided by TradingView; hosting, email and sign-in providers process data on our behalf.</p>
+<h2>Security</h2><p>Passwords are never stored in plain text (salted PBKDF2-SHA256). Binance API key and secret are stored encrypted (Fernet/AES), shown masked after saving, and decrypted server-side only to place orders on your behalf. Sessions use an HttpOnly cookie.</p>
 <h2>Retention and deletion</h2><p>We keep data while your account is active. Request deletion on the <a href="/delete-account">account deletion</a> page. {_contact_en()}</p>
 <h2>Disclaimer</h2><p>The service is not investment advice. Trading with real money is risky and you may lose all of your capital.</p>"""
     return _PAGE % {'title': 'Gizlilik Politikası / Privacy Policy', 'name': SERVICE_NAME, 'body': body}
