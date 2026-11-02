@@ -3457,6 +3457,15 @@ th.sort-active{color:var(--accent)}
   #scannerTable th:nth-child(5),#scannerTable td:nth-child(5),
   #scannerTable th:nth-child(9),#scannerTable td:nth-child(9){display:none}
 }
+/* Phones: the table scrolls sideways instead of cutting columns off; coin
+   names stay on one line and the coin column is pinned while scrolling. */
+@media(max-width:760px){
+  .scanner-panel .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .scanner-panel table.datatable{width:auto;min-width:100%;font-size:11px}
+  .scanner-panel table.datatable th,.scanner-panel table.datatable td{padding:7px 6px;white-space:nowrap;word-break:normal}
+  .scanner-panel table.datatable td.wrap-cell{white-space:normal;min-width:110px}
+  .scanner-panel table.datatable th:first-child,.scanner-panel table.datatable td:first-child{position:sticky;left:0;z-index:2;background:var(--panel);box-shadow:2px 0 0 var(--border)}
+}
 </style>
 '''
 
@@ -3715,6 +3724,8 @@ document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.ta
 
 const money=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=x=>x==null||x===''?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Crypto prices: enough decimals that small coins are not shown as 0.00
+const scPx=x=>{ if(x==null||x===''||isNaN(Number(x))) return '—'; const n=Math.abs(Number(x)); const d=n>=100?2:n>=1?3:n>=0.1?4:n>=0.01?5:n>=0.001?6:8; return Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 const cls=x=>Number(x)>=0?'pos':'neg';
 
 function switchTab(name){
@@ -3992,7 +4003,7 @@ function renderScanner(){
   let f=document.getElementById('signalFilter')?.value||'ALL';
   let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
   rows=sortRows(rows,'scanner');
-  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${num(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
+  document.getElementById('scannerRows').innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · Crypto Futures')"><td><b>${x.symbol}</b></td><td class="num">${scPx(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td>${x.st||'—'}</td><td class="num">${x.adx??'—'}</td><td class="num">${x.rsi??'—'}</td><td class="num">${x.cci??'—'}</td><td>${x.macd||'—'}</td><td class="num">${x.atrp_percentile_1d??'—'}</td><td class="num">${x.score!=null?x.score+'/'+(x.score_max||8):'—'}</td><td>${sigPill(x.signal)}</td><td class="wrap-cell">${x.reason||''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')||`<tr><td colspan="14" class="empty">${t('scanner.noResults')}</td></tr>`;
   document.getElementById('coinCount').textContent=rows.length+' '+t('scanner.coinCountSuffix');
   const _q=(document.getElementById('coinSearch')?.value||'').toUpperCase();
   document.getElementById('longCount').textContent='LONG '+(scannerCache.results||[]).filter(x=>!_q||x.symbol.includes(_q)).filter(x=>x.signal==='LONG').length;
