@@ -19,6 +19,7 @@ TF_BINANCE = {'15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d'}
 TF_TV = {'15m': '15', '1h': '60', '4h': '240', '1d': '1D'}
 BARS = 500
 CACHE_S = 20
+STALE_S = 6 * 3600     # last good chart is still shown (marked stale) when every source fails
 _cache = {}
 _lock = threading.Lock()
 _TV_RE = re.compile(r'^[A-Z0-9_.\-]{1,30}:[A-Z0-9_.\-]{1,30}$')
@@ -62,7 +63,25 @@ def build(tv, tf):
             return hit[1]
     exch, sym = tv.split(':', 1)
     if exch == 'BINANCE':
-        df = _binance_df(sym[:-2] if sym.endswith('.P') else sym, tf)
+        try:
+            df = _binance_df(sym[:-2] if sym.endswith('.P') else sym, tf)
+        except Exception as e:
+            # Binance rate limit (HTTP 429/418 or the shared cooldown): the chart must not die
+            # with it. Fall back to TradingView's own feed for the same perpetual, then to the
+            # last good chart.
+            df = None
+            try:
+                df = _tv_df(tv if sym.endswith('.P') else tv + '.P', tf)
+                print(f'CHART | {tv} {tf} | Binance hatası ({type(e).__name__}) -> TradingView verisi', flush=True)
+            except Exception as e2:
+                print(f'CHART | {tv} {tf} | Binance ve TradingView başarısız: {type(e).__name__} / {type(e2).__name__}', flush=True)
+            if df is None:
+                with _lock:
+                    old = _cache.get(key)
+                if old and time.time() - old[0] < STALE_S:
+                    return dict(old[1], stale=True)
+                raise ChartError('Binance istek sınırına takıldı ve yedek veri kaynağı yanıt vermedi. '
+                                 'Birkaç dakika sonra tekrar deneyin.')
     else:
         df = _tv_df(tv, tf)
     df = df.dropna(subset=['open', 'high', 'low', 'close']).reset_index(drop=True)
