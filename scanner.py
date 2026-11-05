@@ -21,7 +21,16 @@ TICKER_URL = BASE_URL + '/fapi/v1/ticker/24hr'
 
 # Hiz sinirini binance_guard uyguladigi icin worker sayisi dusuruldu (8 -> 3).
 SCANNER_WORKERS = int(os.environ.get('SCANNER_WORKERS', '3'))
-SCANNER_CACHE_SECONDS = int(os.environ.get('SCANNER_CACHE_SECONDS', '900'))
+# Crypto scan timeframe (config.CRYPTO_INTERVAL, env CRYPTO_INTERVAL, default 15m) and how
+# often the scheduled scan runs. The scheduled scan is aligned to the clock: with 60 min it
+# runs at hh:00 and uses the 15m candle that closed at hh:00 (never a forming candle).
+SCAN_INTERVAL = getattr(cfg, 'CRYPTO_INTERVAL', '4h')
+SCAN_EVERY_MIN = max(1, int(os.environ.get('SCANNER_EVERY_MIN', '60')))
+SCANNER_CACHE_SECONDS = int(os.environ.get('SCANNER_CACHE_SECONDS', str(SCAN_EVERY_MIN * 60)))
+# After a scan that had request errors (HTTP 429 etc.) it is repeated after this many seconds
+# (only the coins that failed are refetched, the rest come from the kline cache).
+SCANNER_RETRY_SECONDS = int(os.environ.get('SCANNER_RETRY_SECONDS', '600'))
+SCANNER_MAX_RETRIES = int(os.environ.get('SCANNER_MAX_RETRIES', '2'))   # per hourly boundary
 SCANNER_KLINE_LIMIT = int(os.environ.get('SCANNER_KLINE_LIMIT', '280'))
 SCANNER_DAILY_LIMIT = int(os.environ.get('SCANNER_DAILY_LIMIT', '400'))
 
@@ -35,13 +44,19 @@ _state = {
     'symbols_done': 0,
     'results': [],
     'last_scan_candle': None,
+    'errors': 0,
+    'retries': 0,
+    'asof': None,
+    'aligned': False,     # True = scheduled, clock-aligned scan (the only kind auto add trusts)
+    'interval': SCAN_INTERVAL,
+    'every_min': SCAN_EVERY_MIN,
 }
 
 # Mum onbellegi: (sembol, aralik, limit) -> (DataFrame, gecerlilik_bitis_epoch)
 # Indikatorler yalnizca KAPANMIS mumlardan hesaplanir. Son satir (olusmakta olan
 # mum) kapaninca yeni bir mum olusana kadar kapanmis mumlar degismez; bu yuzden
 # veri o ana kadar yeniden indirilmez. 4 saatlik mum icin 15 dakikalik her
-# taramada ~500 istek yerine 4 saatte bir ~500 istek atilir.
+# taramada ~500 istek yerine mum suresi basina bir kez ~500 istek atilir.
 _kline_cache = {}
 _cache_lock = threading.Lock()
 
@@ -76,7 +91,8 @@ def get_tickers():
     return out
 
 
-def fetch_klines(symbol, interval='4h', limit=280):
+def fetch_klines(symbol, interval=None, limit=280):
+    interval = interval or SCAN_INTERVAL
     data = _get_json(KLINES_URL, {'symbol': symbol, 'interval': interval, 'limit': limit})
     cols = ['open_time','open','high','low','close','volume','close_time','quote_volume','trades','taker_buy_base','taker_buy_quote','ignore']
     df = pd.DataFrame(data, columns=cols)
@@ -87,7 +103,8 @@ def fetch_klines(symbol, interval='4h', limit=280):
     return df
 
 
-def fetch_klines_cached(symbol, interval='4h', limit=280):
+def fetch_klines_cached(symbol, interval=None, limit=280):
+    interval = interval or SCAN_INTERVAL
     """fetch_klines ile ayni sonucu verir; olusmakta olan mum kapanana kadar
     ayni DataFrame'i onbellekten dondurur (kapanmis mumlar degismez)."""
     key = (symbol, interval, limit)
@@ -151,17 +168,34 @@ def _reason_map(row):
     return long_checks, short_checks
 
 
-def scan_symbol(symbol, ticker):
+def scan_symbol(symbol, ticker, asof=None):
+    """asof=None: newest closed candle. asof=<UTC timestamp>: newest candle that closed at or
+    before it (used by the clock-aligned scheduled scan, so retries of the same hour are
+    evaluated on the same candle)."""
     try:
-        df = fetch_klines_cached(symbol, '4h', SCANNER_KLINE_LIMIT)
+        df = fetch_klines_cached(symbol, SCAN_INTERVAL, SCANNER_KLINE_LIMIT)
         if len(df) < 250:
-            return {'symbol': symbol, 'signal': 'DATA', 'reason': 'Yetersiz 4H veri'}
-        closed = df.iloc[:-1].copy()
+            return {'symbol': symbol, 'signal': 'DATA', 'reason': f'Yetersiz {SCAN_INTERVAL} veri'}
+        if asof is not None:
+            closed = df[df['close_time'] <= asof].copy()
+        else:
+            closed = df.iloc[:-1].copy()
+        if len(closed) < 240:
+            return {'symbol': symbol, 'signal': 'DATA', 'reason': f'Yetersiz {SCAN_INTERVAL} veri'}
         enriched = add_indicators(closed, cfg)
         row = enriched.iloc[-1]
-        # Match the bot: only the latest fully closed 4H candle can trigger.
-        long_ok = long_signal(enriched, len(enriched)-1, cfg)
-        short_ok = short_signal(enriched, len(enriched)-1, cfg)
+        # Match the bot: only the latest fully closed candle can trigger.
+        i_last = len(enriched) - 1
+        long_ok = long_signal(enriched, i_last, cfg)
+        short_ok = short_signal(enriched, i_last, cfg)
+        long_score = sum(1 for _, ok in long_conditions(enriched, i_last, cfg) if ok)
+        short_score = sum(1 for _, ok in short_conditions(enriched, i_last, cfg) if ok)
+        # Crypto entry bar (default 8/8) on top of the strategy's own threshold.
+        min_score = int(getattr(cfg, 'CRYPTO_ENTRY_MIN_SCORE', 0) or 0)
+        if long_ok and long_score < min_score:
+            long_ok = False
+        if short_ok and short_score < min_score:
+            short_ok = False
 
         volatile, atrp_pct = (False, None)
         if cfg.USE_VOLATILE_FILTER and (long_ok or short_ok):
@@ -171,9 +205,6 @@ def scan_symbol(symbol, ticker):
 
         sig = 'LONG' if long_ok else ('SHORT' if short_ok else 'NO SIGNAL')
         long_checks, short_checks = _reason_map(row)
-        i_last = len(enriched) - 1
-        long_score = sum(1 for _, ok in long_conditions(enriched, i_last, cfg) if ok)
-        short_score = sum(1 for _, ok in short_conditions(enriched, i_last, cfg) if ok)
         score = long_score if sig == 'LONG' else (short_score if sig == 'SHORT' else max(long_score, short_score))
         if volatile:
             reason = f'1D VOLATILE BLOCK | ATRP percentile={atrp_pct:.1f}'
@@ -213,9 +244,9 @@ def scan_symbol(symbol, ticker):
         return {'symbol': symbol, 'signal': 'ERROR', 'reason': str(e)[:180]}
 
 
-def _scan_worker(symbols):
+def _scan_worker(symbols, asof=None):
     with _lock:
-        _state.update(status='SCANNING', started_at=datetime.now(timezone.utc).isoformat(), finished_at=None,
+        _state.update(aligned=asof is not None, status='SCANNING', started_at=datetime.now(timezone.utc).isoformat(), finished_at=None,
                       last_error=None, symbols_total=len(symbols), symbols_done=0)
         # Onceki basarili sonuclar: bu taramada hata alan semboller icin korunur,
         # boylece 429/ban yuzunden tablo ERROR satirlariyla dolup bosalmaz.
@@ -225,7 +256,7 @@ def _scan_worker(symbols):
         results = []
         errors = 0
         with ThreadPoolExecutor(max_workers=SCANNER_WORKERS) as ex:
-            futs = {ex.submit(scan_symbol, s, tickers.get(s, {})): s for s in symbols}
+            futs = {ex.submit(scan_symbol, s, tickers.get(s, {}), asof): s for s in symbols}
             for fut in as_completed(futs):
                 r = fut.result()
                 if r.get('signal') == 'ERROR':
@@ -243,6 +274,7 @@ def _scan_worker(symbols):
             _state['status'] = 'READY'
             _state['finished_at'] = datetime.now(timezone.utc).isoformat()
             _state['last_scan_candle'] = max(candle_times) if candle_times else None
+            _state['errors'] = errors
             if binance_guard.in_cooldown():
                 _state['last_error'] = f'Binance bekleme suresi aktif ({binance_guard.cooldown_remaining()} sn); eski sonuclar korundu'
         print(f'SCANNER | tarama bitti | {len(symbols)} sembol | hata={errors}', flush=True)
@@ -253,14 +285,17 @@ def _scan_worker(symbols):
             _state['finished_at'] = datetime.now(timezone.utc).isoformat()
 
 
-def start_scan(force=False):
+def start_scan(force=False, aligned=False):
+    """aligned=True: scheduled scan on the clock-aligned candle (see SCAN_EVERY_MIN)."""
     with _lock:
         if _state['status'] == 'SCANNING':
             return False
         if not force and _state['finished_at']:
             try:
                 age = time.time() - datetime.fromisoformat(_state['finished_at']).timestamp()
-                if age < SCANNER_CACHE_SECONDS:
+                retry_ok = bool(_state.get('errors')) and int(_state.get('retries') or 0) < SCANNER_MAX_RETRIES
+                limit_s = SCANNER_RETRY_SECONDS if retry_ok else SCANNER_CACHE_SECONDS
+                if age < limit_s:
                     return False
             except Exception:
                 pass
@@ -268,7 +303,12 @@ def start_scan(force=False):
     if binance_guard.in_cooldown():
         return False
     symbols = get_symbols()
-    threading.Thread(target=_scan_worker, args=(symbols,), daemon=True).start()
+    asof = pd.Timestamp.now(tz='UTC').floor(f'{SCAN_EVERY_MIN}min') if aligned else None
+    with _lock:
+        same = asof is not None and _state.get('asof') == asof.isoformat()
+        _state['retries'] = int(_state.get('retries') or 0) + 1 if same else 0
+        _state['asof'] = asof.isoformat() if asof is not None else None
+    threading.Thread(target=_scan_worker, args=(symbols, asof), daemon=True).start()
     return True
 
 
@@ -279,7 +319,7 @@ def snapshot():
 
 def ensure_background_scan():
     try:
-        start_scan(force=False)
+        start_scan(force=False, aligned=True)
     except Exception as e:
         with _lock:
             _state['status'] = 'ERROR'
@@ -291,35 +331,35 @@ CHECK_INTERVAL_S = int(os.environ.get('SCANNER_CHECK_INTERVAL_S', '20'))
 
 
 def candle_due(now=None):
-    """True when a 4H candle has closed since the candle of the last finished scan.
-    last_scan_candle is the close time (hh:59:59.999) of the newest closed candle that
-    scan used; the next candle closes 4h after that boundary. Without this the scan only
-    ran on a ~30 min rhythm counted from the process start, so after a restart the scan
-    could come up to 30 minutes after the candle close."""
+    """True when the scheduled scan is due: the clock has passed the next SCAN_EVERY_MIN
+    boundary (hh:00 for 60 min) and the last scan used a candle from BEFORE that boundary.
+    last_scan_candle is the close time (hh:mm:59.999) of the newest closed candle that
+    scan used, so +1 ms is the boundary it was evaluated at. Manual scans taken mid-hour
+    (which use the newest 15m candle) never push the schedule off the hour."""
     with _lock:
         lc = _state.get('last_scan_candle')
         busy = _state.get('status') == 'SCANNING'
     if busy or not lc:
         return False
     try:
-        boundary = pd.Timestamp(lc) + pd.Timedelta(milliseconds=1)     # hh:00:00 of the last closed candle's end
-        next_close = boundary + pd.Timedelta(hours=4)
+        boundary = pd.Timestamp(lc) + pd.Timedelta(milliseconds=1)
         now = pd.Timestamp(now) if now is not None else pd.Timestamp.now(tz='UTC')
         if now.tzinfo is None:
             now = now.tz_localize('UTC')
-        return now >= next_close + pd.Timedelta(seconds=CANDLE_SCAN_DELAY_S)
+        cur = now.floor(f'{SCAN_EVERY_MIN}min')
+        return boundary < cur and now >= cur + pd.Timedelta(seconds=CANDLE_SCAN_DELAY_S)
     except Exception:
         return False
 
 
 def background_loop():
     # Polls every CHECK_INTERVAL_S seconds (cheap: no request is sent unless a scan starts).
-    #  * a new 4H candle has closed  -> scan right away (force, ignores the cache age);
-    #  * otherwise the normal cache-age rule (SCANNER_CACHE_SECONDS) re-scans, which only
-    #    refetches what is missing (closed candles are cached), e.g. coins that hit a 429.
+    #  * the hourly boundary has passed -> scan right away (force, ignores the cache age);
+    #  * otherwise a scan is repeated only after request errors (SCANNER_RETRY_SECONDS), or
+    #    when the scan is older than SCANNER_CACHE_SECONDS (e.g. right after a restart).
     while True:
         try:
-            start_scan(force=candle_due())
+            start_scan(force=candle_due(), aligned=True)
         except Exception as e:
             with _lock:
                 _state['status'] = 'ERROR'

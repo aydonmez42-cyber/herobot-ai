@@ -1193,7 +1193,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 4H closed candle · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -1479,7 +1479,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 4H kapalı mum · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -1765,7 +1765,7 @@ const translations = {
   "scanner.tabCrypto": "Binance 合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -2051,7 +2051,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 4H-Kerze · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -2337,7 +2337,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 4H clôturée · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -2623,7 +2623,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 4H cerrada · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
@@ -3515,7 +3515,7 @@ SCANNER_HTML = r'''<!doctype html>
     <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')" data-i18n="scanner.tabCrypto">Crypto Futures</button>
     <button class="tab" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
-    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 4H closed candle &middot; for signal purposes only, no real orders</div>
+    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 15m closed candle &middot; hourly scan &middot; for signal purposes only, no real orders</div>
   </div>
 
   <div class="tabpane active" id="tab-crypto">
@@ -4075,7 +4075,7 @@ refreshUsScanner();setInterval(refreshUsScanner,10000);
 async function refreshScanner(){
   let d=await scannerData();scannerCache=d;
   let st=d.status||'IDLE';
-  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} · ${t('scanner.lastScan4h')}: ${fmtCandleTime(d.last_scan_candle)}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
+  let txt=st==='SCANNING'?`${t('scanner.scanning')}: ${d.symbols_done||0}/${d.symbols_total||0}`:st==='READY'?`${t('scanner.ready')} · ${t('scanner.lastScan4h').replace('4H',d.interval||'4H')}: ${fmtCandleTime(d.last_scan_candle)}`:st==='ERROR'?`${t('scanner.error')}: ${d.last_error||t('scanner.unknownError')}`:t('scanner.waiting');
   document.getElementById('scannerStatus').textContent=txt;renderScanner();
 }
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
@@ -4186,7 +4186,7 @@ const translations = {
   "scanner.tabCrypto": "Crypto Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 4H closed candle · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -4250,7 +4250,7 @@ const translations = {
   "scanner.tabCrypto": "Kripto Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 4H kapalı mum · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -4314,7 +4314,7 @@ const translations = {
   "scanner.tabCrypto": "加密货币合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -4378,7 +4378,7 @@ const translations = {
   "scanner.tabCrypto": "Krypto-Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 4H-Kerze · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -4442,7 +4442,7 @@ const translations = {
   "scanner.tabCrypto": "Futures Crypto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 4H clôturée · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -4506,7 +4506,7 @@ const translations = {
   "scanner.tabCrypto": "Futuros Cripto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 4H cerrada · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
