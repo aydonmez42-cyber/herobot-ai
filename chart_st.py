@@ -1,4 +1,4 @@
-"""Data for the dashboard's own candle chart with Supertrend (10, 3.7).
+"""Data for the dashboard's own candle chart with Supertrend (10, 4.1).
 
 Same Supertrend maths as the scanners (scanner_st.supertrend), so the line the
 user sees is exactly the one the scans and the bot use. Crypto candles come

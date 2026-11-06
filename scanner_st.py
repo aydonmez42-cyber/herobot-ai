@@ -1,5 +1,5 @@
 """
-Supertrend scan (4H, DAILY or WEEKLY candles; ATR period 10, factor 3.7) - MANUAL ONLY.
+Supertrend scan (4H, DAILY or WEEKLY candles; ATR period 10, factor 4.1) - MANUAL ONLY.
 
 LONG  = price closed above the Supertrend line (trend flipped UP) on a closed
         candle; SHORT = it closed below (flipped DOWN).
@@ -27,7 +27,7 @@ import requests
 import binance_live as blive
 
 PERIOD = int(os.environ.get('SUPERTREND_PERIOD', '10'))
-FACTOR = float(os.environ.get('SUPERTREND_FACTOR', '3.7'))
+FACTOR = float(os.environ.get('SUPERTREND_FACTOR', '4.1'))
 INTERVAL = '4h'                       # default timeframe
 TIMEFRAMES = ('4h', '1d', '1w')
 # closed candles needed for a usable line (a weekly history is short for newer listings)
