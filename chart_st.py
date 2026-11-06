@@ -18,7 +18,8 @@ from scanner_st import supertrend, PERIOD, FACTOR
 TF_BINANCE = {'15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1w'}
 TF_TV = {'15m': '15', '1h': '60', '4h': '240', '1d': '1D', '1w': '1W'}
 BARS = 500
-CACHE_S = 20
+CACHE_S = 20            # Binance charts
+TV_CACHE_S = {'15m': 60, '1h': 120, '4h': 300, '1d': 600, '1w': 900}   # TradingView charts (stocks): fewer handshakes
 STALE_S = 6 * 3600     # last good chart is still shown (marked stale) when every source fails
 _cache = {}
 _lock = threading.Lock()
@@ -45,7 +46,8 @@ def _binance_df(symbol, tf):
 
 def _tv_df(tv, tf):
     from tradingview_data import fetch_tv_bars
-    df = fetch_tv_bars(tv, interval=TF_TV[tf], bars=BARS)
+    import tv_guard
+    df = tv_guard.call(fetch_tv_bars, tv, interval=TF_TV[tf], bars=BARS)
     return df.sort_values('timestamp').drop_duplicates('timestamp').reset_index(drop=True)
 
 
@@ -59,7 +61,8 @@ def build(tv, tf):
     key = (tv, tf)
     with _lock:
         hit = _cache.get(key)
-        if hit and time.time() - hit[0] < CACHE_S:
+        ttl = CACHE_S if tv.startswith('BINANCE:') else TV_CACHE_S.get(tf, 300)
+        if hit and time.time() - hit[0] < ttl:
             return hit[1]
     exch, sym = tv.split(':', 1)
     if exch == 'BINANCE':
@@ -83,7 +86,20 @@ def build(tv, tf):
                 raise ChartError('Binance istek sınırına takıldı ve yedek veri kaynağı yanıt vermedi. '
                                  'Birkaç dakika sonra tekrar deneyin.')
     else:
-        df = _tv_df(tv, tf)
+        try:
+            df = _tv_df(tv, tf)
+        except Exception as e:
+            # TradingView busy (429) or unreachable: show the last good chart instead of an error.
+            with _lock:
+                old = _cache.get(key)
+            if old and time.time() - old[0] < STALE_S:
+                print(f'CHART | {tv} {tf} | TradingView hatası ({type(e).__name__}) -> önceki grafik', flush=True)
+                return dict(old[1], stale=True)
+            import tv_guard
+            if tv_guard.is_rate_limited(e):
+                raise ChartError('TradingView istek sınırına takıldı (çok sık istek). '
+                                 'Birkaç saniye bekleyip tekrar tıklayın.')
+            raise
     df = df.dropna(subset=['open', 'high', 'low', 'close']).reset_index(drop=True)
     if len(df) < PERIOD + 5:
         raise ChartError('yeterli mum verisi yok')

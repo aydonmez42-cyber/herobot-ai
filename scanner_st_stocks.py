@@ -24,6 +24,7 @@ import pandas as pd
 
 from scanner_st import supertrend, PERIOD, FACTOR
 from tradingview_data import fetch_tv_bars
+import tv_guard
 
 WORKERS = int(os.environ.get('SCAN_ST_STOCK_WORKERS', '4'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_STOCK_MIN_GAP_S', '120'))
@@ -45,6 +46,7 @@ class _Scan:
         self.tz = _MARKETS[key]['tz']
         self.lock = threading.Lock()
         self.last_finish_ts = 0.0
+        self.failed = 0
         self.state = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None,
                       'progress': 0, 'total': 0, 'last_error': None, 'partial': False}
 
@@ -57,9 +59,9 @@ class _Scan:
 
     def _bars(self, symbol):
         if self.key == 'bist':
-            return fetch_tv_bars(f'BIST:{symbol}', interval=self.tf, bars=self.bars), None
+            return tv_guard.call(fetch_tv_bars, f'BIST:{symbol}', interval=self.tf, bars=self.bars), None
         from us_scanner import _resolve_tv_bars
-        df, ex = _resolve_tv_bars(symbol, self.tf, self.bars)
+        df, ex = tv_guard.call(_resolve_tv_bars, symbol, self.tf, self.bars)
         return df, ex
 
     def _today(self):
@@ -104,10 +106,13 @@ class _Scan:
                 'flip_time': closed.iloc[j]['timestamp'].isoformat(),
             }
         except Exception:
+            with self.lock:
+                self.failed += 1          # data could not be fetched (not "too little history")
             return None
 
     def run(self):
         results, err = [], None
+        self.failed = 0
         try:
             symbols = self._symbols()
             with self.lock:
@@ -122,6 +127,9 @@ class _Scan:
                         self.state['progress'] += 1
         except Exception as e:
             err = f'{type(e).__name__}: {str(e)[:160]}'
+        if not err and self.failed:
+            err = (f'{self.failed} hisse için veri alınamadı (TradingView istek sınırı olabilir); '
+                   f'birkaç dakika sonra tekrar tarayın.')
         with self.lock:
             self.state['results'] = results
             self.state['last_error'] = err
