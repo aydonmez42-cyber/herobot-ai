@@ -1,16 +1,19 @@
 """
-Supertrend scan (4H, ATR period 10, factor 3.7) - MANUAL ONLY.
+Supertrend scan (4H, DAILY or WEEKLY candles; ATR period 10, factor 3.7) - MANUAL ONLY.
 
 LONG  = price closed above the Supertrend line (trend flipped UP) on a closed
-        4H candle; SHORT = it closed below (flipped DOWN).
+        candle; SHORT = it closed below (flipped DOWN).
 For every coin the scan records the current trend and how many closed candles
 ago it last flipped (flip_bars: 0 = on the latest closed candle), so the
 dashboard can show "flipped in the last N candles" without scanning again.
+Binance candles: daily and weekly candles open at 00:00 UTC (weekly: Monday); the
+still-forming candle is always dropped.
 
 It never runs by itself: it starts only from the dashboard button, scans the
 SCAN_ST_TOP_N most liquid USDT-M perpetuals (default 300), paces its requests,
 stops on HTTP 429/418 (sharing the cooldown with binance_live) and refuses to
-start within SCAN_ST_MIN_GAP_S of the last scan.
+start within SCAN_ST_MIN_GAP_S of the last scan (any timeframe) or while another
+timeframe is still scanning. Each timeframe keeps its own last result.
 """
 import os
 import threading
@@ -25,7 +28,10 @@ import binance_live as blive
 
 PERIOD = int(os.environ.get('SUPERTREND_PERIOD', '10'))
 FACTOR = float(os.environ.get('SUPERTREND_FACTOR', '3.7'))
-INTERVAL = '4h'
+INTERVAL = '4h'                       # default timeframe
+TIMEFRAMES = ('4h', '1d', '1w')
+# closed candles needed for a usable line (a weekly history is short for newer listings)
+MIN_CANDLES = {'4h': PERIOD + 30, '1d': PERIOD + 30, '1w': PERIOD + 12}
 TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '300'))
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_MIN_GAP_S', '180'))
@@ -33,9 +39,15 @@ KLINE_LIMIT = 300
 FAPI = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com')
 
 _lock = threading.Lock()
-_state = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None,
-          'progress': 0, 'total': 0, 'last_error': None, 'partial': False}
+_states = {tf: {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None,
+                'progress': 0, 'total': 0, 'last_error': None, 'partial': False}
+           for tf in TIMEFRAMES}
 _last_finish_ts = 0.0
+
+
+def _tf(tf):
+    tf = str(tf or INTERVAL).lower()
+    return tf if tf in TIMEFRAMES else INTERVAL
 
 
 def supertrend(df, period=PERIOD, factor=FACTOR):
@@ -102,18 +114,19 @@ def _universe_n(top_n):
     return rows[:top_n]
 
 
-def snapshot():
+def snapshot(tf='4h'):
+    tf = _tf(tf)
     with _lock:
-        out = dict(_state)
-        out['results'] = list(_state['results'])
-    out.update({'interval': INTERVAL, 'min_gap_s': MIN_GAP_S})
+        out = dict(_states[tf])
+        out['results'] = list(_states[tf]['results'])
+    out.update({'interval': tf, 'min_gap_s': MIN_GAP_S})
     wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0
     out['next_allowed_in_s'] = max(0, int(wait))
     return out
 
 
-def _klines(symbol):
-    data = _get(f'{FAPI}/fapi/v1/klines', {'symbol': symbol, 'interval': INTERVAL, 'limit': KLINE_LIMIT})
+def _klines(symbol, tf):
+    data = _get(f'{FAPI}/fapi/v1/klines', {'symbol': symbol, 'interval': tf, 'limit': KLINE_LIMIT})
     cols = ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume',
             'trades', 'taker_buy_base', 'taker_buy_quote', 'ignore']
     df = pd.DataFrame(data, columns=cols)
@@ -123,10 +136,10 @@ def _klines(symbol):
     return df
 
 
-def _analyse(symbol, vol, chg):
-    df = _klines(symbol)
+def _analyse(symbol, vol, chg, tf='4h'):
+    df = _klines(symbol, tf)
     closed = df.iloc[:-1].reset_index(drop=True)      # closed candles only
-    if len(closed) < PERIOD + 30:
+    if len(closed) < MIN_CANDLES[tf]:
         return None
     up, line = supertrend(closed)
     last = len(closed) - 1
@@ -148,19 +161,19 @@ def _analyse(symbol, vol, chg):
     }
 
 
-def _run():
+def _run(tf):
     global _last_finish_ts
     results, partial, err = [], False, None
     try:
         universe = _universe_n(TOP_N)
         with _lock:
-            _state['total'] = len(universe)
+            _states[tf]['total'] = len(universe)
         for n, (sym, vol, chg) in enumerate(universe, 1):
             if blive.in_rate_limit_cooldown():
                 partial, err = True, 'Binance istek sınırı: tarama yarıda durduruldu, birkaç dakika sonra tekrar deneyin.'
                 break
             try:
-                row = _analyse(sym, vol, chg)
+                row = _analyse(sym, vol, chg, tf)
                 if row:
                     results.append(row)
             except requests.HTTPError as e:
@@ -171,34 +184,36 @@ def _run():
             except Exception:
                 pass
             with _lock:
-                _state['progress'] = n
+                _states[tf]['progress'] = n
             time.sleep(PACE_S)
     except Exception as e:
         err = f'{type(e).__name__}: {str(e)[:160]}'
     with _lock:
-        _state['results'] = results
-        _state['partial'] = partial
-        _state['last_error'] = err
-        _state['status'] = 'ERROR' if (err and not results) else 'READY'
-        _state['finished_at'] = datetime.now(timezone.utc).isoformat()
+        st = _states[tf]
+        st['results'] = results
+        st['partial'] = partial
+        st['last_error'] = err
+        st['status'] = 'ERROR' if (err and not results) else 'READY'
+        st['finished_at'] = datetime.now(timezone.utc).isoformat()
     _last_finish_ts = time.time()
     flips = [r for r in results if r['flip_bars'] == 0]
-    print(f'SCAN-ST | bitti | {len(results)} coin | son mumda: LONG={sum(1 for r in flips if r["trend"]=="UP")} '
+    print(f'SCAN-ST-{tf.upper()} | bitti | {len(results)} coin | son mumda: LONG={sum(1 for r in flips if r["trend"]=="UP")} '
           f'SHORT={sum(1 for r in flips if r["trend"]=="DOWN")} | partial={partial} | err={err}', flush=True)
 
 
-def start_scan():
+def start_scan(tf='4h'):
     """Returns (started, message). Manual trigger only."""
+    tf = _tf(tf)
     with _lock:
-        if _state['status'] == 'SCANNING':
-            return False, 'Tarama zaten çalışıyor.'
+        if any(st['status'] == 'SCANNING' for st in _states.values()):
+            return False, 'Tarama zaten çalışıyor (bir zaman dilimi bitmeden diğeri başlatılamaz).'
     if blive.in_rate_limit_cooldown():
         return False, 'Binance istek sınırı bekleme süresi aktif; birkaç dakika sonra deneyin.'
     wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0
     if wait > 0:
         return False, f'Son taramanın üzerinden çok az zaman geçti; {int(wait)} sn sonra tekrar deneyin.'
     with _lock:
-        _state.update({'status': 'SCANNING', 'progress': 0, 'total': 0, 'last_error': None,
-                       'partial': False, 'started_at': datetime.now(timezone.utc).isoformat()})
-    threading.Thread(target=_run, daemon=True).start()
+        _states[tf].update({'status': 'SCANNING', 'progress': 0, 'total': 0, 'last_error': None,
+                            'partial': False, 'started_at': datetime.now(timezone.utc).isoformat()})
+    threading.Thread(target=_run, args=(tf,), daemon=True).start()
     return True, 'Tarama başlatıldı.'

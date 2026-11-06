@@ -3641,6 +3641,7 @@ SCANNER_HTML = r'''<!doctype html>
     <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
       <div class="scanner-controls">
+        <select id="stTf" onchange="stTfChange()"><option value="4h">4 saat</option><option value="1d">Günlük</option><option value="1w">Haftalık</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Supertrend tara (manuel)</button>
         <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
         <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="6">Son 6 mum</option></select>
@@ -4087,40 +4088,55 @@ refreshScanner();setInterval(refreshScanner,10000);
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 
-// ---- Supertrend scan (4H): MANUAL only ----
-let stCache={results:[],status:'IDLE'}, stTimer=null;
+// ---- Supertrend scan (crypto: 4H / daily / weekly): MANUAL only ----
+const stCaches={'4h':{results:[],status:'IDLE'},'1d':{results:[],status:'IDLE'},'1w':{results:[],status:'IDLE'}};
+let stCache=stCaches['4h'], stTimer=null;
+function stTfVal(){ const v=document.getElementById('stTf')?.value; return (v==='1d'||v==='1w')?v:'4h'; }
+function stTfChange(){
+  const tf=stTfVal(); stCache=stCaches[tf];
+  const bars=document.getElementById('stBars');
+  if(bars){ bars.innerHTML=(tf==='1w'?[1,2,3,4]:[1,2,3,6]).map(n=>`<option value="${n}">${T15('Son '+n+' mum','Last '+n+(n>1?' candles':' candle'))}</option>`).join(''); }
+  renderSt(); refreshSt();
+}
 function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
 function renderSt(){
+  const tf=stTfVal(); stCache=stCaches[tf];
   const f=document.getElementById('stFilter')?.value||'LONG';
   const n=Number(document.getElementById('stBars')?.value||1);
   const all=(stCache.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
   const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('stStatus'), note=document.getElementById('stNote'), btn=document.getElementById('stBtn');
-  const busy=stCache.status==='SCANNING'; if(btn) btn.disabled=busy;
+  const busy=Object.values(stCaches).some(c=>c.status==='SCANNING'); if(btn) btn.disabled=busy;
   if(st){
-    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
+    if(stCache.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
+    else if(busy) st.textContent=T15('Başka bir zaman dilimi taranıyor…','Another timeframe is being scanned…');
     else if(stCache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
+  const lblTr={'4h':'4 saatlik','1d':'Günlük','1w':'Haftalık'}[tf], lblEn={'4h':'4H','1d':'Daily','1w':'Weekly'}[tf];
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    '4 saatlik kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
-    '4H closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
+    lblTr+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.'+(tf==='4h'?'':' Günlük/haftalık mumlar UTC 00:00’da (TR 03:00) kapanır.'),
+    lblEn+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.'+(tf==='4h'?'':' Daily/weekly candles close at 00:00 UTC.'));
   const body=document.getElementById('stRows'); if(!body) return;
-  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · 4H')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stFmtTR(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
+  const iv={'4h':'240','1d':'D','1w':'W'}[tf];
+  const fl=x=>tf==='4h'?stFmtTR(x.flip_time):String(x.flip_time||'').slice(5,10);
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · ${tf.toUpperCase()}','${iv}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${fl(x)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
 }
 async function refreshSt(){
-  try{ const r=await fetch('/api/scanner_st',{cache:'no-store'}); stCache=await r.json(); }catch(e){ return; }
-  renderSt();
-  if(stCache.status==='SCANNING'){ if(!stTimer) stTimer=setInterval(refreshSt,3000); }
-  else if(stTimer){ clearInterval(stTimer); stTimer=null; }
+  const tf=stTfVal();
+  try{ const r=await fetch('/api/scanner_st?tf='+tf,{cache:'no-store'}); stCaches[tf]=await r.json(); }catch(e){ return; }
+  if(tf===stTfVal()) renderSt();
+  if(stCaches[tf].status==='SCANNING'){ if(!stTimer) stTimer=setInterval(refreshSt,3000); }
+  else if(stTimer){ clearInterval(stTimer); stTimer=null; renderSt(); }
 }
 async function stStart(){
+  const tf=stTfVal();
   try{
-    const r=await fetch('/api/scanner_st/scan',{cache:'no-store'}); const d=await r.json();
+    const r=await fetch('/api/scanner_st/scan?tf='+tf,{cache:'no-store'}); const d=await r.json();
     if(!d.started && d.message) alert(d.message);
-    if(d.snapshot) stCache=d.snapshot;
+    if(d.snapshot) stCaches[tf]=d.snapshot;
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   renderSt(); refreshSt();
 }
@@ -9743,11 +9759,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:120]}'}, status=502)
             return
         if path=='/api/scanner_st':
-            self._send_json(scanner_st.snapshot()); return
+            self._send_json(scanner_st.snapshot(parse_qs(urlparse(self.path).query).get('tf',['4h'])[0])); return
         if path=='/api/scanner_st/scan':
             # MANUAL trigger only - the Supertrend scan has no background loop.
-            started,msg=scanner_st.start_scan()
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_st.snapshot()}); return
+            _tf=parse_qs(urlparse(self.path).query).get('tf',['4h'])[0]
+            started,msg=scanner_st.start_scan(_tf)
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st.snapshot(_tf)}); return
         if path=='/api/scanner':
             body=json.dumps(scanner_snapshot(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/scanner/scan':
