@@ -1,12 +1,13 @@
 """
-Supertrend scan (DAILY, ATR period 10, factor 7.8) for Borsa Istanbul and
+Supertrend scan (DAILY or WEEKLY, ATR period 10) for Borsa Istanbul and
 Wall Street (S&P 500 + Nasdaq-100) - MANUAL ONLY.
 
 Same Supertrend maths as scanner_st.py (TradingView ta.supertrend), applied to
-CLOSED daily candles only (today's still-forming session is dropped).
+CLOSED candles only: daily = today's still-forming session is dropped; weekly = the
+current week counts as closed from its Saturday on (stocks do not trade on weekends).
 LONG = price closed above the line (trend flipped UP), SHORT = below.
-flip_bars = how many closed daily candles ago the trend last flipped
-(0 = on the latest closed day).
+flip_bars = how many closed candles (days or weeks) ago the trend last flipped
+(0 = on the latest closed candle). Each (market, timeframe) keeps its own last result.
 
 Data comes from TradingView (same helpers the existing BIST / US scanners use),
 never from Binance, so it cannot touch the Binance rate limit. Runs only when
@@ -27,6 +28,8 @@ from tradingview_data import fetch_tv_bars
 WORKERS = int(os.environ.get('SCAN_ST_STOCK_WORKERS', '4'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_STOCK_MIN_GAP_S', '120'))
 DAILY_BARS = 300
+WEEKLY_BARS = 260
+TIMEFRAMES = {'1D': DAILY_BARS, '1W': WEEKLY_BARS}
 
 _MARKETS = {
     'bist': {'tz': 'Europe/Istanbul'},
@@ -35,8 +38,10 @@ _MARKETS = {
 
 
 class _Scan:
-    def __init__(self, key):
+    def __init__(self, key, tf='1D'):
         self.key = key
+        self.tf = tf
+        self.bars = TIMEFRAMES[tf]
         self.tz = _MARKETS[key]['tz']
         self.lock = threading.Lock()
         self.last_finish_ts = 0.0
@@ -52,18 +57,31 @@ class _Scan:
 
     def _bars(self, symbol):
         if self.key == 'bist':
-            return fetch_tv_bars(f'BIST:{symbol}', interval='1D', bars=DAILY_BARS), None
+            return fetch_tv_bars(f'BIST:{symbol}', interval=self.tf, bars=self.bars), None
         from us_scanner import _resolve_tv_bars
-        df, ex = _resolve_tv_bars(symbol, '1D', DAILY_BARS)
+        df, ex = _resolve_tv_bars(symbol, self.tf, self.bars)
         return df, ex
+
+    def _today(self):
+        return pd.Timestamp.now(tz=self.tz).date()
+
+    def _closed(self, df):
+        """Only finished candles. Daily: sessions before today. Weekly: weeks whose Monday + 5 days
+        (the Saturday) is today or earlier."""
+        today = self._today()
+        local_date = df['timestamp'].dt.tz_convert(self.tz).dt.date
+        if self.tf == '1D':
+            return df.loc[local_date < today].reset_index(drop=True)
+        ld = pd.to_datetime(local_date)
+        monday = ld - pd.to_timedelta(ld.dt.weekday, unit='D')
+        sat = (monday + pd.Timedelta(days=5)).dt.date
+        return df.loc[sat <= today].reset_index(drop=True)
 
     def analyse(self, symbol):
         try:
             df, exchange = self._bars(symbol)
             df = df.sort_values('timestamp').drop_duplicates('timestamp').reset_index(drop=True)
-            today = pd.Timestamp.now(tz=self.tz).date()
-            local_date = df['timestamp'].dt.tz_convert(self.tz).dt.date
-            closed = df.loc[local_date < today].reset_index(drop=True)   # closed sessions only
+            closed = self._closed(df)                                   # closed candles only
             if len(closed) < PERIOD + 30:
                 return None
             up, line = supertrend(closed)
@@ -111,7 +129,7 @@ class _Scan:
             self.state['finished_at'] = datetime.now(timezone.utc).isoformat()
         self.last_finish_ts = time.time()
         flips = [r for r in results if r['flip_bars'] == 0]
-        print(f'SCAN-ST-{self.key.upper()} | bitti | {len(results)} hisse | son mumda: '
+        print(f'SCAN-ST-{self.key.upper()}-{self.tf} | bitti | {len(results)} hisse | son mumda: '
               f'LONG={sum(1 for r in flips if r["trend"]=="UP")} '
               f'SHORT={sum(1 for r in flips if r["trend"]=="DOWN")} | err={err}', flush=True)
 
@@ -119,7 +137,7 @@ class _Scan:
         with self.lock:
             out = dict(self.state)
             out['results'] = list(self.state['results'])
-        out.update({'interval': '1D', 'min_gap_s': MIN_GAP_S})
+        out.update({'interval': self.tf, 'min_gap_s': MIN_GAP_S})
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         out['next_allowed_in_s'] = max(0, int(wait))
         return out
@@ -128,6 +146,9 @@ class _Scan:
         with self.lock:
             if self.state['status'] == 'SCANNING':
                 return False, 'Tarama zaten çalışıyor.'
+        for other_tf, other in ((t, _scans[(self.key, t)]) for t in TIMEFRAMES if t != self.tf):
+            if other.state.get('status') == 'SCANNING':
+                return False, 'Bu piyasada başka bir zaman diliminin taraması çalışıyor, bitmesini bekleyin.'
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         if wait > 0:
             return False, f'Son taramanın üzerinden çok az zaman geçti; {int(wait)} sn sonra tekrar deneyin.'
@@ -138,12 +159,17 @@ class _Scan:
         return True, 'Tarama başlatıldı.'
 
 
-_scans = {k: _Scan(k) for k in _MARKETS}
+_scans = {(k, tf): _Scan(k, tf) for k in _MARKETS for tf in TIMEFRAMES}
 
 
-def snapshot(key):
-    return _scans[key].snapshot()
+def _tf(tf):
+    tf = str(tf or '1D').upper()
+    return tf if tf in TIMEFRAMES else '1D'
 
 
-def start_scan(key):
-    return _scans[key].start()
+def snapshot(key, tf='1D'):
+    return _scans[(key, _tf(tf))].snapshot()
+
+
+def start_scan(key, tf='1D'):
+    return _scans[(key, _tf(tf))].start()

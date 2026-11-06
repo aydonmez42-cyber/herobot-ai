@@ -3657,8 +3657,9 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-bist" style="display:none">
     <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b id="stBistTitle">Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
       <div class="scanner-controls">
+        <select id="stBistTf" onchange="stsTfChange('Bist')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Supertrend tara (manuel)</button>
         <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
         <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
@@ -3667,7 +3668,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
       <div class="table-scroll">
         <table class="datatable" id="stBistTable">
-          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num" id="stBistChgH">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
           <tbody id="stBistRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
         </table>
       </div>
@@ -3675,8 +3676,9 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-us" style="display:none">
     <div id="stUsCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama · Wall Street (Günlük)</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b id="stUsTitle">Supertrend'e göre Tarama · Wall Street (Günlük)</b></div>
       <div class="scanner-controls">
+        <select id="stUsTf" onchange="stsTfChange('Us')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Supertrend tara (manuel)</button>
         <select id="stUsFilter" onchange="stsRender('Us')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
         <select id="stUsBars" onchange="stsRender('Us')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
@@ -3685,7 +3687,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-note" id="stUsNote" style="margin:0 0 8px 0"></div>
       <div class="table-scroll">
         <table class="datatable" id="stUsTable">
-          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num" id="stUsChgH">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
           <tbody id="stUsRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
         </table>
       </div>
@@ -3698,7 +3700,7 @@ SCANNER_HTML = r'''<!doctype html>
     <h2>Süper Grafik</h2>
     <span class="text-faint" id="ownChartLabel">—</span>
     <select id="ownChartTf" onchange="loadOwnChart()">
-      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option>
+      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
     </select>
   </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki tablolardan bir satıra tıklayın; grafik burada da açılır.</div>
@@ -3774,7 +3776,7 @@ function stTab(k){
 }
 // ---- own candle chart with Supertrend (plain canvas, no external library) ----
 const _own={tv:null,label:'',seq:0,d:null,up:null,dn:null,flips:null,view:{bars:120,end:0},hover:null,wired:false};
-function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d'})[String(i||'240')]||'4h'; }
+function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d','W':'1w','1W':'1w'})[String(i||'240')]||'4h'; }
 function openOwnChart(tv,label,interval){
   _own.tv=tv; _own.label=label||tv;
   const sel=document.getElementById('ownChartTf'); if(sel) sel.value=ownTfFromInterval(interval);
@@ -4124,42 +4126,55 @@ async function stStart(){
 }
 refreshSt();   // one cheap read of the last result; it never starts a scan
 
-// ---- Supertrend scan for BIST / Wall Street (DAILY): MANUAL only ----
-const stsCache={Bist:{results:[],status:'IDLE'},Us:{results:[],status:'IDLE'}}, stsTimer={};
+// ---- Supertrend scan for BIST / Wall Street (DAILY or WEEKLY): MANUAL only ----
+const stsCache={Bist:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}},Us:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}}}, stsTimer={};
 const stsApi={Bist:'/api/scanner_st_bist',Us:'/api/scanner_st_us'};
+const stsName={Bist:'Borsa İstanbul',Us:'Wall Street'};
+function stsTf(k){ return document.getElementById('st'+k+'Tf')?.value==='1W'?'1W':'1D'; }
 function stsFmtD(v){ try{ return new Date(v).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5); }catch(e){ return '—'; } }
+function stsTfChange(k){
+  const w=stsTf(k)==='1W';
+  const bars=document.getElementById('st'+k+'Bars');
+  if(bars){ bars.innerHTML=(w?[1,2,3,4]:[1,2,3,5]).map(n=>`<option value="${n}">${T15('Son '+n+(w?' hafta':' gün'),'Last '+n+(w?' week'+(n>1?'s':''):' day'+(n>1?'s':'')))}</option>`).join(''); }
+  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Supertrend'e göre Tarama · "+stsName[k]+(w?' (Haftalık)':' (Günlük)');
+  const h=document.getElementById('st'+k+'ChgH'); if(h) h.textContent=w?T15('Haftalık %','Weekly %'):T15('Günlük %','Daily %');
+  stsRender(k); stsRefresh(k);
+}
 function stsRender(k){
-  const c=stsCache[k]; const f=document.getElementById('st'+k+'Filter')?.value||'LONG';
+  const tf=stsTf(k), w=tf==='1W'; const c=stsCache[k][tf]; const f=document.getElementById('st'+k+'Filter')?.value||'LONG';
   const n=Number(document.getElementById('st'+k+'Bars')?.value||1);
   const all=(c.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
   const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('st'+k+'Status'), note=document.getElementById('st'+k+'Note'), btn=document.getElementById('st'+k+'Btn');
-  const busy=c.status==='SCANNING'; if(btn) btn.disabled=busy;
+  const busy=c.status==='SCANNING' || ['1D','1W'].some(t=>stsCache[k][t].status==='SCANNING'); if(btn) btn.disabled=busy;
   if(st){
-    if(busy) st.textContent=T15('Taranıyor… ','Scanning… ')+(c.progress||0)+'/'+(c.total||'?');
+    if(c.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(c.progress||0)+'/'+(c.total||'?');
     else if(c.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(c.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
-    'Günlük kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
-    'Daily closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
+    (w?'Haftalık':'Günlük')+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
+    (w?'Weekly':'Daily')+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
-  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · 1D','D')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(' gün önce',' days ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')
+  const unitTr=w?' hafta önce':' gün önce', unitEn=w?' weeks ago':' days ago';
+  body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('${k==='Bist'?'BIST':(x.exchange||'NASDAQ')}:${x.symbol}','${x.symbol} · ${tf}','${w?'W':'D'}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${stsFmtD(x.flip_time)}${x.flip_bars>0?' · '+x.flip_bars+T15(unitTr,unitEn):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,mkt,x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${c.finished_at?T15('Bu filtrede hisse yok.','No stocks for this filter.'):'—'}</td></tr>`;
 }
 async function stsRefresh(k){
-  try{ const r=await fetch(stsApi[k],{cache:'no-store'}); stsCache[k]=await r.json(); }catch(e){ return; }
-  stsRender(k);
-  if(stsCache[k].status==='SCANNING'){ if(!stsTimer[k]) stsTimer[k]=setInterval(()=>stsRefresh(k),3000); }
+  const tf=stsTf(k);
+  try{ const r=await fetch(stsApi[k]+'?tf='+tf,{cache:'no-store'}); stsCache[k][tf]=await r.json(); }catch(e){ return; }
+  if(tf===stsTf(k)) stsRender(k);
+  if(stsCache[k][tf].status==='SCANNING'){ if(!stsTimer[k]) stsTimer[k]=setInterval(()=>stsRefresh(k),3000); }
   else if(stsTimer[k]){ clearInterval(stsTimer[k]); stsTimer[k]=null; }
 }
 async function stsStart(k){
+  const tf=stsTf(k);
   try{
-    const r=await fetch(stsApi[k]+'/scan',{cache:'no-store'}); const d=await r.json();
+    const r=await fetch(stsApi[k]+'/scan?tf='+tf,{cache:'no-store'}); const d=await r.json();
     if(!d.started && d.message) alert(d.message);
-    if(d.snapshot) stsCache[k]=d.snapshot;
+    if(d.snapshot) stsCache[k][tf]=d.snapshot;
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   stsRender(k); stsRefresh(k);
 }
@@ -9710,11 +9725,13 @@ class Handler(BaseHTTPRequestHandler):
             started=us_scanner_start(force=force)
             body=json.dumps({'started':started,'status':us_scanner_snapshot().get('status')}).encode(); self.send_response(202 if started else 200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path in ('/api/scanner_st_bist','/api/scanner_st_us'):
-            self._send_json(scanner_st_stocks.snapshot('bist' if path.endswith('bist') else 'us')); return
+            _tf=parse_qs(urlparse(self.path).query).get('tf',['1D'])[0]
+            self._send_json(scanner_st_stocks.snapshot('bist' if path.endswith('bist') else 'us',_tf)); return
         if path in ('/api/scanner_st_bist/scan','/api/scanner_st_us/scan'):
             _k='bist' if 'bist' in path else 'us'
-            started,msg=scanner_st_stocks.start_scan(_k)
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k)}); return
+            _tf=parse_qs(urlparse(self.path).query).get('tf',['1D'])[0]
+            started,msg=scanner_st_stocks.start_scan(_k,_tf)
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k,_tf)}); return
         if path=='/api/chart-st':
             import chart_st
             _q=parse_qs(urlparse(self.path).query)

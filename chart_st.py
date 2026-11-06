@@ -1,4 +1,4 @@
-"""Data for the dashboard's own candle chart with Supertrend (10, 7.8).
+"""Data for the dashboard's own candle chart with Supertrend (10, 3.7).
 
 Same Supertrend maths as the scanners (scanner_st.supertrend), so the line the
 user sees is exactly the one the scans and the bot use. Crypto candles come
@@ -15,8 +15,8 @@ import pandas as pd
 import scanner_st
 from scanner_st import supertrend, PERIOD, FACTOR
 
-TF_BINANCE = {'15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d'}
-TF_TV = {'15m': '15', '1h': '60', '4h': '240', '1d': '1D'}
+TF_BINANCE = {'15m': '15m', '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1w'}
+TF_TV = {'15m': '15', '1h': '60', '4h': '240', '1d': '1D', '1w': '1W'}
 BARS = 500
 CACHE_S = 20
 STALE_S = 6 * 3600     # last good chart is still shown (marked stale) when every source fails
