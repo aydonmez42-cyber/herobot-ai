@@ -194,10 +194,45 @@ AUTO_ADD_MAX_PER_SCAN = max(1, int(_env_float('AUTO_ADD_MAX_PER_SCAN', 10)))
 AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 1.5 if getattr(cfg, 'CRYPTO_INTERVAL', '4h') != '4h' else 6)
 # Auto add skips coins already up more than this % in 24h (scanner change_pct): a coin that
 # pumped that much is prone to a sharp correction. 0 = no limit. Manual adds are not affected.
-AUTO_ADD_MAX_CHANGE_PCT = _env_float('AUTO_ADD_MAX_CHANGE_PCT', 20.0)
+AUTO_ADD_MAX_CHANGE_PCT = _env_float('AUTO_ADD_MAX_CHANGE_PCT', 10.0)     # was 20 until 2026-11-08
 # ...and coins whose 24h change is below this % (0 = skip every coin that is down on the day).
 # Set to -100 to turn the lower limit off.
 AUTO_ADD_MIN_CHANGE_PCT = _env_float('AUTO_ADD_MIN_CHANGE_PCT', 0.0)
+
+# --- Entry quality, pullback entry, entry-context log (added 2026-11-08) ---------------------
+# Closed-trade review (226 trades, Sep-Oct): win rate 69% but profit factor ~1.0, because the average
+# loss (~$103) was twice the average win (~$52) and many stops came within hours of entry (entries
+# near a local top). The 8 conditions are all momentum/trend confirmations, so a coin that passes
+# them has by construction already moved. The three blocks below address that. Each is switchable
+# from Railway; 'log' = only report what it would block, 'off' = disabled.
+#
+# 1) ENTRY QUALITY (LONG only): a coin is NOT entered while any of these is true at the moment of entry.
+#    0 turns a single limit off.
+ENTRY_QUALITY_MODE = _env_mode('ENTRY_QUALITY_MODE', 'on')
+ENTRY_MAX_CHG24_PCT = _env_float('ENTRY_MAX_CHG24_PCT', 10.0)      # rolling 24h change (%) above this: too late
+ENTRY_MAX_EMA_DIST_ATR = _env_float('ENTRY_MAX_EMA_DIST_ATR', 4.0)  # price more than this many ATR above EMA50
+ENTRY_MAX_RSI = _env_float('ENTRY_MAX_RSI', 68.0)                   # RSI above this: overbought (strategy hard cap is 72)
+ENTRY_MAX_ATR4H_PCT = _env_float('ENTRY_MAX_ATR4H_PCT', 6.0)        # 4h ATR as % of price above this: too wild (micro-cap pumps)
+ENTRY_MIN_ATR4H_PCT = _env_float('ENTRY_MIN_ATR4H_PCT', 0.0)        # (off by default; the sample for low-vol coins was small)
+ENTRY_MAX_PER_HOUR = int(_env_float('ENTRY_MAX_PER_HOUR', 3))       # at most this many new entries per rolling hour (correlated stop-outs)
+# 2) PULLBACK ENTRY (LONG only, coins in the entry wait): after the signal the bot does not buy the
+#    high. It waits until price has pulled back PULLBACK_MIN_ATR..PULLBACK_MAX_ATR (15m ATR) from the
+#    highest high of the last PULLBACK_LOOKBACK_BARS candles, with the Supertrend still UP, and the last
+#    closed 15m/1h/4h candles green (the bounce). While waiting, the full 8/8 signal is no longer
+#    required (a pullback naturally weakens momentum indicators); the Supertrend must stay UP. The
+#    wait is capped at PULLBACK_WAIT_HOURS.
+PULLBACK_MODE = _env_mode('PULLBACK_MODE', 'on')
+PULLBACK_MIN_ATR = _env_float('PULLBACK_MIN_ATR', 1.0)
+PULLBACK_MAX_ATR = _env_float('PULLBACK_MAX_ATR', 3.0)
+PULLBACK_LOOKBACK_BARS = int(_env_float('PULLBACK_LOOKBACK_BARS', 8))
+PULLBACK_WAIT_HOURS = _env_float('PULLBACK_WAIT_HOURS', 8.0)
+# 3) ENTRY CONTEXT LOG: every watchlist entry appends its features (24h change, RSI, distance to
+#    EMA50 / Supertrend, ATR %, pullback depth, ...) to entry_context.csv next to the closed-trades
+#    file; join it with closed_trades.csv on symbol + entry_time (analyze_entries.py does that).
+CONTEXT_FILE = os.path.join(os.path.dirname(TRADES_FILE) or '.', 'entry_context.csv')
+CONTEXT_COLS = ['entry_time', 'symbol', 'side', 'entry_price', 'atr15', 'atr15_pct', 'atr4h_pct', 'chg24_pct',
+                'rsi', 'ema_dist_atr', 'st_dist_atr', 'range24_pos', 'pullback_atr', 'btc_st_locked',
+                'hour_utc', 'entries_last_hour', 'note']
 
 # A watchlist coin whose position was closed at a LOSS by a stop (ATR stop,
 # break-even stop, trailing stop, trend stop) is removed from the watchlist
@@ -259,6 +294,133 @@ def crypto_signals(enriched, i):
 def next_scan_time(now):
     """Start of the next scheduled scan (a coin dropped now is not re-added before it)."""
     return pd.Timestamp(now).floor(f'{SCAN_EVERY_MIN}min') + pd.Timedelta(minutes=SCAN_EVERY_MIN)
+
+
+_wait_d4 = {}        # symbol -> closed 4h candles read by _entry_wait_eval (for the 4h ATR %)
+_PENDING_CTX = {}    # symbol -> feature dict computed just before enter_symbol (written to entry_context.csv)
+
+
+def _num(x):
+    try:
+        v = float(x)
+        return v if v == v else None
+    except Exception:
+        return None
+
+
+def _wilder_atr(df, n=14):
+    h, l, c = df['high'].astype(float), df['low'].astype(float), df['close'].astype(float)
+    pc = c.shift(1)
+    tr = pd.concat([h - l, (h - pc).abs(), (l - pc).abs()], axis=1).max(axis=1)
+    return tr.ewm(alpha=1.0 / n, adjust=False, min_periods=n).mean()
+
+
+def _recent_entry_count(state, now, minutes=60):
+    ts_now = pd.Timestamp(now)
+    if ts_now.tzinfo is None:
+        ts_now = ts_now.tz_localize('UTC')
+    cut = ts_now - pd.Timedelta(minutes=minutes)
+    n = 0
+    for s_ in (state.get('entry_times') or []):
+        try:
+            t = pd.Timestamp(s_)
+            if t.tzinfo is None:
+                t = t.tz_localize('UTC')
+            if t >= cut:
+                n += 1
+        except Exception:
+            pass
+    return n
+
+
+def entry_features(state, symbol, price, latest, df, now=None):
+    """Entry-time features of a crypto watchlist coin. `latest` = last CLOSED enriched candle,
+    `df` = raw candles incl. the forming one (price = its close). Missing values are None."""
+    f = {}
+    try:
+        atr = _num(latest['atr'])
+        f['atr15'] = atr
+        f['atr15_pct'] = atr / price * 100.0 if (atr and price) else None
+        n = len(df)
+        ref = _num(df['close'].iloc[-97]) if n >= 98 else _num(df['close'].iloc[0])
+        f['chg24_pct'] = (price / ref - 1.0) * 100.0 if ref else None
+        f['rsi'] = _num(latest.get('rsi'))
+        ema = _num(latest.get('ema50'))
+        stl = _num(latest.get('supertrend'))
+        f['ema_dist_atr'] = (price - ema) / atr if (ema is not None and atr) else None
+        f['st_dist_atr'] = (price - stl) / atr if (stl is not None and atr) else None
+        w = df.iloc[-96:]
+        hi24, lo24 = float(w['high'].max()), float(w['low'].min())
+        f['range24_pos'] = (price - lo24) / (hi24 - lo24) if hi24 > lo24 else None
+        look = df.iloc[-max(1, PULLBACK_LOOKBACK_BARS):]
+        f['pullback_atr'] = (float(look['high'].max()) - price) / atr if atr else None
+        d4 = _wait_d4.get(symbol)
+        f['atr4h_pct'] = None
+        if d4 is not None and len(d4) >= 16:
+            a4 = _num(_wilder_atr(d4).iloc[-1])
+            f['atr4h_pct'] = a4 / price * 100.0 if (a4 and price) else None
+        f['btc_st_locked'] = bool(btc_st_locked(state))
+        f['entries_last_hour'] = _recent_entry_count(state, now) if now is not None else None
+    except Exception as e:
+        print(f'ENTRY FEATURES | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    return f
+
+
+def entry_quality_check(state, side, f, now):
+    """(allowed, [reasons]). Only LONG entries are checked. In 'log' mode the reasons are
+    returned but the entry is still allowed."""
+    if ENTRY_QUALITY_MODE == 'off' or side != 'LONG':
+        return True, []
+    why = []
+
+    def over(key, lim):
+        v = f.get(key)
+        return lim > 0 and v is not None and v > lim
+    if over('chg24_pct', ENTRY_MAX_CHG24_PCT):
+        why.append(f"24s değişim %{f['chg24_pct']:.1f} (limit %{ENTRY_MAX_CHG24_PCT:g})")
+    if over('ema_dist_atr', ENTRY_MAX_EMA_DIST_ATR):
+        why.append(f"fiyat EMA50'nin {f['ema_dist_atr']:.1f} ATR üstünde (limit {ENTRY_MAX_EMA_DIST_ATR:g})")
+    if over('rsi', ENTRY_MAX_RSI):
+        why.append(f"RSI {f['rsi']:.0f} (limit {ENTRY_MAX_RSI:g})")
+    if over('atr4h_pct', ENTRY_MAX_ATR4H_PCT):
+        why.append(f"4s ATR %{f['atr4h_pct']:.1f} çok oynak (limit %{ENTRY_MAX_ATR4H_PCT:g})")
+    if ENTRY_MIN_ATR4H_PCT > 0 and f.get('atr4h_pct') is not None and f['atr4h_pct'] < ENTRY_MIN_ATR4H_PCT:
+        why.append(f"4s ATR %{f['atr4h_pct']:.1f} çok düşük (alt limit %{ENTRY_MIN_ATR4H_PCT:g})")
+    if ENTRY_MAX_PER_HOUR > 0:
+        k = _recent_entry_count(state, now)
+        if k >= ENTRY_MAX_PER_HOUR:
+            why.append(f'son 1 saatte {k} giriş açıldı (limit {ENTRY_MAX_PER_HOUR})')
+    return (not why) or ENTRY_QUALITY_MODE == 'log', why
+
+
+def quality_gate(state, symbol, side, latest, df, now, quiet=False):
+    """Computes the entry features, applies the quality limits and remembers the features for
+    the entry-context log. Returns (allowed, reason_text)."""
+    global LAST_BLOCK_CODES
+    if side != 'LONG':
+        return True, None
+    f = entry_features(state, symbol, float(df.iloc[-1]['close']), latest, df, now)
+    ok, why = entry_quality_check(state, side, f, now)
+    _PENDING_CTX[symbol] = f
+    if why and not quiet:
+        print(f"ENTRY QUALITY {'(log modu, engellenmedi)' if ok else 'BLOCKED'} | LONG {symbol} | " + ' + '.join(why), flush=True)
+    if not ok:
+        LAST_BLOCK_CODES = ['ENTRY_QUALITY']
+        return False, ' + '.join(why)
+    return True, None
+
+
+def log_entry_context(symbol, side, price, now, f):
+    try:
+        row = {c: None for c in CONTEXT_COLS}
+        row.update({k: (round(v, 4) if isinstance(v, float) else v) for k, v in (f or {}).items() if k in CONTEXT_COLS})
+        row.update({'entry_time': now.isoformat(), 'symbol': symbol, 'side': side, 'entry_price': price,
+                    'hour_utc': pd.Timestamp(now).hour,
+                    'note': '' if f else 'no-features'})
+        exists = os.path.exists(CONTEXT_FILE)
+        pd.DataFrame([row], columns=CONTEXT_COLS).to_csv(CONTEXT_FILE, mode='a', header=not exists, index=False)
+    except Exception as e:
+        print(f'ENTRY CONTEXT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
 def watchlist_position_usd():
@@ -751,8 +913,9 @@ def _entry_wait_eval(symbol, side, closed4, now):
     if CRYPTO_INTERVAL == '4h':
         c4 = closed4
     else:
-        d4 = fetch(symbol, 'USD_M', 4, interval='4h')
+        d4 = fetch(symbol, 'USD_M', 40, interval='4h')
         c4 = d4[d4['close_time'] < now_ts].reset_index(drop=True)
+    _wait_d4[symbol] = c4
     tf['4h'] = bool(len(c4)) and with_trade(c4.iloc[-1])
     streak = 0
     for k in range(len(d1h) - 1, -1, -1):
@@ -784,10 +947,18 @@ def _drop_from_watchlist(state, symbol, why):
 def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_short, blocked, now):
     """One evaluation of a coin waiting for entry (see ENTRY_WAIT_MODE).
     Candle data is re-read once per 15 minutes. Returns nothing; the coin ends up
-    entered (position opened), dropped from the watchlist, or still waiting."""
+    entered (position opened), dropped from the watchlist, or still waiting.
+
+    LONG with PULLBACK_MODE='on': the coin is valid while the Supertrend stays UP (not the full 8/8
+    signal) and is entered only after a pullback of PULLBACK_MIN_ATR..PULLBACK_MAX_ATR from the recent
+    high, then the entry quality limits (ENTRY_QUALITY_MODE) and the entry guards apply."""
     side = rec['side']
+    pbm = PULLBACK_MODE if side == 'LONG' else 'off'
     wanted = None if blocked else ('LONG' if (go_long and not go_short) else ('SHORT' if (go_short and not go_long) else None))
-    if wanted != side:
+    if pbm == 'on':
+        if blocked or not bool(latest.get('supertrend_bullish', False)):
+            return _drop_from_watchlist(state, symbol, f'{iv_label(CRYPTO_INTERVAL)} Supertrend yükselişi bozuldu')
+    elif wanted != side:
         return _drop_from_watchlist(state, symbol, f'{iv_label(CRYPTO_INTERVAL)} {side} sinyali artık geçerli değil')
     since = pd.Timestamp(rec['since'])
     if since.tzinfo is None:
@@ -795,8 +966,9 @@ def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_shor
     now_ts = pd.Timestamp(now)
     if now_ts.tzinfo is None:
         now_ts = now_ts.tz_localize('UTC')
-    if (now_ts - since).total_seconds() / 3600.0 > ENTRY_WAIT_MAX_HOURS:
-        return _drop_from_watchlist(state, symbol, f'{ENTRY_WAIT_MAX_HOURS:g} saat içinde uygun giriş oluşmadı')
+    max_h = min(ENTRY_WAIT_MAX_HOURS, PULLBACK_WAIT_HOURS) if pbm == 'on' else ENTRY_WAIT_MAX_HOURS
+    if (now_ts - since).total_seconds() / 3600.0 > max_h:
+        return _drop_from_watchlist(state, symbol, f'{max_h:g} saat içinde uygun giriş oluşmadı')
     boundary = now_ts.floor('15min').isoformat()
     if rec.get('boundary') == boundary:
         return
@@ -811,15 +983,46 @@ def process_entry_wait(state, symbol, rec, closed4, latest, df, go_long, go_shor
             rec['logged_wait'] = True
             print(f'ENTRY WAIT | {side} {symbol} | giriş bekliyor: 15dk={tf["15m"]} 1s={tf["1h"]} 4s={tf["4h"]}', flush=True)
         return
-    sig_close = float(latest['close']); sig_atr = float(latest['atr']); cur_px = float(df.iloc[-1]['close'])
+    cur_px = float(df.iloc[-1]['close'])
+    feats = entry_features(state, symbol, cur_px, latest, df, now) if side == 'LONG' else {}
+    if pbm != 'off':
+        pa = feats.get('pullback_atr')
+        pb_ok = pa is not None and PULLBACK_MIN_ATR <= pa <= PULLBACK_MAX_ATR
+        rec['pullback_atr'] = round(pa, 2) if pa is not None else None
+        if not pb_ok:
+            note = (f'pullback bekleniyor: geri çekilme {pa:.1f} ATR (hedef {PULLBACK_MIN_ATR:g}-{PULLBACK_MAX_ATR:g})'
+                    if pa is not None else 'pullback hesaplanamadı')
+            if rec.get('last_note') != note[:22]:
+                rec['last_note'] = note[:22]
+                print(f'ENTRY WAIT {"" if pbm == "on" else "(log modu) "}| LONG {symbol} | {note}', flush=True)
+            if pbm == 'on':
+                rec['blocked'] = note
+                return
+    q_ok, q_why = entry_quality_check(state, side, feats, now)
+    if q_why:
+        txt = ' + '.join(q_why)
+        if rec.get('last_q') != txt:
+            rec['last_q'] = txt
+            print(f"ENTRY QUALITY {'(log modu, engellenmedi)' if q_ok else 'BLOCKED'} | LONG {symbol} | {txt}", flush=True)
+        if not q_ok:
+            rec['blocked'] = txt
+            return
+    # A pullback entry is by definition BELOW the signal candle's close: the late-entry guards (demo and
+    # per-member live) must not read that as a stale signal, so the signal reference is the entry price.
+    sig_row = latest
+    if pbm == 'on':
+        sig_row = latest.copy()
+        sig_row['close'] = cur_px
+    sig_close = float(sig_row['close']); sig_atr = float(sig_row['atr'])
     allowed, why = entry_guard_check(state, symbol, side, now, sig_close, sig_atr, cur_px, quiet=True)
     if not allowed:
         rec['blocked'] = why
         return
     px = exec_price(cur_px, 'BUY' if side == 'LONG' else 'SELL')
     state.get('entry_wait', {}).pop(symbol, None)
-    print(f'ENTRY WAIT | {side} {symbol} | 15dk/1s/4s uyumlu, pozisyon açılıyor', flush=True)
-    enter_symbol(state, symbol, side, px, latest, now, live_eligible=True)
+    _PENDING_CTX[symbol] = feats
+    print(f'ENTRY WAIT | {side} {symbol} | 15dk/1s/4s uyumlu' + (f', pullback {rec.get("pullback_atr")} ATR' if pbm != 'off' else '') + ', pozisyon açılıyor', flush=True)
+    enter_symbol(state, symbol, side, px, sig_row, now, live_eligible=True)
 
 
 def _traded_symbols():
@@ -1157,6 +1360,10 @@ def enter_symbol(state, symbol, side, price, signal_row, now, live_eligible=Fals
     }
     state.setdefault('positions', {})[symbol] = pos
     state['equity'] -= pos['entry_fee']
+    _et = state.setdefault('entry_times', [])
+    _et.append(now.isoformat())
+    state['entry_times'] = _et[-60:]
+    log_entry_context(symbol, side, price, now, _PENDING_CTX.pop(symbol, None))
     save_state(state)
     send_message(entry_message(pos))
     print(f"WATCHLIST ENTRY | {side} {symbol} | price={price:.6f} | ATR={atr_val:.6f} | SL={sl:.6f} | TP={tp:.6f}", flush=True)
@@ -1566,7 +1773,9 @@ def run_watchlist_symbol(state, symbol, now):
             side_wanted = 'LONG' if (go_long and not go_short) else ('SHORT' if (go_short and not go_long) else None)
             if side_wanted is None:
                 blocked_map.pop(symbol, None)
-            elif ENTRY_WAIT_MODE != 'off' and last_ts is None and is_new_candle:
+            elif ENTRY_WAIT_MODE != 'off' and ((last_ts is None and is_new_candle) or (
+                    ENTRY_WAIT_MODE == 'on' and PULLBACK_MODE == 'on' and side_wanted == 'LONG' and is_new_candle
+                    and bool(((state.get('watchlist') or {}).get(symbol) or {}).get('auto_added')))):
                 # Just added from the scanner: the signal may be hours old.
                 if ENTRY_WAIT_MODE == 'on':
                     waits[symbol] = {'side': side_wanted, 'since': now.isoformat(), 'candle': latest_closed_time.isoformat()}
@@ -1586,11 +1795,15 @@ def run_watchlist_symbol(state, symbol, now):
                     print(f'ENTRY WAIT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
                 allowed, why = entry_guard_check(state, symbol, side_wanted, now, sig_close, sig_atr, cur_px, quiet=is_retry)
                 if allowed:
+                    allowed, why = quality_gate(state, symbol, side_wanted, latest, df, now, quiet=is_retry)
+                if allowed:
                     px = exec_price(cur_px, 'BUY' if side_wanted == 'LONG' else 'SELL')
                     blocked_map.pop(symbol, None)
                     enter_symbol(state, symbol, side_wanted, px, latest, now, live_eligible=True)
             else:
                 allowed, why = entry_guard_check(state, symbol, side_wanted, now, sig_close, sig_atr, cur_px, quiet=is_retry)
+                if allowed:
+                    allowed, why = quality_gate(state, symbol, side_wanted, latest, df, now, quiet=is_retry)
                 if allowed:
                     # Fill at the CURRENT price (the moment of entry), not the forming 4H
                     # candle's open, which can be hours old when a coin is added mid-candle.
@@ -1728,7 +1941,7 @@ def sync_bist_watchlist_signals(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-11-05 r15 | 15m-mode + hourly-scan + 8of8 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-11-08 r16 | entry-quality + pullback-entry + entry-context-log | 15m-mode + hourly-scan + 8of8 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)

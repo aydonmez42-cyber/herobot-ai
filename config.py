@@ -65,9 +65,9 @@ SHORT_ENTRY_MIN_SCORE = 8    # SHORT threshold — stricter: backtest showed SHO
 
 # ATR risk / exit model
 ATR_LENGTH = 14
-ATR_SL_MULTIPLIER = 3.5
+ATR_SL_MULTIPLIER = 3.0       # was 3.5 (2026-11-08: risk/reward <1 -> 3.0 SL vs 3.5 TP)
 ATR_SHORT_SL_MULTIPLIER = 1.35       # TEST 1: Initial stop distance = ATR * 2.0
-ATR_LONG_TP_MULTIPLIER = 2.2   # TEST 33 (2026-09-30): was 4.0 — most winners were
+ATR_LONG_TP_MULTIPLIER = 3.5   # 2026-11-08: was 2.2 (3.0 via Railway); with SL 3.0 -> risk/reward 1.17. TEST 33 (2026-09-30): was 4.0 — most winners were
                                 # exiting via ATR_TRAILING_SL well before reaching
                                 # TP (giving back ~ATR_TRAIL_MULTIPLIER of profit
                                 # from the peak on the way there). Backtest on

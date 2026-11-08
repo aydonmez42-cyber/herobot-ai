@@ -9720,6 +9720,16 @@ class Handler(BaseHTTPRequestHandler):
             q=parse_qs(urlparse(self.path).query)
             body, fname = closed_trades_csv(q)
             self.send_response(200); self.send_header('Content-Type','text/csv; charset=utf-8'); self.send_header('Content-Disposition',f'attachment; filename="{fname}"'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if path=='/api/entry-context.csv':
+            # Entry-time features of every watchlist entry (paper_trading.log_entry_context); join with
+            # closed-trades.csv on symbol + entry_time.
+            _cf = os.path.join(os.path.dirname(TRADES_FILE) or '.', 'entry_context.csv')
+            try:
+                with open(_cf, 'rb') as _fh: body = _fh.read()
+                if not body.startswith(b'\xef\xbb\xbf'): body = b'\xef\xbb\xbf' + body
+            except FileNotFoundError:
+                body = b'\xef\xbb\xbfentry_time,symbol,side\n'
+            self.send_response(200); self.send_header('Content-Type','text/csv; charset=utf-8'); self.send_header('Content-Disposition','attachment; filename="entry_context.csv"'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/closed-trades':
             q=parse_qs(urlparse(self.path).query)
             body=json.dumps(closed_trades_page(q),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
