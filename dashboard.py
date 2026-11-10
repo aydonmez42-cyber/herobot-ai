@@ -1050,7 +1050,7 @@ th.sort-active{color:var(--accent)}
 </section>
 
 
-<section class="panel" id="paperEmbed" style="padding:0;border:0;background:transparent;overflow:visible"><iframe id="paperFrame" src="/trades?embed=1" title="Deneme İşlemleri" style="width:100%;height:560px;border:0;display:block" scrolling="no"></iframe></section>
+<section class="panel" id="paperEmbed" style="padding:0;border:0;background:transparent;overflow:visible"><iframe id="paperFrame" src="/trades?embed=1" title="Robot İşlem Takibi" style="width:100%;height:560px;border:0;display:block" scrolling="no"></iframe></section>
 <script>window.addEventListener("message",function(ev){if(ev.origin!==location.origin)return;var d=ev.data;if(d&&d.paperH){var f=document.getElementById("paperFrame");if(f)f.style.height=Math.max(300,d.paperH+8)+"px";}});</script>
 <section class="cols" style="display:none">
   <div class="panel" id="positionPanel" style="scroll-margin-top:90px">
@@ -1081,7 +1081,7 @@ const translations = {
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
@@ -1240,7 +1240,7 @@ const translations = {
   "tvChart.title": "TradingView Chart",
   "tvChart.noSymbol": "— no symbol selected",
   "tvChart.emptyMessage": "Click a row in the scan tables above to view that symbol's TradingView chart here.",
-  "panel.paperTrades": "Paper Trades",
+  "panel.paperTrades": "Robot Trade Tracking",
   "watchlist.headerSymbol": "Symbol",
   "watchlist.headerMarket": "Market",
   "watchlist.headerDirection": "Direction / Signal",
@@ -1368,7 +1368,7 @@ const translations = {
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
@@ -1527,7 +1527,7 @@ const translations = {
   "tvChart.title": "TradingView Grafiği",
   "tvChart.noSymbol": "— sembol seçilmedi",
   "tvChart.emptyMessage": "Yukarıdaki tarama tablolarından bir satıra tıklayarak o sembolün TradingView grafiğini burada görüntüleyebilirsiniz.",
-  "panel.paperTrades": "Deneme İşlemleri",
+  "panel.paperTrades": "Robot İşlem Takibi",
   "watchlist.headerSymbol": "Sembol",
   "watchlist.headerMarket": "Piyasa",
   "watchlist.headerDirection": "Yön / Sinyal",
@@ -1655,7 +1655,7 @@ const translations = {
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
@@ -1814,7 +1814,7 @@ const translations = {
   "tvChart.title": "TradingView 图表",
   "tvChart.noSymbol": "— 未选择交易对",
   "tvChart.emptyMessage": "点击上方扫描表格中的一行，即可在此处查看该交易对的 TradingView 图表。",
-  "panel.paperTrades": "模拟交易",
+  "panel.paperTrades": "机器人交易跟踪",
   "watchlist.headerSymbol": "交易对",
   "watchlist.headerMarket": "市场",
   "watchlist.headerDirection": "方向 / 信号",
@@ -1942,7 +1942,7 @@ const translations = {
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
@@ -2101,7 +2101,7 @@ const translations = {
   "tvChart.title": "TradingView-Chart",
   "tvChart.noSymbol": "— kein Symbol ausgewählt",
   "tvChart.emptyMessage": "Klicken Sie auf eine Zeile in den obigen Scan-Tabellen, um hier den TradingView-Chart dieses Symbols anzuzeigen.",
-  "panel.paperTrades": "Paper-Trades",
+  "panel.paperTrades": "Roboter-Handelsübersicht",
   "watchlist.headerSymbol": "Symbol",
   "watchlist.headerMarket": "Markt",
   "watchlist.headerDirection": "Richtung / Signal",
@@ -2229,7 +2229,7 @@ const translations = {
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
@@ -2388,7 +2388,7 @@ const translations = {
   "tvChart.title": "Graphique TradingView",
   "tvChart.noSymbol": "— aucun symbole sélectionné",
   "tvChart.emptyMessage": "Cliquez sur une ligne dans les tableaux de scan ci-dessus pour afficher ici le graphique TradingView de ce symbole.",
-  "panel.paperTrades": "Trades paper",
+  "panel.paperTrades": "Suivi des trades du robot",
   "watchlist.headerSymbol": "Symbole",
   "watchlist.headerMarket": "Marché",
   "watchlist.headerDirection": "Direction / Signal",
@@ -2516,7 +2516,7 @@ const translations = {
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
@@ -2675,7 +2675,7 @@ const translations = {
   "tvChart.title": "Gráfico de TradingView",
   "tvChart.noSymbol": "— ningún símbolo seleccionado",
   "tvChart.emptyMessage": "Haz clic en una fila de las tablas de escaneo de arriba para ver aquí el gráfico de TradingView de ese símbolo.",
-  "panel.paperTrades": "Operaciones de prueba",
+  "panel.paperTrades": "Seguimiento del robot",
   "watchlist.headerSymbol": "Símbolo",
   "watchlist.headerMarket": "Mercado",
   "watchlist.headerDirection": "Dirección / Señal",
@@ -4175,7 +4175,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.backtest": "Backtest",
   "nav.faq": "FAQ",
@@ -4240,7 +4240,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.backtest": "Backtest",
   "nav.faq": "SSS",
@@ -4305,7 +4305,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.backtest": "回测",
   "nav.faq": "常见问题",
@@ -4370,7 +4370,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.backtest": "Backtest",
   "nav.faq": "FAQ",
@@ -4435,7 +4435,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.backtest": "Backtest",
   "nav.faq": "FAQ",
@@ -4500,7 +4500,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.backtest": "Backtest",
   "nav.faq": "Preguntas frecuentes",
@@ -4693,7 +4693,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -4718,7 +4718,7 @@ const translations = {
     "faq.a10": "New entries pass through several safety checks: (1) BTC lock — if Bitcoin drops sharply in a short time, new LONG entries are paused; (2) Loss brake — if several stop-losses hit within a short window, new entries pause for a few hours; (3) Direction limit — the number of open positions in the same direction is capped; (4) Late-entry filter — no entry if price already ran far from the signal or moved against it; (5) Break-even stop — once a position is far enough in profit, its stop moves to the entry price. These apply to both demo and live trading; open positions are managed only by their own stop-loss / take-profit / trailing rules. They reduce risk but cannot prevent losses, and this is not investment advice.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -4743,7 +4743,7 @@ const translations = {
     "faq.a10": "Yeni girişler birkaç güvenlik kontrolünden geçer: (1) BTC kilidi — Bitcoin kısa sürede sert düşerse yeni LONG girişleri durur; (2) Zarar freni — kısa sürede üst üste birkaç stop olursa yeni girişler birkaç saat durur; (3) Yön limiti — aynı yönde açılabilecek pozisyon sayısı sınırlıdır; (4) Geç giriş filtresi — fiyat sinyalden çok uzaklaştıysa veya sinyalin tersine gittiyse giriş yapılmaz; (5) Başabaş stop — pozisyon yeterince kâra geçince stop giriş fiyatına çekilir. Bu korumalar hem deneme hem canlı işlemlerde geçerlidir; açık pozisyonları yalnızca kendi stop / kâr al / trailing kuralları yönetir. Riski azaltır ama kaybı tamamen önleyemez ve yatırım tavsiyesi değildir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -4768,7 +4768,7 @@ const translations = {
     "faq.a10": "新的入场会经过多项安全检查：(1) BTC 锁——比特币短时间内大幅下跌时，暂停新的做多入场；(2) 亏损刹车——短时间内连续触发多次止损，新入场暂停数小时；(3) 方向限制——同方向的持仓数量有上限；(4) 迟到入场过滤——价格已远离信号或与信号相反时不入场；(5) 保本止损——持仓盈利达到一定程度后，止损移至入场价。这些保护同时适用于模拟和实盘；已有持仓仅由各自的止损/止盈/移动止损规则管理。它们可以降低风险，但无法完全避免亏损，也不构成投资建议。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -4793,7 +4793,7 @@ const translations = {
     "faq.a10": "Neue Einstiege durchlaufen mehrere Sicherheitsprüfungen: (1) BTC-Sperre – fällt Bitcoin kurzfristig stark, werden neue LONG-Einstiege pausiert; (2) Verlustbremse – lösen innerhalb kurzer Zeit mehrere Stop-Losses aus, pausieren neue Einstiege einige Stunden; (3) Richtungslimit – die Zahl offener Positionen in dieselbe Richtung ist begrenzt; (4) Spät-Einstiegs-Filter – kein Einstieg, wenn der Kurs sich bereits weit vom Signal entfernt oder dagegen bewegt hat; (5) Break-even-Stop – ist eine Position weit genug im Plus, wird der Stop auf den Einstiegspreis gezogen. Diese Schutzmechanismen gelten für Demo- und Live-Handel; offene Positionen werden nur durch ihre eigenen Stop-Loss-/Take-Profit-/Trailing-Regeln verwaltet. Sie senken das Risiko, können Verluste aber nicht verhindern, und sind keine Anlageberatung.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -4818,7 +4818,7 @@ const translations = {
     "faq.a10": "Les nouvelles entrées passent par plusieurs contrôles : (1) Verrou BTC — si Bitcoin chute fortement en peu de temps, les nouvelles entrées LONG sont suspendues ; (2) Frein de pertes — si plusieurs stop-loss sont touchés en peu de temps, les nouvelles entrées sont suspendues quelques heures ; (3) Limite de direction — le nombre de positions ouvertes dans le même sens est plafonné ; (4) Filtre d’entrée tardive — pas d’entrée si le prix s’est déjà éloigné du signal ou a évolué à l’opposé ; (5) Stop au point mort — une fois la position suffisamment en gain, le stop est ramené au prix d’entrée. Ces protections s’appliquent au mode démo comme au réel ; les positions ouvertes ne sont gérées que par leurs propres règles de stop-loss / take-profit / trailing. Elles réduisent le risque sans empêcher les pertes et ne constituent pas un conseil en investissement.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -4891,6 +4891,17 @@ ANALYSIS_BODY = r'''<style>
 .pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
 .pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
 .pos{color:#2fbf71}.neg{color:#e5534b}
+.ta-ruler{margin-top:14px;max-width:560px;margin-left:auto}
+.ta-ruler-lab{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:7px}
+.ta-ruler-lab .sl{color:#e5534b}.ta-ruler-lab .tp{color:#2fbf71}
+.ta-ruler-track{position:relative;height:8px;border-radius:5px;background:var(--bg-elev);border:1px solid var(--border)}
+.ta-ruler-fill{position:absolute;inset:0;border-radius:5px;background:linear-gradient(90deg,#e5534b,#d4a857,#2fbf71);opacity:.3}
+.ta-ruler-dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--bg)}
+.ta-ruler-dot.sl{background:#e5534b}.ta-ruler-dot.tp{background:#2fbf71}
+.ta-ruler-dot.cur{background:#d4a857;width:14px;height:14px;box-shadow:0 0 0 3px rgba(212,168,87,.25)}
+.ta-ruler-tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-faint);transform:translateX(-50%)}
+.ta-ruler-note{margin-top:8px;font-size:12px;color:var(--text-dim);text-align:center}
+@media(min-width:700px){.ta-pos-flex{display:flex;gap:18px;align-items:flex-end}.ta-pos-flex .ta-pos-grid{flex:1}.ta-pos-flex .ta-ruler{flex:0 0 330px;margin:0 0 4px}}
 </style>
 <section class="panel" id="taSearch"><div class="ta-bar">
   <select id="taMarket"><option value="crypto">Kripto</option><option value="bist">Borsa İstanbul</option><option value="us">Wall Street</option></select>
@@ -4901,7 +4912,7 @@ ANALYSIS_BODY = r'''<style>
 <section class="panel" id="taPos" style="display:none"></section>
 <section class="panel" id="ownChartPanel">
   <div class="panel-head">
-    <h2>Supertrend Grafiği</h2>
+    <h2>Teknik Grafik</h2>
     <span class="text-faint" id="ownChartLabel">—</span>
     <select id="ownChartTf" onchange="loadOwnChart()">
       <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
@@ -5090,6 +5101,20 @@ function taGo(){
   const m=document.getElementById('taMarket').value, tv=taBuildTv(m,document.getElementById('taSymbol').value);
   if(tv) taOpen(tv,null,null);
 }
+function taRuler(p,slv){
+  const sl=Number(slv), tp=Number(p.tp), cur=Number(p.current_price), ep=Number(p.entry_price);
+  if(!isFinite(sl)||!isFinite(tp)||!isFinite(cur)||sl===tp) return '';
+  const pos=v=>Math.max(0,Math.min(100,(v-sl)/(tp-sl)*100));   // SL sol uc (0), TP sag uc (100)
+  const pc=pos(cur), pe=isFinite(ep)?pos(ep):null;
+  const dTp=Math.abs(tp-cur)/cur*100, dSl=Math.abs(cur-sl)/cur*100;
+  const nearTp=pc>=50;
+  const note=nearTp?('TP\'ye daha yakın · TP\'ye %'+dTp.toFixed(2)+' kaldı'):('SL\'ye daha yakın · SL\'ye %'+dSl.toFixed(2)+' kaldı');
+  return `<div class="ta-ruler"><div class="ta-ruler-lab"><span class="sl">SL ${taPx(sl)}</span><span class="tp">TP ${taPx(tp)}</span></div>
+   <div class="ta-ruler-track"><div class="ta-ruler-fill"></div>${pe!=null?`<div class="ta-ruler-tick" style="left:${pe.toFixed(1)}%" title="Giriş ${taPx(ep)}"></div>`:''}
+   <div class="ta-ruler-dot sl" style="left:0%"></div><div class="ta-ruler-dot tp" style="left:100%"></div>
+   <div class="ta-ruler-dot cur" style="left:${pc.toFixed(1)}%" title="Anlık ${taPx(cur)}"></div></div>
+   <div class="ta-ruler-note">${note}</div></div>`;
+}
 async function taRefreshPos(){
   const box=document.getElementById('taPos'); const sym=taSymFromTv(TA.tv||'');
   if(!sym){ box.style.display='none'; return; }
@@ -5103,7 +5128,7 @@ async function taRefreshPos(){
   const lock=p.trail_active?('aktif · taban '+taPx(p.trail_stop)):'beklemede (%5 kârda devreye girer)';
   box.style.display='';
   box.innerHTML=`<div class="ta-pos"><div class="ta-pos-head"><span class="pill ${p.side==='LONG'?'long':'short'}">${p.side}</span><b>${sym}</b><span class="text-faint">açık deneme pozisyonu</span></div>
-  <div class="ta-pos-grid">
+  <div class="ta-pos-flex"><div class="ta-pos-grid">
    <div><span>İşlem tutarı</span><b>${taUsd(notional)}</b></div>
    <div><span>İşlem adedi</span><b>${qty.toLocaleString('en-US',{maximumFractionDigits:4})} ${base}</b></div>
    <div><span>Giriş fiyatı</span><b>${taPx(ep)}</b></div>
@@ -5113,7 +5138,7 @@ async function taRefreshPos(){
    <div><span>SL (Supertrend çizgisi)</span><b>${slTxt}</b></div>
    <div><span>Acil stop</span><b>${taPx(p.emergency_stop)}</b></div>
    <div><span>Kâr kilidi</span><b>${lock}</b></div>
-  </div></div>`;
+  </div>${taRuler(p,slv)}</div></div>`;
   _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'TP'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:Number(p.emergency_stop),c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
   ownDraw();
 }
@@ -5396,7 +5421,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Paper Trades",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -5439,7 +5464,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Deneme İşlemleri",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -5482,7 +5507,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "模拟交易",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -5525,7 +5550,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Paper-Trades",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -5568,7 +5593,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Trades paper",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -5611,7 +5636,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Operaciones de prueba",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -5916,7 +5941,7 @@ const translations = {
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
@@ -6067,7 +6092,7 @@ const translations = {
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
@@ -6218,7 +6243,7 @@ const translations = {
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
@@ -6369,7 +6394,7 @@ const translations = {
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
@@ -6520,7 +6545,7 @@ const translations = {
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
@@ -6671,7 +6696,7 @@ const translations = {
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
@@ -6882,7 +6907,7 @@ table.datatable td.wrap-cell{white-space:normal;font-family:var(--font-d);color:
 
 TRADES_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Deneme İşlemleri — Herobot-AI Trading Platform</title>
+<title>Robot İşlem Takibi — Herobot-AI Trading Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -7104,12 +7129,12 @@ const translations = {
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "faq.backToDashboard": "← Dashboard",
-  "panel.paperTrades": "Paper Trades",
+  "panel.paperTrades": "Robot Trade Tracking",
   "panel.recentTrades": "Recent Trades",
   "panel.loading": "Loading…",
   "pos.entry": "Entry",
@@ -7152,12 +7177,12 @@ const translations = {
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "faq.backToDashboard": "← Panel",
-  "panel.paperTrades": "Deneme İşlemleri",
+  "panel.paperTrades": "Robot İşlem Takibi",
   "panel.recentTrades": "Son işlemler",
   "panel.loading": "Yükleniyor…",
   "pos.entry": "Giriş",
@@ -7200,12 +7225,12 @@ const translations = {
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "faq.backToDashboard": "← 仪表盘",
-  "panel.paperTrades": "模拟交易",
+  "panel.paperTrades": "机器人交易跟踪",
   "panel.recentTrades": "最近交易",
   "panel.loading": "加载中…",
   "pos.entry": "入场价",
@@ -7248,12 +7273,12 @@ const translations = {
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "faq.backToDashboard": "← Übersicht",
-  "panel.paperTrades": "Paper-Trades",
+  "panel.paperTrades": "Roboter-Handelsübersicht",
   "panel.recentTrades": "Letzte Trades",
   "panel.loading": "Wird geladen…",
   "pos.entry": "Einstieg",
@@ -7296,12 +7321,12 @@ const translations = {
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "faq.backToDashboard": "← Tableau de bord",
-  "panel.paperTrades": "Trades paper",
+  "panel.paperTrades": "Suivi des trades du robot",
   "panel.recentTrades": "Trades récents",
   "panel.loading": "Chargement…",
   "pos.entry": "Entrée",
@@ -7344,12 +7369,12 @@ const translations = {
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "faq.backToDashboard": "← Panel",
-  "panel.paperTrades": "Operaciones de prueba",
+  "panel.paperTrades": "Seguimiento del robot",
   "panel.recentTrades": "Operaciones recientes",
   "panel.loading": "Cargando…",
   "pos.entry": "Entrada",
@@ -7694,7 +7719,7 @@ const translations = {
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
@@ -7728,7 +7753,7 @@ const translations = {
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
@@ -7762,7 +7787,7 @@ const translations = {
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
@@ -7796,7 +7821,7 @@ const translations = {
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
@@ -7830,7 +7855,7 @@ const translations = {
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
@@ -7864,7 +7889,7 @@ const translations = {
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
@@ -8430,7 +8455,7 @@ const translations = {
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper Trades",
+  "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
@@ -8528,7 +8553,7 @@ const translations = {
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
-  "nav.trades": "Deneme İşlemleri",
+  "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
@@ -8626,7 +8651,7 @@ const translations = {
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
-  "nav.trades": "模拟交易",
+  "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
@@ -8724,7 +8749,7 @@ const translations = {
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
-  "nav.trades": "Paper-Trades",
+  "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
@@ -8822,7 +8847,7 @@ const translations = {
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
-  "nav.trades": "Trades paper",
+  "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
@@ -8920,7 +8945,7 @@ const translations = {
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
-  "nav.trades": "Operaciones de prueba",
+  "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
