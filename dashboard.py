@@ -3601,6 +3601,7 @@ SCANNER_HTML = r'''<!doctype html>
 
 <section class="panel" id="stScanPanel">
 <style>#stScanPanel .scanner-controls{margin-bottom:8px;gap:8px}#stScanPanel .scanner-note{margin:0 0 6px 0!important}#stScanPanel .table-scroll{margin-top:2px}
+#stScanPanel th[data-sk]{cursor:pointer;user-select:none;-webkit-user-select:none;white-space:nowrap}#stScanPanel th[data-sk]:hover{color:var(--text)}#stScanPanel th.sorted{color:var(--accent)}
 #stScanPanel .st-intro{padding:14px 16px 0;font-size:15px;font-weight:600;line-height:1.4}#stScanPanel .scanner-tabs{padding:10px 16px 0;border-bottom:0}
 #stBistTitle,#stUsTitle{display:none}#stBistCard,#stUsCard{padding:8px 16px 10px!important;margin-top:0!important;border-top:0!important}</style>
   <div class="st-intro">Kripto, Borsa İstanbul ve Wall Street hisselerinden dilediğiniz bölümü seçip tarama yapabilirsiniz</div>
@@ -3622,7 +3623,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
       <div class="table-scroll">
         <table class="datatable" id="stTable">
-          <thead><tr><th>Coin</th><th class="num">Price</th><th class="num">24h %</th><th class="num">Volume</th><th class="num">Supertrend</th><th class="num">Distance %</th><th>Flip (TR)</th><th>Signal</th><th>Add</th></tr></thead>
+          <thead data-sk="symbol"><tr><th>Coin</th><th class="num" data-sk="price">Price</th><th class="num" data-sk="change_pct">24h %</th><th class="num" data-sk="volume">Volume</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Distance %</th><th data-sk="flip">Flip (TR)</th><th data-sk="signal">Signal</th><th>Add</th></tr></thead>
           <tbody id="stRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
         </table>
       </div>
@@ -3641,7 +3642,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
       <div class="table-scroll">
         <table class="datatable" id="stBistTable">
-          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num" id="stBistChgH">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stBistChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
           <tbody id="stBistRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
         </table>
       </div>
@@ -3660,7 +3661,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-note" id="stUsNote" style="margin:0 0 8px 0"></div>
       <div class="table-scroll">
         <table class="datatable" id="stUsTable">
-          <thead><tr><th>Hisse</th><th class="num">Fiyat</th><th class="num" id="stUsChgH">Günlük %</th><th class="num">Hacim</th><th class="num">Supertrend</th><th class="num">Uzaklık %</th><th>Dönüş</th><th>Sinyal</th><th>Ekle</th></tr></thead>
+          <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stUsChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
           <tbody id="stUsRows"><tr><td colspan="9" class="empty">—</td></tr></tbody>
         </table>
       </div>
@@ -4070,12 +4071,42 @@ function stTfChange(){
   renderSt(); refreshSt();
 }
 function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
+
+// ---- Tarama tablolarinda baslik tiklayinca kucukten buyuge / buyukten kucuge siralama ----
+const stSortState={St:null,Bist:null,Us:null};
+const stSortTbl={stTable:'St',stBistTable:'Bist',stUsTable:'Us'};
+function stSortVal(x,k){
+  if(k==='symbol'||k==='signal') return String(x[k]||'');
+  if(k==='flip') return Date.parse(x.signal_time||x.flip_time)||0;
+  const v=Number(x[k]); return isNaN(v)?-Infinity:v;
+}
+function stSortRows(rows,key){
+  const so=stSortState[key]; const id=Object.keys(stSortTbl).find(i=>stSortTbl[i]===key);
+  document.querySelectorAll('#'+id+' th[data-sk]').forEach(th=>{
+    const on=so&&th.dataset.sk===so.k; th.classList.toggle('sorted',!!on);
+    let a=th.querySelector('.sk-arrow'); if(!a){ a=document.createElement('span'); a.className='sk-arrow'; th.appendChild(a); }
+    a.textContent=on?(so.dir>0?' ▲':' ▼'):'';
+  });
+  if(!so) return rows;
+  return rows.slice().sort((a,b)=>{
+    const x=stSortVal(a,so.k), y=stSortVal(b,so.k);
+    return (typeof x==='string'?x.localeCompare(y):(x-y))*so.dir;
+  });
+}
+document.addEventListener('click',function(e){
+  const th=e.target.closest&&e.target.closest('th[data-sk]'); if(!th) return;
+  const tbl=th.closest('table'); const key=tbl&&stSortTbl[tbl.id]; if(!key) return;
+  const k=th.dataset.sk, cur=stSortState[key];
+  const textCol=(k==='symbol'||k==='signal');
+  stSortState[key]=(cur&&cur.k===k)?{k,dir:-cur.dir}:{k,dir:textCol?1:-1};   // sayisal: once buyukten kucuge
+  if(key==='St') renderSt(); else stsRender(key);
+});
 function renderSt(){
   const tf=stTfVal(); stCache=stCaches[tf];
   const f=document.getElementById('stFilter')?.value||'LONG';
   const n=Number(document.getElementById('stBars')?.value||1);
   const all=(stCache.results||[]).map(x=>({...x,signal:(x.signal&&x.signal_age!=null&&x.signal_age<n)?x.signal:'NO SIGNAL'}));
-  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>(a.signal_age??99)-(b.signal_age??99)||Number(b.change_pct||0)-Number(a.change_pct||0));
+  const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>(a.signal_age??99)-(b.signal_age??99)||Number(b.change_pct||0)-Number(a.change_pct||0)),'St');
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('stStatus'), note=document.getElementById('stNote'), btn=document.getElementById('stBtn');
   const busy=Object.values(stCaches).some(c=>c.status==='SCANNING'); if(btn) btn.disabled=busy;
@@ -4131,7 +4162,7 @@ function stsRender(k){
   const tf=stsTf(k), w=tf==='1W'; const c=stsCache[k][tf]; const f=document.getElementById('st'+k+'Filter')?.value||'LONG';
   const n=Number(document.getElementById('st'+k+'Bars')?.value||1);
   const all=(c.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
-  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
+  const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0)),k);
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('st'+k+'Status'), note=document.getElementById('st'+k+'Note'), btn=document.getElementById('st'+k+'Btn');
   const busy=c.status==='SCANNING' || ['1D','1W'].some(t=>stsCache[k][t].status==='SCANNING'); if(btn) btn.disabled=busy;
