@@ -9659,7 +9659,10 @@ def ta_ai_comment(tv, tf):
     import os as _os
     import time as _time
     import requests as _rq
-    key = _os.environ.get('ANTHROPIC_API_KEY', '').strip()
+    key = (_os.environ.get('ANTHROPIC_API_KEY', '') or _os.environ.get('CLAUDE_API_KEY', '')).strip().strip('"\'').strip()
+    if key.lower().startswith('bearer '):
+        key = key[7:].strip()
+    key = ''.join(key.split())          # satir sonu / bosluk kalintilarini at
     if not key:
         return {'error': 'Yapay zeka yorumu kapalı: ANTHROPIC_API_KEY tanımlı değil.'}
     d = ta_chart_payload(tv, tf)
@@ -9714,7 +9717,9 @@ def ta_ai_comment(tv, tf):
     except Exception as e:
         return {'error': f'Claude ile bağlantı kurulamadı ({type(e).__name__}).'}
     if r.status_code != 200:
-        msg = {401: 'API anahtarı geçersiz.', 429: 'Claude şu an yoğun, biraz sonra tekrar deneyin.'}.get(r.status_code, f'Claude yanıtı alınamadı (HTTP {r.status_code}).')
+        msg = {401: 'Anthropic API anahtarı reddetti (HTTP 401): Railway’deki ANTHROPIC_API_KEY geçersiz, silinmiş ya da eksik kopyalanmış. console.anthropic.com > API Keys’ten yeni anahtar oluşturup değişkeni güncelleyin (sk-ant- ile başlamalı, tırnak ve boşluk olmamalı) ve servisi yeniden başlatın.' + ('' if key.startswith('sk-ant-') else ' Not: mevcut değer sk-ant- ile başlamıyor.'),
+               403: 'Anthropic anahtarının bu modele erişim izni yok (HTTP 403). TA_AI_MODEL ile başka bir model deneyin.',
+               404: 'Model bulunamadı (HTTP 404): TA_AI_MODEL değişkenini geçerli bir model adıyla ayarlayın.', 429: 'Claude şu an yoğun, biraz sonra tekrar deneyin.'}.get(r.status_code, f'Claude yanıtı alınamadı (HTTP {r.status_code}).')
         return {'error': msg}
     try:
         text = ''.join(b.get('text', '') for b in r.json().get('content', []) if b.get('type') == 'text').strip()
