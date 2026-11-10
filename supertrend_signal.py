@@ -101,10 +101,24 @@ def latest_entry_signal(df, max_age_bars=None):
     return None
 
 
-def entry_allowed(sig, last_price):
-    """Tarama filtreleri. (ok, neden) doner. 24s degisim filtresi YOK (kaldirildi)."""
+def last_closed_side_ok(ind, side):
+    """Giris kurali: LONG icin SON KAPANMIS mum Supertrend cizgisinin USTUNDE (trend yukari), SHORT icin ALTINDA."""
+    st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
+    close = float(ind["close"].iloc[-1])
+    line = float(st["supertrend"].iloc[-1])
+    d = int(st["supertrend_direction"].iloc[-1])
+    if np.isnan(line):
+        return False
+    return (d == 1 and close > line) if side == "LONG" else (d == -1 and close < line)
+
+
+def entry_allowed(sig, last_price, ind=None):
+    """Tarama filtreleri. (ok, neden) doner. 24s degisim filtresi YOK (kaldirildi).
+    ind verilirse (kapanmis mumlar) son mumun Supertrend'e gore konumu da sart."""
     if sig is None:
         return False, "NO_SIGNAL"
+    if ind is not None and not last_closed_side_ok(ind, sig["side"]):
+        return False, "LAST_CANDLE_WRONG_SIDE_OF_ST"
     lvl = sig.get("level")
     if lvl is not None:
         if sig["side"] == "LONG" and last_price <= lvl:

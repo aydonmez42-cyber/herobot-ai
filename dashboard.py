@@ -7,6 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 import config as cfg
 import scanner_st
+import scanner_st15
 import scanner_st_stocks
 import pwa
 from scanner import snapshot as scanner_snapshot, start_scan as scanner_start, ensure_background_scan, background_loop
@@ -1022,6 +1023,7 @@ th.sort-active{color:var(--accent)}
 <nav class="topnav">
   <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -1076,6 +1078,7 @@ const translations = {
   "nav.language": "Language",
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -1362,6 +1365,7 @@ const translations = {
   "nav.language": "Dil",
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -1648,6 +1652,7 @@ const translations = {
   "nav.language": "语言",
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -1934,6 +1939,7 @@ const translations = {
   "nav.language": "Sprache",
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -2220,6 +2226,7 @@ const translations = {
   "nav.language": "Langue",
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -2506,6 +2513,7 @@ const translations = {
   "nav.language": "Idioma",
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -3503,6 +3511,7 @@ SCANNER_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" class="active" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -3591,10 +3600,18 @@ SCANNER_HTML = r'''<!doctype html>
 
 
 <section class="panel" id="stScanPanel">
-<style>#stCard .scanner-controls{margin-bottom:8px;gap:8px}#stCard .scanner-note{margin:0 0 6px 0!important}#stCard .table-scroll{margin-top:2px}</style>
+<style>#stScanPanel .scanner-controls{margin-bottom:8px;gap:8px}#stScanPanel .scanner-note{margin:0 0 6px 0!important}#stScanPanel .table-scroll{margin-top:2px}
+#stScanPanel .st-intro{padding:14px 16px 0;font-size:15px;font-weight:600;line-height:1.4}#stScanPanel .scanner-tabs{padding:10px 16px 0;border-bottom:0}
+#stBistTitle,#stUsTitle{display:none}#stBistCard,#stUsCard{padding:8px 16px 10px!important;margin-top:0!important;border-top:0!important}</style>
+  <div class="st-intro">Kripto, Borsa İstanbul ve Wall Street hisselerinden dilediğiniz bölümü seçip tarama yapabilirsiniz</div>
+  <div class="panel-head scanner-tabs">
+    <button class="tab active" data-sttab="crypto" onclick="stTab('crypto')">Kripto</button>
+    <button class="tab" data-sttab="bist" onclick="stTab('bist')">Borsa İstanbul</button>
+    <button class="tab" data-sttab="us" onclick="stTab('us')">Wall Street</button>
+  </div>
   <div id="stPane-crypto">
     <div id="stCard" style="padding:14px 16px 10px">
-      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:14px">Supertrend Taraması · 15 dk · her saat başı otomatik</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik · ATR 10 / çarpan 4,1</b></div>
       <div class="scanner-controls">
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
@@ -3651,7 +3668,7 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel" id="tvChartPanel">
+<section class="panel" id="tvChartPanel" style="display:none">
   <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
   <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
   <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
@@ -3859,6 +3876,8 @@ function ownWire(cv){
   window.addEventListener('resize',ownDraw);
 }
 function openTvChart(tvSymbol,label,interval){
+  location.href='/analysis?tv='+encodeURIComponent(tvSymbol)+'&iv='+encodeURIComponent(interval||'')+'&label='+encodeURIComponent(label||'');
+  return;
   _tvCur={symbol:tvSymbol,interval:String(interval||'240')};
   document.getElementById('tvChartSymbol').textContent='— '+label;
   const outer=document.getElementById('tvChartOuter');
@@ -4146,7 +4165,7 @@ async function stsStart(k){
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   stsRender(k); stsRefresh(k);
 }
-// BIST / Wall Street Supertrend taramalari kaldirildi
+stsRefresh('Bist'); stsRefresh('Us');   // gunluk Supertrend taramalari: son sonucu okur
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -4154,6 +4173,7 @@ const translations = {
   en: {
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.trades": "Paper Trades",
   "nav.closedTrades": "Closed Trades",
@@ -4218,6 +4238,7 @@ const translations = {
   tr: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.trades": "Deneme İşlemleri",
   "nav.closedTrades": "Kapanan İşlemler",
@@ -4282,6 +4303,7 @@ const translations = {
   zh: {
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.trades": "模拟交易",
   "nav.closedTrades": "已平仓交易",
@@ -4346,6 +4368,7 @@ const translations = {
   de: {
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.trades": "Paper-Trades",
   "nav.closedTrades": "Geschlossene Trades",
@@ -4410,6 +4433,7 @@ const translations = {
   fr: {
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.trades": "Trades paper",
   "nav.closedTrades": "Trades clôturés",
@@ -4474,6 +4498,7 @@ const translations = {
   es: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.trades": "Operaciones de prueba",
   "nav.closedTrades": "Operaciones cerradas",
@@ -4607,6 +4632,7 @@ FAQ_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -4849,6 +4875,279 @@ applyTranslation(_initialLang);
 # Standalone Backtest results page — a static, one-time snapshot report of
 # two backtests the team already ran (ETH and BTC), hardcoded below. No
 # live data / JS fetch calls: the numbers are baked into the page.
+ANALYSIS_BODY = r'''<style>
+.ta-bar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;align-items:center}
+.ta-bar select,.ta-bar input{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
+.ta-bar input{flex:1;min-width:170px}
+.ta-pos{padding:12px 16px}
+.ta-pos-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ta-pos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px 14px;margin-top:10px}
+.ta-pos-grid span{display:block;color:var(--text-faint);font-size:11px;margin-bottom:1px}
+.ta-pos-grid b{font-size:14px}
+#taAiBody{padding:12px 16px;white-space:pre-wrap;line-height:1.55;font-size:13.5px}
+.tv-chart-empty{padding:22px 16px;color:var(--text-faint);font-size:13px}
+.footnote{padding:10px 16px;color:var(--text-faint);font-size:11.5px;line-height:1.5}
+#ownChartPanel .panel-head select{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 9px}
+.pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
+.pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
+.pos{color:#2fbf71}.neg{color:#e5534b}
+</style>
+<section class="panel" id="taSearch"><div class="ta-bar">
+  <select id="taMarket"><option value="crypto">Kripto</option><option value="bist">Borsa İstanbul</option><option value="us">Wall Street</option></select>
+  <input id="taSymbol" list="taList" autocomplete="off" autocapitalize="characters" placeholder="Coin veya hisse adı yazın (örn. BTC, THYAO, AAPL)">
+  <datalist id="taList"></datalist>
+  <button class="btn btn-primary" id="taGo">Grafiği göster</button>
+</div></section>
+<section class="panel" id="taPos" style="display:none"></section>
+<section class="panel" id="ownChartPanel">
+  <div class="panel-head">
+    <h2>Supertrend Grafiği</h2>
+    <span class="text-faint" id="ownChartLabel">—</span>
+    <select id="ownChartTf" onchange="loadOwnChart()">
+      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
+    </select>
+  </div>
+  <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki arama çubuğundan bir coin veya hisse seçin.</div>
+  <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
+  <div class="footnote">Supertrend: ATR 10 · çarpan 4,1. Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC.</div>
+</section>
+<section class="panel" id="taAi">
+  <div class="panel-head"><h2>Yapay Zeka Yorumu (Claude)</h2><button class="btn" id="taAiBtn">Grafiği yorumla</button></div>
+  <div id="taAiBody" class="text-faint">Seçili grafiğin Supertrend durumunu, son mumları ve (varsa) açık pozisyonu Claude'a gönderip kısa bir teknik yorum alabilirsiniz.</div>
+  <div class="footnote">Yorum otomatik üretilir ve yatırım tavsiyesi değildir; yalnızca fiyat/Supertrend verisine dayanır, haber veya temel analiz içermez.</div>
+</section>
+'''
+ANALYSIS_SCRIPT = r'''<script>
+// ---- own candle chart with Supertrend (plain canvas, no external library) ----
+const _own={tv:null,label:'',seq:0,d:null,up:null,dn:null,flips:null,view:{bars:120,end:0},hover:null,wired:false};
+function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d','W':'1w','1W':'1w'})[String(i||'240')]||'4h'; }
+function openOwnChart(tv,label,interval){
+  _own.tv=tv; _own.label=label||tv;
+  const sel=document.getElementById('ownChartTf'); if(sel) sel.value=ownTfFromInterval(interval);
+  loadOwnChart();
+}
+async function loadOwnChart(){
+  const msg=document.getElementById('ownChartMsg'), cv=document.getElementById('ownChart'), lab=document.getElementById('ownChartLabel');
+  if(!_own.tv) return;
+  const tf=document.getElementById('ownChartTf').value, my=++_own.seq;
+  if(lab) lab.textContent='— '+_own.label;
+  msg.style.display=''; msg.textContent='Yükleniyor…';
+  let d;
+  try{ const r=await fetch('/api/ta/chart?tv='+encodeURIComponent(_own.tv)+'&tf='+tf,{cache:'no-store'}); d=await r.json(); }
+  catch(e){ if(my===_own.seq){ msg.textContent='Bağlantı hatası.'; cv.style.display='none'; } return; }
+  if(my!==_own.seq) return;
+  if((d.error||!d.candles||!d.candles.length)&&_own.tv&&_own.tv.startsWith('NASDAQ:')&&!_own.retried){ _own.retried=true; _own.tv=_own.tv.replace('NASDAQ:','NYSE:'); return loadOwnChart(); }
+  if(d.error||!d.candles||!d.candles.length){ msg.textContent='Grafik yüklenemedi: '+(d.error||'veri yok'); cv.style.display='none'; return; }
+  _own.d=d; _own.tf=tf;
+  _own.up=new Map((d.st_up||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
+  _own.dn=new Map((d.st_down||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
+  _own.flips=new Map((d.flips||[]).map(f=>[f.time,f.dir]));
+  _own.view={bars:Math.min(120,d.candles.length),end:d.candles.length}; _own.hover=null;
+  msg.style.display='none'; cv.style.display='block';
+  ownWire(cv); ownDraw();
+}
+function ownFmtPrice(v){ const a=Math.abs(v); return a>=1000?v.toFixed(1):a>=1?v.toFixed(3):a>=0.01?v.toFixed(5):v.toPrecision(4); }
+function ownFmtTime(t,tf){ const x=new Date(t*1000).toISOString(); return tf==='1d'?x.slice(5,10):x.slice(5,10)+' '+x.slice(11,16); }
+function ownGeom(){
+  const cv=document.getElementById('ownChart'), d=_own.d, n=d.candles.length, W=cv.clientWidth, H=cv.clientHeight;
+  const padR=66, padB=22, padT=8, plotW=W-padR, plotH=H-padB-padT;
+  const bars=Math.max(20,Math.min(n,Math.round(_own.view.bars)));
+  const end=Math.max(bars,Math.min(n,Math.round(_own.view.end)));
+  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,step:plotW/bars};
+}
+function ownDraw(){
+  const cv=document.getElementById('ownChart'); if(!cv||!_own.d||cv.style.display==='none') return;
+  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step}=G, C=d.candles, tf=_own.tf;
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle='#0D1114'; g.fillRect(0,0,W,H);
+  let lo=Infinity, hi=-Infinity;
+  for(let i=start;i<end;i++){
+    lo=Math.min(lo,C[i].low); hi=Math.max(hi,C[i].high);
+    const u=_own.up.get(C[i].time), v=_own.dn.get(C[i].time);
+    if(u!=null){ lo=Math.min(lo,u); hi=Math.max(hi,u); }
+    if(v!=null){ lo=Math.min(lo,v); hi=Math.max(hi,v); }
+  }
+  const pad=(hi-lo)*0.06||hi*0.01; lo-=pad; hi+=pad;
+  const X=i=>(i-start+0.5)*step, Y=v=>padT+(hi-v)/(hi-lo)*plotH;
+  g.font='11px system-ui,sans-serif'; g.textBaseline='middle';
+  g.strokeStyle='rgba(255,255,255,.06)'; g.fillStyle='#9aa4af'; g.lineWidth=1;
+  for(let k=0;k<=5;k++){ const v=lo+(hi-lo)*k/5, y=Math.round(Y(v))+.5;
+    g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.textAlign='left'; g.fillText(ownFmtPrice(v),plotW+6,y); }
+  g.textAlign='center'; g.textBaseline='top';
+  const every=Math.max(1,Math.round(bars/5));
+  for(let i=start+Math.floor(every/2);i<end;i+=every){ g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
+  g.save(); g.beginPath(); g.rect(0,0,plotW,padT+plotH); g.clip();
+  const bw=Math.max(1,step*0.7);
+  for(let i=start;i<end;i++){
+    const c=C[i], up=c.close>=c.open, col=up?'#2fbf71':'#e5534b', x=X(i);
+    g.strokeStyle=col; g.fillStyle=col; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Math.round(x)+.5,Y(c.high)); g.lineTo(Math.round(x)+.5,Y(c.low)); g.stroke();
+    const y1=Y(Math.max(c.open,c.close)), y2=Y(Math.min(c.open,c.close));
+    g.fillRect(x-bw/2,y1,bw,Math.max(1,y2-y1));
+  }
+  g.lineWidth=2; g.lineJoin='round';
+  [[_own.up,'#2fbf71'],[_own.dn,'#e5534b']].forEach(([m,col])=>{
+    g.strokeStyle=col; g.beginPath(); let pen=false;
+    for(let i=Math.max(0,start-1);i<end;i++){
+      const v=m.get(C[i].time);
+      if(v==null){ pen=false; continue; }
+      if(!pen){ g.moveTo(X(i),Y(v)); pen=true; } else g.lineTo(X(i),Y(v));
+    }
+    g.stroke();
+  });
+  if(end===C.length){ const lt=C[end-1].time, uu=_own.up.get(lt), dd=_own.dn.get(lt), v=(uu!=null?uu:dd);
+    if(v!=null){ g.setLineDash([6,5]); g.lineWidth=1.5; g.strokeStyle=uu!=null?'#2fbf71':'#e5534b'; g.beginPath(); g.moveTo(X(end-1),Y(v)); g.lineTo(plotW,Y(v)); g.stroke(); g.setLineDash([]); } }
+  (_own.marks||[]).forEach(m=>{ if(m.v<lo||m.v>hi) return; const y=Math.round(Y(m.v))+.5; g.setLineDash([3,4]); g.lineWidth=1; g.strokeStyle=m.c; g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.setLineDash([]); g.fillStyle=m.c; g.font='10px system-ui,sans-serif'; g.textAlign='left'; g.textBaseline='bottom'; g.fillText(m.l,4,y-2); });
+  for(let i=start;i<end;i++){
+    const dir=_own.flips.get(C[i].time); if(!dir) continue;
+    const x=X(i), s=Math.max(4,Math.min(7,step*0.6));
+    g.fillStyle=dir==='UP'?'#2fbf71':'#e5534b'; g.beginPath();
+    if(dir==='UP'){ const y=Y(C[i].low)+10; g.moveTo(x,y-s); g.lineTo(x-s,y+s); g.lineTo(x+s,y+s); }
+    else { const y=Y(C[i].high)-10; g.moveTo(x,y+s); g.lineTo(x-s,y-s); g.lineTo(x+s,y-s); }
+    g.closePath(); g.fill();
+  }
+  g.restore();
+  const h=_own.hover;
+  if(h&&h.x>=0&&h.x<=plotW){
+    const i=Math.max(start,Math.min(end-1,start+Math.floor(h.x/step))), c=C[i];
+    g.strokeStyle='rgba(255,255,255,.25)'; g.lineWidth=1; g.setLineDash([4,4]);
+    g.beginPath(); g.moveTo(X(i),padT); g.lineTo(X(i),padT+plotH); g.moveTo(0,h.y); g.lineTo(plotW,h.y); g.stroke(); g.setLineDash([]);
+    if(h.y>=padT&&h.y<=padT+plotH){ const pv=hi-(h.y-padT)/plotH*(hi-lo), t=ownFmtPrice(pv);
+      g.fillStyle='#2b3440'; g.fillRect(plotW,h.y-9,padR,18); g.fillStyle='#e6edf3'; g.textAlign='left'; g.textBaseline='middle'; g.fillText(t,plotW+6,h.y); }
+    const sv=_own.up.get(c.time)??_own.dn.get(c.time);
+    g.textAlign='left'; g.textBaseline='top'; g.fillStyle='#e6edf3';
+    g.fillText(ownFmtTime(c.time,tf)+'  A '+ownFmtPrice(c.open)+'  Y '+ownFmtPrice(c.high)+'  D '+ownFmtPrice(c.low)+'  K '+ownFmtPrice(c.close)+(sv!=null?'  ST '+ownFmtPrice(sv):''),8,12);
+  }
+}
+function ownWire(cv){
+  if(_own.wired) return; _own.wired=true;
+  const ptrs=new Map(); let lastDist=0;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,pos(e)); lastDist=0; });
+  cv.addEventListener('pointerup',e=>{ ptrs.delete(e.pointerId); });
+  cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); });
+  cv.addEventListener('pointerleave',e=>{ if(!ptrs.size){ _own.hover=null; ownDraw(); } });
+  cv.addEventListener('pointermove',e=>{
+    if(!_own.d) return;
+    const p=pos(e);
+    if(ptrs.has(e.pointerId)){
+      const prev=ptrs.get(e.pointerId); ptrs.set(e.pointerId,p);
+      const G=ownGeom();
+      if(ptrs.size===2){
+        const [a,b]=[...ptrs.values()], dist=Math.hypot(a.x-b.x,a.y-b.y);
+        if(lastDist){ _own.view.bars=Math.max(20,Math.min(G.n,G.bars*lastDist/dist)); }
+        lastDist=dist;
+      } else {
+        _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars;
+        _own.hover=p;
+      }
+    } else _own.hover=p;
+    ownDraw();
+  });
+  cv.addEventListener('wheel',e=>{
+    if(!_own.d) return; e.preventDefault();
+    const G=ownGeom(), f=e.deltaY>0?1.12:1/1.12, nb=Math.max(20,Math.min(G.n,G.bars*f));
+    _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw();
+  },{passive:false});
+  if(window.ResizeObserver) new ResizeObserver(()=>ownDraw()).observe(cv);
+  window.addEventListener('resize',ownDraw);
+}
+
+// ================= Teknik Analiz sayfasi =================
+const TA={market:'crypto',tv:null,usEx:{}};
+const taUsd=x=>x==null?'—':'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const taPx=x=>x==null?'—':ownFmtPrice(Number(x));
+function taSymFromTv(tv){ return String(tv||'').split(':').pop().replace(/\.P$/,''); }
+function taMarketFromTv(tv){ tv=String(tv||''); return tv.startsWith('BINANCE:')?'crypto':tv.startsWith('BIST:')?'bist':'us'; }
+function taBuildTv(market,sym){
+  sym=String(sym||'').trim().toUpperCase().replace(/\s+/g,''); if(!sym) return null;
+  if(market==='crypto'){ if(!/USDT$/.test(sym)) sym+='USDT'; return 'BINANCE:'+sym+'.P'; }
+  if(market==='bist') return 'BIST:'+sym.replace(/\.IS$/,'');
+  return (TA.usEx[sym]||'NASDAQ')+':'+sym;
+}
+function taOpen(tv,label,iv){
+  TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
+  document.getElementById('taMarket').value=TA.market;
+  document.getElementById('taSymbol').value=taSymFromTv(tv);
+  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'15m':'1d');
+  document.getElementById('ownChartTf').value=tf;
+  try{ history.replaceState(null,'','/analysis?tv='+encodeURIComponent(tv)+'&iv='+encodeURIComponent(iv||'')); }catch(e){}
+  _own.tv=tv; _own.label=label||taSymFromTv(tv); _own.marks=[];
+  document.getElementById('taAiBody').textContent='Seçili grafiği Claude ile yorumlatmak için "Grafiği yorumla" düğmesine basın.';
+  loadOwnChart(); taRefreshPos();
+}
+async function taLoadSymbols(){
+  const m=document.getElementById('taMarket').value;
+  try{
+    const d=await (await fetch('/api/ta/symbols?market='+m,{cache:'no-store'})).json();
+    if(m==='us') TA.usEx=d.exchanges||{};
+    document.getElementById('taList').innerHTML=(d.symbols||[]).slice(0,900).map(s=>`<option value="${s}">`).join('');
+  }catch(e){}
+}
+function taGo(){
+  const m=document.getElementById('taMarket').value, tv=taBuildTv(m,document.getElementById('taSymbol').value);
+  if(tv) taOpen(tv,null,null);
+}
+async function taRefreshPos(){
+  const box=document.getElementById('taPos'); const sym=taSymFromTv(TA.tv||'');
+  if(!sym){ box.style.display='none'; return; }
+  let d; try{ d=await (await fetch('/api/watchlist',{cache:'no-store'})).json(); }catch(e){ return; }
+  const it=(d.items||[]).find(x=>x.symbol===sym), p=it&&it.position;
+  if(!p){ box.style.display='none'; if(_own.marks&&_own.marks.length){ _own.marks=[]; ownDraw(); } return; }
+  const qty=Number(p.qty_eth||0), ep=Number(p.entry_price||0), notional=qty*ep, pnl=Number(p.unrealized_pnl||0);
+  const pct=notional?pnl/notional*100:0, cl=pnl>=0?'pos':'neg', base=sym.replace(/USDT$/,'');
+  const slv=p.st_level!=null?p.st_level:p.sl;
+  const slTxt=taPx(slv)+(p.st_level!=null?(p.side==='LONG'?' (altında mum kapanışı)':' (üstünde mum kapanışı)'):'');
+  const lock=p.trail_active?('aktif · taban '+taPx(p.trail_stop)):'beklemede (%5 kârda devreye girer)';
+  box.style.display='';
+  box.innerHTML=`<div class="ta-pos"><div class="ta-pos-head"><span class="pill ${p.side==='LONG'?'long':'short'}">${p.side}</span><b>${sym}</b><span class="text-faint">açık deneme pozisyonu</span></div>
+  <div class="ta-pos-grid">
+   <div><span>İşlem tutarı</span><b>${taUsd(notional)}</b></div>
+   <div><span>İşlem adedi</span><b>${qty.toLocaleString('en-US',{maximumFractionDigits:4})} ${base}</b></div>
+   <div><span>Giriş fiyatı</span><b>${taPx(ep)}</b></div>
+   <div><span>Anlık fiyat</span><b>${taPx(p.current_price)}</b></div>
+   <div><span>Kâr / Zarar</span><b class="${cl}">${(pnl>=0?'+':'')+taUsd(pnl).replace('$-','-$')} · ${(pct>=0?'+':'')+pct.toFixed(2)}%</b></div>
+   <div><span>TP seviyesi</span><b>${taPx(p.tp)}</b></div>
+   <div><span>SL (Supertrend çizgisi)</span><b>${slTxt}</b></div>
+   <div><span>Acil stop</span><b>${taPx(p.emergency_stop)}</b></div>
+   <div><span>Kâr kilidi</span><b>${lock}</b></div>
+  </div></div>`;
+  _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'TP'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:Number(p.emergency_stop),c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
+  ownDraw();
+}
+document.getElementById('taGo').onclick=taGo;
+document.getElementById('taSymbol').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); taGo(); } });
+document.getElementById('taMarket').onchange=()=>{ taLoadSymbols(); };
+document.getElementById('taAiBtn').onclick=async()=>{
+  const body=document.getElementById('taAiBody'), btn=document.getElementById('taAiBtn');
+  if(!TA.tv){ body.textContent='Önce bir coin veya hisse seçin.'; return; }
+  btn.disabled=true; body.textContent='Claude grafiği inceliyor…';
+  try{
+    const tf=document.getElementById('ownChartTf').value;
+    const r=await fetch('/api/ta/ai?tv='+encodeURIComponent(TA.tv)+'&tf='+tf,{cache:'no-store'}); const d=await r.json();
+    body.textContent=d.text||('Yorum alınamadı: '+(d.error||'bilinmeyen hata'));
+  }catch(e){ body.textContent='Bağlantı hatası.'; }
+  btn.disabled=false;
+};
+setInterval(()=>{ if(TA.tv) taRefreshPos(); },5000);
+(async function(){
+  await taLoadSymbols();
+  const q=new URLSearchParams(location.search), tv=q.get('tv');
+  if(tv) taOpen(tv,q.get('label')||null,q.get('iv')||null);
+})();
+
+</script>'''
+import re as _re_ta
+_fa = FAQ_HTML.index('<section class="panel">')
+_fb = FAQ_HTML.index('<div class="page-footer">')
+ANALYSIS_HTML = FAQ_HTML[:_fa] + ANALYSIS_BODY + FAQ_HTML[_fb:]
+ANALYSIS_HTML = ANALYSIS_HTML.replace('</body></html>', ANALYSIS_SCRIPT + '</body></html>')
+ANALYSIS_HTML = ANALYSIS_HTML.replace('<a href="/faq" class="active"', '<a href="/faq"').replace('<a href="/analysis" data-i18n', '<a href="/analysis" class="active" data-i18n')
+ANALYSIS_HTML = _re_ta.sub(r'<title>[^<]*</title>', '<title>Teknik Analiz — Herobot-AI Trading Platform</title>', ANALYSIS_HTML, count=1)
+ANALYSIS_HTML = _re_ta.sub(r'(<div class="brand-sub"[^>]*>)[^<]*(</div>)', r'\1Teknik Analiz\2', ANALYSIS_HTML, count=1)
+
 BACKTEST_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest — Herobot-AI Trading Platform</title>
@@ -4881,6 +5180,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
@@ -5446,6 +5746,7 @@ ACCOUNT_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -5612,6 +5913,7 @@ const translations = {
   en: {
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -5762,6 +6064,7 @@ const translations = {
   tr: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -5912,6 +6215,7 @@ const translations = {
   zh: {
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -6062,6 +6366,7 @@ const translations = {
   de: {
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -6212,6 +6517,7 @@ const translations = {
   fr: {
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -6362,6 +6668,7 @@ const translations = {
   es: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -6605,6 +6912,7 @@ TRADES_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -6636,7 +6944,11 @@ function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return 
 let statusCache=null;
 let watchlistCache={items:[]};
 
-function goToSymbol(symbol){ /* detay paneli kaldirildi */ }
+function goToSymbol(symbol){
+  const it=(watchlistCache.items||[]).find(i=>i.symbol===symbol), m=(it&&it.market)||'crypto';
+  const tv=m==='bist'?'BIST:'+symbol:(m==='us_stock'||m==='us')?'NASDAQ:'+symbol:'BINANCE:'+symbol+'.P';
+  (window.top||window).location.href='/analysis?tv='+encodeURIComponent(tv)+'&iv='+(m==='crypto'?'15':'D');
+}
 const pxf=x=>{if(x==null||x==='')return '—';x=Number(x);const d=x>=100?2:x>=1?4:x>=0.01?5:7;return x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:d});};
 
 
@@ -6789,6 +7101,7 @@ const translations = {
   en: {
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -6836,6 +7149,7 @@ const translations = {
   tr: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -6883,6 +7197,7 @@ const translations = {
   zh: {
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -6930,6 +7245,7 @@ const translations = {
   de: {
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -6977,6 +7293,7 @@ const translations = {
   fr: {
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -7024,6 +7341,7 @@ const translations = {
   es: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -7198,6 +7516,7 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" class="active" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -7372,6 +7691,7 @@ const translations = {
   en: {
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -7405,6 +7725,7 @@ const translations = {
   tr: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -7438,6 +7759,7 @@ const translations = {
   zh: {
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -7471,6 +7793,7 @@ const translations = {
   de: {
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -7504,6 +7827,7 @@ const translations = {
   fr: {
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -7537,6 +7861,7 @@ const translations = {
   es: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -7635,6 +7960,7 @@ LIVE_HTML = r'''<!doctype html>
 <nav class="topnav">
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
+  <a href="/analysis" data-i18n="nav.analysis">Technical Analysis</a>
   <a href="/live" class="active" data-i18n="nav.live">Live Trading</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
@@ -7839,7 +8165,7 @@ function renderMyLive(d){
 
   document.getElementById('liveMineOpenRows').innerHTML = open.map(p=>{
     const opened=fmtTR(p.entry_time);
-    return `<tr><td><a href="/?symbol=${encodeURIComponent(p.symbol)}" style="color:var(--accent);text-decoration:none" title="${t('panel.openPosition')}"><b>${p.symbol}</b> ↗</a></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
+    return `<tr><td><a href="/analysis?tv=${encodeURIComponent('BINANCE:'+p.symbol+'.P')}&iv=15" style="color:var(--accent);text-decoration:none" title="Teknik analiz"><b>${p.symbol}</b> ↗</a></td><td><span class="pill ${String(p.side).toLowerCase()}">${p.side}</span></td>`
       +`<td class="num">${num(p.qty)}</td><td class="num">${livePxFmt(p.entry_price)}</td><td class="num">${livePxFmt(p.current_price)}</td>`
       +`<td class="num ${cls(p.unrealized_pnl)}"><b>${money(p.unrealized_pnl)}</b></td><td>${p.leverage||1}x</td><td class="text-faint">${opened}</td>`
       +`<td><button class="btn btn-danger" onclick="closeLivePosition('${p.symbol}',this)">${t('liveOpen.closeNowBtn')}</button></td></tr>`;
@@ -8101,6 +8427,7 @@ const translations = {
   en: {
   "nav.dashboard": "Dashboard",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper Trades",
@@ -8198,6 +8525,7 @@ const translations = {
   tr: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Tarama",
+  "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
   "nav.backtest": "Backtest",
   "nav.trades": "Deneme İşlemleri",
@@ -8295,6 +8623,7 @@ const translations = {
   zh: {
   "nav.dashboard": "仪表盘",
   "nav.scanner": "扫描",
+  "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
   "nav.backtest": "回测",
   "nav.trades": "模拟交易",
@@ -8392,6 +8721,7 @@ const translations = {
   de: {
   "nav.dashboard": "Übersicht",
   "nav.scanner": "Scan",
+  "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
   "nav.backtest": "Backtest",
   "nav.trades": "Paper-Trades",
@@ -8489,6 +8819,7 @@ const translations = {
   fr: {
   "nav.dashboard": "Tableau de bord",
   "nav.scanner": "Scan",
+  "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
   "nav.backtest": "Backtest",
   "nav.trades": "Trades paper",
@@ -8586,6 +8917,7 @@ const translations = {
   es: {
   "nav.dashboard": "Panel",
   "nav.scanner": "Escaneo",
+  "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
   "nav.backtest": "Backtest",
   "nav.trades": "Operaciones de prueba",
@@ -9227,6 +9559,149 @@ def watchlist_status():
     return {'items': items, 'max_symbols': watchlist_max_symbols(), 'position_usd': position_usd}
 
 
+# ================= Teknik Analiz: grafik verisi, sembol listesi, Claude yorumu =================
+_TA_AI_CACHE = {}
+
+
+def ta_chart_payload(tv, tf):
+    """chart_st'ten mumlari alir; Supertrend'i BOTUN KENDI motoruyla (ATR 10, carpan 4.1) yeniden hesaplar,
+    boylece grafikteki cizgi ve oklar robotun sinyalleriyle birebir ayni olur."""
+    import chart_st
+    import numpy as _np
+    import pandas as _pd
+    import supertrend_signal as _sts
+    from indicators import supertrend as _stf
+    d = chart_st.build(tv, tf)
+    C = d.get('candles') or []
+    if len(C) < 30:
+        return d
+    idx = _pd.to_datetime([c['time'] for c in C], unit='s', utc=True)
+    ind = _pd.DataFrame({'open': [c['open'] for c in C], 'high': [c['high'] for c in C],
+                         'low': [c['low'] for c in C], 'close': [c['close'] for c in C]}, index=idx)
+    st = _stf(ind['high'], ind['low'], ind['close'], _sts.ST_PERIOD, _sts.ST_MULT)
+    line = st['supertrend'].to_numpy(dtype=float)
+    dr = st['supertrend_direction'].to_numpy(dtype=float)
+    times = [c['time'] for c in C]
+    ok = ~_np.isnan(line)
+    d['st_up'] = [{'time': t, 'value': float(v)} for t, v, k, g in zip(times, line, dr, ok) if g and k == 1]
+    d['st_down'] = [{'time': t, 'value': float(v)} for t, v, k, g in zip(times, line, dr, ok) if g and k == -1]
+    flips = []
+    for i in range(1, len(dr)):
+        if _np.isnan(dr[i]) or _np.isnan(dr[i - 1]):
+            continue
+        if dr[i] == 1 and dr[i - 1] == -1:
+            flips.append({'time': times[i], 'dir': 'UP'})
+        elif dr[i] == -1 and dr[i - 1] == 1:
+            flips.append({'time': times[i], 'dir': 'DOWN'})
+    d['flips'] = flips
+    events, state = _sts.run_state_machine(ind)
+    d['st_events'] = [{'time': times[e['i']], 'type': e['type'], 'level': e['level']} for e in events[-12:]]
+    d['st_state'] = {'direction': int(dr[-1]) if not _np.isnan(dr[-1]) else 0, 'line': float(line[-1]) if ok[-1] else None,
+                     'lvl_long': None if _np.isnan(state['lvl_long']) else float(state['lvl_long']),
+                     'lvl_short': None if _np.isnan(state['lvl_short']) else float(state['lvl_short'])}
+    d['st_params'] = {'period': _sts.ST_PERIOD, 'mult': _sts.ST_MULT}
+    return d
+
+
+def ta_symbols(market):
+    market = (market or 'crypto').lower()
+    if market == 'crypto':
+        import binance_live as _bl
+        info = _bl.get_exchange_info() or {}
+        syms = sorted(s for s, i in info.items() if i.get('quoteAsset') == 'USDT'
+                      and i.get('contractType') == 'PERPETUAL' and i.get('status') == 'TRADING')
+        return {'symbols': syms, 'exchanges': {}}
+    k = 'bist' if market == 'bist' else 'us'
+    try:
+        rows = scanner_st_stocks.snapshot(k, '1D').get('results') or []
+    except Exception:
+        rows = []
+    syms = sorted({r.get('symbol') for r in rows if r.get('symbol')})
+    ex = {r['symbol']: (r.get('exchange') or 'NASDAQ') for r in rows if r.get('symbol')} if k == 'us' else {}
+    return {'symbols': syms, 'exchanges': ex}
+
+
+_TA_AI_SYSTEM = (
+    "Sen deneyimli bir teknik analistsin. Yalnızca verilen fiyat ve Supertrend (ATR 10, çarpan 4.1) verisine dayan; "
+    "haber, temel analiz veya veride olmayan bir şey uydurma. Türkçe, kısa ve net yaz. Şu başlıkları kullan: "
+    "1) Genel görünüm 2) Supertrend durumu ve kritik seviye 3) Destek / direnç 4) Olası senaryolar (yükseliş / düşüş) "
+    "ve senaryoyu geçersiz kılan seviye 5) Risk notu. Kesin getiri vaadi verme. Toplam 230 kelimeyi geçme. "
+    "Son cümlede bunun yatırım tavsiyesi olmadığını belirt."
+)
+
+
+def ta_ai_comment(tv, tf):
+    import os as _os
+    import time as _time
+    import requests as _rq
+    key = _os.environ.get('ANTHROPIC_API_KEY', '').strip()
+    if not key:
+        return {'error': 'Yapay zeka yorumu kapalı: ANTHROPIC_API_KEY tanımlı değil.'}
+    d = ta_chart_payload(tv, tf)
+    C = d.get('candles') or []
+    if len(C) < 30:
+        return {'error': 'Yorum için yeterli mum verisi yok.'}
+    last_t = C[-1]['time']
+    ck = (tv, tf, last_t)
+    hit = _TA_AI_CACHE.get(ck)
+    if hit and _time.time() - hit[0] < 600:
+        return {'text': hit[1], 'cached': True}
+    line = {p['time']: p['value'] for p in (d.get('st_up') or [])}
+    line.update({p['time']: p['value'] for p in (d.get('st_down') or [])})
+    from datetime import datetime as _dt, timezone as _tz
+
+    def fp(x):
+        x = float(x)
+        return f'{x:.2f}' if x >= 100 else f'{x:.4f}' if x >= 1 else f'{x:.6f}'
+    rows = []
+    for c in C[-45:]:
+        ts = _dt.fromtimestamp(c['time'], _tz.utc).strftime('%d.%m %H:%M')
+        sv = line.get(c['time'])
+        rows.append(f"{ts} A={fp(c['open'])} Y={fp(c['high'])} D={fp(c['low'])} K={fp(c['close'])} ST={fp(sv) if sv else '-'}")
+    stt = d.get('st_state') or {}
+    last = float(C[-1]['close'])
+    dist = ((last - stt['line']) / last * 100.0) if stt.get('line') else None
+    ev = '; '.join(f"{_dt.fromtimestamp(e['time'], _tz.utc).strftime('%d.%m %H:%M')} {e['type']}" for e in (d.get('st_events') or [])[-6:]) or 'yok'
+    sym = tv.split(':')[-1].replace('.P', '')
+    pos_txt = 'yok'
+    try:
+        p = (read_state().get('positions') or {}).get(sym)
+        if p:
+            pos_txt = (f"{p.get('side')} giriş={fp(p.get('entry_price'))} TP={fp(p.get('tp'))} "
+                       f"stop çizgisi={fp(p.get('st_level') or p.get('sl'))}")
+    except Exception:
+        pass
+    prompt = (f"Sembol: {tv} | Zaman dilimi: {tf}\nSon kapanış/fiyat: {fp(last)}\n"
+              f"Supertrend yönü: {'YUKARI (yükseliş)' if stt.get('direction') == 1 else 'AŞAĞI (düşüş)'} | çizgi: "
+              f"{fp(stt['line']) if stt.get('line') else '-'} | fiyatın çizgiye uzaklığı: "
+              f"{('%.2f%%' % dist) if dist is not None else '-'}\n"
+              f"Kırılan seviye (long): {fp(stt['lvl_long']) if stt.get('lvl_long') else '-'} | (short): "
+              f"{fp(stt['lvl_short']) if stt.get('lvl_short') else '-'}\nSon Supertrend olayları: {ev}\n"
+              f"Açık deneme pozisyonu: {pos_txt}\n"
+              f"Sistem kuralı: long için çizginin yukarı kırılıp üstünde mum kapanışı, short için aşağı kırılıp altında kapanışı; "
+              f"stop, kırılan seviyenin tersinde mum kapanışıdır.\n\nSon {len(rows)} mum (en yeni sonda):\n" + '\n'.join(rows))
+    model = _os.environ.get('TA_AI_MODEL') or _os.environ.get('AI_ANALYST_MODEL') or 'claude-sonnet-5-5'
+    try:
+        r = _rq.post('https://api.anthropic.com/v1/messages',
+                     headers={'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json'},
+                     json={'model': model, 'max_tokens': 1000, 'system': _TA_AI_SYSTEM,
+                           'messages': [{'role': 'user', 'content': prompt}]}, timeout=60)
+    except Exception as e:
+        return {'error': f'Claude ile bağlantı kurulamadı ({type(e).__name__}).'}
+    if r.status_code != 200:
+        msg = {401: 'API anahtarı geçersiz.', 429: 'Claude şu an yoğun, biraz sonra tekrar deneyin.'}.get(r.status_code, f'Claude yanıtı alınamadı (HTTP {r.status_code}).')
+        return {'error': msg}
+    try:
+        text = ''.join(b.get('text', '') for b in r.json().get('content', []) if b.get('type') == 'text').strip()
+    except Exception:
+        text = ''
+    if not text:
+        return {'error': 'Claude boş yanıt döndürdü.'}
+    _TA_AI_CACHE[ck] = (_time.time(), text)
+    return {'text': text}
+
+
+
 class Handler(BaseHTTPRequestHandler):
     # -- session/auth helpers --------------------------------------------
     def _session_token(self):
@@ -9528,6 +10003,29 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/scanner':
             self._send_html(SCANNER_HTML); return
 
+        if path=='/analysis':
+            self._send_html(ANALYSIS_HTML); return
+        if path=='/api/ta/symbols':
+            _q=parse_qs(urlparse(self.path).query)
+            self._send_json(ta_symbols((_q.get('market') or ['crypto'])[0])); return
+        if path=='/api/ta/chart':
+            _q=parse_qs(urlparse(self.path).query)
+            try:
+                self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+            except Exception as _e:
+                self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
+            return
+        if path=='/api/ta/ai':
+            if not self._current_user():
+                self._send_json({'error': 'Oturum gerekli.'}, status=401); return
+            if self._rate_limited('ta_ai', limit=8, window_seconds=300):
+                self._send_json({'error': 'Çok sık istek: birkaç dakika sonra tekrar deneyin.'}, status=429); return
+            _q=parse_qs(urlparse(self.path).query)
+            try:
+                self._send_json(ta_ai_comment((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+            except Exception as _e:
+                self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
+            return
         if path=='/faq':
             self._send_html(FAQ_HTML); return
 
@@ -9734,12 +10232,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:120]}'}, status=502)
             return
         if path=='/api/scanner_st':
-            self._send_json(scanner_st.snapshot(parse_qs(urlparse(self.path).query).get('tf',['4h'])[0])); return
+            self._send_json(scanner_st15.snapshot()); return
         if path=='/api/scanner_st/scan':
-            # MANUAL trigger only - the Supertrend scan has no background loop.
-            _tf=parse_qs(urlparse(self.path).query).get('tf',['4h'])[0]
-            started,msg=scanner_st.start_scan(_tf)
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_st.snapshot(_tf)}); return
+            started,msg=scanner_st15.start_scan()
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st15.snapshot()}); return
         if path=='/api/scanner':
             body=json.dumps(scanner_snapshot(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/scanner/scan':

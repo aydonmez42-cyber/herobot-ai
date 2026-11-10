@@ -13,7 +13,7 @@ from telegram_notifier import send_message, entry_message, exit_message, daily_r
 from state_store import load_state as _load_state, save_state, STATE_FILE, TRADES_FILE
 import ai_analyst
 import supertrend_signal as sts
-import scanner_st
+import scanner_st15
 import auth
 import live_trading
 import threading
@@ -1395,7 +1395,7 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
     }
     log_trade(trade)
     print(f"WATCHLIST EXIT  | {side} {symbol} | reason={reason} | price={price:.6f} | net={net:.2f} | equity={state['equity']:.2f}", flush=True)
-    send_message(exit_message(trade))
+    send_message(st_exit_message(trade) if reason in _ST_REASON else exit_message(trade))
     state['positions'].pop(symbol, None)
     if symbol in (state.get('watchlist') or {}):
         state['watchlist'][symbol]['traded'] = True      # the coin has a closed trade now (idle remove uses this)
@@ -1966,20 +1966,54 @@ def _tr_time(iso):
         return str(iso)[:16]
 
 
+def _usdt(x):
+    return f'{float(x):,.2f} USDT'
+
+
+_ST_REASON_TR = {'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)', 'ST_TP': 'Kâr al (TP)',
+                 'ST_TRAIL_LOCK': 'Kâr kilidi', 'EMERGENCY_STOP': 'Acil stop'}
+
+
 def st_entry_message(pos):
     side = pos['side']
-    kind = {'LONG': 'Supertrend yukari kirildi', 'SHORT': 'Supertrend asagi kirildi',
-            'RE_LONG': 'Stop sonrasi yeniden LONG', 'RE_SHORT': 'Stop sonrasi yeniden SHORT'}.get(pos.get('st_kind'), 'Supertrend sinyali')
+    kind = {'LONG': 'Supertrend yukarı kırıldı', 'SHORT': 'Supertrend aşağı kırıldı',
+            'RE_LONG': 'Stop sonrası yeniden LONG', 'RE_SHORT': 'Stop sonrası yeniden SHORT'}.get(pos.get('st_kind'), 'Supertrend sinyali')
     base = pos['symbol'].replace('USDT', '')
+    notional = pos['entry_price'] * pos['qty_eth']
     return (f"{'🟢' if side == 'LONG' else '🔴'} HEROBOT-AI — YENİ POZİSYON\n\n"
             f"{side} {pos['symbol']}\n"
-            f"Giriş: {_fmt_px(pos['entry_price'])}\n"
-            f"Stop çizgisi (mum kapanışı): {_fmt_px(pos['st_level']) if pos.get('st_level') else '-'}\n"
-            f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])}\n"
+            f"İşlem tutarı: {_usdt(notional)}\n"
+            f"Adet: {pos['qty_eth']:.4f} {base}\n"
+            f"Giriş: {_fmt_px(pos['entry_price'])} USDT\n"
+            f"Stop çizgisi (mum kapanışı): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
+            f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n"
             f"Kâr kilidi: %{sts.TRAIL_ARM_PCT:g} üstünde devreye girer, %{sts.TRAIL_FLOOR_PCT:g} altında kapatır\n"
-            f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])}\n"
-            f"Miktar: {pos['qty_eth']:.4f} {base}\n"
+            f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n"
             f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)")
+
+
+def st_exit_message(trade):
+    side = trade['side']
+    base = trade['symbol'].replace('USDT', '')
+    qty = float(trade['qty_eth'])
+    notional = float(trade['entry_price']) * qty
+    net = float(trade['net_pnl'])
+    pct = (net / notional * 100.0) if notional else 0.0
+    try:
+        mins = int((pd.Timestamp(trade['exit_time']) - pd.Timestamp(trade['entry_time'])).total_seconds() // 60)
+        dur = f'{mins // 60}s {mins % 60}dk' if mins >= 60 else f'{mins}dk'
+    except Exception:
+        dur = '-'
+    sign = '+' if net >= 0 else '-'
+    return (f"{'✅' if net >= 0 else '🛑'} HEROBOT-AI — POZİSYON KAPANDI\n\n"
+            f"{side} {trade['symbol']}\n"
+            f"İşlem tutarı: {_usdt(notional)} · Adet: {qty:.4f} {base}\n"
+            f"Giriş: {_fmt_px(trade['entry_price'])} → Çıkış: {_fmt_px(trade['exit_price'])} USDT\n"
+            f"Net K/Z: {sign}{abs(net):,.2f} USDT ({sign}{abs(pct):.2f}%)\n"
+            f"Ücretler: {float(trade['fees']):,.2f} USDT\n"
+            f"Çıkış nedeni: {_ST_REASON_TR.get(trade['reason'], trade['reason'])}\n"
+            f"Süre: {dur}\n"
+            f"Bakiye: {_usdt(trade['equity_after'])}")
 
 
 def _st_is_crypto_pos(state, symbol):
@@ -2024,7 +2058,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
 
 def st_scan_and_trade(state, now):
     """Saat basi taramasi bittiyse sinyalleri isler (her tarama sonucu yalnizca BIR kez)."""
-    snap = scanner_st.snapshot()
+    snap = scanner_st15.snapshot()
     done = snap.get('finished_at')
     if snap.get('status') != 'READY' or not done or state.get('st_last_scan_done') == done:
         return
@@ -2054,7 +2088,8 @@ def st_scan_and_trade(state, now):
                    'signal_close': r['signal_close'], 'level': r.get('level'), 'age_bars': r.get('signal_age')}
             df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
             price = float(df.iloc[-1]['close'])
-            ok, why = sts.entry_allowed(sig, price)
+            ind = df.iloc[:-1].copy().set_index('close_time')
+            ok, why = sts.entry_allowed(sig, price, ind)
             if not ok:
                 print(f"ST ENTRY | {r['signal']} {symbol} atlandi: {why}", flush=True)
                 continue
@@ -2125,7 +2160,7 @@ def st_reentry_check(state, now):
             price = float(df.iloc[-1]['close'])
             s_in = {'side': sig['side'], 'kind': sig['kind'], 'signal_time': pd.Timestamp(sig['signal_time']).isoformat(),
                     'signal_close': sig['signal_close'], 'level': sig['level'], 'age_bars': sig['age_bars']}
-            ok, why = sts.entry_allowed(s_in, price)
+            ok, why = sts.entry_allowed(s_in, price, ind)
             if not ok:
                 print(f"ST REENTRY | {sig['side']} {symbol} atlandi: {why}", flush=True)
                 continue
@@ -2149,7 +2184,7 @@ def main():
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
           f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s değişim %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} ({iv_label(TREND_SL_INTERVAL)} Supertrend dönüşü) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} ({iv_label(BTC_ST_LOCK_INTERVAL)}) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
-    threading.Thread(target=scanner_st.background_loop, daemon=True).start()
+    threading.Thread(target=scanner_st15.background_loop, daemon=True).start()
     print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP %{sts.TP_PCT:g} | kar kilidi %{sts.TRAIL_ARM_PCT:g}/%{sts.TRAIL_FLOOR_PCT:g} | '
           f'stop={sts.ST_STOP_MODE} | acil stop %{sts.EMERGENCY_STOP_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
     state = load_state()
