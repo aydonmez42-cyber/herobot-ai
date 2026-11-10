@@ -4922,6 +4922,7 @@ ANALYSIS_BODY = r'''<style>
 .pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
 .pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
 .pos{color:#2fbf71}.neg{color:#e5534b}
+.ta-tvlink{color:var(--accent);text-decoration:none;font-size:13px;cursor:pointer}.ta-tvlink:hover{text-decoration:underline}.ta-tvlink::after{content:' ↗';font-size:11px}
 .ta-ruler{margin-top:14px;max-width:560px;margin-left:auto}
 .ta-ruler-lab{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:7px}
 .ta-ruler-lab .sl{color:#e5534b}.ta-ruler-lab .tp{color:#2fbf71}
@@ -4944,7 +4945,7 @@ ANALYSIS_BODY = r'''<style>
 <section class="panel" id="ownChartPanel">
   <div class="panel-head">
     <h2>Teknik Grafik</h2>
-    <span class="text-faint" id="ownChartLabel">—</span>
+    <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
     <select id="ownChartTf" onchange="loadOwnChart()">
       <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
     </select>
@@ -5109,6 +5110,16 @@ function taBuildTv(market,sym){
   if(market==='bist') return 'BIST:'+sym.replace(/\.IS$/,'');
   return (TA.usEx[sym]||'NASDAQ')+':'+sym;
 }
+
+function taTvUrl(){
+  const tv=(_own&&_own.tv)||TA.tv; if(!tv) return '';
+  const tf=document.getElementById('ownChartTf').value, m={'15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
+  return 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv)+'&interval='+(m[tf]||'15');
+}
+(function(){
+  const lab=document.getElementById('ownChartLabel'); if(!lab) return;
+  lab.addEventListener('click',function(e){ const u=taTvUrl(); if(!u){ e.preventDefault(); return; } lab.href=u; });
+})();
 function taOpen(tv,label,iv){
   TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
   document.getElementById('taMarket').value=TA.market;
