@@ -7725,9 +7725,22 @@ function ctDownloadCsv(){
   if(f) qs.set('from',f); if(t2) qs.set('to',t2);
   window.location.href='/api/closed-trades.csv'+(qs.toString()?('?'+qs.toString()):'');
 }
-function ctClearFilter(){
-  document.getElementById('ctFrom').value=''; document.getElementById('ctTo').value='';
-  ctState.from=''; ctState.to=''; ctState.page=1; refreshHistory();
+async function ctClearFilter(){
+  const tr=(typeof currentLang!=='undefined'&&currentLang==='tr');
+  const m1=tr?'Kapanan TÜM deneme işlemleri silinecek (canlı işlem kayıtları etkilenmez). Dosya yedeklenir ama panelden geri alınamaz. Devam edilsin mi?':'ALL closed paper trades will be deleted (live trade records are not affected). The file is backed up but this cannot be undone from the dashboard. Continue?';
+  const m2=tr?'Son onay: kapanan işlemler listesi ve istatistikler sıfırlanacak. Silinsin mi?':'Final confirmation: the closed-trades list and stats will be reset. Delete?';
+  if(!confirm(m1)) return; if(!confirm(m2)) return;
+  const btn=document.getElementById('ctClear'); if(btn) btn.disabled=true;
+  try{
+    const r=await fetch('/api/admin/clear-closed-trades',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json().catch(()=>({}));
+    if(r.status===403){ alert(tr?'Bu işlem için yönetici yetkisi gerekir.':'Administrator permission is required.'); }
+    else if(!d.ok){ alert(d.error||(tr?'Silinemedi.':'Could not delete.')); }
+    else { document.getElementById('ctFrom').value=''; document.getElementById('ctTo').value=''; ctState.from=''; ctState.to=''; ctState.page=1;
+           alert(tr?('Kapanan işlemler silindi ('+(d.removed||0)+' kayıt).'):('Closed trades deleted ('+(d.removed||0)+' rows).')); }
+  }catch(e){ alert(tr?'Bağlantı hatası.':'Connection error.'); }
+  if(btn) btn.disabled=false;
+  refreshHistory();
 }
 async function refreshHistory(){
   const qs=new URLSearchParams({page:ctState.page,page_size:ctState.size});
@@ -10642,6 +10655,24 @@ class Handler(BaseHTTPRequestHandler):
             _set_equity(new_equity)
             print(f'ADMIN | {user} | SET PAPER EQUITY -> {new_equity}', flush=True)
             self._send_json({'ok': True, 'equity': new_equity}); return
+
+        if path=='/api/admin/clear-closed-trades':
+            if not auth.is_admin(user):
+                self._send_json({'error': 'forbidden'}, status=403); return
+            try:
+                from state_store import TRADES_FILE as _TF
+                removed = 0
+                if os.path.exists(_TF):
+                    try:
+                        with open(_TF, encoding='utf-8') as _f:
+                            removed = max(0, sum(1 for _ in _f) - 1)
+                    except Exception:
+                        removed = 0
+                    os.replace(_TF, _TF + '.bak-' + __import__('datetime').datetime.now(__import__('datetime').timezone.utc).strftime('%Y%m%d%H%M%S'))
+            except Exception as e:
+                self._send_json({'ok': False, 'error': str(e)}, status=500); return
+            print(f'ADMIN | {user} | CLEAR CLOSED PAPER TRADES ({removed} rows, backed up; live trade files untouched)', flush=True)
+            self._send_json({'ok': True, 'removed': removed}); return
 
         if path=='/api/admin/reset-paper-trading':
             # Resets the LIVE state only: wipes the main-engine's open
