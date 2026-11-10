@@ -12,6 +12,8 @@ from dashboard import start_dashboard, watchlist_max_symbols
 from telegram_notifier import send_message, entry_message, exit_message, daily_report, verify_connection
 from state_store import load_state as _load_state, save_state, STATE_FILE, TRADES_FILE
 import ai_analyst
+import supertrend_signal as sts
+import scanner_st
 import auth
 import live_trading
 import threading
@@ -74,7 +76,7 @@ BTC_LOCK_MIN_HOURS = _env_float('BTC_LOCK_MIN_HOURS', 2.0)         # never relea
 # not touched. 'log' only reports it. Independent of DEMO_ENTRY_GUARDS.
 BTC_ST_LOCK_MODE = _env_mode('BTC_ST_LOCK_MODE', 'on')
 
-LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
+LOSS_BRAKE_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))      # this many stops...
 LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)          # ...within this many minutes
 LOSS_BRAKE_PAUSE_HOURS = _env_float('LOSS_BRAKE_PAUSE_HOURS', 12)        # ...pauses new entries this long
@@ -110,11 +112,11 @@ def _sl_distance(mult, atr, qty):
 # TIME_STOP_MIN_PNL_USD in profit is closed at the current price (reason TIME_STOP).
 # Closed-trade history (Sep-Oct 2026): trades held > 72h lost money overall, the
 # profitable ones were almost all closed within 12h. Winners are left alone.
-TIME_STOP_MODE = _env_mode('TIME_STOP_MODE', 'on')
+TIME_STOP_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 TIME_STOP_HOURS = _env_float('TIME_STOP_HOURS', 48.0)
 TIME_STOP_MIN_PNL_USD = _env_float('TIME_STOP_MIN_PNL_USD', 10.0)
 
-BREAKEVEN_MODE = _env_mode('BREAKEVEN_MODE', 'on')
+BREAKEVEN_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 BREAKEVEN_ATR = _env_float('BREAKEVEN_ATR', 1.5)                    # move stop to entry once this many ATR in profit
 BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus this buffer (covers fees)
 
@@ -127,7 +129,7 @@ BREAKEVEN_BUFFER_ATR = _env_float('BREAKEVEN_BUFFER_ATR', 0.1)      # ...plus th
 # Higher tiers ("arm:lock", single touch) engage as soon as the peak profit
 # has reached their arm level, and ratchet the lock up: once a position has
 # seen 100 it closes at 75, once it has seen 150 it closes at 125.
-PROFIT_LOCK_MODE = _env_mode('PROFIT_LOCK_MODE', 'on')
+PROFIT_LOCK_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 PROFIT_LOCK_ARM_USD = _env_float('PROFIT_LOCK_ARM_USD', 60.0)
 PROFIT_LOCK_USD = _env_float('PROFIT_LOCK_USD', 42.0)
 
@@ -147,7 +149,7 @@ def _parse_lock_tiers(raw):
 
 PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '90:65,130:100,180:150'))
 
-EARLY_EXIT_MODE = _env_mode('EARLY_EXIT_MODE', 'log')              # 'log' = only report what it would close
+EARLY_EXIT_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
 
 # 15-minute reversal exit. The position is opened on a crypto-interval signal, but once it is
@@ -158,7 +160,7 @@ EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG alrea
 # taken only after the confirming candle has CLOSED (never on a forming candle),
 # and ONLY while the position is at a loss (price beyond the entry).
 # 'log' = only report, 'off' = disabled.
-M15_EXIT_MODE = _env_mode('M15_EXIT_MODE', 'on')
+M15_EXIT_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
 
 # Trend stop (TREND_SL_INTERVAL, default 4H, closed candles): a LONG is stopped out when the
@@ -166,7 +168,7 @@ M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
 # the entry; a SHORT symmetrically (Supertrend flipped UP after entry). The former
 # "close below EMA50" condition was removed on 2026-11-05. Works as an extra stop in
 # front of the far ATR stop. 'log' = only report, 'off' = disabled.
-TREND_SL_MODE = _env_mode('TREND_SL_MODE', 'on')
+TREND_SL_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 TREND_SL_EMA = int(_env_float('TREND_SL_EMA', 50))
 
 # Entry wait ("Ekle" lock). A coin added from the scanner does NOT open a position
@@ -176,7 +178,7 @@ TREND_SL_EMA = int(_env_float('TREND_SL_EMA', 50))
 # watchlist when the last ENTRY_WAIT_RED_COUNT closed 1h candles are all against
 # the trade, when the crypto-interval signal is gone, or after ENTRY_WAIT_MAX_HOURS.
 # 'log' = only report what it would do and enter as before, 'off' = disabled.
-ENTRY_WAIT_MODE = _env_mode('ENTRY_WAIT_MODE', 'on')
+ENTRY_WAIT_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 ENTRY_WAIT_MAX_HOURS = _env_float('ENTRY_WAIT_MAX_HOURS', 24)
 ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
 
@@ -189,9 +191,9 @@ ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
 # limit. Only coins with a full score (CRYPTO_ENTRY_MIN_SCORE, 8/8) are added. Auto-added coins that have no position, are not waiting and no longer
 # show a LONG signal are removed again so the list does not fill up.
 # 'log' = only report what it would add, 'off' = disabled.
-AUTO_ADD_MODE = _env_mode('AUTO_ADD_MODE', 'on')
+AUTO_ADD_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 AUTO_ADD_MAX_PER_SCAN = max(1, int(_env_float('AUTO_ADD_MAX_PER_SCAN', 10)))
-AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 1.5 if getattr(cfg, 'CRYPTO_INTERVAL', '4h') != '4h' else 6)
+AUTO_ADD_MAX_SCAN_AGE_H = _env_float('AUTO_ADD_MAX_SCAN_AGE_H', 1.5)
 # Auto add skips coins already up more than this % in 24h (scanner change_pct): a coin that
 # pumped that much is prone to a sharp correction. 0 = no limit. Manual adds are not affected.
 AUTO_ADD_MAX_CHANGE_PCT = _env_float('AUTO_ADD_MAX_CHANGE_PCT', 10.0)     # was 20 until 2026-11-08
@@ -208,7 +210,7 @@ AUTO_ADD_MIN_CHANGE_PCT = _env_float('AUTO_ADD_MIN_CHANGE_PCT', 0.0)
 #
 # 1) ENTRY QUALITY (LONG only): a coin is NOT entered while any of these is true at the moment of entry.
 #    0 turns a single limit off.
-ENTRY_QUALITY_MODE = _env_mode('ENTRY_QUALITY_MODE', 'on')
+ENTRY_QUALITY_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 ENTRY_MAX_CHG24_PCT = _env_float('ENTRY_MAX_CHG24_PCT', 10.0)      # rolling 24h change (%) above this: too late
 ENTRY_MAX_EMA_DIST_ATR = _env_float('ENTRY_MAX_EMA_DIST_ATR', 4.0)  # price more than this many ATR above EMA50
 ENTRY_MAX_RSI = _env_float('ENTRY_MAX_RSI', 68.0)                   # RSI above this: overbought (strategy hard cap is 72)
@@ -221,7 +223,7 @@ ENTRY_MAX_PER_HOUR = int(_env_float('ENTRY_MAX_PER_HOUR', 3))       # at most th
 #    closed 15m/1h/4h candles green (the bounce). While waiting, the full 8/8 signal is no longer
 #    required (a pullback naturally weakens momentum indicators); the Supertrend must stay UP. The
 #    wait is capped at PULLBACK_WAIT_HOURS.
-PULLBACK_MODE = _env_mode('PULLBACK_MODE', 'on')
+PULLBACK_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 PULLBACK_MIN_ATR = _env_float('PULLBACK_MIN_ATR', 1.0)
 PULLBACK_MAX_ATR = _env_float('PULLBACK_MAX_ATR', 3.0)
 PULLBACK_LOOKBACK_BARS = int(_env_float('PULLBACK_LOOKBACK_BARS', 8))
@@ -239,7 +241,7 @@ CONTEXT_COLS = ['entry_time', 'symbol', 'side', 'entry_price', 'atr15', 'atr15_p
 # ("Deneme İşlemleri") instead of waiting there. The closed trade stays in the
 # history. Auto add will not bring the coin back for STOP_REMOVE_COOLDOWN_H hours.
 # Skipped while a member still holds a real position in the coin.
-STOP_REMOVE_MODE = _env_mode('STOP_REMOVE_MODE', 'on')
+STOP_REMOVE_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 STOP_REMOVE_COOLDOWN_H = _env_float('STOP_REMOVE_COOLDOWN_H', 24)
 STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL', 'TIME_STOP')
 
@@ -248,7 +250,7 @@ STOP_REMOVE_REASONS = ('ATR_SL', 'BREAKEVEN_SL', 'ATR_TRAILING_SL', 'TREND_SL', 
 # signal of NONE is removed - if it was added by auto add (any signal other than
 # LONG) or if it already has closed trades. 'log' only reports. Manual coins that
 # never traded are left alone.
-IDLE_REMOVE_MODE = _env_mode('IDLE_REMOVE_MODE', 'on')
+IDLE_REMOVE_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 IDLE_REMOVE_MIN_AGE_H = _env_float('IDLE_REMOVE_MIN_AGE_H', 1)
 _traded_cache = {'ts': 0.0, 'symbols': set()}
 
@@ -263,11 +265,11 @@ _btc_cache = {'ts': 0.0, 'data': None}
 # cfg.CRYPTO_INTERVAL (default 15m; Railway variable CRYPTO_INTERVAL=4h restores the old mode).
 # Things that are deliberately NOT tied to it: the entry-wait 4h check (still a real 4h
 # candle), the trend stop (TREND_SL_INTERVAL, default 4h), the BTC 1h/4h drop lock, stocks.
-CRYPTO_INTERVAL = getattr(cfg, 'CRYPTO_INTERVAL', '4h')
+CRYPTO_INTERVAL = '15m'   # robot yalnizca 15 dakikalik grafikle calisir
 CRYPTO_ENTRY_MIN_SCORE = int(getattr(cfg, 'CRYPTO_ENTRY_MIN_SCORE', 0) or 0)
 SCAN_EVERY_MIN = max(1, int(_env_float('SCANNER_EVERY_MIN', 60)))
 BTC_ST_LOCK_INTERVAL = os.environ.get('BTC_ST_LOCK_INTERVAL', CRYPTO_INTERVAL).strip() or CRYPTO_INTERVAL
-TREND_SL_INTERVAL = os.environ.get('TREND_SL_INTERVAL', '4h').strip() or '4h'
+TREND_SL_INTERVAL = '15m'
 _IV_LABEL = {'1m': '1dk', '3m': '3dk', '5m': '5dk', '15m': '15dk', '30m': '30dk', '1h': '1s', '2h': '2s', '4h': '4s', '1d': '1g'}
 
 
@@ -1606,8 +1608,6 @@ def restore_orphaned_live_positions(state, now):
         print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
         return
     for symbol, holders in holders_by_symbol.items():
-        if symbol == cfg.SIGNAL_SYMBOL:
-            continue  # the main ETH bot manages its own position
         existing = state.get('positions', {}).get(symbol)
         if existing and existing.get('sl') is not None and existing.get('tp') is not None:
             continue  # protected already
@@ -1939,15 +1939,144 @@ def sync_bist_watchlist_signals(state, now):
         save_state(state)
 
 
+# =============================================================================
+# SUPERTREND MOTORU (15 dk, saat basi tarama) - tek giris/cikis sistemi
+#   Giris : scanner_st'in saat basi taramasindaki LONG/SHORT sinyali (supertrend_signal.py)
+#   Cikis : TP %7 | kar kilidi (%5'te devreye girer, %4 altina inince kapatir) |
+#           Supertrend stop'u (LONG: kirilan seviye altinda mum kapanisi, SHORT: ustunde) |
+#           acil stop (girisen ST_EMERGENCY_STOP_PCT % ters hareket)
+#   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal
+#   cikisi ve 8-puan stratejisi bu yolda KULLANILMAZ.
+# =============================================================================
+ST_MAX_OPEN = int(_env_float('ST_MAX_OPEN_POSITIONS', 10))
+ST_SCAN_MAX_AGE_H = _env_float('ST_SCAN_MAX_AGE_H', 0.75)     # bundan eski tarama sonucu ile islem acilmaz (restart sonrasi)
+_ST_REASON = {'TP': 'ST_TP', 'TRAIL_LOCK': 'ST_TRAIL_LOCK', 'ST_STOP': 'ST_STOP', 'EMERGENCY_STOP': 'EMERGENCY_STOP'}
+
+
+def _st_is_crypto_pos(state, symbol):
+    return ((state.get('watchlist') or {}).get(symbol) or {}).get('market') == 'crypto'
+
+
+def st_open_position(state, symbol, sig, price_raw, atr_val, now):
+    side = sig['side']
+    sign = 1.0 if side == 'LONG' else -1.0
+    px = exec_price(price_raw, 'BUY' if side == 'LONG' else 'SELL')
+    qty = (watchlist_position_usd() / px) if px else 0.0
+    level = float(sig['level']) if sig.get('level') is not None else None
+    pos = {
+        'side': side, 'symbol': symbol, 'qty_eth': qty,
+        'entry_price': px, 'entry_time': now.isoformat(),
+        'signal_time': pd.Timestamp(sig['signal_time']).isoformat(), 'atr': float(atr_val or 0.0),
+        'sl': level if level is not None else px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0),
+        'tp': px * (1 + sign * sts.TP_PCT / 100.0),
+        'trail_active': False, 'trail_stop': None, 'highest_high': px, 'lowest_low': px,
+        'entry_fee': fee(px * qty), 'source': 'st',
+        'st_level': level, 'st_kind': sig.get('kind'), 'peak_pct': 0.0,
+        'emergency_stop': px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0),
+    }
+    state.setdefault('positions', {})[symbol] = pos
+    state.setdefault('watchlist', {})[symbol] = {
+        'symbol': symbol, 'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': side,
+        'note': 'Supertrend 15dk', 'st_auto': True}
+    state['equity'] -= pos['entry_fee']
+    state.setdefault('st_traded', {})[symbol] = pos['signal_time']
+    save_state(state)
+    send_message(entry_message(pos))
+    print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
+          f"acil stop={pos['emergency_stop']:.6f}", flush=True)
+    try:
+        live_trading.on_entry_signal(symbol, side, px, source='watchlist',
+                                     guard_ctx=live_guard_ctx(state, {'close': sig['signal_close'], 'atr': atr_val}, px))
+    except Exception as e:
+        print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)
+
+
+def st_scan_and_trade(state, now):
+    """Saat basi taramasi bittiyse sinyalleri isler (her tarama sonucu yalnizca BIR kez)."""
+    snap = scanner_st.snapshot()
+    done = snap.get('finished_at')
+    if snap.get('status') != 'READY' or not done or state.get('st_last_scan_done') == done:
+        return
+    state['st_last_scan_done'] = done
+    asof = pd.Timestamp(snap['asof'])
+    if asof != asof.floor(f'{SCAN_EVERY_MIN}min'):
+        save_state(state)
+        return                                    # manuel (saat basi olmayan) tarama islem acmaz
+    if (now - pd.Timestamp(done)).total_seconds() / 3600.0 > ST_SCAN_MAX_AGE_H:
+        print('ST SCAN | sonuc cok eski, islem acilmadi', flush=True)
+        save_state(state)
+        return
+    rows = [r for r in snap.get('results', []) if r.get('signal') in ('LONG', 'SHORT')]
+    rows.sort(key=lambda r: -(r.get('volume') or 0))
+    print(f"ST SCAN | {len(rows)} sinyal | asof={asof.isoformat()}", flush=True)
+    for r in rows:
+        symbol = r['symbol']
+        try:
+            if symbol in (state.get('positions') or {}):
+                continue
+            if state.get('st_traded', {}).get(symbol) == r.get('signal_time'):
+                continue                          # bu sinyalle zaten islem acildi
+            if len(state.get('positions') or {}) >= ST_MAX_OPEN:
+                print(f'ST ENTRY | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
+                break
+            sig = {'side': r['signal'], 'kind': r.get('signal_kind'), 'signal_time': r['signal_time'],
+                   'signal_close': r['signal_close'], 'level': r.get('level'), 'age_bars': r.get('signal_age')}
+            df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+            price = float(df.iloc[-1]['close'])
+            ok, why = sts.entry_allowed(sig, price)
+            if not ok:
+                print(f"ST ENTRY | {r['signal']} {symbol} atlandi: {why}", flush=True)
+                continue
+            st_open_position(state, symbol, sig, price, r.get('atr'), now)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                print('ST SCAN | Binance bekleme suresi aktif, kalan sinyaller atlandi', flush=True)
+                break
+            print(f'ST ENTRY | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    save_state(state)
+
+
+def st_manage_positions(state, now):
+    """Acik kripto pozisyonlarini her turda (30 sn) yonetir; Supertrend stop'u kapanmis 15 dk mumlara bakar."""
+    for symbol, p in list((state.get('positions') or {}).items()):
+        if not _st_is_crypto_pos(state, symbol):
+            continue
+        try:
+            df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+            ind = df.iloc[:-1].copy().set_index('close_time')       # yalnizca kapanmis mumlar
+            price = float(df.iloc[-1]['close'])
+            sign = 1.0 if p['side'] == 'LONG' else -1.0
+            profit = sign * (price - p['entry_price']) / p['entry_price'] * 100.0
+            p['peak_pct'] = max(float(p.get('peak_pct') or 0.0), profit)
+            p['trail_active'] = p['peak_pct'] >= sts.TRAIL_ARM_PCT
+            p['trail_stop'] = (p['entry_price'] * (1 + sign * sts.TRAIL_FLOOR_PCT / 100.0)) if p['trail_active'] else None
+            raw = sts.check_exit(p, ind, price)
+            if raw:
+                exit_raw = p['tp'] if raw == 'TP' else price
+                exit_symbol_position(state, symbol, exit_raw, _ST_REASON[raw], now, live_eligible=True)
+                if ((state.get('watchlist') or {}).get(symbol) or {}).get('st_auto'):
+                    for k in ('watchlist', 'watchlist_signals'):
+                        (state.get(k) or {}).pop(symbol, None)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                print(f'ST MANAGE | Binance bekleme suresi aktif, kalan pozisyonlar bu turda atlandi ({symbol} ve sonrasi)', flush=True)
+                break
+            print(f'ST MANAGE | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    save_state(state)
+
+
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-11-08 r16 | entry-quality + pullback-entry + entry-context-log | 15m-mode + hourly-scan + 8of8 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print('VERSION | paper_trading 2026-11-10 st-only r17 | entry-quality + pullback-entry + entry-context-log | 15m-mode + hourly-scan + 8of8 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
     print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
           f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s değişim %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} ({iv_label(TREND_SL_INTERVAL)} Supertrend dönüşü) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} ({iv_label(BTC_ST_LOCK_INTERVAL)}) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
+    threading.Thread(target=scanner_st.background_loop, daemon=True).start()
+    print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP %{sts.TP_PCT:g} | kar kilidi %{sts.TRAIL_ARM_PCT:g}/%{sts.TRAIL_FLOOR_PCT:g} | '
+          f'stop={sts.ST_STOP_MODE} | acil stop %{sts.EMERGENCY_STOP_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
     state = load_state()
     if state.get('position'):
         p = state['position']
@@ -1967,24 +2096,8 @@ def main():
             # file from another thread, and without a reload here this loop's
             # next save would silently overwrite those changes.
             state = load_state()
-            signal_df = fetch_cached(cfg.SIGNAL_SYMBOL, 'USD_M', CRYPTO_INTERVAL, 300)
-            long_df = fetch(cfg.LONG_SYMBOL, 'COIN_M', 2)     # only the latest candle is used
-            short_df = fetch(cfg.SHORT_SYMBOL, 'USD_M', 2)
-            # Daily volatility veto uses only the latest fully closed 1D candle.
-            daily_df = fetch_cached(cfg.SIGNAL_SYMBOL, 'USD_M', '1d', 400)
-            daily_closed = daily_df.iloc[:-1].copy()
-            volatile_now, atrp_pct, atrp_value = is_volatile_daily(
-                daily_closed,
-                cfg.VOLATILITY_ATR_LENGTH,
-                cfg.VOLATILITY_PERCENTILE_LENGTH,
-                cfg.VOLATILITY_LOW_PERCENTILE,
-                cfg.VOLATILITY_HIGH_PERCENTILE,
-            )
-            # Only fully closed candles (CRYPTO_INTERVAL) are eligible for signals.
-            closed = signal_df.iloc[:-1].copy()
-            enriched = add_indicators(closed, cfg)
-            latest = enriched.iloc[-1]
-            latest_closed_time = latest['close_time']
+            long_df = fetch(cfg.LONG_SYMBOL, 'COIN_M', 2, interval=CRYPTO_INTERVAL)     # yalniz fiyat gosterimi
+            short_df = fetch(cfg.SHORT_SYMBOL, 'USD_M', 2, interval=CRYPTO_INTERVAL)
             now = datetime.now(timezone.utc)
             state['last_heartbeat'] = now.isoformat()
             # Daily Telegram report at 09:00 Europe/Istanbul. If the service restarts after 09:00,
@@ -2025,22 +2138,7 @@ def main():
                 'ETHUSD_PERP': float(long_df.iloc[-1]['close'])
             }
             state['market_price_time'] = now.isoformat()
-            def fmt(v):
-                try:
-                    x=float(v)
-                    return round(x,4)
-                except Exception:
-                    return None
-            state['signals'] = {
-                'ema': 'BULLISH' if float(latest.get('ema_fast',0)) > float(latest.get('ema_slow',0)) else 'BEARISH',
-                'supertrend': 'BULLISH' if bool(latest.get('supertrend_direction', False)) else 'BEARISH',
-                'adx': fmt(latest.get('adx')), 'rsi': fmt(latest.get('rsi')),
-                'cci': fmt(latest.get('cci')), 'stoch': 'K/D loaded',
-                'macd': 'BULLISH' if float(latest.get('macd',0)) > float(latest.get('macd_signal',0)) and float(latest.get('macd_hist',0)) > 0 else 'BEARISH',
-                'volatility': 'BLOCKED' if (cfg.USE_VOLATILE_FILTER and volatile_now) else 'OK',
-                'atrp_percentile_1d': fmt(atrp_pct),
-                'final': 'VOLATILE_BLOCK' if (cfg.USE_VOLATILE_FILTER and volatile_now) else ('LONG' if crypto_signals(enriched, len(enriched)-1)[0] else ('SHORT' if crypto_signals(enriched, len(enriched)-1)[1] else 'NONE'))
-            }
+            state['signals'] = {}      # eski 8-puan ETH sinyal karti kaldirildi
             # Refresh the BTC lock once per cycle (cheap: cached 60s). Wrapped
             # so a problem here can never stop the trading loop.
             try:
@@ -2053,50 +2151,6 @@ def main():
                 print(f'BTC ST LOCK | ERROR | {type(e).__name__}: {e}', flush=True)
             save_state(state)
 
-            # Manage current position using the live execution candle first.
-            if state['position']:
-                long_live = long_df.iloc[-1]
-                short_live = short_df.iloc[-1]
-                if process_intrabar(state, long_live, short_live, now):
-                    pass
-
-            # Process each newly closed signal candle exactly once.
-            last = state.get('last_closed_time')
-            last_ts = pd.Timestamp(last) if last else None
-            if last_ts is None or latest_closed_time > last_ts:
-                # Use the new candle's close to generate a signal; enter at the current execution candle open.
-                state['last_closed_time'] = latest_closed_time.isoformat()
-                if state['position'] is None:
-                    go_long, go_short = crypto_signals(enriched, len(enriched)-1)
-                    if cfg.USE_VOLATILE_FILTER and volatile_now:
-                        go_long = False
-                        go_short = False
-                        print(f'CANDLE {latest_closed_time} | VOLATILE BLOCK | 1D ATRP percentile={atrp_pct}', flush=True)
-                    # Main ETH engine: the same BTC lock / loss brake / late-entry
-                    # checks as the watchlist apply to NEW entries only (the
-                    # watchlist-wide direction limit does not apply to ETH, and
-                    # ETH's own exits are untouched). Fails open on any error.
-                    g_close = float(latest['close']); g_atr = float(latest['atr']); g_px = float(short_df.iloc[-1]['close'])
-                    if go_long and not go_short:
-                        allowed, _why = entry_guard_check(state, cfg.SIGNAL_SYMBOL, 'LONG', now, g_close, g_atr, g_px, skip_direction_limit=True)
-                        if allowed:
-                            px = exec_price(float(long_df.iloc[-1]['open']), 'BUY')
-                            enter(state, 'LONG', px, latest, now)
-                        else:
-                            print(f"CANDLE {latest_closed_time} | LONG signal blocked by entry guard", flush=True)
-                    elif go_short and not go_long:
-                        allowed, _why = entry_guard_check(state, cfg.SIGNAL_SYMBOL, 'SHORT', now, g_close, g_atr, g_px, skip_direction_limit=True)
-                        if allowed:
-                            px = exec_price(float(short_df.iloc[-1]['open']), 'SELL')
-                            enter(state, 'SHORT', px, latest, now)
-                        else:
-                            print(f"CANDLE {latest_closed_time} | SHORT signal blocked by entry guard", flush=True)
-                    else:
-                        print(f"CANDLE {latest_closed_time} | no signal", flush=True)
-                else:
-                    print(f"CANDLE {latest_closed_time} | position already open: {state['position']['side']}", flush=True)
-                save_state(state)
-
             # Manually-added watchlist symbols (from the scanner's "+ Ekle" button).
             # Crypto and US stock symbols each get a full, independent paper
             # position using the same strategy; BIST symbols are signal-only
@@ -2106,8 +2160,8 @@ def main():
             except Exception as e:
                 print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
             try:
-                prune_idle_watchlist(state, now)
-                auto_add_from_scanner(state, now)
+                st_scan_and_trade(state, now)
+                st_manage_positions(state, now)
                 save_state(state)
             except Exception as e:
                 print(f'AUTO ADD | ERROR | {type(e).__name__}: {e}', flush=True)
@@ -2115,7 +2169,7 @@ def main():
                 market = w.get('market')
                 try:
                     if market == 'crypto':
-                        run_watchlist_symbol(state, wsym, now)
+                        pass          # kripto: st_scan_and_trade / st_manage_positions yonetir
                     elif market == 'us_stock':
                         run_us_stock_watchlist_symbol(state, wsym, now)
                 except Exception as e:

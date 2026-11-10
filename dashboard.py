@@ -3512,49 +3512,12 @@ SCANNER_HTML = r'''<!doctype html>
 
 <section class="panel scanner-panel">
   <div class="panel-head scanner-tabs">
-    <button class="tab active" data-tab="crypto" onclick="switchTab('crypto')" data-i18n="scanner.tabCrypto">Crypto Futures</button>
-    <button class="tab" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
+    <button class="tab active" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
     <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 15m closed candle &middot; hourly scan &middot; for signal purposes only, no real orders</div>
   </div>
 
-  <div class="tabpane active" id="tab-crypto">
-
-    <div class="scanner-controls">
-      <input id="coinSearch" placeholder="Search coin (e.g. BTC)" data-i18n-placeholder="scanner.coinSearchPlaceholder" oninput="renderScanner()">
-      <select id="signalFilter" onchange="renderScanner()">
-        <option value="ALL" data-i18n="scanner.allSignals">All signals</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="NO SIGNAL">NO SIGNAL</option>
-      </select>
-      <button class="btn" onclick="startScanner(true)" data-i18n="scanner.scanAll">Scan all</button>
-      <span class="scanner-status" id="scannerStatus" data-i18n="scanner.preparing">Preparing…</span>
-    </div>
-    <div class="scanner-summary"><span id="coinCount">0 coins</span><span class="tag tag-long tag-click" id="longCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','LONG',renderScanner)">LONG 0</span><span class="tag tag-short tag-click" id="shortCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','SHORT',renderScanner)">SHORT 0</span><span class="tag tag-flat tag-click" id="noCount" role="button" tabindex="0" onclick="toggleSigFilter('signalFilter','NO SIGNAL',renderScanner)">NO SIGNAL 0</span></div>
-    <div class="table-scroll tall">
-      <table class="datatable" id="scannerTable">
-        <thead><tr>
-          <th class="sortable" data-key="symbol" data-tbl="scanner" data-i18n="scanner.headerCoin">Coin</th>
-          <th class="sortable num" data-key="price" data-tbl="scanner" data-i18n="scanner.headerPrice">Price</th>
-          <th class="sortable num" data-key="change_pct" data-tbl="scanner" data-i18n="scanner.headerChange24h">24h %</th>
-          <th class="sortable num" data-key="volume" data-tbl="scanner" data-i18n="scanner.headerVolume">Volume</th>
-          <th data-key="st" data-i18n="scanner.headerSt">ST</th>
-          <th class="sortable num" data-key="adx" data-tbl="scanner" data-i18n="scanner.headerAdx">ADX</th>
-          <th class="sortable num" data-key="rsi" data-tbl="scanner" data-i18n="scanner.headerRsi">RSI</th>
-          <th class="sortable num" data-key="cci" data-tbl="scanner" data-i18n="scanner.headerCci">CCI</th>
-          <th data-i18n="scanner.headerMacd">MACD</th>
-          <th class="sortable num" data-key="atrp_percentile_1d" data-tbl="scanner" data-i18n="scanner.headerAtrp">ATRP %ile</th>
-          <th class="sortable num" data-key="score" data-tbl="scanner" data-i18n="scanner.headerScore">Score</th>
-          <th class="sortable" data-key="signal" data-tbl="scanner" data-i18n="scanner.headerSignal">Signal</th>
-          <th data-i18n="scanner.headerReason">Description</th>
-          <th data-i18n="scanner.headerAdd">Add</th>
-        </tr></thead>
-        <tbody id="scannerRows"><tr><td colspan="14" class="empty" data-i18n="scanner.waiting">Waiting for scan…</td></tr></tbody>
-      </table>
-    </div>
-
-
-  </div>
-
-  <div class="tabpane" id="tab-bist">
+  <div class="tabpane active" id="tab-bist">
     <div class="scanner-controls">
       <input id="bistSearch" placeholder="Search stock (e.g. THYAO)" data-i18n-placeholder="scanner.stockSearchPlaceholderBist" oninput="renderBistScanner()">
       <select id="bistSignalFilter" onchange="renderBistScanner()">
@@ -3639,12 +3602,12 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-crypto">
     <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend'e göre Tarama</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend Taraması · 15 dk · her saat başı otomatik</b></div>
       <div class="scanner-controls">
-        <select id="stTf" onchange="stTfChange()"><option value="4h">4 saat</option><option value="1d">Günlük</option><option value="1w">Haftalık</option></select>
-        <button class="btn" id="stBtn" onclick="stStart()">⏱ Supertrend tara (manuel)</button>
+        <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
+        <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="6">Son 6 mum</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="4" selected>Son 4 mum (1 saat)</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
@@ -3696,18 +3659,7 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel" id="ownChartPanel">
-  <div class="panel-head">
-    <h2>Süper Grafik</h2>
-    <span class="text-faint" id="ownChartLabel">—</span>
-    <select id="ownChartTf" onchange="loadOwnChart()">
-      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
-    </select>
-  </div>
-  <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki tablolardan bir satıra tıklayın; grafik burada da açılır.</div>
-  <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
-  <div class="footnote">Yeşil çizgi: yükseliş, kırmızı çizgi: düşüş. Oklar trend dönüşlerini gösterir. Fare tekeri veya iki parmakla yakınlaştırın, sürükleyerek kaydırın. Saatler UTC.</div>
-</section>
+
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
@@ -3784,6 +3736,7 @@ function openOwnChart(tv,label,interval){
   loadOwnChart();
 }
 async function loadOwnChart(){
+  return;   // Süper Grafik kaldirildi
   const msg=document.getElementById('ownChartMsg'), cv=document.getElementById('ownChart'), lab=document.getElementById('ownChartLabel');
   if(!_own.tv) return;
   const tf=document.getElementById('ownChartTf').value, my=++_own.seq;
@@ -3917,7 +3870,7 @@ function openTvChart(tvSymbol,label,interval){
   const config={
     autosize:true,
     symbol:tvSymbol,
-    interval:String(interval||"240"),
+    interval:"15",
     timezone:"Etc/UTC",
     theme:"dark",
     style:"1",
@@ -3928,7 +3881,7 @@ function openTvChart(tvSymbol,label,interval){
     allow_symbol_change:true,
     withdateranges:true,
     save_image:false,
-    studies:["RSI@tv-basicstudies","MACD@tv-basicstudies","CCI@tv-basicstudies","StochasticRSI@tv-basicstudies","DM@tv-basicstudies"],
+    studies:["Supertrend@tv-basicstudies"],          // yalnizca Supertrend (ATR 10, carpan 4.1: grafik ayarindan kontrol edin)
     support_host:"https://www.tradingview.com"
   };
   const script=document.createElement('script');
@@ -4002,6 +3955,7 @@ function sortRows(rows,tbl){
 async function scannerData(){try{let r=await fetch('/api/scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
 let scannerCache={results:[]};
 function renderScanner(){
+  if(!document.getElementById('scannerRows')) return;   // normal kripto taramasi kaldirildi
   let q=(document.getElementById('coinSearch')?.value||'').toUpperCase();
   let f=document.getElementById('signalFilter')?.value||'ALL';
   let rows=scannerCache.results.filter(x=>(!q||x.symbol.includes(q))&&(f==='ALL'||x.signal===f));
@@ -4082,20 +4036,20 @@ async function refreshScanner(){
   document.getElementById('scannerStatus').textContent=txt;renderScanner();
 }
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
-refreshScanner();setInterval(refreshScanner,10000);
+// normal kripto taramasi kaldirildi: tek kripto taramasi Supertrend (15 dk, saat basi)
 
 // ---- helpers used by the Supertrend scan below ----
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 
-// ---- Supertrend scan (crypto: 4H / daily / weekly): MANUAL only ----
-const stCaches={'4h':{results:[],status:'IDLE'},'1d':{results:[],status:'IDLE'},'1w':{results:[],status:'IDLE'}};
-let stCache=stCaches['4h'], stTimer=null;
-function stTfVal(){ const v=document.getElementById('stTf')?.value; return (v==='1d'||v==='1w')?v:'4h'; }
+// ---- Supertrend scan (crypto: 15m, hourly automatic) ----
+const stCaches={'15m':{results:[],status:'IDLE'}};
+let stCache=stCaches['15m'], stTimer=null;
+function stTfVal(){ return '15m'; }
 function stTfChange(){
   const tf=stTfVal(); stCache=stCaches[tf];
   const bars=document.getElementById('stBars');
-  if(bars){ bars.innerHTML=(tf==='1w'?[1,2,3,4]:[1,2,3,6]).map(n=>`<option value="${n}">${T15('Son '+n+' mum','Last '+n+(n>1?' candles':' candle'))}</option>`).join(''); }
+  if(bars){ bars.innerHTML=[1,2,3,4].map(n=>`<option value="${n}">${T15('Son '+n+' mum','Last '+n+(n>1?' candles':' candle'))}</option>`).join(''); }
   renderSt(); refreshSt();
 }
 function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
@@ -4103,8 +4057,8 @@ function renderSt(){
   const tf=stTfVal(); stCache=stCaches[tf];
   const f=document.getElementById('stFilter')?.value||'LONG';
   const n=Number(document.getElementById('stBars')?.value||1);
-  const all=(stCache.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
-  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0));
+  const all=(stCache.results||[]).map(x=>({...x,signal:(x.signal&&x.signal_age!=null&&x.signal_age<n)?x.signal:'NO SIGNAL'}));
+  const rows=all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>(a.signal_age??99)-(b.signal_age??99)||Number(b.change_pct||0)-Number(a.change_pct||0));
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('stStatus'), note=document.getElementById('stNote'), btn=document.getElementById('stBtn');
   const busy=Object.values(stCaches).some(c=>c.status==='SCANNING'); if(btn) btn.disabled=busy;
@@ -4112,15 +4066,15 @@ function renderSt(){
     if(stCache.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
     else if(busy) st.textContent=T15('Başka bir zaman dilimi taranıyor…','Another timeframe is being scanned…');
     else if(stCache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
-    else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
+    else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
   }
-  const lblTr={'4h':'4 saatlik','1d':'Günlük','1w':'Haftalık'}[tf], lblEn={'4h':'4H','1d':'Daily','1w':'Weekly'}[tf];
+  const lblTr='15 dakikalık', lblEn='15m';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    lblTr+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.'+(tf==='4h'?'':' Günlük/haftalık mumlar UTC 00:00’da (TR 03:00) kapanır.'),
-    lblEn+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.'+(tf==='4h'?'':' Daily/weekly candles close at 00:00 UTC.'));
+    lblTr+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
+    lblEn+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
   const body=document.getElementById('stRows'); if(!body) return;
-  const iv={'4h':'240','1d':'D','1w':'W'}[tf];
-  const fl=x=>tf==='4h'?stFmtTR(x.flip_time):String(x.flip_time||'').slice(5,10);
+  const iv='15';
+  const fl=x=>stFmtTR(x.signal_time||x.flip_time);
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · ${tf.toUpperCase()}','${iv}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${fl(x)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
 }
@@ -4140,7 +4094,7 @@ async function stStart(){
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   renderSt(); refreshSt();
 }
-refreshSt();   // one cheap read of the last result; it never starts a scan
+refreshSt(); setInterval(refreshSt,60000);   // sonuc her dakika okunur; tarama saat basi kendiliginden calisir
 
 // ---- Supertrend scan for BIST / Wall Street (DAILY or WEEKLY): MANUAL only ----
 const stsCache={Bist:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}},Us:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}}}, stsTimer={};
@@ -10134,6 +10088,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'forbidden'}, status=403); return
             try:
                 _reset_paper_trading(STARTING_EQUITY)
+                if os.environ.get('RESET_CLEARS_PAPER_HISTORY', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+                    from state_store import TRADES_FILE as _TF
+                    if os.path.exists(_TF):
+                        os.replace(_TF, _TF + '.bak-' + __import__('datetime').datetime.now(__import__('datetime').timezone.utc).strftime('%Y%m%d%H%M%S'))
             except Exception as e:
                 self._send_json({'ok': False, 'error': str(e)}, status=500); return
             print(f'ADMIN | {user} | RESET PAPER TRADING (open positions + equity only, closed-trade history kept) -> equity={STARTING_EQUITY}', flush=True)
@@ -10295,7 +10253,6 @@ def trial_expiry_notify_loop():
 def start_dashboard():
     server=ThreadingHTTPServer(('0.0.0.0',PORT),Handler)
     print(f'DASHBOARD | http://0.0.0.0:{PORT} | PAPER ONLY + COIN SCANNER',flush=True)
-    threading.Thread(target=background_loop, daemon=True).start()
     threading.Thread(target=bist_background_loop, daemon=True).start()
     threading.Thread(target=us_background_loop, daemon=True).start()
     threading.Thread(target=telegram_link.poll_loop, daemon=True).start()

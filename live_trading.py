@@ -83,7 +83,7 @@ def _env_mode(name, default='on'):
 
 
 BTC_LOCK_MODE = _env_mode('BTC_LOCK_MODE', 'on')
-LOSS_BRAKE_MODE = _env_mode('LOSS_BRAKE_MODE', 'on')
+LOSS_BRAKE_MODE = 'off'   # kaldirildi (Supertrend-only sistem)
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))
 LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)
 LOSS_BRAKE_PAUSE_HOURS = _env_float('LOSS_BRAKE_PAUSE_HOURS', 12)

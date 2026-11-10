@@ -99,7 +99,7 @@ INITIAL_CAPITAL = 10000.0
 # reports (deck, /backtest page) to a $10,000 baseline, and must stay that
 # way for those numbers to still make sense. Can still be overridden per
 # deployment with the PAPER_INITIAL_CAPITAL env var.
-PAPER_ACCOUNT_INITIAL_CAPITAL = 100000.0
+PAPER_ACCOUNT_INITIAL_CAPITAL = 10000.0
 POSITION_QTY_ETH = 1.0        # Fixed position size: exactly 1 ETH per trade
 POSITION_SIZE_PCT = 1.0       # Kept for compatibility; NOT used for sizing in TEST 16
 LEVERAGE = 1.0
