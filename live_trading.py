@@ -82,7 +82,10 @@ def _env_mode(name, default='on'):
     return v if v in ('on', 'log', 'off') else default
 
 
-BTC_LOCK_MODE = _env_mode('BTC_LOCK_MODE', 'on')
+BTC_LOCK_MODE = 'off'   # kaldirildi: hem long hem short aciliyor
+import binance_algo
+EMERGENCY_STOP_PCT = _env_float('ST_EMERGENCY_STOP_PCT', 6.0)      # giristen % ters hareket
+EMERGENCY_STOP_MODE = _env_mode('LIVE_EMERGENCY_STOP', 'on')
 LOSS_BRAKE_MODE = 'off'   # kaldirildi (Supertrend-only sistem)
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))
 LOSS_BRAKE_WINDOW_MIN = _env_float('LOSS_BRAKE_WINDOW_MIN', 60)
@@ -92,6 +95,40 @@ LATE_ENTRY_MODE = _env_mode('LATE_ENTRY_MODE', 'on')
 LATE_ENTRY_CHASE_ATR = _env_float('LATE_ENTRY_CHASE_ATR', 1.5)
 LATE_ENTRY_ADVERSE_ATR = _env_float('LATE_ENTRY_ADVERSE_ATR', 1.0)
 MAX_RECENT_SKIPS = 20
+
+
+def _arm_emergency_stop(username, api_key, api_secret, symbol, side, entry_price, leverage):
+    """Girisin hemen ardindan Binance'e acil stop (STOP_MARKET, closePosition) koyar. Basarisizlik islemi bozmaz,
+    uyeye bildirilir. Tetik, likidasyondan once olsun diye min(pct, 80/kaldirac) kullanilir.
+    Doner: pozisyon kaydina eklenecek dict."""
+    if EMERGENCY_STOP_MODE != 'on' or EMERGENCY_STOP_PCT <= 0:
+        return {}
+    pct = min(EMERGENCY_STOP_PCT, 80.0 / max(1, int(leverage or 1)))
+    trigger = entry_price * (1 - pct / 100.0) if side == 'LONG' else entry_price * (1 + pct / 100.0)
+    try:
+        ok, res = binance_algo.place_emergency_stop(api_key, api_secret, symbol, side, trigger)
+    except Exception as e:
+        ok, res = False, f'{type(e).__name__}: {e}'
+    if ok:
+        print(f'LIVE | {username} | ACIL STOP KONDU | {side} {symbol} | tetik={trigger:.6g} (%{pct:.2f}) | id={res}', flush=True)
+        return {'algo_id': res, 'emergency_stop': trigger, 'emergency_stop_pct': pct}
+    print(f'LIVE | {username} | ACIL STOP KONAMADI | {side} {symbol} | {res}', flush=True)
+    _notify_user(username, lambda s=symbol, sd=side, r=res: tg.live_risk_alert(
+        f'{s} {sd} pozisyonu icin Binance ACIL STOP emri konamadi:\n{r}\n\nPozisyon acik ve yalnizca bot tarafindan yonetiliyor; '
+        f'istersen Binance uygulamasindan kendi stop emrini ekleyebilirsin.'))
+    return {'emergency_stop_error': str(res)[:160]}
+
+
+def _disarm_emergency_stop(api_key, api_secret, symbol, pos):
+    """Pozisyon kapandiktan sonra artakalan acil stop emrini iptal eder (aksi halde ayni sembolde sonradan acilan
+    bir pozisyonu kapatabilir)."""
+    if not pos or not (pos.get('algo_id') or pos.get('emergency_stop')):
+        return
+    try:
+        ok, msg = binance_algo.cancel_emergency_stop(api_key, api_secret, symbol, pos.get('algo_id'))
+        print(f'LIVE | ACIL STOP IPTAL | {symbol} | {msg}', flush=True)
+    except Exception as e:
+        print(f'LIVE | ACIL STOP IPTAL HATASI | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
 def _parse_iso_utc(v):
@@ -492,6 +529,7 @@ def reconcile_user_positions(username, min_age_s=45):
             if not pos:
                 continue
             side, qty, entry = pos['side'], pos['qty'], pos['entry_price']
+            _disarm_emergency_stop(api_key, api_secret, symbol, pos)
             px = blive.get_mark_price(symbol) or entry
             gross = (px - entry) * qty if side == 'LONG' else (entry - px) * qty
             urec['realized_pnl_usd'] += gross
@@ -501,7 +539,7 @@ def reconcile_user_positions(username, min_age_s=45):
             _log_live_trade({
                 'username': username, 'side': side, 'symbol': symbol, 'qty': qty,
                 'entry_price': entry, 'exit_price': px, 'pnl': gross,
-                'reason': 'closed_on_binance', 'entry_time': pos.get('entry_time'),
+                'reason': ('EMERGENCY_STOP' if pos.get('algo_id') else 'closed_on_binance'), 'entry_time': pos.get('entry_time'),
                 'exit_time': now.isoformat(), 'source': 'reconcile',
             })
             _save_runtime(runtime)
@@ -604,6 +642,7 @@ def open_position_now(username, symbol, side, demo_price=None):
             'entry_time': datetime.now(timezone.utc).isoformat(), 'source': 'manual_join',
             'leverage': leverage,
         }
+        urec['positions'][symbol].update(_arm_emergency_stop(username, api_key, api_secret, symbol, side, fill_price, leverage))
         urec['last_error'] = None
         urec['last_error_notified'] = None
         _save_runtime(runtime)
@@ -649,6 +688,7 @@ def close_position_now(username, symbol):
             print(f'LIVE | {username} | MANUAL CLOSE FAILED | {symbol} {side} | {result}', flush=True)
             return False, f'Kapatma emri başarısız oldu: {result}'
 
+        _disarm_emergency_stop(api_key, api_secret, symbol, pos)
         fallback_price = blive.get_mark_price(symbol) or pos['entry_price']
         fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, fallback_price)
         entry_price = pos['entry_price']
@@ -740,6 +780,7 @@ def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
                 'entry_time': datetime.now(timezone.utc).isoformat(), 'source': source,
                 'leverage': leverage,
             }
+            urec['positions'][symbol].update(_arm_emergency_stop(username, api_key, api_secret, symbol, side, fill_price, leverage))
             urec['last_error'] = None
             urec['last_error_notified'] = None
             print(f'LIVE ENTRY | {username} | {side} {symbol} | qty={qty} | price~{fill_price} | leverage={leverage}x', flush=True)
@@ -783,6 +824,7 @@ def on_exit_signal(symbol, side, price, reason, source='eth_bot'):
                     _notify_user(username, lambda s=symbol, sd=side, r=result: tg.live_risk_alert(f'{s} {sd} pozisyonunu kapatma emri BAŞARISIZ OLDU:\n{r}\n\nPozisyon Binance hesabınızda AÇIK kalmış olabilir — lütfen hemen manuel kontrol edin.'))
                 changed = True
                 continue
+            _disarm_emergency_stop(api_key, api_secret, symbol, pos)
             fill_price = blive.resolve_fill_price(api_key, api_secret, symbol, result, price)
             entry_price = pos['entry_price']
             gross = (fill_price - entry_price) * qty if side == 'LONG' else (entry_price - fill_price) * qty

@@ -1023,7 +1023,6 @@ th.sort-active{color:var(--accent)}
   <a href="/" class="active" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -1049,7 +1048,9 @@ th.sort-active{color:var(--accent)}
 </section>
 
 
-<section class="cols">
+<section class="panel" id="paperEmbed" style="padding:0;border:0;background:transparent;overflow:visible"><iframe id="paperFrame" src="/trades?embed=1" title="Deneme İşlemleri" style="width:100%;height:560px;border:0;display:block" scrolling="no"></iframe></section>
+<script>window.addEventListener("message",function(ev){if(ev.origin!==location.origin)return;var d=ev.data;if(d&&d.paperH){var f=document.getElementById("paperFrame");if(f)f.style.height=Math.max(300,d.paperH+8)+"px";}});</script>
+<section class="cols" style="display:none">
   <div class="panel" id="positionPanel" style="scroll-margin-top:90px">
     <div class="panel-head"><h2><span data-i18n="panel.openPosition">Open position</span> <span class="text-faint" id="detailSymbol">— ETHUSDT</span></h2></div>
     <div class="position-body" id="position" data-i18n="panel.loading">Loading…</div>
@@ -3503,14 +3504,13 @@ SCANNER_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" class="active" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
-<section class="panel scanner-panel">
+<section class="panel scanner-panel" style="display:none">
   <div class="panel-head scanner-tabs">
     <button class="tab active" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
@@ -3588,21 +3588,13 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
 </section>
 
-<section class="panel" id="tvChartPanel">
-  <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
-  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
-  <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
-</section>
+
 
 <section class="panel" id="stScanPanel">
-  <div class="panel-head scanner-tabs">
-    <button class="tab active" data-sttab="crypto" onclick="stTab('crypto')">Kripto</button>
-    <button class="tab" data-sttab="bist" onclick="stTab('bist')">Borsa İstanbul</button>
-    <button class="tab" data-sttab="us" onclick="stTab('us')">Wall Street</button>
-  </div>
+<style>#stCard .scanner-controls{margin-bottom:8px;gap:8px}#stCard .scanner-note{margin:0 0 6px 0!important}#stCard .table-scroll{margin-top:2px}</style>
   <div id="stPane-crypto">
-    <div id="stCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b>Supertrend Taraması · 15 dk · her saat başı otomatik</b></div>
+    <div id="stCard" style="padding:14px 16px 10px">
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:14px">Supertrend Taraması · 15 dk · her saat başı otomatik</b></div>
       <div class="scanner-controls">
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
@@ -3657,6 +3649,12 @@ SCANNER_HTML = r'''<!doctype html>
       </div>
     </div>
   </div>
+</section>
+
+<section class="panel" id="tvChartPanel">
+  <div class="panel-head"><h2><a href="#" id="tvChartTitle" onclick="openTvExternal();return false" title="TradingView'de aç / Open on TradingView" style="color:var(--accent);text-decoration:underline;cursor:pointer"><span data-i18n="tvChart.title">TradingView Chart</span> ↗</a> <span class="text-faint" id="tvChartSymbol" data-i18n="tvChart.noSymbol">— no symbol selected</span></h2><button class="btn tv-fullscreen-btn hidden" id="tvFullscreenBtn" onclick="toggleTvFullscreen()" data-i18n="tvChart.fullscreen">⛶ Fullscreen</button></div>
+  <div id="tvChartEmpty" class="tv-chart-empty" data-i18n="tvChart.emptyMessage">Click a row in the scan tables above to view that symbol's TradingView chart here.</div>
+  <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
 </section>
 
 
@@ -3994,7 +3992,7 @@ async function refreshBistScanner(){
   document.getElementById('bistScannerStatus').textContent=txt;renderBistScanner();
 }
 async function startBistScanner(force=false){document.getElementById('bistScannerStatus').textContent=t('scanner.startingBistScan');try{await fetch('/api/bist-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshBistScanner();}
-refreshBistScanner();setInterval(refreshBistScanner,10000);
+// BIST taramasi kaldirildi
 
 async function usScannerData(){try{let r=await fetch('/api/us-scanner',{cache:'no-store'});return await r.json()}catch(e){return {status:'ERROR',results:[],last_error:String(e)}}}
 let usScannerCache={results:[]};
@@ -4027,7 +4025,7 @@ function fmtCandleTime(s){
   }catch(e){ return s; }
 }
 async function startUsScanner(force=false){document.getElementById('usScannerStatus').textContent=t('scanner.startingUsScan');try{await fetch('/api/us-scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshUsScanner();}
-refreshUsScanner();setInterval(refreshUsScanner,10000);
+// Wall Street taramasi kaldirildi
 
 async function refreshScanner(){
   let d=await scannerData();scannerCache=d;
@@ -4148,7 +4146,7 @@ async function stsStart(k){
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   stsRender(k); stsRefresh(k);
 }
-stsRefresh('Bist'); stsRefresh('Us');   // cheap read of last result; never starts a scan
+// BIST / Wall Street Supertrend taramalari kaldirildi
 
 refreshWatchlist();setInterval(refreshWatchlist,10000);
 
@@ -4610,7 +4608,6 @@ FAQ_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
@@ -4885,7 +4882,6 @@ BACKTEST_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -5451,7 +5447,6 @@ ACCOUNT_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -6611,7 +6606,6 @@ TRADES_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" class="active" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -6642,9 +6636,8 @@ function sigPill(x){const c=x==='LONG'?'long':x==='SHORT'?'short':'flat';return 
 let statusCache=null;
 let watchlistCache={items:[]};
 
-function goToSymbol(symbol){
-  window.location.href = '/?symbol=' + encodeURIComponent(symbol);
-}
+function goToSymbol(symbol){ /* detay paneli kaldirildi */ }
+const pxf=x=>{if(x==null||x==='')return '—';x=Number(x);const d=x>=100?2:x>=1?4:x>=0.01?5:7;return x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:d});};
 
 
 const BLOCK_TEXT={
@@ -6693,7 +6686,7 @@ function renderWatchlistTable(){
   })();}catch(e){ console.error('wl summary',e); }
 
   let rowsHtml='';
-  if(statusCache){
+  if(false){   // ETH ana motoru kaldirildi: ETH da normal bir tarama coini
     const p=statusCache.position;
     const sideCell=p?`<span class="pill ${p.side.toLowerCase()}">${p.side}</span>`:sigPill((statusCache.signals&&statusCache.signals.final)||'NO SIGNAL');
     const pnlCell=p?`<span class="${cls(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</span>`:'<span class="text-faint">'+t('watchlist.noPosition')+'</span>';
@@ -6725,7 +6718,7 @@ function renderWatchlistTable(){
     const marketLabel=x.market==='bist'?t('market.bist'):x.market==='us_stock'?t('market.usStock'):t('market.binance');
     const liveBtn=(p&&x.market==='crypto')?liveJoinBtn(x.symbol,p):'';
     const closeBtn=(p&&isAdmin)?`<button class="btn btn-danger" id="closeBtn_${x.symbol}" onclick="event.stopPropagation();closePosition('${x.symbol}',false)">${t('watchlist.closeBtn')}</button> `:'';
-    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${num(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${liveBtn}${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
+    return `<tr class="row-clickable" onclick="goToSymbol('${x.symbol}')"><td><b>${x.symbol}</b></td><td>${marketLabel}</td><td>${sideCell}</td><td class="num">${pxf(p?p.current_price:x.current_price)}</td><td class="num">${pnlCell}</td><td class="text-faint">${added}</td><td>${liveBtn}${closeBtn}<button class="btn" onclick="event.stopPropagation();removeFromWatchlist('${x.symbol}')">${t('watchlist.removeBtn')}</button></td></tr>`;
   }).join('');
 
   document.getElementById('watchlistRows').innerHTML=rowsHtml||'<tr><td colspan="7" class="watchlist-empty">'+t('watchlist.empty')+'</td></tr>';
@@ -7206,7 +7199,6 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" class="active" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -7644,7 +7636,6 @@ LIVE_HTML = r'''<!doctype html>
   <a href="/" data-i18n="nav.dashboard">Dashboard</a>
   <a href="/scanner" data-i18n="nav.scanner">Scan</a>
   <a href="/live" class="active" data-i18n="nav.live">Live Trading</a>
-  <a href="/trades" data-i18n="nav.trades">Paper Trades</a>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
@@ -9203,7 +9194,20 @@ def watchlist_status():
         pos = None
         p = positions.get(symbol)
         if p:
-            cp = f(sig.get('price', p.get('entry_price')))
+            cp_raw = sig.get('price')
+            try:
+                import time as _t
+                from datetime import datetime as _dt
+                _stale = (not sig.get('updated_at')) or (_t.time() - _dt.fromisoformat(sig['updated_at']).timestamp() > 120)
+            except Exception:
+                _stale = True
+            if cp_raw is None or _stale:
+                try:
+                    import binance_live as _bl
+                    cp_raw = _bl.get_mark_price(symbol) or cp_raw
+                except Exception:
+                    pass
+            cp = f(cp_raw if cp_raw is not None else p.get('entry_price'))
             qty = f(p.get('qty_eth', 0)); ep = f(p.get('entry_price'))
             unreal = (cp - ep) * qty if p.get('side') == 'LONG' else (ep - cp) * qty
             active = f(p.get('trail_stop')) if p.get('trail_active') and p.get('trail_stop') is not None else f(p.get('sl'))
@@ -9539,7 +9543,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send_html(html); return
 
         if path=='/trades':
+            if parse_qs(urlparse(self.path).query).get('embed', ['0'])[0] != '1':
+                self._redirect('/'); return           # Deneme islemleri artik Panel'in icinde
             html = TRADES_HTML.replace('__STARTING_EQUITY__', repr(STARTING_EQUITY))
+            html = html.replace('</head>', '<style>.topbar,.topnav,.page-footer{display:none!important}'
+                                '.app{max-width:none!important;padding:0!important}html,body{background:transparent!important}'
+                                '.wl-panel{margin-bottom:0!important}</style></head>')
+            html = html.replace('</body>', '<script>(function(){function h(){try{parent.postMessage({paperH:document.documentElement.scrollHeight},location.origin)}catch(e){}}'
+                                'if(window.ResizeObserver)new ResizeObserver(h).observe(document.documentElement);window.addEventListener("load",h);setInterval(h,1500);})();</script></body>')
             self._send_html(html); return
         if path=='/closed-trades':
             self._send_html(CLOSED_TRADES_HTML); return
@@ -10088,7 +10099,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'forbidden'}, status=403); return
             try:
                 _reset_paper_trading(STARTING_EQUITY)
-                if os.environ.get('RESET_CLEARS_PAPER_HISTORY', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+                if os.environ.get('RESET_KEEPS_PAPER_HISTORY', '').strip().lower() not in ('1', 'true', 'yes', 'on'):
                     from state_store import TRADES_FILE as _TF
                     if os.path.exists(_TF):
                         os.replace(_TF, _TF + '.bak-' + __import__('datetime').datetime.now(__import__('datetime').timezone.utc).strftime('%Y%m%d%H%M%S'))
