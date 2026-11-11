@@ -9775,6 +9775,19 @@ def ta_ai_comment(tv, tf):
         msg = {401: 'Anthropic API anahtarı reddetti (HTTP 401): Railway’deki ANTHROPIC_API_KEY geçersiz, silinmiş ya da eksik kopyalanmış. console.anthropic.com > API Keys’ten yeni anahtar oluşturup değişkeni güncelleyin (sk-ant- ile başlamalı, tırnak ve boşluk olmamalı) ve servisi yeniden başlatın.' + ('' if key.startswith('sk-ant-') else ' Not: mevcut değer sk-ant- ile başlamıyor.'),
                403: 'Anthropic anahtarının bu modele erişim izni yok (HTTP 403). TA_AI_MODEL ile başka bir model deneyin.',
                404: 'Model bulunamadı (HTTP 404): TA_AI_MODEL değişkenini geçerli bir model adıyla ayarlayın.', 429: 'Claude şu an yoğun, biraz sonra tekrar deneyin.'}.get(r.status_code, f'Claude yanıtı alınamadı (HTTP {r.status_code}).')
+        try:
+            _em = str((r.json().get('error') or {}).get('message') or '')[:300]
+        except Exception:
+            _em = ''
+        if r.status_code not in (401, 403, 404, 429) and _em:
+            if 'credit balance' in _em.lower():
+                msg = ('Anthropic hesabında API kredisi yok veya bitti (HTTP 400). console.anthropic.com > Plans & Billing '
+                       'bölümünden kredi yükleyin; Claude.ai aboneliği API kullanımını kapsamaz.')
+            else:
+                msg = f'Claude isteği reddetti (HTTP {r.status_code}): {_em}'
+        elif _em and r.status_code in (403, 404):
+            msg = msg + ' (' + _em + ')'
+        print(f'TA-AI | HTTP {r.status_code} | model={model} | {_em}', flush=True)
         return {'error': msg}
     try:
         text = ''.join(b.get('text', '') for b in r.json().get('content', []) if b.get('type') == 'text').strip()
