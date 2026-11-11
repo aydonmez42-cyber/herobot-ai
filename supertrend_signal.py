@@ -18,11 +18,11 @@ ST_MULT = 4.1
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "level")      # "level" (Pine varsayilani) | "flip"
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
-TP_PCT = float(os.environ.get("ST_TP_PCT", "2.0"))           # fiyat uzerinden %, kaldiracsiz
-TRAIL_ARM_PCT = float(os.environ.get("ST_TRAIL_ARM_PCT", "5.0"))    # kar bu seviyeyi gecince koruma devreye girer
-TRAIL_FLOOR_PCT = float(os.environ.get("ST_TRAIL_FLOOR_PCT", "4.0"))  # devredeyken kar bunun altina inerse kapat
+TP_PCT = float(os.environ.get("ST_TP_PCT", "4.0"))           # fiyat uzerinden %, kaldiracsiz
+TRAIL_ARM_PCT = float(os.environ.get("ST_TRAIL_ARM_PCT", "2.5"))    # kar bu seviyeyi gecince koruma devreye girer
+TRAIL_FLOOR_PCT = float(os.environ.get("ST_TRAIL_FLOOR_PCT", "2.0"))  # devredeyken kar bunun altina inerse kapat
 
-MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "4"))   # saatlik tarama = son 4 kapanmis 15 dk mum
+MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "6.0"))            # acil stop: girisen % olarak olumsuz hareket
 
@@ -153,7 +153,7 @@ def check_exit(pos, df, last_price):
         return "EMERGENCY_STOP"
     if profit >= TP_PCT:
         return "TP"
-    if peak >= TRAIL_ARM_PCT and profit < TRAIL_FLOOR_PCT:
+    if peak >= TRAIL_ARM_PCT and profit <= TRAIL_FLOOR_PCT:
         return "TRAIL_LOCK"
 
     st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)

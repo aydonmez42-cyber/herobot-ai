@@ -3617,7 +3617,7 @@ SCANNER_HTML = r'''<!doctype html>
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3">Son 3 mum</option><option value="4" selected>Son 4 mum (1 saat)</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3" selected>Son 3 mum (45 dk)</option><option value="4">Son 4 mum (1 saat)</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>

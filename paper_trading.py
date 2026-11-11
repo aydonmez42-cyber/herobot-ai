@@ -1942,7 +1942,7 @@ def sync_bist_watchlist_signals(state, now):
 # =============================================================================
 # SUPERTREND MOTORU (15 dk, saat basi tarama) - tek giris/cikis sistemi
 #   Giris : scanner_st'in saat basi taramasindaki LONG/SHORT sinyali (supertrend_signal.py)
-#   Cikis : TP %2 (ST_TP_PCT) | kar kilidi (%5'te devreye girer, %4 altina inince kapatir) |
+#   Cikis : TP %4 (ST_TP_PCT) | kar kilidi (%2,5'te devreye girer, %2 altina inince kapatir) |
 #           Supertrend stop'u (LONG: kirilan seviye altinda mum kapanisi, SHORT: ustunde) |
 #           acil stop (girisen ST_EMERGENCY_STOP_PCT % ters hareket)
 #   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal
@@ -1987,7 +1987,7 @@ def st_entry_message(pos):
             f"Giriş: {_fmt_px(pos['entry_price'])} USDT\n"
             f"Stop çizgisi (mum kapanışı): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
             f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n"
-            + (f"Kâr kilidi: %{sts.TRAIL_ARM_PCT:g} üstünde devreye girer, %{sts.TRAIL_FLOOR_PCT:g} altında kapatır\n" if sts.TRAIL_ARM_PCT < sts.TP_PCT else "") +
+            + (f"Kâr kilidi: %{sts.TRAIL_ARM_PCT:g} üstünde devreye girer, %{sts.TRAIL_FLOOR_PCT:g} seviyesine inerse kapatır\n" if sts.TRAIL_ARM_PCT < sts.TP_PCT else "") +
             f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n"
             f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)")
 
