@@ -1942,8 +1942,8 @@ def sync_bist_watchlist_signals(state, now):
 # =============================================================================
 # SUPERTREND MOTORU (15 dk, saat basi tarama) - tek giris/cikis sistemi
 #   Giris : scanner_st'in saat basi taramasindaki LONG/SHORT sinyali (supertrend_signal.py)
-#   Cikis : TP %4 (ST_TP_PCT) | kar kilidi (%2,5'te devreye girer, %2 altina inince kapatir) |
-#           Supertrend stop'u (LONG: kirilan seviye altinda mum kapanisi, SHORT: ustunde) |
+#   Cikis : basamakli kar kilidi (ST_LOCK_TIERS, sabit TP yok) |
+#           Supertrend stop'u (dinamik: LONG yesil cizginin altinda, SHORT kirmizi cizginin ustunde mum kapanisi) |
 #           acil stop (girisen ST_EMERGENCY_STOP_PCT % ters hareket)
 #   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal
 #   cikisi ve 8-puan stratejisi bu yolda KULLANILMAZ.
@@ -1985,9 +1985,10 @@ def st_entry_message(pos):
             f"İşlem tutarı: {_usdt(notional)}\n"
             f"Adet: {pos['qty_eth']:.4f} {base}\n"
             f"Giriş: {_fmt_px(pos['entry_price'])} USDT\n"
-            f"Stop çizgisi (mum kapanışı): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
-            f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n"
-            + (f"Kâr kilidi: %{sts.TRAIL_ARM_PCT:g} üstünde devreye girer, %{sts.TRAIL_FLOOR_PCT:g} seviyesine inerse kapatır\n" if sts.TRAIL_ARM_PCT < sts.TP_PCT else "") +
+            f"Stop (Supertrend çizgisi, mum kapanışında; çizgiyle birlikte hareket eder): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
+            + (f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n" if sts.TP_PCT > 0 else f"Sabit TP yok · ilk kilit hedefi: {_fmt_px(pos['tp'])} USDT\n")
+            + f"Kâr kilidi (zirve → korunan kâr): {sts.lock_tiers_text()}\n"
+            +
             f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n"
             f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)")
 
@@ -2026,12 +2027,14 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     px = exec_price(price_raw, 'BUY' if side == 'LONG' else 'SELL')
     qty = (watchlist_position_usd() / px) if px else 0.0
     level = float(sig['level']) if sig.get('level') is not None else None
+    if sts.ST_STOP_MODE == 'flip' and sig.get('st') is not None:
+        level = float(sig['st'])          # stop = yeni olusan Supertrend cizgisi (her turda guncellenir)
     pos = {
         'side': side, 'symbol': symbol, 'qty_eth': qty,
         'entry_price': px, 'entry_time': now.isoformat(),
         'signal_time': pd.Timestamp(sig['signal_time']).isoformat(), 'atr': float(atr_val or 0.0),
         'sl': level if level is not None else px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0),
-        'tp': px * (1 + sign * sts.TP_PCT / 100.0),
+        'tp': px * (1 + sign * (sts.TP_PCT if sts.TP_PCT > 0 else sts.next_lock_target(0.0)) / 100.0),   # TP kapaliysa: ilk kilit hedefi
         'trail_active': False, 'trail_stop': None, 'highest_high': px, 'lowest_low': px,
         'entry_fee': fee(px * qty), 'source': 'st',
         'st_level': level, 'st_kind': sig.get('kind'), 'peak_pct': 0.0,
@@ -2115,9 +2118,18 @@ def st_manage_positions(state, now):
             profit = sign * (price - p['entry_price']) / p['entry_price'] * 100.0
             state.setdefault('watchlist_signals', {})[symbol] = {'price': price, 'final': p['side'], 'updated_at': now.isoformat()}
             p['peak_pct'] = max(float(p.get('peak_pct') or 0.0), profit)
-            p['trail_active'] = p['peak_pct'] >= sts.TRAIL_ARM_PCT
-            p['trail_stop'] = (p['entry_price'] * (1 + sign * sts.TRAIL_FLOOR_PCT / 100.0)) if p['trail_active'] else None
-            p['tp'] = p['entry_price'] * (1 + sign * sts.TP_PCT / 100.0)   # TP ayari degistiyse acik pozisyonlar da yeni hedefi kullanir
+            _fl = sts.lock_floor(p['peak_pct'])
+            p['trail_active'] = _fl is not None
+            p['trail_stop'] = (p['entry_price'] * (1 + sign * _fl / 100.0)) if _fl is not None else None
+            _tgt = sts.TP_PCT if sts.TP_PCT > 0 else sts.next_lock_target(p['peak_pct'])
+            p['tp'] = p['entry_price'] * (1 + sign * _tgt / 100.0)          # TP kapaliysa: bir sonraki kilit basamagi
+            if sts.ST_STOP_MODE == 'flip':
+                try:
+                    _ln = float(sts.supertrend(ind['high'], ind['low'], ind['close'], sts.ST_PERIOD, sts.ST_MULT)['supertrend'].iloc[-1])
+                    if _ln == _ln and _ln > 0:
+                        p['st_level'] = _ln; p['sl'] = _ln      # dinamik (trailing) stop: cizgi hareket ettikce stop da hareket eder
+                except Exception:
+                    pass
             raw = sts.check_exit(p, ind, price)
             if raw:
                 exit_raw = p['tp'] if raw == 'TP' else price
@@ -2186,7 +2198,7 @@ def main():
           f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s değişim %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} ({iv_label(TREND_SL_INTERVAL)} Supertrend dönüşü) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} ({iv_label(BTC_ST_LOCK_INTERVAL)}) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     threading.Thread(target=scanner_st15.background_loop, daemon=True).start()
-    print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP %{sts.TP_PCT:g} | kar kilidi %{sts.TRAIL_ARM_PCT:g}/%{sts.TRAIL_FLOOR_PCT:g} | '
+    print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP {sts.tp_text()} | kar kilidi {sts.lock_tiers_text()}  '
           f'stop={sts.ST_STOP_MODE} | acil stop %{sts.EMERGENCY_STOP_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
     state = load_state()
     if state.get('position'):

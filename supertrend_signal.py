@@ -15,12 +15,60 @@ from indicators import supertrend
 
 ST_PERIOD = 10
 ST_MULT = 4.1
-ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "level")      # "level" (Pine varsayilani) | "flip"
+ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
-TP_PCT = float(os.environ.get("ST_TP_PCT", "4.0"))           # fiyat uzerinden %, kaldiracsiz
-TRAIL_ARM_PCT = float(os.environ.get("ST_TRAIL_ARM_PCT", "2.5"))    # kar bu seviyeyi gecince koruma devreye girer
-TRAIL_FLOOR_PCT = float(os.environ.get("ST_TRAIL_FLOOR_PCT", "2.0"))  # devredeyken kar bunun altina inerse kapat
+TP_PCT = float(os.environ.get("ST_TP_PCT", "0"))             # sabit TP (fiyat uzerinden %, kaldiracsiz); 0 = kapali (basamakli kar kilidi kullanilir)
+
+
+def _parse_tiers(txt):
+    out = []
+    for part in str(txt).split(","):
+        if ":" in part:
+            a, f = part.split(":", 1)
+            try:
+                out.append((float(a), float(f)))
+            except ValueError:
+                pass
+    out.sort()
+    return out or [(2.5, 1.0), (4.0, 2.5), (6.0, 4.0), (8.0, 6.0)]
+
+
+# Basamakli kar kilidi: "zirve_kar:kilitli_kar" ciftleri (fiyat uzerinden %). Zirve kar ilk degere ulasinca
+# kar o seviyenin kilidine iner, kilit zirve buyudukce yukselir. Son basamagin ustunde kilit = zirve - (son_zirve - son_kilit).
+LOCK_TIERS = _parse_tiers(os.environ.get("ST_LOCK_TIERS", "2.5:1,4:2.5,6:4,8:6"))
+TRAIL_ARM_PCT = LOCK_TIERS[0][0]
+TRAIL_FLOOR_PCT = LOCK_TIERS[0][1]
+
+
+def lock_floor(peak):
+    """Zirve kara gore korunan (kilitli) kar %; henuz kilit yoksa None."""
+    fl = None
+    for arm, floor in LOCK_TIERS:
+        if peak >= arm:
+            fl = floor
+    if fl is None:
+        return None
+    arm, floor = LOCK_TIERS[-1]
+    if peak > arm:
+        fl = max(fl, peak - (arm - floor))
+    return fl
+
+
+def next_lock_target(peak):
+    """Sonraki kilit basamaginin tetik kari %."""
+    for arm, _ in LOCK_TIERS:
+        if peak < arm:
+            return arm
+    return peak + (LOCK_TIERS[-1][0] - LOCK_TIERS[-1][1])
+
+
+def tp_text():
+    return f"%{TP_PCT:g}" if TP_PCT > 0 else "yok"
+
+
+def lock_tiers_text():
+    return " · ".join(f"+%{a:g} → %{f:g}" for a, f in LOCK_TIERS)
 
 MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
@@ -97,7 +145,7 @@ def latest_entry_signal(df, max_age_bars=None):
                 return None                               # sinyal sonradan stop oldu: girme
             return {"side": "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT",
                     "kind": e["type"], "signal_time": e["time"], "signal_close": e["close"],
-                    "level": e["level"], "age_bars": last - e["i"]}
+                    "level": e["level"], "st": e["st"], "age_bars": last - e["i"]}
     return None
 
 
@@ -151,9 +199,10 @@ def check_exit(pos, df, last_price):
 
     if profit <= -EMERGENCY_STOP_PCT:
         return "EMERGENCY_STOP"
-    if profit >= TP_PCT:
+    if TP_PCT > 0 and profit >= TP_PCT:
         return "TP"
-    if peak >= TRAIL_ARM_PCT and profit <= TRAIL_FLOOR_PCT:
+    _fl = lock_floor(peak)
+    if _fl is not None and profit <= _fl:
         return "TRAIL_LOCK"
 
     st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)

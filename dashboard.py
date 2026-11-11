@@ -5150,8 +5150,8 @@ function taRuler(p,slv){
   const pc=pos(cur), pe=isFinite(ep)?pos(ep):null;
   const dTp=Math.abs(tp-cur)/cur*100, dSl=Math.abs(cur-sl)/cur*100;
   const nearTp=pc>=50;
-  const note=nearTp?('TP\'ye daha yakın · TP\'ye %'+dTp.toFixed(2)+' kaldı'):('SL\'ye daha yakın · SL\'ye %'+dSl.toFixed(2)+' kaldı');
-  return `<div class="ta-ruler"><div class="ta-ruler-lab"><span class="sl">SL ${taPx(sl)}</span><span class="tp">TP ${taPx(tp)}</span></div>
+  const note=nearTp?('Kilit hedefine daha yakın · hedefe %'+dTp.toFixed(2)+' kaldı'):('SL\'ye daha yakın · SL\'ye %'+dSl.toFixed(2)+' kaldı');
+  return `<div class="ta-ruler"><div class="ta-ruler-lab"><span class="sl">SL ${taPx(sl)}</span><span class="tp">Kilit ${taPx(tp)}</span></div>
    <div class="ta-ruler-track"><div class="ta-ruler-fill"></div>${pe!=null?`<div class="ta-ruler-tick" style="left:${pe.toFixed(1)}%" title="Giriş ${taPx(ep)}"></div>`:''}
    <div class="ta-ruler-dot sl" style="left:0%"></div><div class="ta-ruler-dot tp" style="left:100%"></div>
    <div class="ta-ruler-dot cur" style="left:${pc.toFixed(1)}%" title="Anlık ${taPx(cur)}"></div></div>
@@ -5166,7 +5166,7 @@ async function taRefreshPos(){
   const qty=Number(p.qty_eth||0), ep=Number(p.entry_price||0), notional=qty*ep, pnl=Number(p.unrealized_pnl||0);
   const pct=notional?pnl/notional*100:0, cl=pnl>=0?'pos':'neg', base=sym.replace(/USDT$/,'');
   const slv=p.st_level!=null?p.st_level:p.sl;
-  const slTxt=taPx(slv)+(p.st_level!=null?(p.side==='LONG'?' (altında mum kapanışı)':' (üstünde mum kapanışı)'):'');
+  const slTxt=taPx(slv)+(p.st_level!=null?(p.side==='LONG'?' (yeşil çizgi, altında mum kapanışı · çizgiyle yükselir)':' (kırmızı çizgi, üstünde mum kapanışı · çizgiyle iner)'):'');
   const lock=p.trail_active?('aktif · taban '+taPx(p.trail_stop)):'beklemede';
   box.style.display='';
   box.innerHTML=`<div class="ta-pos"><div class="ta-pos-head"><span class="pill ${p.side==='LONG'?'long':'short'}">${p.side}</span><b>${sym}</b><span class="text-faint">açık deneme pozisyonu</span></div>
@@ -5176,12 +5176,12 @@ async function taRefreshPos(){
    <div><span>Giriş fiyatı</span><b>${taPx(ep)}</b></div>
    <div><span>Anlık fiyat</span><b>${taPx(p.current_price)}</b></div>
    <div><span>Kâr / Zarar</span><b class="${cl}">${(pnl>=0?'+':'')+taUsd(pnl).replace('$-','-$')} · ${(pct>=0?'+':'')+pct.toFixed(2)}%</b></div>
-   <div><span>TP seviyesi</span><b>${taPx(p.tp)}</b></div>
+   <div><span>Sonraki kilit hedefi</span><b>${taPx(p.tp)}</b></div>
    <div><span>SL (Supertrend çizgisi)</span><b>${slTxt}</b></div>
    <div><span>Acil stop</span><b>${taPx(p.emergency_stop)}</b></div>
    <div><span>Kâr kilidi</span><b>${lock}</b></div>
   </div>${taRuler(p,slv)}</div></div>`;
-  _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'TP'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:Number(p.emergency_stop),c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
+  _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'Kilit hedefi'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:Number(p.emergency_stop),c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
   ownDraw();
 }
 document.getElementById('taGo').onclick=taGo;
@@ -9750,7 +9750,7 @@ def ta_ai_comment(tv, tf):
     try:
         p = (read_state().get('positions') or {}).get(sym)
         if p:
-            pos_txt = (f"{p.get('side')} giriş={fp(p.get('entry_price'))} TP={fp(p.get('tp'))} "
+            pos_txt = (f"{p.get('side')} giriş={fp(p.get('entry_price'))} sonraki kilit hedefi={fp(p.get('tp'))} "
                        f"stop çizgisi={fp(p.get('st_level') or p.get('sl'))}")
     except Exception:
         pass
