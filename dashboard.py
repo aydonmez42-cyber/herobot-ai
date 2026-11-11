@@ -4922,6 +4922,13 @@ ANALYSIS_BODY = r'''<style>
 .pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
 .pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
 .pos{color:#2fbf71}.neg{color:#e5534b}
+.ta-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 2px;align-items:center}
+.ta-tools button{min-width:40px;height:34px;padding:0 10px;border-radius:8px;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);cursor:pointer;font-size:15px;line-height:1}
+.ta-tools button:hover{border-color:var(--accent);color:var(--accent)}
+#ownChartPanel.ta-full{position:fixed!important;inset:0;z-index:99999;margin:0!important;border-radius:0!important;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;max-width:none!important}
+#ownChartPanel.ta-full #ownChart{flex:1 1 auto;height:calc(100vh - 150px)!important;height:calc(100dvh - 150px)!important}
+#ownChartPanel.ta-full .footnote{display:none}
+body.ta-nolock{overflow:hidden}
 .ta-tvlink{color:var(--accent);text-decoration:none;font-size:13px;cursor:pointer}.ta-tvlink:hover{text-decoration:underline}.ta-tvlink::after{content:' ↗';font-size:11px}
 .ta-ruler{margin-top:14px;max-width:560px;margin-left:auto}
 .ta-ruler-lab{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:7px}
@@ -4950,9 +4957,17 @@ ANALYSIS_BODY = r'''<style>
       <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
     </select>
   </div>
+  <div class="ta-tools" id="taTools">
+    <button type="button" onclick="taZoom(1.25)" title="Uzaklaştır (daha çok mum)">−</button>
+    <button type="button" onclick="taZoom(1/1.25)" title="Yakınlaştır (daha az mum)">+</button>
+    <button type="button" onclick="taYZoom(1.25)" title="Fiyat ölçeğini genişlet (dikey uzaklaştır)">↕−</button>
+    <button type="button" onclick="taYZoom(1/1.25)" title="Fiyat ölçeğini daralt (dikey yakınlaştır)">↕+</button>
+    <button type="button" onclick="taResetView()" title="Görünümü sıfırla">⟲</button>
+    <button type="button" onclick="taFull()" id="taFullBtn" title="Tam ekran">⛶</button>
+  </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki arama çubuğundan bir coin veya hisse seçin.</div>
   <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
-  <div class="footnote">Supertrend: ATR 10 · çarpan 4,1. Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC.</div>
+  <div class="footnote">Supertrend: ATR 10 · çarpan 4,1. Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC. Her yöne kaydırmak için sürükleyin; sağdaki fiyat ekseninde sürükleyerek (ya da Shift + tekerlek ile) fiyat ölçeğini değiştirin; ⟲ ile görünümü sıfırlayın, ⛶ ile tam ekrana geçin.</div>
 </section>
 <section class="panel" id="taAi">
   <div class="panel-head"><h2>Yapay Zeka Yorumu (Claude)</h2><button class="btn" id="taAiBtn">Grafiği yorumla</button></div>
@@ -5013,6 +5028,7 @@ function ownDraw(){
     if(v!=null){ lo=Math.min(lo,v); hi=Math.max(hi,v); }
   }
   const pad=(hi-lo)*0.06||hi*0.01; lo-=pad; hi+=pad;
+  { const yz=_own.view.yz||1, ys=_own.view.ys||0, rng=hi-lo, cc=(hi+lo)/2+ys*rng, hf=rng/2*yz; lo=cc-hf; hi=cc+hf; }
   const X=i=>(i-start+0.5)*step, Y=v=>padT+(hi-v)/(hi-lo)*plotH;
   g.font='11px system-ui,sans-serif'; g.textBaseline='middle';
   g.strokeStyle='rgba(255,255,255,.06)'; g.fillStyle='#9aa4af'; g.lineWidth=1;
@@ -5068,7 +5084,7 @@ function ownWire(cv){
   if(_own.wired) return; _own.wired=true;
   const ptrs=new Map(); let lastDist=0;
   const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
-  cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,pos(e)); lastDist=0; });
+  cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); const pp=pos(e); ptrs.set(e.pointerId,pp); lastDist=0; _own.yscale=!!(ptrs.size===1&&_own.d&&pp.x>ownGeom().plotW); });
   cv.addEventListener('pointerup',e=>{ ptrs.delete(e.pointerId); });
   cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); });
   cv.addEventListener('pointerleave',e=>{ if(!ptrs.size){ _own.hover=null; ownDraw(); } });
@@ -5083,7 +5099,8 @@ function ownWire(cv){
         if(lastDist){ _own.view.bars=Math.max(20,Math.min(G.n,G.bars*lastDist/dist)); }
         lastDist=dist;
       } else {
-        _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars;
+        if(_own.yscale){ _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*Math.exp((p.y-prev.y)*0.006))); _own.view.end=G.end; _own.view.bars=G.bars; }
+        else { _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars; _own.view.ys=(_own.view.ys||0)+(p.y-prev.y)/G.plotH*(_own.view.yz||1); }
         _own.hover=p;
       }
     } else _own.hover=p;
@@ -5091,6 +5108,7 @@ function ownWire(cv){
   });
   cv.addEventListener('wheel',e=>{
     if(!_own.d) return; e.preventDefault();
+    { const _r=cv.getBoundingClientRect(); if(e.shiftKey||(e.clientX-_r.left)>ownGeom().plotW){ _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*(e.deltaY>0?1.12:1/1.12))); ownDraw(); return; } }
     const G=ownGeom(), f=e.deltaY>0?1.12:1/1.12, nb=Math.max(20,Math.min(G.n,G.bars*f));
     _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw();
   },{passive:false});
@@ -5111,6 +5129,23 @@ function taBuildTv(market,sym){
   return (TA.usEx[sym]||'NASDAQ')+':'+sym;
 }
 
+
+function taZoom(f){ if(!_own||!_own.d) return; const G=ownGeom(), nb=Math.max(20,Math.min(G.n,G.bars*f)); _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw(); }
+function taYZoom(f){ if(!_own||!_own.d) return; _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*f)); ownDraw(); }
+function taResetView(){ if(!_own||!_own.d) return; const n=_own.d.candles.length; _own.view={bars:Math.min(120,n),end:n}; ownDraw(); }
+function taFull(on){
+  const el=document.getElementById('ownChartPanel'); if(!el) return;
+  const want=(typeof on==='boolean')?on:!el.classList.contains('ta-full');
+  el.classList.toggle('ta-full',want); document.body.classList.toggle('ta-nolock',want);
+  const btn=document.getElementById('taFullBtn'); if(btn){ btn.textContent=want?'✕':'⛶'; btn.title=want?'Tam ekrandan çık':'Tam ekran'; }
+  try{
+    if(want&&el.requestFullscreen&&!document.fullscreenElement){ el.requestFullscreen().catch(()=>{}); }
+    else if(!want&&document.fullscreenElement&&document.exitFullscreen){ document.exitFullscreen().catch(()=>{}); }
+  }catch(e){}
+  setTimeout(()=>{ try{ ownDraw(); }catch(e){} },60); setTimeout(()=>{ try{ ownDraw(); }catch(e){} },300);
+}
+document.addEventListener('fullscreenchange',()=>{ const el=document.getElementById('ownChartPanel'); if(el&&!document.fullscreenElement&&el.classList.contains('ta-full')) taFull(false); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const el=document.getElementById('ownChartPanel'); if(el&&el.classList.contains('ta-full')) taFull(false); } });
 function taTvUrl(){
   const tv=(_own&&_own.tv)||TA.tv; if(!tv) return '';
   const tf=document.getElementById('ownChartTf').value, m={'15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
