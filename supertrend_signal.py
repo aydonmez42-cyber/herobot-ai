@@ -18,7 +18,7 @@ ST_MULT = 4.1
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "level")      # "level" (Pine varsayilani) | "flip"
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
-TP_PCT = float(os.environ.get("ST_TP_PCT", "7.0"))           # fiyat uzerinden %, kaldiracsiz
+TP_PCT = float(os.environ.get("ST_TP_PCT", "2.0"))           # fiyat uzerinden %, kaldiracsiz
 TRAIL_ARM_PCT = float(os.environ.get("ST_TRAIL_ARM_PCT", "5.0"))    # kar bu seviyeyi gecince koruma devreye girer
 TRAIL_FLOOR_PCT = float(os.environ.get("ST_TRAIL_FLOOR_PCT", "4.0"))  # devredeyken kar bunun altina inerse kapat
 

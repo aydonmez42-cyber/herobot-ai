@@ -5167,7 +5167,7 @@ async function taRefreshPos(){
   const pct=notional?pnl/notional*100:0, cl=pnl>=0?'pos':'neg', base=sym.replace(/USDT$/,'');
   const slv=p.st_level!=null?p.st_level:p.sl;
   const slTxt=taPx(slv)+(p.st_level!=null?(p.side==='LONG'?' (altında mum kapanışı)':' (üstünde mum kapanışı)'):'');
-  const lock=p.trail_active?('aktif · taban '+taPx(p.trail_stop)):'beklemede (%5 kârda devreye girer)';
+  const lock=p.trail_active?('aktif · taban '+taPx(p.trail_stop)):'beklemede';
   box.style.display='';
   box.innerHTML=`<div class="ta-pos"><div class="ta-pos-head"><span class="pill ${p.side==='LONG'?'long':'short'}">${p.side}</span><b>${sym}</b><span class="text-faint">açık deneme pozisyonu</span></div>
   <div class="ta-pos-flex"><div class="ta-pos-grid">
