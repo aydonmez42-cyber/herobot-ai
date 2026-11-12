@@ -67,14 +67,14 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None):
     """Tek coin: tum islemleri doner (liste of dict)."""
-    events, _ = sts.run_state_machine(df)
-    st = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)
-    d = st["supertrend_direction"].to_numpy()
+    if events is None:
+        events, _ = sts.run_state_machine(df)
+        d = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
     o, h, l, c = (df[k].to_numpy() for k in ("open", "high", "low", "close"))
     n = len(df); trades = []; busy_until = -1
-    emerg = sts.EMERGENCY_STOP_PCT
+    emerg = sts.EMERGENCY_STOP_PCT if emerg is None else emerg
     for e in events:
         if e["type"] not in ("LONG", "SHORT", "RE_LONG", "RE_SHORT"): continue
         i = e["i"]
@@ -122,40 +122,65 @@ def fmt(name, s):
             f"toplam={s['sum%']:+8.1f}%  maxDD={s['maxdd%']:7.1f}%  en kotu={s['worst%']:+6.1f}%")
 
 
+def prep(df):
+    ev, _ = sts.run_state_machine(df)
+    d = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
+    return ev, d
+
+
+def row(label, tr):
+    s = stats(tr)
+    if not s: return f"{label:<26} islem yok"
+    net = sorted(t["net"] for t in tr)
+    ex5 = sum(net[:-5]) if len(net) > 5 else float("nan")
+    L = stats([t for t in tr if t["side"] == "LONG"]); S = stats([t for t in tr if t["side"] == "SHORT"])
+    tt = sorted(tr, key=lambda t: t["t"]); h = len(tt) // 2
+    h1 = sum(t["net"] for t in tt[:h]); h2 = sum(t["net"] for t in tt[h:])
+    pf = lambda x: f"{x['pf']:.2f}" if x else "  - "
+    return (f"{label:<26} n={s['n']:<5} kaz={s['win%']:4.1f}% ort={s['avg%']:+5.2f}% PF={s['pf']:4.2f} toplam={s['sum%']:+7.1f}% "
+            f"en5'siz={ex5:+7.1f}% yarı1/2={h1:+6.0f}/{h2:+5.0f} PF(L/S)={pf(L)}/{pf(S)} en kotu={s['worst%']:+5.1f}%")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--coins", type=int, default=40); ap.add_argument("--days", type=int, default=90)
+    ap.add_argument("--coins", type=int, default=20); ap.add_argument("--days", type=int, default=90)
     ap.add_argument("--fee", type=float, default=0.05, help="yon basina komisyon+kayma %%")
-    ap.add_argument("--tfs", default="15m,4h"); ap.add_argument("--symbols", default="")
-    ap.add_argument("--csv", default="", help="sonuc islemlerini CSV'ye yaz")
+    ap.add_argument("--tfs", default="15m"); ap.add_argument("--symbols", default="")
+    ap.add_argument("--emerg", default="6,5,4,3,2.5", help="denenecek acil stop %% degerleri (virgullu)")
+    ap.add_argument("--sides", default="both,long", help="both=LONG+SHORT, long=yalniz LONG, short=yalniz SHORT")
+    ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
-    print(f"{len(syms)} coin, {a.days} gun, komisyon+kayma {a.fee}%/yon, kilit={sts.lock_tiers_text()}, acil stop %{sts.EMERGENCY_STOP_PCT}\n")
-    allrows = []; res = {}
+    emerg_list = [float(x) for x in a.emerg.split(",")]; sides = [x.strip() for x in a.sides.split(",")]
+    print(f"{len(syms)} coin, {a.days} gun, komisyon+kayma {a.fee}%/yon, kilit={sts.lock_tiers_text()}\n")
+    data = {}
     for tf in a.tfs.split(","):
-        tr_all = []
+        data[tf] = []
         for k, s in enumerate(syms, 1):
             try:
                 df = fetch(s, tf, a.days)
             except Exception as ex:
-                print(f"  {s} {tf}: {ex}", file=sys.stderr); continue
+                print(f"  {s} {tf}: {ex}", file=sys.stderr, flush=True); continue
             warm = max(0, len(df) - int(a.days * 1440 / TF_MIN[tf]))
-            for t in simulate(df, a.fee, warm):
-                t.update(symbol=s, tf=tf); tr_all.append(t)
-            if k % 10 == 0: print(f"  {tf}: {k}/{len(syms)} coin", file=sys.stderr)
-        res[tf] = tr_all; allrows += tr_all
-    print("=" * 150)
-    for tf, tr in res.items():
-        print(fmt(f"{tf} TUMU", stats(tr)))
-        print(fmt(f"{tf} LONG", stats([t for t in tr if t["side"] == "LONG"])))
-        print(fmt(f"{tf} SHORT", stats([t for t in tr if t["side"] == "SHORT"])))
-        rs = pd.Series([t["reason"] for t in tr]).value_counts()
-        print("   cikis nedenleri:", ", ".join(f"{k}={v}" for k, v in rs.items()),
-              f"| ort. sure: {np.mean([t['bars'] for t in tr]) * TF_MIN[tf] / 60:.1f} saat" if tr else "")
-        print("-" * 150)
-    print("Not: 'toplam' islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik). Kaldirac x ile yaklasik x katina cikar, risk de oyle.")
-    if a.csv and allrows:
-        pd.DataFrame(allrows).to_csv(a.csv, index=False); print("islemler yazildi:", a.csv)
+            ev, d = prep(df); data[tf].append((s, df, warm, ev, d))
+            if k % 5 == 0: print(f"  {tf}: {k}/{len(syms)} coin cekildi", file=sys.stderr, flush=True)
+    print("=" * 170)
+    first = None
+    for tf, items in data.items():
+        for sd in sides:
+            for em in emerg_list:
+                tr_all = []
+                for s, df, warm, ev, d in items:
+                    for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d):
+                        t.update(symbol=s, tf=tf); tr_all.append(t)
+                if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
+                if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
+                if first is None: first = tr_all
+                print(row(f"{tf} {sd:<5} acil stop %{em:g}", tr_all), flush=True)
+            print("-" * 170)
+    print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
+    print("Not: toplam, islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik); coin listesi bugunun en likitleri (iyimser egilim olabilir).")
+    if a.csv and first: pd.DataFrame(first).to_csv(a.csv, index=False); print("islemler yazildi:", a.csv)
 
 
 if __name__ == "__main__":
