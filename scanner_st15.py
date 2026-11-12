@@ -8,7 +8,7 @@ Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir; son 4 kapanmis
 (= bir onceki saatin tamami) sinyaller listelenir. Olusmakta olan mum her zaman atilir.
 
 Dashboard: /api/scanner_st rotalari bu modulu kullanir (scanner_st.py 4s/1g/1h taramasi DEGISMEDEN kalir; grafik ve hisse taramalari onu kullanir).
-Evren: en likit SCAN_ST_TOP_N (varsayilan 300) USDT-M surekli kontrat.
+Evren: en likit SCAN_ST_TOP_N (varsayilan 500) USDT-M surekli kontrat.
 """
 import os
 import threading
@@ -27,7 +27,7 @@ PERIOD = sts.ST_PERIOD
 FACTOR = sts.ST_MULT
 INTERVAL = '15m'
 TIMEFRAMES = ('15m',)
-TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '300'))
+TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '500'))
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_MIN_GAP_S', '120'))
 SCAN_EVERY_MIN = max(5, int(os.environ.get('SCANNER_EVERY_MIN', '60')))

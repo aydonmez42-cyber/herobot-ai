@@ -828,8 +828,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 
 /* Top nav */
 .topnav{display:flex;gap:4px 6px;align-items:center;padding:0 4px;margin-bottom:14px;flex-wrap:wrap}
-.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
-.topnav a:hover{color:var(--text)}
+.topnav a{color:#fff;text-decoration:none;font-size:13.5px;font-weight:700;transition:color .15s;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+.topnav a:hover{color:var(--accent)}
 .topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
 
 /* KPI strip */
@@ -3374,8 +3374,8 @@ _NAV_PAGE_STYLE_EXTRA = r'''
 .lang-select:hover{border-color:var(--accent);color:var(--accent)}
 .lang-select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .topnav{display:flex;gap:4px 6px;align-items:center;padding:0 4px;margin-bottom:14px;flex-wrap:wrap}
-.topnav a{color:var(--text-faint);text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
-.topnav a:hover{color:var(--text)}
+.topnav a{color:#fff;text-decoration:none;font-size:13.5px;font-weight:700;transition:color .15s;padding:6px 10px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+.topnav a:hover{color:var(--accent)}
 .topnav a.active{color:var(--accent);background:var(--accent-soft);border-color:#4a3d22}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
 .panel-head{padding:14px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -3612,7 +3612,7 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-crypto">
     <div id="stCard" style="padding:14px 16px 10px">
-      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik · ATR 10 / çarpan 4,1</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik</b></div>
       <div class="scanner-controls">
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
@@ -3631,10 +3631,10 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-bist" style="display:none">
     <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b id="stBistTitle">Supertrend'e göre Tarama · Borsa İstanbul (Günlük)</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b id="stBistTitle">Tarama · Borsa İstanbul (Günlük)</b></div>
       <div class="scanner-controls">
         <select id="stBistTf" onchange="stsTfChange('Bist')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
-        <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Supertrend tara (manuel)</button>
+        <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Tara (manuel)</button>
         <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
         <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
         <span class="scanner-status" id="stBistStatus"></span>
@@ -3650,10 +3650,10 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-us" style="display:none">
     <div id="stUsCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
-      <div class="scanner-controls" style="margin-bottom:6px"><b id="stUsTitle">Supertrend'e göre Tarama · Wall Street (Günlük)</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b id="stUsTitle">Tarama · Wall Street (Günlük)</b></div>
       <div class="scanner-controls">
         <select id="stUsTf" onchange="stsTfChange('Us')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
-        <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Supertrend tara (manuel)</button>
+        <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Tara (manuel)</button>
         <select id="stUsFilter" onchange="stsRender('Us')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
         <select id="stUsBars" onchange="stsRender('Us')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
         <span class="scanner-status" id="stUsStatus"></span>
@@ -4118,8 +4118,8 @@ function renderSt(){
   }
   const lblTr='15 dakikalık', lblEn='15m';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    lblTr+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · en likit '+(stCache.total||300)+' USDT-M coin.',
-    lblEn+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · most liquid '+(stCache.total||300)+' USDT-M coins.');
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, en likit '+(stCache.total||500)+' coin.',
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+(stCache.total||500)+' most liquid coins.');
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='15';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
@@ -4154,7 +4154,7 @@ function stsTfChange(k){
   const w=stsTf(k)==='1W';
   const bars=document.getElementById('st'+k+'Bars');
   if(bars){ bars.innerHTML=(w?[1,2,3,4]:[1,2,3,5]).map(n=>`<option value="${n}">${T15('Son '+n+(w?' hafta':' gün'),'Last '+n+(w?' week'+(n>1?'s':''):' day'+(n>1?'s':'')))}</option>`).join(''); }
-  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Supertrend'e göre Tarama · "+stsName[k]+(w?' (Haftalık)':' (Günlük)');
+  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Tarama · "+stsName[k]+(w?' (Haftalık)':' (Günlük)');
   const h=document.getElementById('st'+k+'ChgH'); if(h) h.textContent=w?T15('Haftalık %','Weekly %'):T15('Günlük %','Daily %');
   stsRender(k); stsRefresh(k);
 }
@@ -4172,8 +4172,8 @@ function stsRender(k){
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
-    (w?'Haftalık':'Günlük')+' kapanmış mum · Supertrend · LONG: fiyat Supertrend’i yukarı kırdı, SHORT: aşağı kırdı · '+(c.total||0)+' hisse.',
-    (w?'Weekly':'Daily')+' closed candle · Supertrend · LONG: price broke above Supertrend, SHORT: broke below · '+(c.total||0)+' stocks.');
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali. Periyod '+(w?'Haftalık':'Günlük')+', '+(c.total||0)+' hisse.',
+    'Red line broken upward on a candle close: LONG; green line broken downward on a candle close: SHORT. Period '+(w?'Weekly':'Daily')+', '+(c.total||0)+' stocks.');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
   const unitTr=w?' hafta önce':' gün önce', unitEn=w?' weeks ago':' days ago';
@@ -4981,7 +4981,7 @@ body.ta-nolock{overflow:hidden}
   </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki arama çubuğundan bir coin veya hisse seçin.</div>
   <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
-  <div class="footnote">Supertrend: ATR 10 · çarpan 4,1. Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC. Her yöne kaydırmak için sürükleyin; sağdaki fiyat ekseninde sürükleyerek (ya da Shift + tekerlek ile) fiyat ölçeğini değiştirin; ⟲ ile görünümü sıfırlayın, ⛶ ile tam ekrana geçin.</div>
+  <div class="footnote">Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC. Her yöne kaydırmak için sürükleyin; sağdaki fiyat ekseninde sürükleyerek (ya da Shift + tekerlek ile) fiyat ölçeğini değiştirin; ⟲ ile görünümü sıfırlayın, ⛶ ile tam ekrana geçin.</div>
 </section>
 <section class="panel" id="taAi">
   <div class="panel-head"><h2>Yapay Zeka Yorumu (Claude)</h2><button class="btn" id="taAiBtn">Grafiği yorumla</button></div>

@@ -2150,7 +2150,7 @@ def st_manual_requests(state, now):
 
 
 def st_manual_watch_scan(state, now, skip_symbols=()):
-    """Saat basi taramada: Robota Ekle ile eklenmis (top-300 disinda kalabilen) coinleri de ayni kurallarla degerlendir."""
+    """Saat basi taramada: Robota Ekle ile eklenmis (top-500 disinda kalabilen) coinleri de ayni kurallarla degerlendir."""
     for wsym, w in list((state.get('watchlist') or {}).items()):
         if not w.get('st_manual') or w.get('market') != 'crypto' or wsym in skip_symbols:
             continue
