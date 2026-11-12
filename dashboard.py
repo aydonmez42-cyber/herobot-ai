@@ -4922,8 +4922,12 @@ ANALYSIS_BODY = r'''<style>
 .pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
 .pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
 .pos{color:#2fbf71}.neg{color:#e5534b}
-.ta-botbtn{background:var(--accent);color:#1a1405;border:0;border-radius:8px;padding:4px 12px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}.ta-botbtn:disabled{opacity:.55;cursor:default}
+.ta-botbtn{background:var(--accent);color:#1a1405;border:0;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}.ta-botbtn:disabled{opacity:.55;cursor:default}
 .ta-botmsg{display:none;margin:8px 16px 0;padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.45;background:var(--bg-elev);border:1px solid var(--border)}
+.ta-head3{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.ta-head-left{display:flex;align-items:center;gap:10px;min-width:0}.ta-head-right{display:flex;justify-content:flex-end}
+.ta-head-mid{text-align:center}
+@media(max-width:560px){.ta-head3{grid-template-columns:1fr auto}.ta-head-mid{grid-column:1/-1;grid-row:2}}
 .ta-head-mid{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
 .ta-head-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
 .ta-tvopen{font-size:11.5px;color:var(--text-dim);text-decoration:underline;cursor:pointer}.ta-tvopen:hover{color:var(--accent)}
@@ -4955,18 +4959,16 @@ body.ta-nolock{overflow:hidden}
 </div></section>
 <section class="panel" id="taPos" style="display:none"></section>
 <section class="panel" id="ownChartPanel">
-  <div class="panel-head">
-    <h2>Teknik Grafik</h2>
+  <div class="panel-head ta-head3">
+    <div class="ta-head-left"><h2>Teknik Grafik</h2>
+      <select id="ownChartTf" onchange="loadOwnChart()">
+        <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
+      </select></div>
     <div class="ta-head-mid">
       <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
-      <div class="ta-head-sub">
-        <a id="taTvOpen" class="ta-tvopen" href="#" target="_blank" rel="noopener">Tradingview grafiğini aç.</a>
-        <button type="button" id="taBotBtn" class="ta-botbtn" onclick="taAddToBot()" title="Bu coini robot takip listesine ekle">Robota Ekle</button>
-      </div>
+      <a id="taTvOpen" class="ta-tvopen" href="#" target="_blank" rel="noopener">Tradingview'de aç</a>
     </div>
-    <select id="ownChartTf" onchange="loadOwnChart()">
-      <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
-    </select>
+    <div class="ta-head-right"><button type="button" id="taBotBtn" class="ta-botbtn" onclick="taAddToBot()" title="Bu coini robot takip listesine ekle">Robota Ekle</button></div>
   </div>
   <div class="ta-botmsg" id="taBotMsg"></div>
   <div class="ta-tools" id="taTools">
