@@ -2088,7 +2088,7 @@ def st_scan_and_trade(state, now):
                 print(f'ST ENTRY | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
                 break
             sig = {'side': r['signal'], 'kind': r.get('signal_kind'), 'signal_time': r['signal_time'],
-                   'signal_close': r['signal_close'], 'level': r.get('level'), 'age_bars': r.get('signal_age')}
+                   'signal_close': r['signal_close'], 'level': r.get('level'), 'st': r.get('signal_st'), 'age_bars': r.get('signal_age')}
             df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
             price = float(df.iloc[-1]['close'])
             ind = df.iloc[:-1].copy().set_index('close_time')
@@ -2102,7 +2102,64 @@ def st_scan_and_trade(state, now):
                 print('ST SCAN | Binance bekleme suresi aktif, kalan sinyaller atlandi', flush=True)
                 break
             print(f'ST ENTRY | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+    st_manual_watch_scan(state, now, skip_symbols={r['symbol'] for r in rows})
     save_state(state)
+
+
+def _st_try_open_manual(state, symbol, now, sig=None):
+    """Teknik Analiz'den 'Robota Ekle' ile eklenen coin icin, normal giris kurallariyla pozisyon acmayi dener."""
+    if symbol in (state.get('positions') or {}):
+        return False
+    if len(state.get('positions') or {}) >= ST_MAX_OPEN:
+        print(f'ST MANUEL | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
+        return False
+    df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+    price = float(df.iloc[-1]['close'])
+    ind = df.iloc[:-1].copy().set_index('close_time')
+    if sig is None:
+        sig = sts.latest_entry_signal(ind)
+        if sig is None:
+            return False
+    else:
+        sig = dict(sig)
+    if state.get('st_traded', {}).get(symbol) == str(pd.Timestamp(sig['signal_time']).isoformat()):
+        return False
+    ok, why = sts.entry_allowed(sig, price, ind)
+    if not ok:
+        print(f"ST MANUEL | {sig.get('side')} {symbol} atlandi: {why}", flush=True)
+        return False
+    st_open_position(state, symbol, sig, price, None, now)
+    return True
+
+
+def st_manual_requests(state, now):
+    """Dashboard'dan gelen 'hemen ac' istekleri (Robota Ekle sirasinda gecerli sinyal varsa)."""
+    reqs = state.get('st_open_req') or {}
+    if not reqs:
+        return
+    for symbol, sig in list(reqs.items()):
+        try:
+            _st_try_open_manual(state, symbol, now, sig)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                break
+            print(f'ST MANUEL | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
+        reqs.pop(symbol, None)
+    state['st_open_req'] = reqs
+    save_state(state)
+
+
+def st_manual_watch_scan(state, now, skip_symbols=()):
+    """Saat basi taramada: Robota Ekle ile eklenmis (top-300 disinda kalabilen) coinleri de ayni kurallarla degerlendir."""
+    for wsym, w in list((state.get('watchlist') or {}).items()):
+        if not w.get('st_manual') or w.get('market') != 'crypto' or wsym in skip_symbols:
+            continue
+        try:
+            _st_try_open_manual(state, wsym, now)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                break
+            print(f'ST MANUEL | ERROR | {wsym} | {type(e).__name__}: {e}', flush=True)
 
 
 def st_manage_positions(state, now):
@@ -2167,7 +2224,8 @@ def st_reentry_check(state, now):
                 break
             df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
             ind = df.iloc[:-1].copy().set_index('close_time')
-            sig = sts.latest_entry_signal(ind, max_age_bars=1)       # yalnizca en son KAPANAN mum
+            # stop sonrasi izleme: yalnizca en son kapanan mum | elle eklenen (Robota Ekle): tarama ile ayni 'son 3 mum' kurali
+            sig = sts.latest_entry_signal(ind, max_age_bars=(sts.MAX_SIGNAL_AGE_BARS if info.get('manual') else 1))
             if not sig or state.get('st_traded', {}).get(symbol) == pd.Timestamp(sig['signal_time']).isoformat():
                 continue
             price = float(df.iloc[-1]['close'])
@@ -2274,6 +2332,7 @@ def main():
                 print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
             try:
                 st_scan_and_trade(state, now)
+                st_manual_requests(state, now)
                 st_manage_positions(state, now)
                 st_reentry_check(state, now)
                 save_state(state)

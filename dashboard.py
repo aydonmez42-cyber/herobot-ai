@@ -4922,6 +4922,11 @@ ANALYSIS_BODY = r'''<style>
 .pill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
 .pill.long{background:rgba(47,191,113,.15);color:#2fbf71}.pill.short{background:rgba(229,83,75,.15);color:#e5534b}
 .pos{color:#2fbf71}.neg{color:#e5534b}
+.ta-botbtn{background:var(--accent);color:#1a1405;border:0;border-radius:8px;padding:4px 12px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}.ta-botbtn:disabled{opacity:.55;cursor:default}
+.ta-botmsg{display:none;margin:8px 16px 0;padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.45;background:var(--bg-elev);border:1px solid var(--border)}
+.ta-head-mid{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.ta-head-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.ta-tvopen{font-size:11.5px;color:var(--text-dim);text-decoration:underline;cursor:pointer}.ta-tvopen:hover{color:var(--accent)}
 .ta-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 2px;align-items:center}
 .ta-tools button{min-width:40px;height:34px;padding:0 10px;border-radius:8px;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);cursor:pointer;font-size:15px;line-height:1}
 .ta-tools button:hover{border-color:var(--accent);color:var(--accent)}
@@ -4952,11 +4957,18 @@ body.ta-nolock{overflow:hidden}
 <section class="panel" id="ownChartPanel">
   <div class="panel-head">
     <h2>Teknik Grafik</h2>
-    <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
+    <div class="ta-head-mid">
+      <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
+      <div class="ta-head-sub">
+        <a id="taTvOpen" class="ta-tvopen" href="#" target="_blank" rel="noopener">Tradingview grafiğini aç.</a>
+        <button type="button" id="taBotBtn" class="ta-botbtn" onclick="taAddToBot()" title="Bu coini robot takip listesine ekle">Robota Ekle</button>
+      </div>
+    </div>
     <select id="ownChartTf" onchange="loadOwnChart()">
       <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
     </select>
   </div>
+  <div class="ta-botmsg" id="taBotMsg"></div>
   <div class="ta-tools" id="taTools">
     <button type="button" onclick="taZoom(1.25)" title="Uzaklaştır (daha çok mum)">−</button>
     <button type="button" onclick="taZoom(1/1.25)" title="Yakınlaştır (daha az mum)">+</button>
@@ -5146,14 +5158,33 @@ function taFull(on){
 }
 document.addEventListener('fullscreenchange',()=>{ const el=document.getElementById('ownChartPanel'); if(el&&!document.fullscreenElement&&el.classList.contains('ta-full')) taFull(false); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const el=document.getElementById('ownChartPanel'); if(el&&el.classList.contains('ta-full')) taFull(false); } });
+
+async function taAddToBot(){
+  const btn=document.getElementById('taBotBtn'), box=document.getElementById('taBotMsg'), tv=(_own&&_own.tv)||TA.tv;
+  const show=(t,err)=>{ box.style.display='block'; box.style.color=err?'#e5534b':'var(--text)'; box.textContent=t; };
+  if(!tv){ show('Önce bir coin veya hisse seçin.',true); return; }
+  btn.disabled=true; const old=btn.textContent; btn.textContent='Ekleniyor…';
+  try{
+    const r=await fetch('/api/ta/add_to_bot?tv='+encodeURIComponent(tv),{cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    if(!d.ok){ show(d.error||'Eklenemedi.',true); btn.textContent=old; btn.disabled=false; return; }
+    if(d.status==='in_position') show('✓ '+d.symbol+' için robotun zaten açık pozisyonu var.');
+    else if(d.status==='opening') show('✓ '+d.symbol+' robota eklendi. Geçerli bir '+d.side+' sinyali var; pozisyon birkaç saniye içinde açılır (Robot İşlem Takibi\'nde görünür).');
+    else if(d.status==='watching') show('✓ '+d.symbol+' robota eklendi ve takip ediliyor. Şu an giriş şartı sağlanmıyor: '+d.why+'. Saat başı taramada geçerli bir sinyal oluşursa robot pozisyon açar.');
+    else show('✓ '+d.symbol+' takip listesine eklendi.');
+    btn.textContent='Robotta ✓';
+  }catch(e){ show('Bağlantı hatası.',true); btn.textContent=old; btn.disabled=false; }
+}
 function taTvUrl(){
   const tv=(_own&&_own.tv)||TA.tv; if(!tv) return '';
   const tf=document.getElementById('ownChartTf').value, m={'15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
   return 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv)+'&interval='+(m[tf]||'15');
 }
 (function(){
-  const lab=document.getElementById('ownChartLabel'); if(!lab) return;
-  lab.addEventListener('click',function(e){ const u=taTvUrl(); if(!u){ e.preventDefault(); return; } lab.href=u; });
+  ['ownChartLabel','taTvOpen'].forEach(id=>{
+    const a=document.getElementById(id); if(!a) return;
+    a.addEventListener('click',function(e){ const u=taTvUrl(); if(!u){ e.preventDefault(); return; } a.href=u; });
+  });
 })();
 function taOpen(tv,label,iv){
   TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
@@ -9745,6 +9776,78 @@ _TA_AI_SYSTEM = (
 )
 
 
+_BOT_WHY_TR = {
+    'NO_SIGNAL': 'son 3 kapanmış mumda yeni bir Supertrend dönüşü yok',
+    'LAST_CANDLE_WRONG_SIDE_OF_ST': 'son kapanmış mum Supertrend çizgisinin yanlış tarafında',
+    'BELOW_LEVEL': 'fiyat kırılan çizginin altına geri dönmüş',
+    'ABOVE_LEVEL': 'fiyat kırılan çizginin üstüne geri dönmüş',
+    'LATE_ENTRY': 'sinyalden bu yana fiyat çok koşmuş (geç giriş)',
+    'NO_DATA': 'yeterli mum verisi yok',
+}
+
+
+def ta_parse_market(tv):
+    """'BINANCE:LITUSDT.P' -> ('LITUSDT','crypto'); 'BIST:THYAO' -> ('THYAO','bist'); 'NASDAQ:AAPL' -> ('AAPL','us_stock')."""
+    tv = str(tv or '').strip()
+    ex, _, sym = tv.partition(':')
+    ex = ex.upper(); sym = (sym or ex).upper()
+    if sym.endswith('.P'):
+        sym = sym[:-2]
+    if ex in ('BINANCE', ''):
+        return sym, 'crypto'
+    if ex == 'BIST':
+        return sym, 'bist'
+    return sym, 'us_stock'
+
+
+def ta_bot_check(symbol):
+    """Coin icin su an gecerli bir giris sinyali var mi? Saat basi taramayla ayni kurallar."""
+    import supertrend_signal as _sts
+    import pandas as _pd
+    df = scanner_st15._klines(symbol)
+    asof = _pd.Timestamp.now(tz='UTC').floor('15min')
+    closed = df[df['close_time'] <= asof].reset_index(drop=True)
+    if len(closed) < 60:
+        return {'ok': False, 'why': 'NO_DATA', 'sig': None}
+    ind = closed.set_index('close_time')
+    price = float(df.iloc[-1]['close'])
+    sig = _sts.latest_entry_signal(ind)
+    ok, why = _sts.entry_allowed(sig, price, ind)
+    if sig:
+        sig = dict(sig); sig['signal_time'] = _pd.Timestamp(sig['signal_time']).isoformat()
+    return {'ok': ok, 'why': why, 'sig': sig}
+
+
+def ta_add_to_bot(tv):
+    from state_store import update_state as _upd
+    symbol, market = ta_parse_market(tv)
+    if not symbol or len(symbol) > 24 or not all(ch.isalnum() or ch in '._-' for ch in symbol):
+        return {'ok': False, 'error': 'geçersiz sembol'}
+    cur = read_state().get('watchlist', {}) or {}
+    if symbol not in cur and len(cur) >= watchlist_max_symbols():
+        return {'ok': False, 'error': f'takip listesi dolu (maks {watchlist_max_symbols()}). Robot İşlem Takibi\'nden bir coin kaldırın.'}
+    if symbol in (read_state().get('positions') or {}):
+        return {'ok': True, 'status': 'in_position', 'symbol': symbol}
+    from datetime import datetime as _dt, timezone as _tz
+
+    def m(s):
+        w = s.setdefault('watchlist', {})
+        e = w.get(symbol) or {'symbol': symbol, 'market': market, 'added_signal': None,
+                              'added_at': _dt.now(_tz.utc).isoformat()}
+        e['market'] = market; e['st_manual'] = True; e['note'] = e.get('note') or 'Teknik Analiz'
+        w[symbol] = e
+    _upd(m)
+    if market != 'crypto':
+        return {'ok': True, 'status': 'watching_stock', 'symbol': symbol}
+    chk = ta_bot_check(symbol)
+    if chk['ok']:
+        def m2(s):
+            s.setdefault('st_open_req', {})[symbol] = chk['sig']
+        _upd(m2)
+        return {'ok': True, 'status': 'opening', 'symbol': symbol, 'side': chk['sig']['side']}
+    return {'ok': True, 'status': 'watching', 'symbol': symbol, 'why': _BOT_WHY_TR.get(chk['why'], chk['why'])}
+
+
 def ta_ai_comment(tv, tf):
     import os as _os
     import time as _time
@@ -9832,8 +9935,6 @@ def ta_ai_comment(tv, tf):
         return {'error': 'Claude boş yanıt döndürdü.'}
     _TA_AI_CACHE[ck] = (_time.time(), text)
     return {'text': text}
-
-
 
 class Handler(BaseHTTPRequestHandler):
     # -- session/auth helpers --------------------------------------------
@@ -10147,6 +10248,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
+            return
+        if path=='/api/ta/add_to_bot':
+            if not self._current_user():
+                self._send_json({'ok': False, 'error': 'Oturum gerekli.'}, status=401); return
+            if self._rate_limited('ta_bot', limit=20, window_seconds=300):
+                self._send_json({'ok': False, 'error': 'Çok sık istek: birkaç dakika sonra tekrar deneyin.'}, status=429); return
+            _q=parse_qs(urlparse(self.path).query)
+            try:
+                _r=ta_add_to_bot((_q.get('tv') or [''])[0])
+                self._send_json(_r, status=(200 if _r.get('ok') else 400))
+            except Exception as _e:
+                self._send_json({'ok': False, 'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
             return
         if path=='/api/ta/ai':
             if not self._current_user():
