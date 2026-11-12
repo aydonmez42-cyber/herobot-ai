@@ -141,6 +141,18 @@ def row(label, tr):
             f"en5'siz={ex5:+7.1f}% yarı1/2={h1:+6.0f}/{h2:+5.0f} PF(L/S)={pf(L)}/{pf(S)} en kotu={s['worst%']:+5.1f}%")
 
 
+def summ(tf, tset, sd, em, tr):
+    st = stats(tr) or {}
+    L = stats([t for t in tr if t["side"] == "LONG"]) or {}; S = stats([t for t in tr if t["side"] == "SHORT"]) or {}
+    net = sorted(t["net"] for t in tr); tt = sorted(tr, key=lambda t: t["t"]); h = len(tt) // 2
+    return {"tf": tf, "kilit": tset, "yon": sd, "acil_stop": em, "islem": st.get("n"), "kazanma_%": round(st.get("win%", 0), 1),
+            "ort_%": round(st.get("avg%", 0), 3), "PF": round(st.get("pf", 0), 3), "toplam_%": round(st.get("sum%", 0), 1),
+            "en5siz_%": round(sum(net[:-5]), 1) if len(net) > 5 else None,
+            "yari1_%": round(sum(t["net"] for t in tt[:h]), 1), "yari2_%": round(sum(t["net"] for t in tt[h:]), 1),
+            "PF_long": round(L.get("pf", 0), 3) if L else None, "PF_short": round(S.get("pf", 0), 3) if S else None,
+            "en_kotu_%": round(st.get("worst%", 0), 2)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--coins", type=int, default=20); ap.add_argument("--days", type=int, default=90)
@@ -150,6 +162,7 @@ def main():
     ap.add_argument("--sides", default="both", help="both=LONG+SHORT, long=yalniz LONG, short=yalniz SHORT")
     ap.add_argument("--tiers", default="2.5:1,4:2.5,6:4,8:6;1.5:0.5,3:1.5,5:3,8:6;2:1,4:2.5,6:4,8:6;3:1.5,5:3,8:5;1:0.2,2.5:1,4:2.5,6:4,8:6;none",
                     help="denenecek kar kilidi basamaklari; ';' ile ayirin. Her biri 'tetik:kilit,...' ; none = kilit yok")
+    ap.add_argument("--out", default="sonuc", help="ozet sonuc dosyalarinin adi (.txt ve .csv otomatik yazilir)")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
@@ -168,6 +181,7 @@ def main():
             if k % 5 == 0: print(f"  {tf}: {k}/{len(syms)} coin cekildi", file=sys.stderr, flush=True)
     print("=" * 170)
     first = None
+    summary, lines = [], []
     tier_sets = [x.strip() for x in a.tiers.split(";") if x.strip()]
     for tf, items in data.items():
         for tset in tier_sets:
@@ -183,9 +197,16 @@ def main():
                     if first is None: first = tr_all
                     print(f"kilit [{tset}] {sd} acil %{em:g}", flush=True)
                     print("   " + row(f"{tf}", tr_all), flush=True)
+                    summary.append(summ(tf, tset, sd, em, tr_all)); lines.append((f"kilit [{tset}] {sd} acil %{em:g}", row(tf, tr_all)))
         print("-" * 170)
     print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
     print("Not: toplam, islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik); coin listesi bugunun en likitleri (iyimser egilim olabilir).")
+    base = a.out
+    with open(base + ".txt", "w", encoding="utf-8") as f:
+        f.write(f"{len(syms)} coin, {a.days} gun, komisyon+kayma {a.fee}%/yon\n\n")
+        for h, r in lines: f.write(h + "\n   " + r + "\n")
+    pd.DataFrame(summary).to_csv(base + ".csv", index=False)
+    print(f"\nSonuclar kaydedildi: {base}.txt  ve  {base}.csv  (su an bulundugunuz klasorde)")
     if a.csv and first: pd.DataFrame(first).to_csv(a.csv, index=False); print("islemler yazildi:", a.csv)
 
 
