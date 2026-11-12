@@ -146,8 +146,10 @@ def main():
     ap.add_argument("--coins", type=int, default=20); ap.add_argument("--days", type=int, default=90)
     ap.add_argument("--fee", type=float, default=0.05, help="yon basina komisyon+kayma %%")
     ap.add_argument("--tfs", default="15m"); ap.add_argument("--symbols", default="")
-    ap.add_argument("--emerg", default="6,5,4,3,2.5", help="denenecek acil stop %% degerleri (virgullu)")
-    ap.add_argument("--sides", default="both,long", help="both=LONG+SHORT, long=yalniz LONG, short=yalniz SHORT")
+    ap.add_argument("--emerg", default="4", help="denenecek acil stop %% degerleri (virgullu)")
+    ap.add_argument("--sides", default="both", help="both=LONG+SHORT, long=yalniz LONG, short=yalniz SHORT")
+    ap.add_argument("--tiers", default="2.5:1,4:2.5,6:4,8:6;1.5:0.5,3:1.5,5:3,8:6;2:1,4:2.5,6:4,8:6;3:1.5,5:3,8:5;1:0.2,2.5:1,4:2.5,6:4,8:6;none",
+                    help="denenecek kar kilidi basamaklari; ';' ile ayirin. Her biri 'tetik:kilit,...' ; none = kilit yok")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
@@ -166,18 +168,22 @@ def main():
             if k % 5 == 0: print(f"  {tf}: {k}/{len(syms)} coin cekildi", file=sys.stderr, flush=True)
     print("=" * 170)
     first = None
+    tier_sets = [x.strip() for x in a.tiers.split(";") if x.strip()]
     for tf, items in data.items():
-        for sd in sides:
-            for em in emerg_list:
-                tr_all = []
-                for s, df, warm, ev, d in items:
-                    for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d):
-                        t.update(symbol=s, tf=tf); tr_all.append(t)
-                if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
-                if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
-                if first is None: first = tr_all
-                print(row(f"{tf} {sd:<5} acil stop %{em:g}", tr_all), flush=True)
-            print("-" * 170)
+        for tset in tier_sets:
+            sts.LOCK_TIERS = [] if tset.lower() == "none" else sts._parse_tiers(tset)
+            for sd in sides:
+                for em in emerg_list:
+                    tr_all = []
+                    for s, df, warm, ev, d in items:
+                        for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d):
+                            t.update(symbol=s, tf=tf); tr_all.append(t)
+                    if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
+                    if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
+                    if first is None: first = tr_all
+                    print(f"kilit [{tset}] {sd} acil %{em:g}", flush=True)
+                    print("   " + row(f"{tf}", tr_all), flush=True)
+        print("-" * 170)
     print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
     print("Not: toplam, islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik); coin listesi bugunun en likitleri (iyimser egilim olabilir).")
     if a.csv and first: pd.DataFrame(first).to_csv(a.csv, index=False); print("islemler yazildi:", a.csv)
