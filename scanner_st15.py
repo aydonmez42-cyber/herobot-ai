@@ -50,6 +50,34 @@ def _get(url, params=None, timeout=15):
     return r.json()
 
 
+MIN_LISTING_DAYS = float(os.environ.get('ST_MIN_LISTING_DAYS', '14'))   # bundan yeni listelenen kontratlar taranmaz / islem acilmaz (0 = kapali)
+_ONB = {'t': 0.0, 'm': {}}
+
+
+def _onboard_map():
+    """sembol -> Binance'te listelenme zamani (ms). 6 saatte bir tazelenir."""
+    if not _ONB['m'] or time.time() - _ONB['t'] > 6 * 3600:
+        try:
+            data = _get(f'{FAPI}/fapi/v1/exchangeInfo', timeout=25)
+            _ONB['m'] = {s['symbol']: s.get('onboardDate') for s in (data.get('symbols') or []) if s.get('onboardDate')}
+            _ONB['t'] = time.time()
+        except Exception as e:
+            print(f'SCAN | listeleme tarihi alinamadi: {type(e).__name__}: {e}', flush=True)
+    return _ONB['m']
+
+
+def listing_age_days(symbol):
+    ms = _onboard_map().get(symbol)
+    return (time.time() * 1000.0 - float(ms)) / 86400000.0 if ms else None     # bilinmiyorsa None (engelleme)
+
+
+def is_new_listing(symbol):
+    if MIN_LISTING_DAYS <= 0:
+        return False
+    age = listing_age_days(symbol)
+    return age is not None and age < MIN_LISTING_DAYS
+
+
 def _universe_n(top_n):
     info = blive.get_exchange_info() or {}
     ok = {s for s, i in info.items()
@@ -57,7 +85,7 @@ def _universe_n(top_n):
     rows = []
     for t in _get(f'{FAPI}/fapi/v1/ticker/24hr', timeout=20):
         sym = t.get('symbol')
-        if sym in ok and sym.upper() not in _EXCLUDE:
+        if sym in ok and sym.upper() not in _EXCLUDE and not is_new_listing(sym):
             try:
                 rows.append((sym, float(t.get('quoteVolume') or 0), float(t.get('priceChangePercent') or 0)))
             except Exception:

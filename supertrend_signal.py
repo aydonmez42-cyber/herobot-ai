@@ -72,11 +72,49 @@ def lock_tiers_text():
 
 MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
-EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "0"))              # acil stop: 0 = KAPALI (yalnizca Supertrend stopu); >0 ise giristen % ters hareket
+EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
 EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
 # Girişte Supertrend stopu fiyattan bu % den uzaksa islem acilmaz (cok oynak coin; acil stop yok -> kayip siniri). 0 = kapali
 MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "6"))
+
+
+# Pozisyon boyutu (paper): risk bazli. Stop olursa kaybedilecek tutar = guncel bakiyenin RISK_PCT %'si
+RISK_PCT = float(os.environ.get("ST_RISK_PCT", "0.25"))              # 0 = eski sabit boyut
+MAX_NOTIONAL_USD = float(os.environ.get("ST_MAX_NOTIONAL_USD", "2500"))   # tek pozisyon nominal ust siniri
+MIN_NOTIONAL_USD = float(os.environ.get("ST_MIN_NOTIONAL_USD", "100"))    # bundan kucuk pozisyon acilmaz
+MAX_EXPOSURE_X = float(os.environ.get("ST_MAX_EXPOSURE_X", "3"))          # toplam acik nominal <= bakiye x bu
+# BTC rejimi: BTC'nin Supertrend yonunun TERSINE en fazla bu kadar acik pozisyon
+COUNTER_TREND_MAX = int(float(os.environ.get("ST_COUNTER_TREND_MAX", "4")))
+REGIME_SYMBOL = os.environ.get("ST_REGIME_SYMBOL", "BTCUSDT").upper()
+
+
+def position_notional(equity, open_notional, price, level, base_usd):
+    """(nominal_usd, neden). Risk bazli boyut: risk_usd / stop_mesafesi, ust/alt sinir ve toplam maruziyet siniri ile.
+    nominal 0 ise pozisyon acilmaz."""
+    if RISK_PCT <= 0:
+        return float(base_usd), None
+    equity = float(equity or 0.0)
+    if equity <= 0 or not price:
+        return 0.0, "NO_EQUITY"
+    dist = abs(price - level) / price if level else 0.06
+    dist = max(dist, 0.005)                      # cok yakin stopta boyut sismesin
+    n = min(equity * RISK_PCT / 100.0 / dist, MAX_NOTIONAL_USD)
+    room = equity * MAX_EXPOSURE_X - float(open_notional or 0.0)
+    if room < n:
+        n = room
+    if n < MIN_NOTIONAL_USD:
+        return 0.0, "EXPOSURE_LIMIT" if room < MIN_NOTIONAL_USD else "TOO_SMALL"
+    return float(n), None
+
+
+def regime_direction(df_closed):
+    """Kapanmis mumlarla REGIME_SYMBOL'un Supertrend yonu: 'LONG' | 'SHORT' | None."""
+    st = supertrend(df_closed["high"], df_closed["low"], df_closed["close"], ST_PERIOD, ST_MULT)
+    d = st["supertrend_direction"].iloc[-1]
+    if np.isnan(d):
+        return None
+    return "LONG" if int(d) == 1 else "SHORT"
 
 
 def is_excluded(symbol):

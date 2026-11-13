@@ -1247,7 +1247,7 @@ const translations = {
   "watchlist.headerPrice": "Price",
   "watchlist.headerUnrealizedPnl": "Unrealized P&L",
   "watchlist.headerAdded": "Added",
-  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $",
+  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: risk-based on stop distance and balance; fixed size if used: $",
   "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
   "watchlist.loading": "Loading…",
   "watchlist.empty": "Watchlist is empty. Click “+ Add” on any symbol showing LONG/SHORT in the scanner to have the bot watch/paper-trade it.",
@@ -1534,7 +1534,7 @@ const translations = {
   "watchlist.headerPrice": "Fiyat",
   "watchlist.headerUnrealizedPnl": "Unrealized P&L",
   "watchlist.headerAdded": "Eklenme",
-  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
+  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını aşağıda görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: stop mesafesine göre risk bazlı, bakiyeye oranlı; sabit boyut kullanılırsa $",
   "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
   "watchlist.loading": "Yükleniyor…",
   "watchlist.empty": "Takip listesi boş. Tarayıcıda LONG/SHORT veren bir sembole “+ Ekle” diyerek botun izlemesini/paper trade etmesini sağlayabilirsin.",
@@ -7064,7 +7064,7 @@ TRADES_HTML = r'''<!doctype html>
       <tbody id="watchlistRows"><tr><td colspan="7" class="empty" data-i18n="watchlist.loading">Loading…</td></tr></tbody>
     </table>
   </div>
-  <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
+  <div class="footnote"><span data-i18n="watchlist.footnotePrefix">Click a row to view that symbol's position and signal detail below. Crypto symbols open an independent paper position using the same strategy (size: risk-based on stop distance and balance; fixed size if used: $</span><span id="wlUsd">—</span><span data-i18n="watchlist.footnoteSuffix"> notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.</span></div>
 </section>
 
 
@@ -7254,7 +7254,7 @@ const translations = {
   "watchlist.headerPrice": "Price",
   "watchlist.headerUnrealizedPnl": "Unrealized P&L",
   "watchlist.headerAdded": "Added",
-  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail on the dashboard. Crypto symbols open an independent paper position using the same strategy (size: $",
+  "watchlist.footnotePrefix": "Click a row to view that symbol's position and signal detail on the dashboard. Crypto symbols open an independent paper position using the same strategy (size: risk-based on stop distance and balance; fixed size if used: $",
   "watchlist.footnoteSuffix": " notional). Borsa Istanbul symbols are signal-only; no real/paper order is placed.",
   "trades.resetBtn": "Reset Trades",
   "trades.resetConfirm": "This will close/clear any open paper position(s) and watchlist, and reset the balance to {amount}. Your closed-trade history (Closed Trades page) is NOT affected. This cannot be undone. Continue?",
@@ -7302,7 +7302,7 @@ const translations = {
   "watchlist.headerPrice": "Fiyat",
   "watchlist.headerUnrealizedPnl": "Unrealized P&L",
   "watchlist.headerAdded": "Eklenme",
-  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını panelde görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: $",
+  "watchlist.footnotePrefix": "Bir satıra tıklayarak o sembolün pozisyon ve sinyal detayını panelde görüntüleyebilirsiniz. Kripto sembolleri aynı strateji ile bağımsız bir paper pozisyon açar (boyut: stop mesafesine göre risk bazlı, bakiyeye oranlı; sabit boyut kullanılırsa $",
   "watchlist.footnoteSuffix": " nominal). Borsa İstanbul sembolleri yalnızca sinyal takibidir; gerçek/paper emir açılmaz.",
   "trades.resetBtn": "İşlemleri Sıfırla",
   "trades.resetConfirm": "Bu işlem açık pozisyon(lar)ı ve takip listesini temizler, bakiyeyi {amount} olarak sıfırlar. Kapanan İşlemler geçmişiniz ETKİLENMEZ. Bu işlem geri alınamaz. Devam edilsin mi?",

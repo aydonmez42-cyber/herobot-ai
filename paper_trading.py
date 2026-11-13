@@ -1944,7 +1944,7 @@ def sync_bist_watchlist_signals(state, now):
 #   Giris : scanner_st'in saat basi taramasindaki LONG/SHORT sinyali (supertrend_signal.py)
 #   Cikis : basamakli kar kilidi (ST_LOCK_TIERS, sabit TP yok) |
 #           Supertrend stop'u (dinamik: LONG yesil cizginin altinda, SHORT kirmizi cizginin ustunde mum kapanisi) |
-#           acil stop (girisen ST_EMERGENCY_STOP_PCT % ters hareket)
+#           felaket freni (girisen ST_EMERGENCY_STOP_PCT % ters hareket; 0 = kapali)
 #   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal
 #   cikisi ve 8-puan stratejisi bu yolda KULLANILMAZ.
 # =============================================================================
@@ -2021,6 +2021,41 @@ def _st_is_crypto_pos(state, symbol):
     return ((state.get('watchlist') or {}).get(symbol) or {}).get('market') == 'crypto'
 
 
+def _st_open_notional(state):
+    return sum(float(p.get('qty_eth') or 0) * float(p.get('entry_price') or 0) for p in (state.get('positions') or {}).values())
+
+
+_REGIME_WARN = {'t': 0.0}
+
+
+def st_extra_gate(state, symbol, sig, price):
+    """Ek giris kapilari: yeni listeleme | BTC rejimi (trend aleyhine en fazla N pozisyon) | boyut/maruziyet siniri."""
+    side = sig['side']
+    try:
+        if scanner_st15.is_new_listing(symbol):
+            return False, f'NEW_LISTING(<{scanner_st15.MIN_LISTING_DAYS:g}g)'
+    except Exception:
+        pass
+    if sts.COUNTER_TREND_MAX >= 0 and symbol != sts.REGIME_SYMBOL:
+        reg = None
+        try:
+            _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', CRYPTO_INTERVAL, 300)
+            reg = sts.regime_direction(_d.iloc[:-1])
+        except Exception as e:
+            if time.time() - _REGIME_WARN['t'] > 600:
+                _REGIME_WARN['t'] = time.time()
+                print(f'ST GATE | {sts.REGIME_SYMBOL} rejimi okunamadi ({type(e).__name__}); kural atlandi', flush=True)
+        if reg and side != reg:
+            n_counter = sum(1 for p in (state.get('positions') or {}).values() if p.get('side') != reg)
+            if n_counter >= sts.COUNTER_TREND_MAX:
+                return False, f'COUNTER_TREND_LIMIT({sts.REGIME_SYMBOL} {reg}, aleyhte {n_counter}/{sts.COUNTER_TREND_MAX})'
+    lvl = sig.get('st') if sig.get('st') is not None else sig.get('level')
+    n, why = sts.position_notional(state.get('equity'), _st_open_notional(state), price, lvl, watchlist_position_usd())
+    if n <= 0:
+        return False, why or 'SIZE'
+    return True, 'OK'
+
+
 def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     side = sig['side']
     sign = 1.0 if side == 'LONG' else -1.0
@@ -2029,6 +2064,11 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     level = float(sig['level']) if sig.get('level') is not None else None
     if sts.ST_STOP_MODE == 'flip' and sig.get('st') is not None:
         level = float(sig['st'])          # stop = yeni olusan Supertrend cizgisi (her turda guncellenir)
+    _notional, _why = sts.position_notional(state.get('equity'), _st_open_notional(state), px, level, watchlist_position_usd())
+    if _notional <= 0:
+        print(f'ST ENTRY | {symbol} atlandi: pozisyon boyutu/maruziyet siniri ({_why})', flush=True)
+        return
+    qty = _notional / px if px else 0.0
     pos = {
         'side': side, 'symbol': symbol, 'qty_eth': qty,
         'entry_price': px, 'entry_time': now.isoformat(),
@@ -2093,6 +2133,8 @@ def st_scan_and_trade(state, now):
             price = float(df.iloc[-1]['close'])
             ind = df.iloc[:-1].copy().set_index('close_time')
             ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
+            if ok:
+                ok, why = st_extra_gate(state, symbol, sig, price)
             if not ok:
                 print(f"ST ENTRY | {r['signal']} {symbol} atlandi: {why}", flush=True)
                 continue
@@ -2125,6 +2167,8 @@ def _st_try_open_manual(state, symbol, now, sig=None):
     if state.get('st_traded', {}).get(symbol) == str(pd.Timestamp(sig['signal_time']).isoformat()):
         return False
     ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
+    if ok:
+        ok, why = st_extra_gate(state, symbol, sig, price)
     if not ok:
         print(f"ST MANUEL | {sig.get('side')} {symbol} atlandi: {why}", flush=True)
         return False
@@ -2230,8 +2274,10 @@ def st_reentry_check(state, now):
                 continue
             price = float(df.iloc[-1]['close'])
             s_in = {'side': sig['side'], 'kind': sig['kind'], 'signal_time': pd.Timestamp(sig['signal_time']).isoformat(),
-                    'signal_close': sig['signal_close'], 'level': sig['level'], 'age_bars': sig['age_bars']}
+                    'signal_close': sig['signal_close'], 'level': sig['level'], 'st': sig.get('st'), 'age_bars': sig['age_bars']}
             ok, why = sts.entry_allowed(s_in, price, ind, symbol=symbol)
+            if ok:
+                ok, why = st_extra_gate(state, symbol, s_in, price)
             if not ok:
                 print(f"ST REENTRY | {sig['side']} {symbol} atlandi: {why}", flush=True)
                 continue
