@@ -163,6 +163,7 @@ def main():
     ap.add_argument("--tiers", default="2.5:1,4:2.5,6:4,8:6;1.5:0.5,3:1.5,5:3,8:6;2:1,4:2.5,6:4,8:6;3:1.5,5:3,8:5;1:0.2,2.5:1,4:2.5,6:4,8:6;none",
                     help="denenecek kar kilidi basamaklari; ';' ile ayirin. Her biri 'tetik:kilit,...' ; none = kilit yok")
     ap.add_argument("--out", default="sonuc", help="ozet sonuc dosyalarinin adi (.txt ve .csv otomatik yazilir)")
+    ap.add_argument("--gaps", default="", help="izleyen kilit bosluklari 'esik:bosluk,...' (ornek 8:2,10:1.5); none = kapali; bos = kodun varsayilani")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
@@ -181,6 +182,8 @@ def main():
             if k % 5 == 0: print(f"  {tf}: {k}/{len(syms)} coin cekildi", file=sys.stderr, flush=True)
     print("=" * 170)
     first = None
+    if a.gaps:
+        sts.TRAIL_GAPS = [] if a.gaps.lower() == "none" else sts._parse_gaps(a.gaps)
     summary, lines = [], []
     tier_sets = [x.strip() for x in a.tiers.split(";") if x.strip()]
     for tf, items in data.items():

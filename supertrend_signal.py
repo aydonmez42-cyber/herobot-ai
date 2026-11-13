@@ -41,8 +41,36 @@ TRAIL_ARM_PCT = LOCK_TIERS[0][0]
 TRAIL_FLOOR_PCT = LOCK_TIERS[0][1]
 
 
+def _parse_gaps(txt):
+    out = []
+    for part in str(txt).split(","):
+        if ":" in part:
+            a, g = part.split(":", 1)
+            try:
+                out.append((float(a), float(g)))
+            except ValueError:
+                pass
+    out.sort()
+    return out
+
+
+# Son basamagin ustunde izleyen kilit: zirve kar >= esik oldugunda taban = zirve - bosluk (puan). Ornek "8:2,10:1.5":
+# +%8..+%10 arasi zirvenin 2 puan, +%10 ustunde 1.5 puan altinda. Bos birakirsaniz ("none") yalnizca basamaklar gecerli.
+TRAIL_GAPS = _parse_gaps(os.environ.get("ST_TRAIL_GAPS", "8:2,10:1.5"))
+
+
+def _gap_for(peak):
+    gap = None
+    for a, g in TRAIL_GAPS:
+        if peak >= a:
+            gap = g
+    return gap
+
+
 def lock_floor(peak):
     """Zirve kara gore korunan (kilitli) kar %; henuz kilit yoksa None."""
+    if not LOCK_TIERS:
+        return None
     fl = None
     for arm, floor in LOCK_TIERS:
         if peak >= arm:
@@ -52,6 +80,9 @@ def lock_floor(peak):
     arm, floor = LOCK_TIERS[-1]
     if peak > arm:
         fl = max(fl, peak - (arm - floor))
+    gap = _gap_for(peak)
+    if gap is not None:
+        fl = max(fl, peak - gap)
     return fl
 
 
@@ -60,7 +91,8 @@ def next_lock_target(peak):
     for arm, _ in LOCK_TIERS:
         if peak < arm:
             return arm
-    return peak + (LOCK_TIERS[-1][0] - LOCK_TIERS[-1][1])
+    gap = _gap_for(peak)
+    return peak + (gap if gap is not None else (LOCK_TIERS[-1][0] - LOCK_TIERS[-1][1]))
 
 
 def tp_text():
@@ -68,7 +100,10 @@ def tp_text():
 
 
 def lock_tiers_text():
-    return " · ".join(f"+%{a:g} → %{f:g}" for a, f in LOCK_TIERS)
+    t = " · ".join(f"+%{a:g} → %{f:g}" for a, f in LOCK_TIERS)
+    if TRAIL_GAPS:
+        t += " · sonrasında zirvenin " + ", ".join(f"+%{a:g}'dan itibaren {g:g}" for a, g in TRAIL_GAPS) + " puan altı"
+    return t
 
 MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
