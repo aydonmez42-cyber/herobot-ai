@@ -1,5 +1,5 @@
 """
-Supertrend taramasi - 15 DAKIKALIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.1).
+Supertrend taramasi - 15 DAKIKALIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.4).
 
 Sinyal mantigi supertrend_signal.py icindedir (TradingView "ST Sinyal" Pine kodunun birebir karsiligi):
   LONG  = Supertrend'i yukari kirip ustunde mum kapatti (veya stop sonrasi yeniden giris),

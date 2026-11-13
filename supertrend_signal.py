@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.1 sinyal motoru (15 dk) - TradingView "ST Sinyal" Pine kodunun birebir Python karsiligi.
+Supertrend 10 / 4.4 sinyal motoru (15 dk) - TradingView "ST Sinyal" Pine kodunun birebir Python karsiligi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -14,7 +14,7 @@ import pandas as pd
 from indicators import supertrend
 
 ST_PERIOD = 10
-ST_MULT = 4.1
+ST_MULT = float(os.environ.get("ST_MULT", "4.4"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
@@ -135,7 +135,7 @@ MAX_NOTIONAL_USD = float(os.environ.get("ST_MAX_NOTIONAL_USD", "2500"))   # tek 
 MIN_NOTIONAL_USD = float(os.environ.get("ST_MIN_NOTIONAL_USD", "100"))    # bundan kucuk pozisyon acilmaz
 MAX_EXPOSURE_X = float(os.environ.get("ST_MAX_EXPOSURE_X", "3"))          # toplam acik nominal <= bakiye x bu
 # BTC rejimi: BTC'nin Supertrend yonunun TERSINE en fazla bu kadar acik pozisyon
-COUNTER_TREND_MAX = int(float(os.environ.get("ST_COUNTER_TREND_MAX", "4")))
+COUNTER_TREND_MAX = int(float(os.environ.get("ST_COUNTER_TREND_MAX", "2")))
 REGIME_SYMBOL = os.environ.get("ST_REGIME_SYMBOL", "BTCUSDT").upper()
 
 

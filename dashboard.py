@@ -3899,7 +3899,7 @@ function openTvChart(tvSymbol,label,interval){
     allow_symbol_change:true,
     withdateranges:true,
     save_image:false,
-    studies:["Supertrend@tv-basicstudies"],          // yalnizca Supertrend (ATR 10, carpan 4.1: grafik ayarindan kontrol edin)
+    studies:["Supertrend@tv-basicstudies"],          // yalnizca Supertrend (ATR 10, carpan 4.4: grafik ayarindan kontrol edin)
     support_host:"https://www.tradingview.com"
   };
   const script=document.createElement('script');
@@ -9712,7 +9712,7 @@ _TA_AI_CACHE = {}
 
 
 def ta_chart_payload(tv, tf):
-    """chart_st'ten mumlari alir; Supertrend'i BOTUN KENDI motoruyla (ATR 10, carpan 4.1) yeniden hesaplar,
+    """chart_st'ten mumlari alir; Supertrend'i BOTUN KENDI motoruyla (ATR 10, carpan 4.4) yeniden hesaplar,
     boylece grafikteki cizgi ve oklar robotun sinyalleriyle birebir ayni olur."""
     import chart_st
     import numpy as _np
@@ -9770,7 +9770,7 @@ def ta_symbols(market):
 
 
 _TA_AI_SYSTEM = (
-    "Sen deneyimli bir teknik analistsin. Yalnızca verilen fiyat ve Supertrend (ATR 10, çarpan 4.1) verisine dayan; "
+    "Sen deneyimli bir teknik analistsin. Yalnızca verilen fiyat ve Supertrend (ATR 10, çarpan 4.4) verisine dayan; "
     "haber, temel analiz veya veride olmayan bir şey uydurma. Türkçe, kısa ve net yaz. Şu başlıkları kullan: "
     "1) Genel görünüm 2) Supertrend durumu ve kritik seviye 3) Destek / direnç 4) Olası senaryolar (yükseliş / düşüş) "
     "ve senaryoyu geçersiz kılan seviye 5) Risk notu. Kesin getiri vaadi verme. Toplam 230 kelimeyi geçme. "
