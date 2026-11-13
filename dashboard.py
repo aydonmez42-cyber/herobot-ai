@@ -842,6 +842,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .kpi-divider{width:1px;background:var(--border-soft);flex:none}
 .sparkline{width:100%;height:30px;margin-top:8px;display:block}
 .pos{color:var(--bull)}.neg{color:var(--bear)}
+a.st-side{font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+a.st-side:hover{filter:brightness(1.25)}
 
 /* Panels */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
@@ -3388,6 +3390,8 @@ _NAV_PAGE_STYLE_EXTRA = r'''
 .kpi-sub{font-size:12px;color:var(--text-dim);margin-top:4px;font-family:var(--font-m)}
 .kpi-divider{width:1px;background:var(--border-soft);flex:none}
 .pos{color:var(--bull)}.neg{color:var(--bear)}
+a.st-side{font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+a.st-side:hover{filter:brightness(1.25)}
 .table-scroll{overflow:auto}
 table.datatable{width:100%;border-collapse:collapse;font-size:12.5px}
 table.datatable th{position:sticky;top:0;background:var(--panel);text-align:left;padding:10px 12px;color:var(--text-faint);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -3616,7 +3620,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-controls">
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
-        <select id="stFilter" onchange="renderSt()"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
         <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3" selected>Son 3 mum (45 dk)</option><option value="4">Son 4 mum (1 saat)</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
@@ -3635,7 +3639,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-controls">
         <select id="stBistTf" onchange="stsTfChange('Bist')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Tara (manuel)</button>
-        <select id="stBistFilter" onchange="stsRender('Bist')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stBistFilter" autocomplete="off" onchange="stsRender('Bist')"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
         <select id="stBistBars" onchange="stsRender('Bist')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
         <span class="scanner-status" id="stBistStatus"></span>
       </div>
@@ -3654,7 +3658,7 @@ SCANNER_HTML = r'''<!doctype html>
       <div class="scanner-controls">
         <select id="stUsTf" onchange="stsTfChange('Us')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Tara (manuel)</button>
-        <select id="stUsFilter" onchange="stsRender('Us')"><option value="LONG">LONG</option><option value="SHORT">SHORT</option><option value="ALL">ALL</option></select>
+        <select id="stUsFilter" autocomplete="off" onchange="stsRender('Us')"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
         <select id="stUsBars" onchange="stsRender('Us')"><option value="1">Son 1 gün</option><option value="2">Son 2 gün</option><option value="3">Son 3 gün</option><option value="5">Son 5 gün</option></select>
         <span class="scanner-status" id="stUsStatus"></span>
       </div>
@@ -4101,9 +4105,18 @@ document.addEventListener('click',function(e){
   stSortState[key]=(cur&&cur.k===k)?{k,dir:-cur.dir}:{k,dir:textCol?1:-1};   // sayisal: once buyukten kucuge
   if(key==='St') renderSt(); else stsRender(key);
 });
+function stSideLinks(nL,nS,selId){
+  const mk=(side,n,cls)=>'<a href="#" class="st-side '+cls+'" data-sel="'+selId+'" data-side="'+side+'">'+side+' '+n+'</a>';
+  return mk('LONG',nL,'pos')+' · '+mk('SHORT',nS,'neg');
+}
+document.addEventListener('click',function(e){
+  const a=e.target.closest&&e.target.closest('a.st-side'); if(!a) return;
+  e.preventDefault(); const sel=document.getElementById(a.dataset.sel);
+  if(sel){ sel.value=a.dataset.side; sel.dispatchEvent(new Event('change')); }
+});
 function renderSt(){
   const tf=stTfVal(); stCache=stCaches[tf];
-  const f=document.getElementById('stFilter')?.value||'LONG';
+  const f=document.getElementById('stFilter')?.value||'ALL';
   const n=Number(document.getElementById('stBars')?.value||1);
   const all=(stCache.results||[]).map(x=>({...x,signal:(x.signal&&x.signal_age!=null&&x.signal_age<n)?x.signal:'NO SIGNAL'}));
   const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>(a.signal_age??99)-(b.signal_age??99)||Number(b.change_pct||0)-Number(a.change_pct||0)),'St');
@@ -4113,7 +4126,7 @@ function renderSt(){
   if(st){
     if(stCache.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
     else if(busy) st.textContent=T15('Başka bir zaman dilimi taranıyor…','Another timeframe is being scanned…');
-    else if(stCache.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
+    else if(stCache.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · '+stSideLinks(nL,nS,'stFilter');
     else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
   }
   const lblTr='15 dakikalık', lblEn='15m';
@@ -4159,7 +4172,7 @@ function stsTfChange(k){
   stsRender(k); stsRefresh(k);
 }
 function stsRender(k){
-  const tf=stsTf(k), w=tf==='1W'; const c=stsCache[k][tf]; const f=document.getElementById('st'+k+'Filter')?.value||'LONG';
+  const tf=stsTf(k), w=tf==='1W'; const c=stsCache[k][tf]; const f=document.getElementById('st'+k+'Filter')?.value||'ALL';
   const n=Number(document.getElementById('st'+k+'Bars')?.value||1);
   const all=(c.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
   const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0)),k);
@@ -4168,7 +4181,7 @@ function stsRender(k){
   const busy=c.status==='SCANNING' || ['1D','1W'].some(t=>stsCache[k][t].status==='SCANNING'); if(btn) btn.disabled=busy;
   if(st){
     if(c.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(c.progress||0)+'/'+(c.total||'?');
-    else if(c.finished_at) st.textContent=T15('Son tarama: ','Last scan: ')+stFmtTR(c.finished_at)+' (TR) · LONG '+nL+' · SHORT '+nS;
+    else if(c.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(c.finished_at)+' (TR) · '+stSideLinks(nL,nS,'st'+k+'Filter');
     else st.textContent=T15('Henüz tarama yapılmadı (otomatik tarama yok).','No scan yet (never runs automatically).');
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
