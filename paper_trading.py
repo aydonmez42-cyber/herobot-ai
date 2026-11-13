@@ -1950,7 +1950,8 @@ def sync_bist_watchlist_signals(state, now):
 # =============================================================================
 ST_MAX_OPEN = int(_env_float('ST_MAX_OPEN_POSITIONS', 10))
 ST_SCAN_MAX_AGE_H = _env_float('ST_SCAN_MAX_AGE_H', 0.75)     # bundan eski tarama sonucu ile islem acilmaz (restart sonrasi)
-_ST_REASON = {'TP': 'ST_TP', 'TRAIL_LOCK': 'ST_TRAIL_LOCK', 'ST_STOP': 'ST_STOP', 'EMERGENCY_STOP': 'EMERGENCY_STOP'}
+_ST_REASON = {'TP': 'ST_TP', 'TRAIL_LOCK': 'ST_TRAIL_LOCK', 'ST_STOP': 'ST_STOP', 'EMERGENCY_STOP': 'EMERGENCY_STOP',
+              'REGIME_PROFIT': 'ST_REGIME_PROFIT', 'REGIME_CUT': 'ST_REGIME_CUT'}
 
 
 def _fmt_px(x):
@@ -1971,7 +1972,8 @@ def _usdt(x):
 
 
 _ST_REASON_TR = {'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)', 'ST_TP': 'Kâr al (TP)',
-                 'ST_TRAIL_LOCK': 'Kâr kilidi', 'EMERGENCY_STOP': 'Acil stop'}
+                 'ST_TRAIL_LOCK': 'Kâr kilidi', 'EMERGENCY_STOP': 'Acil stop',
+                 'ST_REGIME_PROFIT': 'BTC trendi döndü: kâr alındı', 'ST_REGIME_CUT': 'BTC trendi döndü: ters yön sınırı (en çok zarardaki kapatıldı)'}
 
 
 def st_entry_message(pos):
@@ -2206,8 +2208,82 @@ def st_manual_watch_scan(state, now, skip_symbols=()):
             print(f'ST MANUEL | ERROR | {wsym} | {type(e).__name__}: {e}', flush=True)
 
 
+def st_regime_flip_check(state, now):
+    """BTC Supertrend yonu degistiginde (kapanmis mum): yeni rejime TERS yondeki pozisyonlarda
+      1) kari >= ST_REGIME_TAKE_PROFIT_PCT olanlar kapatilir,
+      2) kari 0..esik arasinda olanlar basabasa (komisyon payi) cekilir (kilit tabani),
+      3) ters yonde hala N'den fazla pozisyon varsa, en cok zarardakilerden baslayarak N'e inene kadar kapatilir.
+    Her donus yalnizca BIR kez islenir; rejim okunamazsa atlanir."""
+    if not sts.REGIME_FLIP or sts.COUNTER_TREND_MAX < 0:
+        return
+    try:
+        _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', CRYPTO_INTERVAL, 300)
+        reg = sts.regime_direction(_d.iloc[:-1])
+    except Exception as e:
+        if type(e).__name__ != 'BinanceCooldown' and time.time() - _REGIME_WARN['t'] > 600:
+            _REGIME_WARN['t'] = time.time()
+            print(f'ST REJIM | {sts.REGIME_SYMBOL} rejimi okunamadi ({type(e).__name__}); donus kontrolu atlandi', flush=True)
+        return
+    if not reg:
+        return
+    prev = state.get('btc_regime')
+    if prev == reg:
+        return
+    state['btc_regime'] = reg
+    save_state(state)
+    if not prev:
+        print(f'ST REJIM | {sts.REGIME_SYMBOL} rejimi: {reg} (ilk okuma)', flush=True)
+        return
+    counter = {s: p for s, p in (state.get('positions') or {}).items() if _st_is_crypto_pos(state, s) and p.get('side') != reg and s != sts.REGIME_SYMBOL}
+    print(f'ST REJIM | {sts.REGIME_SYMBOL} {prev} -> {reg} | ters yonde {len(counter)} pozisyon', flush=True)
+    rows = []
+    for s, p in counter.items():
+        try:
+            price = float(fetch_cached(s, 'USD_M', CRYPTO_INTERVAL, 300).iloc[-1]['close'])
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                print('ST REJIM | Binance bekleme suresi aktif; donus islemi bir sonraki turda denenir', flush=True)
+                state['btc_regime'] = prev            # bir sonraki turda yeniden dene
+                return
+            continue
+        sign = 1.0 if p['side'] == 'LONG' else -1.0
+        rows.append((s, sign * (price - p['entry_price']) / p['entry_price'] * 100.0, price))
+    closed = []
+
+    def _close(s, price, raw):
+        p = state['positions'].get(s)
+        if not p:
+            return
+        exit_symbol_position(state, s, price, _ST_REASON[raw], now, live_eligible=True)
+        if ((state.get('watchlist') or {}).get(s) or {}).get('st_auto'):
+            for k in ('watchlist', 'watchlist_signals'):
+                (state.get(k) or {}).pop(s, None)
+        closed.append(s)
+
+    for s, profit, price in rows:
+        if profit >= sts.REGIME_TAKE_PROFIT_PCT:
+            _close(s, price, 'REGIME_PROFIT')
+        elif profit > 0:
+            state['positions'][s]['be_floor'] = sts.BREAKEVEN_FLOOR_PCT if profit > sts.BREAKEVEN_FLOOR_PCT else 0.0
+    left = sorted([(profit, s, price) for s, profit, price in rows if s not in closed])
+    n_over = len(left) - sts.COUNTER_TREND_MAX
+    for profit, s, price in left[:max(0, n_over)]:           # en dusuk (en cok zarardaki) once
+        _close(s, price, 'REGIME_CUT')
+    save_state(state)
+    try:
+        send_message(f"⚠️ {sts.REGIME_SYMBOL} Supertrend yönü {prev} → {reg}\n"
+                     f"Ters yöndeki pozisyon: {len(rows)} | kapatılan: {len(closed)}" + (f" ({', '.join(closed)})" if closed else '') + "\n"
+                     f"Kâr ≥ %{sts.REGIME_TAKE_PROFIT_PCT:g} olanlar kapatıldı, kârdaki diğerleri başabaşa çekildi, ters yön sınırı {sts.COUNTER_TREND_MAX}.")
+    except Exception:
+        pass
+
+
 def st_manage_positions(state, now):
     """Acik kripto pozisyonlarini her turda (30 sn) yonetir; Supertrend stop'u kapanmis 15 dk mumlara bakar."""
+    try:
+        st_regime_flip_check(state, now)
+    except Exception as e:
+        print(f'ST REJIM | ERROR | {type(e).__name__}: {e}', flush=True)
     for symbol, p in list((state.get('positions') or {}).items()):
         if not _st_is_crypto_pos(state, symbol):
             continue
@@ -2219,7 +2295,7 @@ def st_manage_positions(state, now):
             profit = sign * (price - p['entry_price']) / p['entry_price'] * 100.0
             state.setdefault('watchlist_signals', {})[symbol] = {'price': price, 'final': p['side'], 'updated_at': now.isoformat()}
             p['peak_pct'] = max(float(p.get('peak_pct') or 0.0), profit)
-            _fl = sts.lock_floor(p['peak_pct'])
+            _fl = sts.pos_floor(p, p['peak_pct'])
             p['trail_active'] = _fl is not None
             p['trail_stop'] = (p['entry_price'] * (1 + sign * _fl / 100.0)) if _fl is not None else None
             _tgt = sts.TP_PCT if sts.TP_PCT > 0 else sts.next_lock_target(p['peak_pct'])

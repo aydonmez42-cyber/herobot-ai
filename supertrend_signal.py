@@ -67,6 +67,21 @@ def _gap_for(peak):
     return gap
 
 
+# BTC rejimi pozisyonlarin aleyhine donunce: kar >= esik olanlar kapatilir, 0..esik arasi olanlar basabasa (komisyon payi) cekilir
+REGIME_FLIP = os.environ.get("ST_REGIME_FLIP", "on").strip().lower() != "off"
+REGIME_TAKE_PROFIT_PCT = float(os.environ.get("ST_REGIME_TAKE_PROFIT_PCT", "1"))
+BREAKEVEN_FLOOR_PCT = float(os.environ.get("ST_BREAKEVEN_FLOOR_PCT", "0.1"))
+
+
+def pos_floor(pos, peak):
+    """Pozisyonun etkin koruma tabani %: kilit basamaklari ile basabas tabaninin buyugu; yoksa None."""
+    fl = lock_floor(peak)
+    be = pos.get("be_floor")
+    if be is not None:
+        fl = float(be) if fl is None else max(fl, float(be))
+    return fl
+
+
 def lock_floor(peak):
     """Zirve kara gore korunan (kilitli) kar %; henuz kilit yoksa None."""
     if not LOCK_TIERS:
@@ -294,7 +309,7 @@ def check_exit(pos, df, last_price):
         return "EMERGENCY_STOP"
     if TP_PCT > 0 and profit >= TP_PCT:
         return "TP"
-    _fl = lock_floor(peak)
+    _fl = pos_floor(pos, peak)
     if _fl is not None and profit <= _fl:
         return "TRAIL_LOCK"
 
