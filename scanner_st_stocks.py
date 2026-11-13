@@ -34,6 +34,8 @@ TIMEFRAMES = {'1D': DAILY_BARS, '1W': WEEKLY_BARS}
 
 BIST_UNIVERSES = ('XU030', 'XU100', 'XUTUM')      # BIST 30 / BIST 100 / BIST Tumu
 DEFAULT_BIST_UNIVERSE = 'XUTUM'
+US_UNIVERSES = ('DJI', 'NDX', 'SPX')              # Dow Jones / Nasdaq 100 / S&P 500
+DEFAULT_US_UNIVERSE = 'SPX'
 
 _MARKETS = {
     'bist': {'tz': 'Europe/Istanbul'},
@@ -42,7 +44,7 @@ _MARKETS = {
 
 
 class _Scan:
-    def __init__(self, key, tf='1D', universe='ALL'):
+    def __init__(self, key, tf='1D', universe='XUTUM'):
         self.key = key
         self.tf = tf
         self.universe = universe
@@ -66,8 +68,14 @@ class _Scan:
             syms, self.source = get_xutum_symbols(force=False)
             self.approx = False
             return syms
-        from us_stocks_universe import get_us_symbols
-        return get_us_symbols(force=False)[0]
+        from us_stocks_universe import get_us_index_symbols
+        syms, self.source, self.approx, ex = get_us_index_symbols(self.universe)
+        if ex:                                           # borsa bilgisi hazirsa her hisse icin borsa denemesi yapilmaz
+            import us_scanner
+            with us_scanner._exchange_lock:
+                for s_, e_ in ex.items():
+                    us_scanner._exchange_cache.setdefault(s_, e_)
+        return syms
 
     def _bars(self, symbol):
         if self.key == 'bist':
@@ -158,7 +166,8 @@ class _Scan:
             out = dict(self.state)
             out['results'] = list(self.state['results'])
         out.update({'interval': self.tf, 'min_gap_s': MIN_GAP_S, 'universe': self.universe,
-                    'source': self.source, 'approx': self.approx})
+                    'source': self.source, 'approx': self.approx,
+                    'approx_kind': 'static' if self.key == 'us' else 'mcap'})
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         out['next_allowed_in_s'] = max(0, int(wait))
         return out
@@ -183,7 +192,7 @@ class _Scan:
 _scans = {}
 for _k in _MARKETS:
     for _tf in TIMEFRAMES:
-        for _u in (BIST_UNIVERSES if _k == 'bist' else ('ALL',)):
+        for _u in (BIST_UNIVERSES if _k == 'bist' else US_UNIVERSES):
             _scans[(_k, _tf, _u)] = _Scan(_k, _tf, _u)
 
 
@@ -193,10 +202,10 @@ def _tf(tf):
 
 
 def _u(key, universe):
-    if key != 'bist':
-        return 'ALL'
-    u = str(universe or DEFAULT_BIST_UNIVERSE).upper()
-    return u if u in BIST_UNIVERSES else DEFAULT_BIST_UNIVERSE
+    u = str(universe or '').upper()
+    if key == 'bist':
+        return u if u in BIST_UNIVERSES else DEFAULT_BIST_UNIVERSE
+    return u if u in US_UNIVERSES else DEFAULT_US_UNIVERSE
 
 
 def snapshot(key, tf='1D', universe=None):

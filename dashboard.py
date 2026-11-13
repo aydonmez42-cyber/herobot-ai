@@ -3657,6 +3657,7 @@ SCANNER_HTML = r'''<!doctype html>
     <div id="stUsCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="scanner-controls" style="margin-bottom:6px"><b id="stUsTitle">Tarama · Wall Street (Günlük)</b></div>
       <div class="scanner-controls">
+        <select id="stUsUni" autocomplete="off" onchange="stsTfChange('Us')"><option value="DJI">Dow Jones</option><option value="NDX" selected>Nasdaq 100</option><option value="SPX">S&amp;P 500</option></select>
         <select id="stUsTf" onchange="stsTfChange('Us')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stUsBtn" onclick="stsStart('Us')">⏱ Tara (manuel)</button>
         <select id="stUsFilter" autocomplete="off" onchange="stsRender('Us')"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -4162,18 +4163,18 @@ refreshSt(); setInterval(refreshSt,60000);   // sonuc her dakika okunur; tarama 
 const stsCache={Bist:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}},Us:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}}}, stsTimer={};
 const stsApi={Bist:'/api/scanner_st_bist',Us:'/api/scanner_st_us'};
 const stsName={Bist:'Borsa İstanbul',Us:'Wall Street'};
-function stsUni(k){ return k==='Bist' ? (document.getElementById('stBistUni')?.value||'XU100') : ''; }
-function stsCK(k){ return stsTf(k)+(k==='Bist'?'|'+stsUni(k):''); }
-function stsUq(k){ return k==='Bist' ? '&u='+encodeURIComponent(stsUni(k)) : ''; }
+function stsUni(k){ return document.getElementById('st'+k+'Uni')?.value || (k==='Bist'?'XU100':'NDX'); }
+function stsCK(k){ return stsTf(k)+'|'+stsUni(k); }
+function stsUq(k){ return '&u='+encodeURIComponent(stsUni(k)); }
 function stsSlot(k,key){ return stsCache[k][key] || (stsCache[k][key]={results:[],status:'IDLE'}); }
-const stsUniName={XU030:'BIST 30',XU100:'BIST 100',XUTUM:'BIST Tümü'};
+const stsUniName={XU030:'BIST 30',XU100:'BIST 100',XUTUM:'BIST Tümü',DJI:'Dow Jones',NDX:'Nasdaq 100',SPX:'S&P 500'};
 function stsTf(k){ return document.getElementById('st'+k+'Tf')?.value==='1W'?'1W':'1D'; }
 function stsFmtD(v){ try{ return new Date(v).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5); }catch(e){ return '—'; } }
 function stsTfChange(k){
   const w=stsTf(k)==='1W';
   const bars=document.getElementById('st'+k+'Bars');
   if(bars){ bars.innerHTML=(w?[1,2,3,4]:[1,2,3,5]).map(n=>`<option value="${n}">${T15('Son '+n+(w?' hafta':' gün'),'Last '+n+(w?' week'+(n>1?'s':''):' day'+(n>1?'s':'')))}</option>`).join(''); }
-  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Tarama · "+stsName[k]+(k==='Bist'?' · '+(stsUniName[stsUni(k)]||''):'')+(w?' (Haftalık)':' (Günlük)');
+  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Tarama · "+stsName[k]+' · '+(stsUniName[stsUni(k)]||'')+(w?' (Haftalık)':' (Günlük)');
   const h=document.getElementById('st'+k+'ChgH'); if(h) h.textContent=w?T15('Haftalık %','Weekly %'):T15('Günlük %','Daily %');
   stsRender(k); stsRefresh(k);
 }
@@ -4192,7 +4193,7 @@ function stsRender(k){
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
     'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali. Periyod '+(w?'Haftalık':'Günlük')+', '+(c.total||0)+' hisse.',
-    'Red line broken upward on a candle close: LONG; green line broken downward on a candle close: SHORT. Period '+(w?'Weekly':'Daily')+', '+(c.total||0)+' stocks.')+(c.approx?T15(' ⚠ Resmi endeks listesi alınamadı; piyasa değerine göre en büyük hisseler tarandı.',' ⚠ Official index list unavailable; largest stocks by market cap were scanned.'):'');
+    'Red line broken upward on a candle close: LONG; green line broken downward on a candle close: SHORT. Period '+(w?'Weekly':'Daily')+', '+(c.total||0)+' stocks.')+(c.approx?(c.approx_kind==='static'?T15(' ⚠ Canlı endeks listesi alınamadı; kayıtlı (eski olabilen) liste tarandı.',' ⚠ Live index list unavailable; a saved (possibly outdated) list was scanned.'):T15(' ⚠ Resmi endeks listesi alınamadı; piyasa değerine göre en büyük hisseler tarandı.',' ⚠ Official index list unavailable; largest stocks by market cap were scanned.')):'');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
   const unitTr=w?' hafta önce':' gün önce', unitEn=w?' weeks ago':' days ago';

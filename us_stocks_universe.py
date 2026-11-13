@@ -25,6 +25,67 @@ NASDAQ100 = [
 _SYMBOLS = sorted(set(SP500) | set(NASDAQ100))
 
 
+# Dow Jones Industrial Average (30). STATIK YEDEK: TradingView'den canli liste alinamazsa kullanilir; endeks bilesimi
+# zamanla degisir (son bilinen liste). Canli liste her zaman once denenir.
+DOW30 = ['AAPL','AMGN','AMZN','AXP','BA','CAT','CRM','CSCO','CVX','DIS','GS','HD','HON','IBM','JNJ','JPM','KO',
+         'MCD','MMM','MRK','MSFT','NKE','NVDA','PG','SHW','TRV','UNH','V','VZ','WMT']
+
+# ---- Endeks bazli evren (canli: TradingView Screener 'symbolset'; yedek: kayitli liste) ----
+import os, re, time, threading
+import requests
+
+TV_US_SCANNER_URL = os.environ.get('TRADINGVIEW_US_SCANNER_URL', 'https://scanner.tradingview.com/america/scan')
+US_INDEXES = {
+    'DJI': {'name': 'Dow Jones', 'sym': 'SYML:DJ;DJI', 'ok': (28, 32), 'static': DOW30},
+    'NDX': {'name': 'Nasdaq 100', 'sym': 'SYML:NASDAQ;NDX', 'ok': (95, 110), 'static': NASDAQ100},
+    'SPX': {'name': 'S&P 500', 'sym': 'SYML:SP;SPX', 'ok': (480, 520), 'static': SP500},
+}
+_US_CACHE_S = int(os.environ.get('US_INDEX_CACHE_SECONDS', '21600'))
+_idx_lock = threading.Lock()
+_idx_cache = {}
+
+
+def _tv_us_payload(sym):
+    return {'columns': ['name', 'description'], 'filter': [], 'filterOR': [], 'ignore_unknown_fields': False,
+            'options': {'lang': 'en'}, 'price_conversion': {}, 'range': [0, 700],
+            'sort': {'sortBy': 'name', 'sortOrder': 'asc'},
+            'symbols': {'symbolset': [sym], 'query': {'types': []}, 'tickers': []}, 'markets': ['america']}
+
+
+def get_us_index_symbols(code, force=False):
+    """Dow Jones / Nasdaq 100 / S&P 500. Doner: (semboller, kaynak, approx, {sembol: borsa}).
+    approx=True: canli liste alinamadi, kayitli (eski olabilen) liste kullanildi."""
+    code = str(code).upper()
+    meta = US_INDEXES[code]
+    now = time.time()
+    with _idx_lock:
+        c = _idx_cache.get(code)
+        if c and not force and now - c['ts'] < _US_CACHE_S:
+            return list(c['symbols']), c['source'], c['approx'], dict(c['ex'])
+    try:
+        r = requests.post(TV_US_SCANNER_URL, json=_tv_us_payload(meta['sym']), timeout=30, headers={
+            'Accept': 'application/json', 'Content-Type': 'text/plain;charset=UTF-8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
+            'Origin': 'https://www.tradingview.com', 'Referer': 'https://www.tradingview.com/'})
+        r.raise_for_status()
+        syms, ex = [], {}
+        for row in (r.json().get('data') or []):
+            full = str(row.get('s') or '').upper()
+            exch, _, sym = full.partition(':')
+            if sym and re.fullmatch(r"[A-Z0-9.\-]{1,10}", sym) and sym not in ex:
+                syms.append(sym); ex[sym] = exch
+        lo, hi = meta['ok']
+        if not (lo <= len(syms) <= hi):
+            raise RuntimeError(f"{meta['name']} bilesen sayisi beklenenden farkli: {len(syms)}")
+        out = (sorted(syms), f"TradingView {meta['name']} endeks bilesenleri ({len(syms)})", False, ex)
+    except Exception as exc:
+        stat = sorted(set(meta['static']))
+        out = (stat, f"kayitli liste ({meta['name']}, {len(stat)}; canli liste alinamadi: {type(exc).__name__})", True, {})
+    with _idx_lock:
+        _idx_cache[code] = {'symbols': out[0], 'source': out[1], 'approx': out[2], 'ex': out[3], 'ts': time.time()}
+    return list(out[0]), out[1], out[2], dict(out[3])
+
+
 def get_us_symbols(force=False):
     """Mirrors bist_xutum_universe.get_xutum_symbols()'s (symbols, source)
     shape. `force` is accepted for interface compatibility but unused —
