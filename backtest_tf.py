@@ -21,6 +21,18 @@ import argparse, json, sys, time, urllib.request, urllib.parse
 import numpy as np
 import pandas as pd
 import supertrend_signal as sts
+from indicators import adx as _adx, atr as _atr
+
+_FILT = {}
+
+
+def filt_arrays(sym, df):
+    """Giris filtreleri icin: ADX(14) ve ATR(14)/kapanis*100 dizileri (sinyal muminde okunur; sembol basina onbellek)."""
+    if sym not in _FILT:
+        a = _adx(df["high"], df["low"], df["close"], 14)["adx"].to_numpy()
+        p = (_atr(df["high"], df["low"], df["close"], 14) / df["close"] * 100.0).to_numpy()
+        _FILT[sym] = (a, p)
+    return _FILT[sym]
 
 FAPI = "https://fapi.binance.com"
 TF_MIN = {"15m": 15, "1h": 60, "4h": 240}
@@ -67,7 +79,7 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0):
     """Tek coin: tum islemleri doner (liste of dict)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
@@ -79,6 +91,8 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None):
         if e["type"] not in ("LONG", "SHORT", "RE_LONG", "RE_SHORT"): continue
         i = e["i"]
         if i < warm or i + 1 >= n or i <= busy_until: continue
+        if adx_min > 0 and adx_arr is not None and not (adx_arr[i] >= adx_min): continue        # trend zayif (NaN de elenir)
+        if atr_min > 0 and atrp_arr is not None and not (atrp_arr[i] >= atr_min): continue      # oynaklik cok dusuk
         side = 1 if e["type"] in ("LONG", "RE_LONG") else -1
         entry = o[i + 1]; peak = 0.0; exit_pct = None; reason = None; j = i + 1
         while j < n:
@@ -165,12 +179,16 @@ def main():
     ap.add_argument("--out", default="sonuc", help="ozet sonuc dosyalarinin adi (.txt ve .csv otomatik yazilir)")
     ap.add_argument("--gaps", default="", help="izleyen kilit bosluklari 'esik:bosluk,...' (ornek 8:2,10:1.5); none = kapali; bos = kodun varsayilani")
     ap.add_argument("--mults", default="", help="denenecek Supertrend carpanlari (virgullu, ornek 4.1,4.7); bos = kodun carpani")
+    ap.add_argument("--adx", default="0", help="giriste en az ADX(14) degerleri (virgullu, ornek 0,20,25,30); 0 = filtre yok")
+    ap.add_argument("--minatr", default="0", help="giriste en az ATR(14)/fiyat %% degerleri (virgullu, ornek 0,0.3,0.5); 0 = filtre yok")
     ap.add_argument("--persym", action="store_true", help="her coin icin ayri satir da yaz")
     ap.add_argument("--period", type=int, default=0, help="Supertrend ATR periyodu (0 = kodun degeri)")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
     if a.period > 0:
         sts.ST_PERIOD = a.period
+    adx_list = [float(x) for x in a.adx.split(",") if x.strip()] or [0.0]
+    atr_list = [float(x) for x in a.minatr.split(",") if x.strip()] or [0.0]
     mult_list = [float(x) for x in a.mults.split(",") if x.strip()] or [sts.ST_MULT]
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
     emerg_list = [float(x) for x in a.emerg.split(",")]; sides = [x.strip() for x in a.sides.split(",")]
@@ -200,14 +218,17 @@ def main():
             sts.LOCK_TIERS = [] if tset.lower() == "none" else sts._parse_tiers(tset)
             for sd in sides:
                 for em in emerg_list:
+                  for adx_min in adx_list:
+                   for atr_min in atr_list:
                     tr_all = []
                     for s, df, warm, ev, d in items:
-                        for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d):
+                        fa, fp = filt_arrays(s, df)
+                        for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d, adx_arr=fa, atrp_arr=fp, adx_min=adx_min, atr_min=atr_min):
                             t.update(symbol=s, tf=tf); tr_all.append(t)
                     if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
                     if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
                     if first is None: first = tr_all
-                    head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g}"
+                    head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g} | ADX>={adx_min:g} ATR%>={atr_min:g}"
                     print(head, flush=True)
                     print("   " + row(f"{tf}", tr_all), flush=True)
                     if a.persym:
@@ -215,7 +236,7 @@ def main():
                             sub = [t for t in tr_all if t["symbol"] == sy]
                             if sub:
                                 print("     " + row(sy, sub), flush=True); lines.append(("   " + sy, row(sy, sub)))
-                    sm = summ(tf, tset, sd, em, tr_all); sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
+                    sm = summ(tf, tset, sd, em, tr_all); sm["adx_min"] = adx_min; sm["atr_min"] = atr_min; sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
                     summary.append(sm); lines.append((head, row(tf, tr_all)))
         print("-" * 170)
     print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
