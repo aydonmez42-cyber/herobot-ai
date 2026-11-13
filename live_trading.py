@@ -84,7 +84,7 @@ def _env_mode(name, default='on'):
 
 BTC_LOCK_MODE = 'off'   # kaldirildi: hem long hem short aciliyor
 import binance_algo
-EMERGENCY_STOP_PCT = _env_float('ST_EMERGENCY_STOP_PCT', 6.0)      # giristen % ters hareket
+EMERGENCY_STOP_PCT = _env_float('ST_EMERGENCY_STOP_PCT', 0.0)      # giristen % ters hareket
 EMERGENCY_STOP_MODE = _env_mode('LIVE_EMERGENCY_STOP', 'on')
 LOSS_BRAKE_MODE = 'off'   # kaldirildi (Supertrend-only sistem)
 LOSS_BRAKE_STOP_COUNT = int(_env_float('LOSS_BRAKE_STOP_COUNT', 3))

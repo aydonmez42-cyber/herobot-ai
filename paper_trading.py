@@ -1988,8 +1988,8 @@ def st_entry_message(pos):
             f"Stop (Supertrend çizgisi, mum kapanışında; çizgiyle birlikte hareket eder): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
             + (f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n" if sts.TP_PCT > 0 else f"Sabit TP yok · ilk kilit hedefi: {_fmt_px(pos['tp'])} USDT\n")
             + f"Kâr kilidi (zirve → korunan kâr): {sts.lock_tiers_text()}\n"
+            + (f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n" if pos.get('emergency_stop') else "")
             +
-            f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n"
             f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)")
 
 
@@ -2033,12 +2033,12 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
         'side': side, 'symbol': symbol, 'qty_eth': qty,
         'entry_price': px, 'entry_time': now.isoformat(),
         'signal_time': pd.Timestamp(sig['signal_time']).isoformat(), 'atr': float(atr_val or 0.0),
-        'sl': level if level is not None else px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0),
+        'sl': level if level is not None else px * (1 - sign * 0.06),
         'tp': px * (1 + sign * (sts.TP_PCT if sts.TP_PCT > 0 else sts.next_lock_target(0.0)) / 100.0),   # TP kapaliysa: ilk kilit hedefi
         'trail_active': False, 'trail_stop': None, 'highest_high': px, 'lowest_low': px,
         'entry_fee': fee(px * qty), 'source': 'st',
         'st_level': level, 'st_kind': sig.get('kind'), 'peak_pct': 0.0,
-        'emergency_stop': px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0),
+        'emergency_stop': (px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0)) if sts.EMERGENCY_STOP_PCT > 0 else None,
     }
     state.setdefault('positions', {})[symbol] = pos
     state.setdefault('watchlist', {})[symbol] = {
@@ -2051,7 +2051,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     save_state(state)
     send_message(st_entry_message(pos))
     print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
-          f"acil stop={pos['emergency_stop']:.6f}", flush=True)
+          f"acil stop={('%.6f' % pos['emergency_stop']) if pos.get('emergency_stop') else 'kapali'}", flush=True)
     try:
         live_trading.on_entry_signal(symbol, side, px, source='watchlist',
                                      guard_ctx=live_guard_ctx(state, {'close': sig['signal_close'], 'atr': atr_val}, px))
@@ -2092,7 +2092,7 @@ def st_scan_and_trade(state, now):
             df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
             price = float(df.iloc[-1]['close'])
             ind = df.iloc[:-1].copy().set_index('close_time')
-            ok, why = sts.entry_allowed(sig, price, ind)
+            ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
             if not ok:
                 print(f"ST ENTRY | {r['signal']} {symbol} atlandi: {why}", flush=True)
                 continue
@@ -2124,7 +2124,7 @@ def _st_try_open_manual(state, symbol, now, sig=None):
         sig = dict(sig)
     if state.get('st_traded', {}).get(symbol) == str(pd.Timestamp(sig['signal_time']).isoformat()):
         return False
-    ok, why = sts.entry_allowed(sig, price, ind)
+    ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
     if not ok:
         print(f"ST MANUEL | {sig.get('side')} {symbol} atlandi: {why}", flush=True)
         return False
@@ -2231,7 +2231,7 @@ def st_reentry_check(state, now):
             price = float(df.iloc[-1]['close'])
             s_in = {'side': sig['side'], 'kind': sig['kind'], 'signal_time': pd.Timestamp(sig['signal_time']).isoformat(),
                     'signal_close': sig['signal_close'], 'level': sig['level'], 'age_bars': sig['age_bars']}
-            ok, why = sts.entry_allowed(s_in, price, ind)
+            ok, why = sts.entry_allowed(s_in, price, ind, symbol=symbol)
             if not ok:
                 print(f"ST REENTRY | {sig['side']} {symbol} atlandi: {why}", flush=True)
                 continue
@@ -2257,7 +2257,7 @@ def main():
     threading.Thread(target=start_dashboard, daemon=True).start()
     threading.Thread(target=scanner_st15.background_loop, daemon=True).start()
     print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP {sts.tp_text()} | kar kilidi {sts.lock_tiers_text()}  '
-          f'stop={sts.ST_STOP_MODE} | acil stop %{sts.EMERGENCY_STOP_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
+          f'stop={sts.ST_STOP_MODE} | acil stop {sts.EMERGENCY_STOP_PCT:g} (0=kapali) | max mesafe %{sts.MAX_STOP_DIST_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
     state = load_state()
     if state.get('position'):
         p = state['position']

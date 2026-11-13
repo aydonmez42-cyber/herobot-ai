@@ -8,7 +8,7 @@ Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir; son 4 kapanmis
 (= bir onceki saatin tamami) sinyaller listelenir. Olusmakta olan mum her zaman atilir.
 
 Dashboard: /api/scanner_st rotalari bu modulu kullanir (scanner_st.py 4s/1g/1h taramasi DEGISMEDEN kalir; grafik ve hisse taramalari onu kullanir).
-Evren: en likit SCAN_ST_TOP_N (varsayilan 500) USDT-M surekli kontrat.
+Evren: en likit SCAN_ST_TOP_N (varsayilan 100) USDT-M surekli kontrat.
 """
 import os
 import threading
@@ -27,7 +27,8 @@ PERIOD = sts.ST_PERIOD
 FACTOR = sts.ST_MULT
 INTERVAL = '15m'
 TIMEFRAMES = ('15m',)
-TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '500'))
+TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '100'))
+_EXCLUDE = {x.strip().upper() for x in os.environ.get('ST_EXCLUDE_SYMBOLS', 'PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT').split(',') if x.strip()}
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))
 MIN_GAP_S = float(os.environ.get('SCAN_ST_MIN_GAP_S', '120'))
 SCAN_EVERY_MIN = max(5, int(os.environ.get('SCANNER_EVERY_MIN', '60')))
@@ -56,7 +57,7 @@ def _universe_n(top_n):
     rows = []
     for t in _get(f'{FAPI}/fapi/v1/ticker/24hr', timeout=20):
         sym = t.get('symbol')
-        if sym in ok:
+        if sym in ok and sym.upper() not in _EXCLUDE:
             try:
                 rows.append((sym, float(t.get('quoteVolume') or 0), float(t.get('priceChangePercent') or 0)))
             except Exception:
@@ -110,7 +111,7 @@ def _analyse(symbol, vol, chg, asof):
     }
     if sig:
         row.update({'signal': sig['side'], 'signal_kind': sig['kind'], 'signal_age': int(sig['age_bars']),
-                    'level': sig['level'], 'signal_close': sig['signal_close'],
+                    'level': sig['level'], 'signal_st': sig.get('st'), 'signal_close': sig['signal_close'],
                     'signal_time': pd.Timestamp(sig['signal_time']).isoformat()})
     return row
 

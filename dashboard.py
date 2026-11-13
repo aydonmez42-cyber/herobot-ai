@@ -4118,8 +4118,8 @@ function renderSt(){
   }
   const lblTr='15 dakikalık', lblEn='15m';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, en likit '+(stCache.total||500)+' coin.',
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+(stCache.total||500)+' most liquid coins.');
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, en likit '+(stCache.total||100)+' coin.',
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+(stCache.total||100)+' most liquid coins.');
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='15';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
@@ -5246,10 +5246,10 @@ async function taRefreshPos(){
    <div><span>Kâr / Zarar</span><b class="${cl}">${(pnl>=0?'+':'')+taUsd(pnl).replace('$-','-$')} · ${(pct>=0?'+':'')+pct.toFixed(2)}%</b></div>
    <div><span>Sonraki kilit hedefi</span><b>${taPx(p.tp)}</b></div>
    <div><span>SL (Supertrend çizgisi)</span><b>${slTxt}</b></div>
-   <div><span>Acil stop</span><b>${taPx(p.emergency_stop)}</b></div>
+   ${p.emergency_stop?`<div><span>Acil stop</span><b>${taPx(p.emergency_stop)}</b></div>`:''}
    <div><span>Kâr kilidi</span><b>${lock}</b></div>
   </div>${taRuler(p,slv)}</div></div>`;
-  _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'Kilit hedefi'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:Number(p.emergency_stop),c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
+  _own.marks=[{v:ep,c:'#e6edf3',l:'Giriş'},{v:Number(p.tp),c:'#2fbf71',l:'Kilit hedefi'},{v:Number(slv),c:'#f0b429',l:'SL'},{v:p.emergency_stop?Number(p.emergency_stop):NaN,c:'#a33a34',l:'Acil'}].filter(m=>isFinite(m.v)&&m.v>0);
   ownDraw();
 }
 document.getElementById('taGo').onclick=taGo;

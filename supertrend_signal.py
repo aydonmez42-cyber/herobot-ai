@@ -72,7 +72,15 @@ def lock_tiers_text():
 
 MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
-EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "6.0"))            # acil stop: girisen % olarak olumsuz hareket
+EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "0"))              # acil stop: 0 = KAPALI (yalnizca Supertrend stopu); >0 ise giristen % ters hareket
+# Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
+EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
+# Girişte Supertrend stopu fiyattan bu % den uzaksa islem acilmaz (cok oynak coin; acil stop yok -> kayip siniri). 0 = kapali
+MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "6"))
+
+
+def is_excluded(symbol):
+    return bool(symbol) and str(symbol).upper() in EXCLUDE_SYMBOLS
 
 
 def run_state_machine(df, stop_mode=None):
@@ -160,13 +168,25 @@ def last_closed_side_ok(ind, side):
     return (d == 1 and close > line) if side == "LONG" else (d == -1 and close < line)
 
 
-def entry_allowed(sig, last_price, ind=None):
+def entry_allowed(sig, last_price, ind=None, symbol=None):
     """Tarama filtreleri. (ok, neden) doner. 24s degisim filtresi YOK (kaldirildi).
     ind verilirse (kapanmis mumlar) son mumun Supertrend'e gore konumu da sart."""
     if sig is None:
         return False, "NO_SIGNAL"
+    if is_excluded(symbol):
+        return False, "EXCLUDED_SYMBOL"
     if ind is not None and not last_closed_side_ok(ind, sig["side"]):
         return False, "LAST_CANDLE_WRONG_SIDE_OF_ST"
+    if MAX_STOP_DIST_PCT > 0 and last_price:
+        line = None
+        if ind is not None:
+            _st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
+            line = float(_st["supertrend"].iloc[-1])
+            line = None if np.isnan(line) else line
+        if line is None and sig.get("st") is not None:
+            line = float(sig["st"])
+        if line is not None and abs(last_price - line) / last_price * 100.0 > MAX_STOP_DIST_PCT:
+            return False, "STOP_TOO_FAR"
     lvl = sig.get("level")
     if lvl is not None:
         if sig["side"] == "LONG" and last_price <= lvl:
@@ -197,7 +217,7 @@ def check_exit(pos, df, last_price):
         peak = profit
     peak = max(peak, float(pos.get('peak_pct') or 0.0))
 
-    if profit <= -EMERGENCY_STOP_PCT:
+    if EMERGENCY_STOP_PCT > 0 and profit <= -EMERGENCY_STOP_PCT:
         return "EMERGENCY_STOP"
     if TP_PCT > 0 and profit >= TP_PCT:
         return "TP"
