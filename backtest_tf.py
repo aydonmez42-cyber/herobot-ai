@@ -164,8 +164,13 @@ def main():
                     help="denenecek kar kilidi basamaklari; ';' ile ayirin. Her biri 'tetik:kilit,...' ; none = kilit yok")
     ap.add_argument("--out", default="sonuc", help="ozet sonuc dosyalarinin adi (.txt ve .csv otomatik yazilir)")
     ap.add_argument("--gaps", default="", help="izleyen kilit bosluklari 'esik:bosluk,...' (ornek 8:2,10:1.5); none = kapali; bos = kodun varsayilani")
+    ap.add_argument("--mults", default="", help="denenecek Supertrend carpanlari (virgullu, ornek 4.1,4.7); bos = kodun carpani")
+    ap.add_argument("--period", type=int, default=0, help="Supertrend ATR periyodu (0 = kodun degeri)")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
+    if a.period > 0:
+        sts.ST_PERIOD = a.period
+    mult_list = [float(x) for x in a.mults.split(",") if x.strip()] or [sts.ST_MULT]
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
     emerg_list = [float(x) for x in a.emerg.split(",")]; sides = [x.strip() for x in a.sides.split(",")]
     print(f"{len(syms)} coin, {a.days} gun, komisyon+kayma {a.fee}%/yon, kilit={sts.lock_tiers_text()}\n")
@@ -178,7 +183,7 @@ def main():
             except Exception as ex:
                 print(f"  {s} {tf}: {ex}", file=sys.stderr, flush=True); continue
             warm = max(0, len(df) - int(a.days * 1440 / TF_MIN[tf]))
-            ev, d = prep(df); data[tf].append((s, df, warm, ev, d))
+            data[tf].append((s, df, warm, None, None))
             if k % 5 == 0: print(f"  {tf}: {k}/{len(syms)} coin cekildi", file=sys.stderr, flush=True)
     print("=" * 170)
     first = None
@@ -186,7 +191,10 @@ def main():
         sts.TRAIL_GAPS = [] if a.gaps.lower() == "none" else sts._parse_gaps(a.gaps)
     summary, lines = [], []
     tier_sets = [x.strip() for x in a.tiers.split(";") if x.strip()]
-    for tf, items in data.items():
+    for tf, items0 in data.items():
+      for mult in mult_list:
+        sts.ST_MULT = mult
+        items = [(s, df, warm) + prep(df) for s, df, warm, _e, _d in items0]
         for tset in tier_sets:
             sts.LOCK_TIERS = [] if tset.lower() == "none" else sts._parse_tiers(tset)
             for sd in sides:
@@ -198,9 +206,11 @@ def main():
                     if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
                     if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
                     if first is None: first = tr_all
-                    print(f"kilit [{tset}] {sd} acil %{em:g}", flush=True)
+                    head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g}"
+                    print(head, flush=True)
                     print("   " + row(f"{tf}", tr_all), flush=True)
-                    summary.append(summ(tf, tset, sd, em, tr_all)); lines.append((f"kilit [{tset}] {sd} acil %{em:g}", row(tf, tr_all)))
+                    sm = summ(tf, tset, sd, em, tr_all); sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
+                    summary.append(sm); lines.append((head, row(tf, tr_all)))
         print("-" * 170)
     print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
     print("Not: toplam, islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik); coin listesi bugunun en likitleri (iyimser egilim olabilir).")
