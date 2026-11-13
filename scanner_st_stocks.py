@@ -32,6 +32,9 @@ DAILY_BARS = 300
 WEEKLY_BARS = 260
 TIMEFRAMES = {'1D': DAILY_BARS, '1W': WEEKLY_BARS}
 
+BIST_UNIVERSES = ('XU030', 'XU100', 'XUTUM')      # BIST 30 / BIST 100 / BIST Tumu
+DEFAULT_BIST_UNIVERSE = 'XUTUM'
+
 _MARKETS = {
     'bist': {'tz': 'Europe/Istanbul'},
     'us': {'tz': 'America/New_York'},
@@ -39,9 +42,12 @@ _MARKETS = {
 
 
 class _Scan:
-    def __init__(self, key, tf='1D'):
+    def __init__(self, key, tf='1D', universe='ALL'):
         self.key = key
         self.tf = tf
+        self.universe = universe
+        self.source = None
+        self.approx = False
         self.bars = TIMEFRAMES[tf]
         self.tz = _MARKETS[key]['tz']
         self.lock = threading.Lock()
@@ -52,8 +58,14 @@ class _Scan:
 
     def _symbols(self):
         if self.key == 'bist':
+            if self.universe in ('XU030', 'XU100'):
+                from bist_xutum_universe import get_index_symbols
+                syms, self.source, self.approx = get_index_symbols(self.universe)
+                return syms
             from bist_xutum_universe import get_xutum_symbols
-            return get_xutum_symbols(force=False)[0]
+            syms, self.source = get_xutum_symbols(force=False)
+            self.approx = False
+            return syms
         from us_stocks_universe import get_us_symbols
         return get_us_symbols(force=False)[0]
 
@@ -145,7 +157,8 @@ class _Scan:
         with self.lock:
             out = dict(self.state)
             out['results'] = list(self.state['results'])
-        out.update({'interval': self.tf, 'min_gap_s': MIN_GAP_S})
+        out.update({'interval': self.tf, 'min_gap_s': MIN_GAP_S, 'universe': self.universe,
+                    'source': self.source, 'approx': self.approx})
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         out['next_allowed_in_s'] = max(0, int(wait))
         return out
@@ -154,9 +167,9 @@ class _Scan:
         with self.lock:
             if self.state['status'] == 'SCANNING':
                 return False, 'Tarama zaten çalışıyor.'
-        for other_tf, other in ((t, _scans[(self.key, t)]) for t in TIMEFRAMES if t != self.tf):
+        for other in (v for (k, _t, _u), v in _scans.items() if k == self.key and v is not self):
             if other.state.get('status') == 'SCANNING':
-                return False, 'Bu piyasada başka bir zaman diliminin taraması çalışıyor, bitmesini bekleyin.'
+                return False, 'Bu piyasada başka bir tarama (zaman dilimi/evren) çalışıyor, bitmesini bekleyin.'
         wait = MIN_GAP_S - (time.time() - self.last_finish_ts) if self.last_finish_ts else 0
         if wait > 0:
             return False, f'Son taramanın üzerinden çok az zaman geçti; {int(wait)} sn sonra tekrar deneyin.'
@@ -167,7 +180,11 @@ class _Scan:
         return True, 'Tarama başlatıldı.'
 
 
-_scans = {(k, tf): _Scan(k, tf) for k in _MARKETS for tf in TIMEFRAMES}
+_scans = {}
+for _k in _MARKETS:
+    for _tf in TIMEFRAMES:
+        for _u in (BIST_UNIVERSES if _k == 'bist' else ('ALL',)):
+            _scans[(_k, _tf, _u)] = _Scan(_k, _tf, _u)
 
 
 def _tf(tf):
@@ -175,9 +192,28 @@ def _tf(tf):
     return tf if tf in TIMEFRAMES else '1D'
 
 
-def snapshot(key, tf='1D'):
-    return _scans[(key, _tf(tf))].snapshot()
+def _u(key, universe):
+    if key != 'bist':
+        return 'ALL'
+    u = str(universe or DEFAULT_BIST_UNIVERSE).upper()
+    return u if u in BIST_UNIVERSES else DEFAULT_BIST_UNIVERSE
 
 
-def start_scan(key, tf='1D'):
-    return _scans[(key, _tf(tf))].start()
+def snapshot(key, tf='1D', universe=None):
+    return _scans[(key, _tf(tf), _u(key, universe))].snapshot()
+
+
+def start_scan(key, tf='1D', universe=None):
+    return _scans[(key, _tf(tf), _u(key, universe))].start()
+
+
+def all_symbol_rows(key, tf='1D'):
+    """Tum evrenlerin son sonuclari (sembole gore tekil) - Teknik Analiz sembol listesi icin."""
+    seen, rows = set(), []
+    for (k, t, _uu), sc in _scans.items():
+        if k != key or t != _tf(tf):
+            continue
+        for r in (sc.snapshot().get('results') or []):
+            if r.get('symbol') and r['symbol'] not in seen:
+                seen.add(r['symbol']); rows.append(r)
+    return rows

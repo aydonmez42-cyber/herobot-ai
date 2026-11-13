@@ -118,6 +118,84 @@ def get_xutum_symbols(force=False):
     raise RuntimeError('XUTUM evreni alınamadı | ' + ' | '.join(errors))
 
 
+# ---- BIST 30 / BIST 100 (endeks bilesenleri) ----
+# TradingView Screener'da endeks uyeleri 'symbolset' ile istenir ("SYML:BIST;XU100"). Liste bu sekilde her seferinde
+# TradingView'den gelir (endeks bilesimi degisince kendiliginden guncellenir). Beklenen boyutta gelmezse YEDEK olarak
+# BIST'teki hisseler piyasa degerine gore siralanip ilk N alinir; bu RESMI endeks listesi degildir ve 'approx'=True doner.
+INDEXES = {
+    'XU030': {'name': 'BIST 30', 'n': 30, 'ok': (25, 35)},
+    'XU100': {'name': 'BIST 100', 'n': 100, 'ok': (90, 110)},
+}
+_idx_cache = {}
+
+
+def _tv_index_payload(code):
+    p = _tv_payload()
+    p['symbols'] = {'symbolset': [f'SYML:BIST;{code}'], 'query': {'types': []}, 'tickers': []}
+    p['range'] = [0, 300]
+    return p
+
+
+def _tv_rank_payload(n):
+    p = _tv_payload()
+    p['columns'] = ['name', 'description', 'market_cap_basic']
+    p['sort'] = {'sortBy': 'market_cap_basic', 'sortOrder': 'desc'}
+    p['range'] = [0, int(n)]
+    return p
+
+
+def _rows_to_symbols(payload):
+    out = []
+    for row in (payload.get('data') or []):
+        s = _normalize(row.get('s'))
+        if s and s not in out:
+            out.append(s)
+    return out
+
+
+def fetch_index_from_tradingview(code):
+    meta = INDEXES[code]
+    r = requests.post(TV_SCANNER_URL, json=_tv_index_payload(code), headers=_headers(), timeout=TIMEOUT)
+    r.raise_for_status()
+    syms = _rows_to_symbols(r.json())
+    lo, hi = meta['ok']
+    if not (lo <= len(syms) <= hi):
+        raise RuntimeError(f"{meta['name']} bilesen sayisi beklenenden farkli: {len(syms)}")
+    return sorted(syms), f"TradingView {meta['name']} endeks bilesenleri ({len(syms)})", False
+
+
+def fetch_index_by_market_cap(code):
+    meta = INDEXES[code]
+    r = requests.post(TV_SCANNER_URL, json=_tv_rank_payload(meta['n']), headers=_headers(), timeout=TIMEOUT)
+    r.raise_for_status()
+    syms = _rows_to_symbols(r.json())
+    if len(syms) < int(meta['n'] * 0.8):
+        raise RuntimeError(f"piyasa degeri siralamasi beklenenden kucuk: {len(syms)}")
+    return sorted(syms), f"TradingView piyasa degeri siralamasi (YAKLASIK {meta['name']}, {len(syms)} hisse)", True
+
+
+def get_index_symbols(code, force=False):
+    """BIST 30 / BIST 100 hisseleri. Doner: (semboller, kaynak, approx)."""
+    code = str(code).upper()
+    if code not in INDEXES:
+        raise ValueError(f'bilinmeyen endeks: {code}')
+    now = time.time()
+    with _lock:
+        c = _idx_cache.get(code)
+        if c and not force and now - c['ts'] < CACHE_SECONDS * 6:
+            return list(c['symbols']), c['source'], c['approx']
+    errors = []
+    for fn in (fetch_index_from_tradingview, fetch_index_by_market_cap):
+        try:
+            symbols, source, approx = fn(code)
+            with _lock:
+                _idx_cache[code] = {'symbols': symbols, 'ts': time.time(), 'source': source, 'approx': approx}
+            return list(symbols), source, approx
+        except Exception as exc:
+            errors.append(f'{fn.__name__}: {exc}')
+    raise RuntimeError(f'{code} evreni alinamadi | ' + ' | '.join(errors))
+
+
 # Backward-compatible alias. Returns (symbols, source), same contract as get_xutum_symbols().
 def get_bist_tum_symbols(force=False):
     return get_xutum_symbols(force=force)

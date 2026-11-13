@@ -3637,6 +3637,7 @@ SCANNER_HTML = r'''<!doctype html>
     <div id="stBistCard" style="margin-top:22px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="scanner-controls" style="margin-bottom:6px"><b id="stBistTitle">Tarama · Borsa İstanbul (Günlük)</b></div>
       <div class="scanner-controls">
+        <select id="stBistUni" autocomplete="off" onchange="stsTfChange('Bist')"><option value="XU030">BIST 30</option><option value="XU100" selected>BIST 100</option><option value="XUTUM">BIST Tümü</option></select>
         <select id="stBistTf" onchange="stsTfChange('Bist')"><option value="1D">Günlük</option><option value="1W">Haftalık</option></select>
         <button class="btn" id="stBistBtn" onclick="stsStart('Bist')">⏱ Tara (manuel)</button>
         <select id="stBistFilter" autocomplete="off" onchange="stsRender('Bist')"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -4161,24 +4162,29 @@ refreshSt(); setInterval(refreshSt,60000);   // sonuc her dakika okunur; tarama 
 const stsCache={Bist:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}},Us:{'1D':{results:[],status:'IDLE'},'1W':{results:[],status:'IDLE'}}}, stsTimer={};
 const stsApi={Bist:'/api/scanner_st_bist',Us:'/api/scanner_st_us'};
 const stsName={Bist:'Borsa İstanbul',Us:'Wall Street'};
+function stsUni(k){ return k==='Bist' ? (document.getElementById('stBistUni')?.value||'XU100') : ''; }
+function stsCK(k){ return stsTf(k)+(k==='Bist'?'|'+stsUni(k):''); }
+function stsUq(k){ return k==='Bist' ? '&u='+encodeURIComponent(stsUni(k)) : ''; }
+function stsSlot(k,key){ return stsCache[k][key] || (stsCache[k][key]={results:[],status:'IDLE'}); }
+const stsUniName={XU030:'BIST 30',XU100:'BIST 100',XUTUM:'BIST Tümü'};
 function stsTf(k){ return document.getElementById('st'+k+'Tf')?.value==='1W'?'1W':'1D'; }
 function stsFmtD(v){ try{ return new Date(v).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5); }catch(e){ return '—'; } }
 function stsTfChange(k){
   const w=stsTf(k)==='1W';
   const bars=document.getElementById('st'+k+'Bars');
   if(bars){ bars.innerHTML=(w?[1,2,3,4]:[1,2,3,5]).map(n=>`<option value="${n}">${T15('Son '+n+(w?' hafta':' gün'),'Last '+n+(w?' week'+(n>1?'s':''):' day'+(n>1?'s':'')))}</option>`).join(''); }
-  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Tarama · "+stsName[k]+(w?' (Haftalık)':' (Günlük)');
+  const ti=document.getElementById('st'+k+'Title'); if(ti) ti.textContent="Tarama · "+stsName[k]+(k==='Bist'?' · '+(stsUniName[stsUni(k)]||''):'')+(w?' (Haftalık)':' (Günlük)');
   const h=document.getElementById('st'+k+'ChgH'); if(h) h.textContent=w?T15('Haftalık %','Weekly %'):T15('Günlük %','Daily %');
   stsRender(k); stsRefresh(k);
 }
 function stsRender(k){
-  const tf=stsTf(k), w=tf==='1W'; const c=stsCache[k][tf]; const f=document.getElementById('st'+k+'Filter')?.value||'ALL';
+  const tf=stsTf(k), w=tf==='1W'; const c=stsSlot(k,stsCK(k)); const f=document.getElementById('st'+k+'Filter')?.value||'ALL';
   const n=Number(document.getElementById('st'+k+'Bars')?.value||1);
   const all=(c.results||[]).map(x=>({...x,signal:(x.flip_bars<n)?(x.trend==='UP'?'LONG':'SHORT'):'NO SIGNAL'}));
   const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>a.flip_bars-b.flip_bars||Number(b.change_pct||0)-Number(a.change_pct||0)),k);
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('st'+k+'Status'), note=document.getElementById('st'+k+'Note'), btn=document.getElementById('st'+k+'Btn');
-  const busy=c.status==='SCANNING' || ['1D','1W'].some(t=>stsCache[k][t].status==='SCANNING'); if(btn) btn.disabled=busy;
+  const busy=c.status==='SCANNING' || Object.values(stsCache[k]).some(x=>x&&x.status==='SCANNING'); if(btn) btn.disabled=busy;
   if(st){
     if(c.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(c.progress||0)+'/'+(c.total||'?');
     else if(c.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(c.finished_at)+' (TR) · '+stSideLinks(nL,nS,'st'+k+'Filter');
@@ -4186,7 +4192,7 @@ function stsRender(k){
   }
   if(note) note.textContent=(c.last_error?('⚠ '+c.last_error+' '):'')+T15(
     'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali. Periyod '+(w?'Haftalık':'Günlük')+', '+(c.total||0)+' hisse.',
-    'Red line broken upward on a candle close: LONG; green line broken downward on a candle close: SHORT. Period '+(w?'Weekly':'Daily')+', '+(c.total||0)+' stocks.');
+    'Red line broken upward on a candle close: LONG; green line broken downward on a candle close: SHORT. Period '+(w?'Weekly':'Daily')+', '+(c.total||0)+' stocks.')+(c.approx?T15(' ⚠ Resmi endeks listesi alınamadı; piyasa değerine göre en büyük hisseler tarandı.',' ⚠ Official index list unavailable; largest stocks by market cap were scanned.'):'');
   const body=document.getElementById('st'+k+'Rows'); if(!body) return;
   const mkt=k==='Bist'?'bist':'us_stock';
   const unitTr=w?' hafta önce':' gün önce', unitEn=w?' weeks ago':' days ago';
@@ -4194,18 +4200,18 @@ function stsRender(k){
     ||`<tr><td colspan="9" class="empty">${c.finished_at?T15('Bu filtrede hisse yok.','No stocks for this filter.'):'—'}</td></tr>`;
 }
 async function stsRefresh(k){
-  const tf=stsTf(k);
-  try{ const r=await fetch(stsApi[k]+'?tf='+tf,{cache:'no-store'}); stsCache[k][tf]=await r.json(); }catch(e){ return; }
-  if(tf===stsTf(k)) stsRender(k);
-  if(stsCache[k][tf].status==='SCANNING'){ if(!stsTimer[k]) stsTimer[k]=setInterval(()=>stsRefresh(k),3000); }
+  const tf=stsTf(k), key=stsCK(k);
+  try{ const r=await fetch(stsApi[k]+'?tf='+tf+stsUq(k),{cache:'no-store'}); stsCache[k][key]=await r.json(); }catch(e){ return; }
+  if(key===stsCK(k)) stsRender(k);
+  if(stsCache[k][key].status==='SCANNING'){ if(!stsTimer[k]) stsTimer[k]=setInterval(()=>stsRefresh(k),3000); }
   else if(stsTimer[k]){ clearInterval(stsTimer[k]); stsTimer[k]=null; }
 }
 async function stsStart(k){
-  const tf=stsTf(k);
+  const tf=stsTf(k), key=stsCK(k);
   try{
-    const r=await fetch(stsApi[k]+'/scan?tf='+tf,{cache:'no-store'}); const d=await r.json();
+    const r=await fetch(stsApi[k]+'/scan?tf='+tf+stsUq(k),{cache:'no-store'}); const d=await r.json();
     if(!d.started && d.message) alert(d.message);
-    if(d.snapshot) stsCache[k][tf]=d.snapshot;
+    if(d.snapshot) stsCache[k][key]=d.snapshot;
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   stsRender(k); stsRefresh(k);
 }
@@ -9774,7 +9780,7 @@ def ta_symbols(market):
         return {'symbols': syms, 'exchanges': {}}
     k = 'bist' if market == 'bist' else 'us'
     try:
-        rows = scanner_st_stocks.snapshot(k, '1D').get('results') or []
+        rows = scanner_st_stocks.all_symbol_rows(k, '1D')
     except Exception:
         rows = []
     syms = sorted({r.get('symbol') for r in rows if r.get('symbol')})
@@ -10475,13 +10481,13 @@ class Handler(BaseHTTPRequestHandler):
             started=us_scanner_start(force=force)
             body=json.dumps({'started':started,'status':us_scanner_snapshot().get('status')}).encode(); self.send_response(202 if started else 200); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path in ('/api/scanner_st_bist','/api/scanner_st_us'):
-            _tf=parse_qs(urlparse(self.path).query).get('tf',['1D'])[0]
-            self._send_json(scanner_st_stocks.snapshot('bist' if path.endswith('bist') else 'us',_tf)); return
+            _q9=parse_qs(urlparse(self.path).query); _tf=_q9.get('tf',['1D'])[0]; _u9=_q9.get('u',[None])[0]
+            self._send_json(scanner_st_stocks.snapshot('bist' if path.endswith('bist') else 'us',_tf,_u9)); return
         if path in ('/api/scanner_st_bist/scan','/api/scanner_st_us/scan'):
             _k='bist' if 'bist' in path else 'us'
-            _tf=parse_qs(urlparse(self.path).query).get('tf',['1D'])[0]
-            started,msg=scanner_st_stocks.start_scan(_k,_tf)
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k,_tf)}); return
+            _q9=parse_qs(urlparse(self.path).query); _tf=_q9.get('tf',['1D'])[0]; _u9=_q9.get('u',[None])[0]
+            started,msg=scanner_st_stocks.start_scan(_k,_tf,_u9)
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st_stocks.snapshot(_k,_tf,_u9)}); return
         if path=='/api/chart-st':
             import chart_st
             _q=parse_qs(urlparse(self.path).query)
