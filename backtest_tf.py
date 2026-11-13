@@ -165,6 +165,7 @@ def main():
     ap.add_argument("--out", default="sonuc", help="ozet sonuc dosyalarinin adi (.txt ve .csv otomatik yazilir)")
     ap.add_argument("--gaps", default="", help="izleyen kilit bosluklari 'esik:bosluk,...' (ornek 8:2,10:1.5); none = kapali; bos = kodun varsayilani")
     ap.add_argument("--mults", default="", help="denenecek Supertrend carpanlari (virgullu, ornek 4.1,4.7); bos = kodun carpani")
+    ap.add_argument("--persym", action="store_true", help="her coin icin ayri satir da yaz")
     ap.add_argument("--period", type=int, default=0, help="Supertrend ATR periyodu (0 = kodun degeri)")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
     a = ap.parse_args()
@@ -209,6 +210,11 @@ def main():
                     head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g}"
                     print(head, flush=True)
                     print("   " + row(f"{tf}", tr_all), flush=True)
+                    if a.persym:
+                        for sy in syms:
+                            sub = [t for t in tr_all if t["symbol"] == sy]
+                            if sub:
+                                print("     " + row(sy, sub), flush=True); lines.append(("   " + sy, row(sy, sub)))
                     sm = summ(tf, tset, sd, em, tr_all); sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
                     summary.append(sm); lines.append((head, row(tf, tr_all)))
         print("-" * 170)
