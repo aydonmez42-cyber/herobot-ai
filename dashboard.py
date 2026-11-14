@@ -3630,7 +3630,6 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
-      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stTable">
           <thead data-sk="symbol"><tr><th>Coin</th><th class="num" data-sk="price">Price</th><th class="num" data-sk="change_pct">24h %</th><th class="num" data-sk="volume">Volume</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Distance %</th><th data-sk="flip">Flip (TR)</th><th data-sk="signal">Signal</th><th>Add</th></tr></thead>
@@ -3651,7 +3650,6 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stBistStatus"></span>
       </div>
       <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
-      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stBistTable">
           <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stBistChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
@@ -3672,7 +3670,6 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stUsStatus"></span>
       </div>
       <div class="scanner-note" id="stUsNote" style="margin:0 0 8px 0"></div>
-      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stUsTable">
           <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stUsChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
@@ -3689,7 +3686,7 @@ SCANNER_HTML = r'''<!doctype html>
   <div id="tvChartOuter" class="tv-chart-frame hidden"></div>
 </section>
 
-
+<div class="st-disc" role="note" style="margin:14px 0"></div>
 
 <div class="page-footer"><a href="/" class="link-btn" data-i18n="faq.backToDashboard">← Dashboard</a></div>
 </div>
@@ -5033,15 +5030,14 @@ body.ta-nolock{overflow:hidden}
   </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki arama çubuğundan bir coin veya hisse seçin.</div>
   <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
-  <div class="st-disc" role="note"></div>
   <div class="footnote">Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC. Her yöne kaydırmak için sürükleyin; sağdaki fiyat ekseninde sürükleyerek (ya da Shift + tekerlek ile) fiyat ölçeğini değiştirin; ⟲ ile görünümü sıfırlayın, ⛶ ile tam ekrana geçin.</div>
 </section>
 <section class="panel" id="taAi">
   <div class="panel-head"><h2>Yapay Zeka Yorumu (Claude)</h2><button class="btn" id="taAiBtn">Grafiği yorumla</button></div>
   <div id="taAiBody" class="text-faint">Seçili grafiğin Supertrend durumunu, son mumları ve (varsa) açık pozisyonu Claude'a gönderip kısa bir teknik yorum alabilirsiniz.</div>
   <div class="footnote">Yorum otomatik üretilir ve yatırım tavsiyesi değildir; yalnızca fiyat/Supertrend verisine dayanır, haber veya temel analiz içermez.</div>
-  <div class="st-disc" role="note"></div>
 </section>
+<div class="st-disc" role="note" style="margin:14px 0"></div>
 '''
 ANALYSIS_SCRIPT = r'''<script>
 const TA_DISC_TR='<b>Yasal Uyarı:</b> Bu ekranda listelenen hisse senetleri ve kripto paralar, yalnızca trend takip algoritmalarıyla tespit edilen trend başlangıç seviyelerini gösteren teknik gösterge değerleridir; <b>yatırım tavsiyesi niteliği taşımaz</b> ve yatırım danışmanlığı kapsamında değildir. Yükselen trend LONG, düşen trend SHORT olarak gösterilir. Bu gösterimler yalnızca bilgi amaçlıdır. Tarama ekranında LONG sinyali görünmesi ilgili hisse senedi veya kripto paranın fiyatının yükseleceğini, SHORT sinyali görünmesi ise düşeceğini <b>garanti etmez</b>. Geçmiş performans gelecekteki sonuçların göstergesi değildir. Hisse senedi ve kripto para işlemleri yüksek risk içerir ve yatırılan sermayenin tamamının veya bir kısmının kaybedilmesine yol açabilir. Herhangi bir işlem açmadan önce kendi risk analizinizi yapmanız gerekmektedir; işlem kararı ve doğabilecek sonuçlar tamamen size aittir.';
