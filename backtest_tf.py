@@ -34,6 +34,24 @@ def filt_arrays(sym, df):
         _FILT[sym] = (a, p)
     return _FILT[sym]
 
+_VOLC = {}
+
+
+def vol_arrays(sym, df, vwma_p):
+    """Hacim filtreleri: goreli hacim (mum hacmi / onceki 20 mumun ortalamasi) ve VWMA(p) (sembol basina onbellek)."""
+    if (sym, "rv") not in _VOLC:
+        v = df["volume"]
+        _VOLC[(sym, "rv")] = (v / v.shift(1).rolling(20).mean()).to_numpy()
+    rv = _VOLC[(sym, "rv")]
+    vw = None
+    if vwma_p and vwma_p > 0:
+        if (sym, vwma_p) not in _VOLC:
+            pv = (df["close"] * df["volume"]).rolling(int(vwma_p)).sum() / df["volume"].rolling(int(vwma_p)).sum()
+            _VOLC[(sym, vwma_p)] = pv.to_numpy()
+        vw = _VOLC[(sym, vwma_p)]
+    return rv, vw
+
+
 FAPI = "https://fapi.binance.com"
 TF_MIN = {"15m": 15, "1h": 60, "4h": 240}
 
@@ -79,7 +97,7 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None):
     """Tek coin: tum islemleri doner (liste of dict)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
@@ -94,6 +112,11 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
         if adx_min > 0 and adx_arr is not None and not (adx_arr[i] >= adx_min): continue        # trend zayif (NaN de elenir)
         if atr_min > 0 and atrp_arr is not None and not (atrp_arr[i] >= atr_min): continue      # oynaklik cok dusuk
         side = 1 if e["type"] in ("LONG", "RE_LONG") else -1
+        if vol_min > 0 and relvol is not None and not (relvol[i] >= vol_min): continue          # sinyal muminde hacim zayif
+        if vwma is not None:                                                                    # VWMA teyidi: fiyat VWMA'nin dogru tarafinda + egim yonde
+            if not (vwma[i] == vwma[i] and vwma[i - 1] == vwma[i - 1]): continue
+            if side == 1 and not (c[i] > vwma[i] and vwma[i] > vwma[i - 1]): continue
+            if side == -1 and not (c[i] < vwma[i] and vwma[i] < vwma[i - 1]): continue
         entry = o[i + 1]; peak = 0.0; exit_pct = None; reason = None; j = i + 1
         while j < n:
             adverse = (l[j] if side == 1 else h[j]); fav = (h[j] if side == 1 else l[j])
@@ -181,6 +204,8 @@ def main():
     ap.add_argument("--mults", default="", help="denenecek Supertrend carpanlari (virgullu, ornek 4.1,4.7); bos = kodun carpani")
     ap.add_argument("--adx", default="0", help="giriste en az ADX(14) degerleri (virgullu, ornek 0,20,25,30); 0 = filtre yok")
     ap.add_argument("--minatr", default="0", help="giriste en az ATR(14)/fiyat %% degerleri (virgullu, ornek 0,0.3,0.5); 0 = filtre yok")
+    ap.add_argument("--volmult", default="0", help="sinyal muminde en az goreli hacim (mum hacmi / onceki 20 mum ort.), virgullu, ornek 0,1,1.2,1.5; 0 = filtre yok")
+    ap.add_argument("--vwma", default="0", help="VWMA periyotlari (virgullu, ornek 0,20,50); LONG: kapanis>VWMA ve VWMA yukari egimli, SHORT tersi; 0 = filtre yok")
     ap.add_argument("--persym", action="store_true", help="her coin icin ayri satir da yaz")
     ap.add_argument("--period", type=int, default=0, help="Supertrend ATR periyodu (0 = kodun degeri)")
     ap.add_argument("--csv", default="", help="ilk senaryonun islemlerini CSV'ye yaz")
@@ -189,6 +214,8 @@ def main():
         sts.ST_PERIOD = a.period
     adx_list = [float(x) for x in a.adx.split(",") if x.strip()] or [0.0]
     atr_list = [float(x) for x in a.minatr.split(",") if x.strip()] or [0.0]
+    vol_list = [float(x) for x in a.volmult.split(",") if x.strip()] or [0.0]
+    vw_list = [int(float(x)) for x in a.vwma.split(",") if x.strip()] or [0]
     mult_list = [float(x) for x in a.mults.split(",") if x.strip()] or [sts.ST_MULT]
     syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()] or top_symbols(a.coins)
     emerg_list = [float(x) for x in a.emerg.split(",")]; sides = [x.strip() for x in a.sides.split(",")]
@@ -220,24 +247,27 @@ def main():
                 for em in emerg_list:
                   for adx_min in adx_list:
                    for atr_min in atr_list:
-                    tr_all = []
-                    for s, df, warm, ev, d in items:
+                    for vol_min in vol_list:
+                     for vw_p in vw_list:
+                      tr_all = []
+                      for s, df, warm, ev, d in items:
                         fa, fp = filt_arrays(s, df)
-                        for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d, adx_arr=fa, atrp_arr=fp, adx_min=adx_min, atr_min=atr_min):
+                        rv, vw = vol_arrays(s, df, vw_p)
+                        for t in simulate(df, a.fee, warm, emerg=em, events=ev, d=d, adx_arr=fa, atrp_arr=fp, adx_min=adx_min, atr_min=atr_min, relvol=rv, vol_min=vol_min, vwma=vw):
                             t.update(symbol=s, tf=tf); tr_all.append(t)
-                    if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
-                    if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
-                    if first is None: first = tr_all
-                    head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g} | ADX>={adx_min:g} ATR%>={atr_min:g}"
-                    print(head, flush=True)
-                    print("   " + row(f"{tf}", tr_all), flush=True)
-                    if a.persym:
-                        for sy in syms:
-                            sub = [t for t in tr_all if t["symbol"] == sy]
-                            if sub:
-                                print("     " + row(sy, sub), flush=True); lines.append(("   " + sy, row(sy, sub)))
-                    sm = summ(tf, tset, sd, em, tr_all); sm["adx_min"] = adx_min; sm["atr_min"] = atr_min; sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
-                    summary.append(sm); lines.append((head, row(tf, tr_all)))
+                      if sd == "long": tr_all = [t for t in tr_all if t["side"] == "LONG"]
+                      if sd == "short": tr_all = [t for t in tr_all if t["side"] == "SHORT"]
+                      if first is None: first = tr_all
+                      head = f"ATR {sts.ST_PERIOD} carpan {mult:g} | kilit [{tset}] {sd} acil %{em:g} | ADX>={adx_min:g} ATR%>={atr_min:g} | goreli hacim>={vol_min:g} VWMA={vw_p}"
+                      print(head, flush=True)
+                      print("   " + row(f"{tf}", tr_all), flush=True)
+                      if a.persym:
+                          for sy in syms:
+                              sub = [t for t in tr_all if t["symbol"] == sy]
+                              if sub:
+                                  print("     " + row(sy, sub), flush=True); lines.append(("   " + sy, row(sy, sub)))
+                      sm = summ(tf, tset, sd, em, tr_all); sm["adx_min"] = adx_min; sm["atr_min"] = atr_min; sm["vol_min"] = vol_min; sm["vwma"] = vw_p; sm["carpan"] = mult; sm["atr"] = sts.ST_PERIOD
+                      summary.append(sm); lines.append((head, row(tf, tr_all)))
         print("-" * 170)
     print("en5'siz = en kazancli 5 islem cikarilinca toplam (tek islemlere bagimlilik testi). yarı1/2 = donemin ilk/ikinci yarisinin toplami.")
     print("Not: toplam, islem basina fiyat % toplamidir (kaldiracsiz, esit agirlik); coin listesi bugunun en likitleri (iyimser egilim olabilir).")
