@@ -374,15 +374,18 @@ KILL_SWITCH_FILE = os.environ.get(
 )
 
 
-def set_live_settings(username, position_usd, max_leverage, daily_loss_limit_usd, max_open_positions):
+def set_live_settings(username, position_usd, max_leverage, daily_loss_limit_usd, max_open_positions, sizing_mode='fixed'):
+    sizing_mode = 'strategic' if str(sizing_mode or '').lower() == 'strategic' else 'fixed'
     try:
-        position_usd = float(position_usd)
+        position_usd = float(position_usd) if (sizing_mode == 'fixed' or str(position_usd or '').strip() != '') else 0.0
         max_leverage = int(max_leverage)
         daily_loss_limit_usd = float(daily_loss_limit_usd)
         max_open_positions = int(max_open_positions)
     except (TypeError, ValueError):
         return False, 'Geçersiz sayı değeri.'
-    if not (0 < position_usd <= 50000):
+    if sizing_mode == 'fixed' and not (0 < position_usd <= 50000):
+        return False, 'Pozisyon büyüklüğü 0 ile 50.000 USD arasında olmalı.'
+    if sizing_mode == 'strategic' and not (0 <= position_usd <= 50000):
         return False, 'Pozisyon büyüklüğü 0 ile 50.000 USD arasında olmalı.'
     if not (1 <= max_leverage <= LIVE_MAX_LEVERAGE_CAP):
         return False, f'Kaldıraç 1 ile {LIVE_MAX_LEVERAGE_CAP}x arasında olmalı.'
@@ -393,6 +396,7 @@ def set_live_settings(username, position_usd, max_leverage, daily_loss_limit_usd
 
     def m(u):
         u['live_position_usd'] = position_usd
+        u['live_sizing_mode'] = sizing_mode
         u['live_max_leverage'] = max_leverage
         u['live_daily_loss_limit_usd'] = daily_loss_limit_usd
         u['live_max_open_positions'] = max_open_positions
@@ -413,7 +417,7 @@ def set_live_trading_enabled(username, enabled):
             return False, 'Önce Binance API anahtarınızı kaydedip doğrulamanız gerekiyor.'
         if not rec.get('risk_ack_at'):
             return False, 'Önce risk onayını vermeniz gerekiyor.'
-        if not (rec.get('live_position_usd') or 0) > 0:
+        if rec.get('live_sizing_mode') != 'strategic' and not (rec.get('live_position_usd') or 0) > 0:
             return False, 'Önce pozisyon büyüklüğü (USD) ayarını kaydedin.'
         if not (rec.get('live_daily_loss_limit_usd') or 0) > 0:
             return False, 'Günlük maksimum kayıp limiti belirlemeden canlı işlem açamazsınız.'
@@ -441,6 +445,7 @@ def list_live_enabled_users():
         out.append({
             'username': rec.get('username'),
             'live_position_usd': rec.get('live_position_usd'),
+            'live_sizing_mode': rec.get('live_sizing_mode') or 'fixed',
             'live_max_leverage': rec.get('live_max_leverage'),
             'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
             'live_max_open_positions': rec.get('live_max_open_positions'),
@@ -612,6 +617,7 @@ def list_users_admin():
             'days_left': sub['days_left'],
             'live_trading_enabled': bool(rec.get('live_trading_enabled')),
             'live_position_usd': rec.get('live_position_usd'),
+            'live_sizing_mode': rec.get('live_sizing_mode') or 'fixed',
             'live_max_leverage': rec.get('live_max_leverage'),
             'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
             'live_max_open_positions': rec.get('live_max_open_positions'),
@@ -975,6 +981,7 @@ def get_account_status(username):
         'binance_verify_error': rec.get('binance_verify_error'),
         'live_trading_enabled': bool(rec.get('live_trading_enabled')),
         'live_position_usd': rec.get('live_position_usd'),
+        'live_sizing_mode': rec.get('live_sizing_mode') or 'fixed',
         'live_max_leverage': rec.get('live_max_leverage'),
         'live_daily_loss_limit_usd': rec.get('live_daily_loss_limit_usd'),
         'live_max_open_positions': rec.get('live_max_open_positions'),

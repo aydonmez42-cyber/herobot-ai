@@ -8542,6 +8542,14 @@ function renderLivePanel(a){
     ${openPos}${pnlRow}${errRow}
     <form class="account-form" id="liveSettingsForm" onsubmit="return submitLiveSettings(event)" style="margin-top:10px">
       <div>
+        <label>${currentLang==='tr'?'Pozisyon tutarı yöntemi':'Position sizing method'}</label>
+        <select id="liveSizingMode" onchange="liveSizingChanged()">
+          <option value="fixed" ${a.live_sizing_mode!=='strategic'?'selected':''}>${currentLang==='tr'?'Sabit tutar':'Fixed amount'}</option>
+          <option value="strategic" ${a.live_sizing_mode==='strategic'?'selected':''}>${currentLang==='tr'?'Stratejik tutar (risk bazlı)':'Strategic amount (risk-based)'}</option>
+        </select>
+        <div class="text-faint" id="liveSizingHelp" style="font-size:11.5px;margin-top:4px;line-height:1.5"></div>
+      </div>
+      <div id="liveFixedBox">
         <label>${t('live.positionUsdLabel')}</label>
         <input type="number" step="0.01" min="0" id="livePositionUsd" value="${a.live_position_usd||''}" placeholder="${t('live.positionUsdPlaceholder')}">
       </div>
@@ -8566,12 +8574,24 @@ function renderLivePanel(a){
     </form>
     <div class="live-danger">${t('live.dangerText')}</div>
   `;
+  liveSizingChanged();
 }
 
+function liveSizingChanged(){
+  const m=document.getElementById('liveSizingMode'); if(!m) return;
+  const tr=(currentLang==='tr'), strat=(m.value==='strategic');
+  const fb=document.getElementById('liveFixedBox'); if(fb) fb.style.display=strat?'none':'';
+  const h=document.getElementById('liveSizingHelp');
+  if(h) h.textContent=strat
+    ? (tr?'Her işlemde, stop olursa kaybedeceğiniz tutar Binance vadeli işlem bakiyenizin yaklaşık %0,25\'i olacak şekilde pozisyon büyüklüğü otomatik hesaplanır (stop Supertrend çizgisine yakınsa büyük, uzaksa küçük pozisyon). Tek pozisyon bakiyenizin en fazla %25\'i, toplam açık pozisyon en fazla 3 katı olur; kullanılabilir marj yetmezse küçültülür.'
+          :'On every trade the size is calculated so that a stop-out costs about 0.25% of your Binance futures balance (closer Supertrend stop = larger position, farther stop = smaller). A single position is capped at 25% of your balance and total open notional at 3x; it is reduced if available margin is insufficient.')
+    : (tr?'Her işlemde sizin belirlediğiniz sabit USD tutarı kullanılır.':'Every trade uses the fixed USD amount you set.');
+}
 async function submitLiveSettings(ev){
   ev.preventDefault();
   const body={
     position_usd: document.getElementById('livePositionUsd').value,
+    sizing_mode: document.getElementById('liveSizingMode').value,
     max_leverage: document.getElementById('liveMaxLeverage').value,
     daily_loss_limit_usd: document.getElementById('liveDailyLossLimit').value,
     max_open_positions: document.getElementById('liveMaxPositions').value,
@@ -9410,7 +9430,7 @@ async function load(){
       <td>${u.binance_connected?(u.binance_verified_at?'Doğrulandı':'Bağlı'):'—'}</td>
       <td>${badge(u.subscription_status)}</td>
       <td>${u.days_left!=null?u.days_left+' gün':'—'}</td>
-      <td>${u.live_trading_enabled?`<span class="badge badge-active">Açık</span> <span class="text-faint">(${u.live_position_usd||0} USD, ${u.live_max_leverage||1}x, max ${u.live_max_open_positions||1} pozisyon, limit ${u.live_daily_loss_limit_usd||0} USD)</span>`:'<span class="text-faint">Kapalı</span>'}</td>
+      <td>${u.live_trading_enabled?`<span class="badge badge-active">Açık</span> <span class="text-faint">(${u.live_sizing_mode==='strategic'?'Stratejik tutar':(u.live_position_usd||0)+' USD'}, ${u.live_max_leverage||1}x, max ${u.live_max_open_positions||1} pozisyon, limit ${u.live_daily_loss_limit_usd||0} USD)</span>`:'<span class="text-faint">Kapalı</span>'}</td>
       <td>${u.pending_plan?`<span class="badge badge-trial">${u.pending_plan==='monthly'?'Aylık':'Yıllık'} · ${u.pending_amount_usd} USD</span> <span class="text-faint">${(u.pending_requested_at||'').replace('T',' ').slice(0,16)}</span>`:'<span class="text-faint">—</span>'}</td>
       <td>
         <select onchange="setStatus('${u.username}', this.value)">
@@ -10738,6 +10758,7 @@ class Handler(BaseHTTPRequestHandler):
             ok, err = auth.set_live_settings(
                 user, data.get('position_usd'), data.get('max_leverage'),
                 data.get('daily_loss_limit_usd'), data.get('max_open_positions'),
+                sizing_mode=data.get('sizing_mode') or 'fixed',
             )
             self._send_json({'ok': ok, 'error': err}); return
 

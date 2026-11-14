@@ -2098,7 +2098,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
           f"acil stop={('%.6f' % pos['emergency_stop']) if pos.get('emergency_stop') else 'kapali'}", flush=True)
     try:
-        live_trading.on_entry_signal(symbol, side, px, source='watchlist',
+        live_trading.on_entry_signal(symbol, side, px, source='watchlist', stop_level=level,
                                      guard_ctx=live_guard_ctx(state, {'close': sig['signal_close'], 'atr': atr_val}, px))
     except Exception as e:
         print(f'LIVE | ERROR | {type(e).__name__}: {e}', flush=True)

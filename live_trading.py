@@ -131,6 +131,52 @@ def _disarm_emergency_stop(api_key, api_secret, symbol, pos):
         print(f'LIVE | ACIL STOP IPTAL HATASI | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
+# ---- Stratejik tutar: paper hesapla ayni risk bazli boyutlandirma (gercek Binance bakiyesine gore) ----
+def _envf(name, default):
+    try:
+        return float(os.environ.get(name, default))
+    except Exception:
+        return float(default)
+
+STRAT_RISK_PCT = _envf('LIVE_STRAT_RISK_PCT', _envf('ST_RISK_PCT', 0.25))          # stop olursa kaybedilecek bakiye %'si
+STRAT_MAX_NOTIONAL_PCT = _envf('LIVE_STRAT_MAX_NOTIONAL_PCT', 25.0)                # tek pozisyon nominal ust siniri (bakiye %)
+STRAT_MAX_EXPOSURE_X = _envf('LIVE_STRAT_MAX_EXPOSURE_X', _envf('ST_MAX_EXPOSURE_X', 3.0))   # toplam acik nominal <= bakiye x bu
+STRAT_MIN_NOTIONAL_USD = _envf('LIVE_STRAT_MIN_USD', 10.0)                         # bundan kucuk pozisyon acilmaz
+STRAT_DEFAULT_DIST = 0.06                                                          # stop seviyesi bilinmiyorsa varsayilan mesafe
+STRAT_MIN_DIST = 0.005                                                             # cok yakin stopta boyut sismesin
+
+
+def _strategic_position_usd(rec, api_key, api_secret, urec, price, stop_level):
+    """Stratejik tutar: nominal = bakiye x risk% / stop mesafesi; tek pozisyon ust sinir, toplam maruziyet siniri ve
+    kullanilabilir marj (kaldirac dahil) ile sinirlanir. Doner: (usd, hata_metni_veya_None)."""
+    ov, err = blive.get_account_overview(api_key, api_secret)
+    if not ov:
+        return 0.0, f'Stratejik tutar için bakiye okunamadı: {err}'
+    equity = float(ov.get('margin_balance') or ov.get('wallet_balance') or 0.0)
+    if equity <= 0:
+        return 0.0, 'Stratejik tutar için Binance vadeli işlem bakiyesi bulunamadı.'
+    dist = abs(price - stop_level) / price if (stop_level and price) else STRAT_DEFAULT_DIST
+    dist = max(dist, STRAT_MIN_DIST)
+    n = min(equity * STRAT_RISK_PCT / 100.0 / dist, equity * STRAT_MAX_NOTIONAL_PCT / 100.0)
+    open_notional = sum(float(p.get('qty') or 0) * float(p.get('entry_price') or 0) for p in (urec.get('positions') or {}).values())
+    room = equity * STRAT_MAX_EXPOSURE_X - open_notional
+    n = min(n, room)
+    lev = max(1, min(int(rec.get('live_max_leverage') or 1), HARD_MAX_LEVERAGE))
+    avail = float(ov.get('available_balance') or 0.0)
+    n = min(n, avail * lev * 0.95)                  # marj yetmezse kucult
+    if n < STRAT_MIN_NOTIONAL_USD:
+        return 0.0, ('Stratejik tutar: toplam maruziyet sınırı doldu veya kullanılabilir marj yetersiz.' if room < STRAT_MIN_NOTIONAL_USD or avail * lev * 0.95 < STRAT_MIN_NOTIONAL_USD
+                     else 'Stratejik tutar: hesaplanan pozisyon çok küçük, işlem açılmadı.')
+    return float(n), None
+
+
+def _resolve_position_usd(rec, api_key, api_secret, urec, price, stop_level=None):
+    if (rec.get('live_sizing_mode') or 'fixed') == 'strategic':
+        return _strategic_position_usd(rec, api_key, api_secret, urec, price, stop_level)
+    usd = float(rec.get('live_position_usd') or 0)
+    return (usd, None) if usd > 0 else (0.0, 'Canlı işlem tutarınız ayarlanmamış.')
+
+
 def _parse_iso_utc(v):
     d = datetime.fromisoformat(str(v).replace('Z', '+00:00'))
     return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
@@ -618,13 +664,13 @@ def open_position_now(username, symbol, side, demo_price=None):
             return False, f'Maksimum açık pozisyon sayınıza ulaştınız ({max_positions}).'
         if LIVE_MAX_SAME_DIRECTION > 0 and sum(1 for p in urec['positions'].values() if p.get('side') == side) >= LIVE_MAX_SAME_DIRECTION:
             return False, f'Aynı yönde en fazla {LIVE_MAX_SAME_DIRECTION} canlı pozisyon açılabilir.'
-        position_usd = float(rec.get('live_position_usd') or 0)
-        if position_usd <= 0:
-            return False, 'Canlı işlem tutarınız ayarlanmamış.'
         api_key, api_secret = auth.get_decrypted_binance_credentials(username)
         if not api_key or not api_secret:
             return False, 'Binance anahtarınız okunamadı — Binance bağlantınızı kontrol edin.'
         price = blive.get_mark_price(symbol) or demo_price
+        position_usd, perr = _resolve_position_usd(rec, api_key, api_secret, urec, price)
+        if perr:
+            return False, perr
         qty, err = blive.compute_quantity(symbol, position_usd, price)
         if err:
             return False, err
@@ -722,7 +768,7 @@ def close_position_now(username, symbol):
     return True, None
 
 
-def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
+def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None, stop_level=None):
     """side: 'LONG' or 'SHORT'. Called right after the shared strategy opens
     a paper position, at that same signal price, so live orders mirror the
     exact signal the paper account is trading."""
@@ -751,12 +797,15 @@ def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
                 _record_skip(urec, symbol, side, codes, now_utc)
                 print(f'LIVE | {username} | ENTRY SKIPPED BY GUARD | {side} {symbol} | {",".join(codes)}', flush=True)
                 continue
-            position_usd = float(rec.get('live_position_usd') or 0)
-            if position_usd <= 0:
-                continue
             api_key, api_secret = auth.get_decrypted_binance_credentials(username)
             if not api_key or not api_secret:
                 urec['last_error'] = 'Binance anahtarı okunamadı'
+                continue
+            position_usd, perr = _resolve_position_usd(rec, api_key, api_secret, urec, price, stop_level)
+            if perr:
+                if (rec.get('live_sizing_mode') or 'fixed') == 'strategic':
+                    urec['last_error'] = perr
+                    print(f'LIVE | {username} | ENTRY SKIPPED | {symbol} | {perr}', flush=True)
                 continue
             qty, err = blive.compute_quantity(symbol, position_usd, price)
             if err:
@@ -778,7 +827,7 @@ def on_entry_signal(symbol, side, price, source='eth_bot', guard_ctx=None):
             urec['positions'][symbol] = {
                 'side': side, 'qty': qty, 'entry_price': fill_price,
                 'entry_time': datetime.now(timezone.utc).isoformat(), 'source': source,
-                'leverage': leverage,
+                'leverage': leverage, 'sizing': rec.get('live_sizing_mode') or 'fixed', 'notional_usd': round(position_usd, 2),
             }
             urec['positions'][symbol].update(_arm_emergency_stop(username, api_key, api_secret, symbol, side, fill_price, leverage))
             urec['last_error'] = None
