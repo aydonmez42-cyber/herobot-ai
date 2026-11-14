@@ -36,11 +36,52 @@ KLINE_LIMIT = 499                      # Binance agirligi 2 (500+ olursa 5)
 MIN_CANDLES = 60
 FAPI = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com')
 
+# ---- Evrenler: LIQ100 (varsayilan, robotun otomatik taramasi) / TOP10 (piyasa degeri) / VOL20 (24s hacim) / ALL (tum USDT-M) ----
+UNIVERSES = ('LIQ100', 'TOP10', 'VOL20', 'ALL')
+PACE_ALL_S = float(os.environ.get('SCAN_ST_PACE_ALL_S', '0.25'))
+COINGECKO_URL = os.environ.get('COINGECKO_MARKETS_URL', 'https://api.coingecko.com/api/v3/coins/markets')
+TOP10_FALLBACK = [x.strip().upper() for x in os.environ.get(
+    'ST_TOP10_FALLBACK', 'BTC,ETH,BNB,XRP,SOL,DOGE,TRX,ADA,LINK,AVAX').split(',') if x.strip()]
+_NOT_COINS = {'USDT', 'USDC', 'USDE', 'DAI', 'FDUSD', 'USDS', 'TUSD', 'BUSD', 'PYUSD', 'USDD', 'USD1', 'USDG', 'USDT0',
+              'STETH', 'WSTETH', 'WETH', 'WBTC', 'WEETH', 'WBETH', 'CBBTC', 'RETH', 'BSC-USD', 'SUSDE', 'BUIDL', 'USDTB'}
+
 _lock = threading.Lock()
 _state = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None, 'progress': 0, 'total': 0,
           'last_error': None, 'partial': False, 'asof': None, 'interval': INTERVAL,
           'every_min': SCAN_EVERY_MIN}
 _last_finish_ts = 0.0
+_states = {'LIQ100': _state}                 # robotun okudugu durum = LIQ100 (degismeden kalir)
+for _u in UNIVERSES[1:]:
+    _states[_u] = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None, 'progress': 0, 'total': 0,
+                   'last_error': None, 'partial': False, 'asof': None, 'interval': INTERVAL, 'every_min': SCAN_EVERY_MIN}
+_CG = {'t': 0.0, 'syms': None}
+
+
+def _u(universe):
+    u = str(universe or 'LIQ100').upper()
+    return u if u in UNIVERSES else 'LIQ100'
+
+
+def _top_by_market_cap(n=10):
+    """Piyasa degerine gore ilk n coin (CoinGecko, 6 saat onbellek); alinamazsa kayitli liste. Doner: (semboller, approx)."""
+    if _CG['syms'] and time.time() - _CG['t'] < 6 * 3600:
+        return _CG['syms'][:n], False
+    try:
+        r = requests.get(COINGECKO_URL, params={'vs_currency': 'usd', 'order': 'market_cap_desc', 'per_page': 60, 'page': 1},
+                         timeout=15, headers={'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+        r.raise_for_status()
+        syms = []
+        for c in r.json():
+            s = str(c.get('symbol') or '').upper()
+            if s and s not in _NOT_COINS and 'USD' not in s and s not in syms:
+                syms.append(s)
+        if len(syms) < 10:
+            raise RuntimeError('CoinGecko listesi kisa')
+        _CG.update({'t': time.time(), 'syms': syms})
+        return syms[:n], False
+    except Exception as e:
+        print(f'SCAN | piyasa degeri listesi alinamadi ({type(e).__name__}); kayitli liste kullaniliyor', flush=True)
+        return list(TOP10_FALLBACK), True
 
 
 def _get(url, params=None, timeout=15):
@@ -94,6 +135,27 @@ def _universe_n(top_n):
     return rows[:top_n]
 
 
+def _universe_for(universe):
+    """Doner: (satirlar [(sembol, hacim, degisim%)], approx, kaynak)."""
+    u = _u(universe)
+    if u == 'LIQ100':
+        return _universe_n(TOP_N), False, f'24s hacme gore en likit {TOP_N}'
+    if u == 'VOL20':
+        return _universe_n(20), False, '24s hacme gore ilk 20'
+    if u == 'ALL':
+        return _universe_n(10000), False, 'tum USDT-M surekli kontratlar'
+    allrows = {r[0]: r for r in _universe_n(10000)}
+    caps, approx = _top_by_market_cap(10 + 6)
+    out = []
+    for base in caps:
+        for cand in (base + 'USDT', '1000' + base + 'USDT'):
+            if cand in allrows:
+                out.append(allrows[cand]); break
+        if len(out) >= 10:
+            break
+    return out, approx, 'piyasa degerine gore ilk 10' if not approx else 'kayitli liste (piyasa degeri alinamadi)'
+
+
 def _klines(symbol):
     data = _get(f'{FAPI}/fapi/v1/klines', {'symbol': symbol, 'interval': INTERVAL, 'limit': KLINE_LIMIT})
     cols = ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume',
@@ -144,23 +206,26 @@ def _analyse(symbol, vol, chg, asof):
     return row
 
 
-def snapshot(tf=None):
+def snapshot(tf=None, universe=None):
+    u = _u(universe)
     with _lock:
-        out = dict(_state)
-        out['results'] = list(_state['results'])
-    out.update({'interval': INTERVAL, 'min_gap_s': MIN_GAP_S})
+        out = dict(_states[u])
+        out['results'] = list(_states[u]['results'])
+    out.update({'interval': INTERVAL, 'min_gap_s': MIN_GAP_S, 'universe': u})
     wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0
     out['next_allowed_in_s'] = max(0, int(wait))
     return out
 
 
-def _run(asof):
+def _run(asof, universe_name='LIQ100'):
     global _last_finish_ts
-    results, partial, err = [], False, None
+    st = _states[universe_name]
+    pace = PACE_ALL_S if universe_name == 'ALL' else PACE_S
+    results, partial, err, approx, source = [], False, None, False, None
     try:
-        universe = _universe_n(TOP_N)
+        universe, approx, source = _universe_for(universe_name)
         with _lock:
-            _state['total'] = len(universe)
+            st['total'] = len(universe)
         for n, (sym, vol, chg) in enumerate(universe, 1):
             if blive.in_rate_limit_cooldown():
                 partial, err = True, 'Binance istek siniri: tarama yarida durduruldu, birkac dakika sonra tekrar denenecek.'
@@ -176,23 +241,28 @@ def _run(asof):
             except Exception:
                 pass
             with _lock:
-                _state['progress'] = n
-            time.sleep(PACE_S)
+                st['progress'] = n
+            time.sleep(pace)
     except Exception as e:
         err = f'{type(e).__name__}: {str(e)[:160]}'
     with _lock:
-        _state.update({'results': results, 'partial': partial, 'last_error': err,
-                       'status': 'ERROR' if (err and not results) else 'READY',
-                       'finished_at': datetime.now(timezone.utc).isoformat(), 'asof': asof.isoformat()})
+        st.update({'results': results, 'partial': partial, 'last_error': err,
+                   'status': 'ERROR' if (err and not results) else 'READY',
+                   'finished_at': datetime.now(timezone.utc).isoformat(), 'asof': asof.isoformat(),
+                   'approx': approx, 'source': source})
     _last_finish_ts = time.time()
     n_l = sum(1 for r in results if r['signal'] == 'LONG'); n_s = sum(1 for r in results if r['signal'] == 'SHORT')
-    print(f'SCAN-ST-15M | bitti | {len(results)} coin | sinyal: LONG={n_l} SHORT={n_s} | asof={asof} | partial={partial} | err={err}', flush=True)
+    print(f'SCAN-ST-15M | {universe_name} | bitti | {len(results)} coin | sinyal: LONG={n_l} SHORT={n_s} | asof={asof} | partial={partial} | err={err}', flush=True)
 
 
-def start_scan(tf=None, aligned=False):
-    """(started, message). aligned=True: saat basi mumuna gore; False: manuel (son kapanmis 15 dk mum)."""
+def start_scan(tf=None, aligned=False, universe=None):
+    """(started, message). aligned=True: saat basi mumuna gore; False: manuel (son kapanmis 15 dk mum).
+    Yalnizca LIQ100 evreni robotun otomatik taramasidir; diger evrenler yalniz manuel ve gosterim amaclidir."""
+    u = _u(universe)
+    if aligned:
+        u = 'LIQ100'
     with _lock:
-        if _state['status'] == 'SCANNING':
+        if any(s['status'] == 'SCANNING' for s in _states.values()):
             return False, 'Tarama zaten calisiyor.'
     if blive.in_rate_limit_cooldown():
         return False, 'Binance istek siniri bekleme suresi aktif; birkac dakika sonra deneyin.'
@@ -202,16 +272,16 @@ def start_scan(tf=None, aligned=False):
     now = pd.Timestamp.now(tz='UTC')
     asof = now.floor(f'{SCAN_EVERY_MIN}min') if aligned else now.floor('15min')
     with _lock:
-        _state.update({'status': 'SCANNING', 'progress': 0, 'total': 0, 'last_error': None, 'partial': False,
-                       'started_at': datetime.now(timezone.utc).isoformat()})
-    threading.Thread(target=_run, args=(asof,), daemon=True).start()
+        _states[u].update({'status': 'SCANNING', 'progress': 0, 'total': 0, 'last_error': None, 'partial': False,
+                           'started_at': datetime.now(timezone.utc).isoformat()})
+    threading.Thread(target=_run, args=(asof, u), daemon=True).start()
     return True, 'Tarama baslatildi.'
 
 
 def scan_due(now=None):
     """Saat basi sinirini gecti ve son tarama bu sinirdan ONCEki mumla yapildiysa True."""
     with _lock:
-        busy = _state['status'] == 'SCANNING'
+        busy = any(s['status'] == 'SCANNING' for s in _states.values())
         last = _state.get('asof')
     if busy:
         return False

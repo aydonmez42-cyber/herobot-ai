@@ -3618,6 +3618,7 @@ SCANNER_HTML = r'''<!doctype html>
     <div id="stCard" style="padding:14px 16px 10px">
       <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik</b></div>
       <div class="scanner-controls">
+        <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü</option></select>
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -4067,11 +4068,21 @@ const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return e
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
 
 // ---- Supertrend scan (crypto: 15m, hourly automatic) ----
-const stCaches={'15m':{results:[],status:'IDLE'}};
-let stCache=stCaches['15m'], stTimer=null;
+const stCaches={'15m|LIQ100':{results:[],status:'IDLE'}};
+let stCache=stCaches['15m|LIQ100'], stTimer=null;
 function stTfVal(){ return '15m'; }
+function stUniVal(){ return document.getElementById('stUni')?.value||'LIQ100'; }
+function stKey(){ return stTfVal()+'|'+stUniVal(); }
+function stSlot(key){ return stCaches[key] || (stCaches[key]={results:[],status:'IDLE'}); }
+function stUniText(c){
+  const u=stUniVal(), n=c&&c.total;
+  if(u==='TOP10') return T15('piyasa değerine göre en büyük '+(n||10)+' coin','the '+(n||10)+' largest coins by market cap');
+  if(u==='VOL20') return T15('24 saatlik hacme göre en hacimli '+(n||20)+' coin','the '+(n||20)+' highest-volume coins (24h)');
+  if(u==='ALL') return T15('Binance tüm USDT-M kontratları ('+(n||'?')+' coin)','all Binance USDT-M contracts ('+(n||'?')+' coins)');
+  return T15('en likit '+(n||100)+' coin',(n||100)+' most liquid coins');
+}
 function stTfChange(){
-  const tf=stTfVal(); stCache=stCaches[tf];
+  const tf=stTfVal(); stCache=stSlot(stKey());
   const bars=document.getElementById('stBars');
   if(bars){ bars.innerHTML=[1,2,3,4].map(n=>`<option value="${n}">${T15('Son '+n+' mum','Last '+n+(n>1?' candles':' candle'))}</option>`).join(''); }
   renderSt(); refreshSt();
@@ -4117,7 +4128,7 @@ document.addEventListener('click',function(e){
   if(sel){ sel.value=a.dataset.side; sel.dispatchEvent(new Event('change')); }
 });
 function renderSt(){
-  const tf=stTfVal(); stCache=stCaches[tf];
+  const tf=stTfVal(); stCache=stSlot(stKey());
   const f=document.getElementById('stFilter')?.value||'ALL';
   const n=Number(document.getElementById('stBars')?.value||1);
   const all=(stCache.results||[]).map(x=>({...x,signal:(x.signal&&x.signal_age!=null&&x.signal_age<n)?x.signal:'NO SIGNAL'}));
@@ -4127,14 +4138,14 @@ function renderSt(){
   const busy=Object.values(stCaches).some(c=>c.status==='SCANNING'); if(btn) btn.disabled=busy;
   if(st){
     if(stCache.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
-    else if(busy) st.textContent=T15('Başka bir zaman dilimi taranıyor…','Another timeframe is being scanned…');
+    else if(busy) st.textContent=T15('Başka bir tarama çalışıyor…','Another scan is running…');
     else if(stCache.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · '+stSideLinks(nL,nS,'stFilter');
     else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
   }
   const lblTr='15 dakikalık', lblEn='15m';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, en likit '+(stCache.total||100)+' coin.',
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+(stCache.total||100)+' most liquid coins.');
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='15';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
@@ -4142,18 +4153,18 @@ function renderSt(){
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
 }
 async function refreshSt(){
-  const tf=stTfVal();
-  try{ const r=await fetch('/api/scanner_st?tf='+tf,{cache:'no-store'}); stCaches[tf]=await r.json(); }catch(e){ return; }
-  if(tf===stTfVal()) renderSt();
-  if(stCaches[tf].status==='SCANNING'){ if(!stTimer) stTimer=setInterval(refreshSt,3000); }
+  const tf=stTfVal(), key=stKey();
+  try{ const r=await fetch('/api/scanner_st?tf='+tf+'&u='+encodeURIComponent(stUniVal()),{cache:'no-store'}); stCaches[key]=await r.json(); }catch(e){ return; }
+  if(key===stKey()) renderSt();
+  if(stCaches[key].status==='SCANNING'){ if(!stTimer) stTimer=setInterval(refreshSt,3000); }
   else if(stTimer){ clearInterval(stTimer); stTimer=null; renderSt(); }
 }
 async function stStart(){
-  const tf=stTfVal();
+  const tf=stTfVal(), key=stKey();
   try{
-    const r=await fetch('/api/scanner_st/scan?tf='+tf,{cache:'no-store'}); const d=await r.json();
+    const r=await fetch('/api/scanner_st/scan?tf='+tf+'&u='+encodeURIComponent(stUniVal()),{cache:'no-store'}); const d=await r.json();
     if(!d.started && d.message) alert(d.message);
-    if(d.snapshot) stCaches[tf]=d.snapshot;
+    if(d.snapshot) stCaches[key]=d.snapshot;
   }catch(e){ alert(T15('Bağlantı hatası','Connection error')); return; }
   renderSt(); refreshSt();
 }
@@ -10500,10 +10511,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:120]}'}, status=502)
             return
         if path=='/api/scanner_st':
-            self._send_json(scanner_st15.snapshot()); return
+            _u11=parse_qs(urlparse(self.path).query).get('u',[None])[0]
+            self._send_json(scanner_st15.snapshot(None,_u11)); return
         if path=='/api/scanner_st/scan':
-            started,msg=scanner_st15.start_scan()
-            self._send_json({'started':started,'message':msg,'snapshot':scanner_st15.snapshot()}); return
+            _u11=parse_qs(urlparse(self.path).query).get('u',[None])[0]
+            started,msg=scanner_st15.start_scan(None,False,_u11)
+            self._send_json({'started':started,'message':msg,'snapshot':scanner_st15.snapshot(None,_u11)}); return
         if path=='/api/scanner':
             body=json.dumps(scanner_snapshot(),ensure_ascii=False).encode(); self.send_response(200); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body); return
         if path=='/api/scanner/scan':
