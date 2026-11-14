@@ -1204,7 +1204,7 @@ def auto_add_from_scanner(state, now):
         wl[sym] = {'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': 'LONG', 'auto_added': True}
     state['auto_add_count'] = int(state.get('auto_add_count') or 0) + len(take)
     try:
-        send_message(f'🤖 {iv_label(CRYPTO_INTERVAL)} mum taramasından otomatik eklenen LONG coinler (giriş bekleme kilidiyle): ' + ', '.join(take))
+        send_message(f'🤖 {iv_label(CRYPTO_INTERVAL)} mum taramasından otomatik eklenen LONG coinler (giriş bekleme kilidiyle): ' + ', '.join(take) + TG_DISCLAIMER)
     except Exception:
         pass
 
@@ -1976,6 +1976,9 @@ _ST_REASON_TR = {'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)
                  'ST_REGIME_PROFIT': 'BTC trendi döndü: kâr alındı', 'ST_REGIME_CUT': 'BTC trendi döndü: ters yön sınırı (en çok zarardaki kapatıldı)'}
 
 
+TG_DISCLAIMER = "\n\n⚠️ Yasal Uyarı: Bu mesaj yatırım tavsiyesi değildir; trend algoritmasının teknik gösterge çıktısıdır. LONG/SHORT bilgisi yalnızca bilgi amaçlıdır, fiyat yönünü veya kazancı garanti etmez. İşlemler yüksek risk içerir; kendi risk analizinizi yapın."
+
+
 def st_entry_message(pos):
     side = pos['side']
     kind = {'LONG': 'Supertrend yukarı kırıldı', 'SHORT': 'Supertrend aşağı kırıldı',
@@ -1992,7 +1995,7 @@ def st_entry_message(pos):
             + f"Kâr kilidi (zirve → korunan kâr): {sts.lock_tiers_text()}\n"
             + (f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n" if pos.get('emergency_stop') else "")
             +
-            f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)")
+            f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)" + TG_DISCLAIMER)
 
 
 def st_exit_message(trade):
@@ -2016,7 +2019,7 @@ def st_exit_message(trade):
             f"Ücretler: {float(trade['fees']):,.2f} USDT\n"
             f"Çıkış nedeni: {_ST_REASON_TR.get(trade['reason'], trade['reason'])}\n"
             f"Süre: {dur}\n"
-            f"Bakiye: {_usdt(trade['equity_after'])}")
+            f"Bakiye: {_usdt(trade['equity_after'])}" + TG_DISCLAIMER)
 
 
 def _st_is_crypto_pos(state, symbol):
@@ -2273,7 +2276,7 @@ def st_regime_flip_check(state, now):
     try:
         send_message(f"⚠️ {sts.REGIME_SYMBOL} Supertrend yönü {prev} → {reg}\n"
                      f"Ters yöndeki pozisyon: {len(rows)} | kapatılan: {len(closed)}" + (f" ({', '.join(closed)})" if closed else '') + "\n"
-                     f"Kâr ≥ %{sts.REGIME_TAKE_PROFIT_PCT:g} olanlar kapatıldı, kârdaki diğerleri başabaşa çekildi, ters yön sınırı {sts.COUNTER_TREND_MAX}.")
+                     f"Kâr ≥ %{sts.REGIME_TAKE_PROFIT_PCT:g} olanlar kapatıldı, kârdaki diğerleri başabaşa çekildi, ters yön sınırı {sts.COUNTER_TREND_MAX}." + TG_DISCLAIMER)
     except Exception:
         pass
 

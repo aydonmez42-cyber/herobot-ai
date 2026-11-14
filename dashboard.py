@@ -844,6 +844,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-d);-
 .pos{color:var(--bull)}.neg{color:var(--bear)}
 a.st-side{font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 a.st-side:hover{filter:brightness(1.25)}
+.st-disc{margin:0 0 10px 0;padding:8px 10px;border-left:3px solid var(--accent,#d6a84a);border-radius:4px;background:rgba(214,168,74,.07);color:var(--text-dim,#9aa4b2);font-size:11.5px;line-height:1.5}
+.st-disc b{color:var(--text,#e8ecf1)}
 
 /* Panels */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
@@ -3392,6 +3394,8 @@ _NAV_PAGE_STYLE_EXTRA = r'''
 .pos{color:var(--bull)}.neg{color:var(--bear)}
 a.st-side{font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 a.st-side:hover{filter:brightness(1.25)}
+.st-disc{margin:0 0 10px 0;padding:8px 10px;border-left:3px solid var(--accent,#d6a84a);border-radius:4px;background:rgba(214,168,74,.07);color:var(--text-dim,#9aa4b2);font-size:11.5px;line-height:1.5}
+.st-disc b{color:var(--text,#e8ecf1)}
 .table-scroll{overflow:auto}
 table.datatable{width:100%;border-collapse:collapse;font-size:12.5px}
 table.datatable th{position:sticky;top:0;background:var(--panel);text-align:left;padding:10px 12px;color:var(--text-faint);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -3626,6 +3630,7 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
+      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stTable">
           <thead data-sk="symbol"><tr><th>Coin</th><th class="num" data-sk="price">Price</th><th class="num" data-sk="change_pct">24h %</th><th class="num" data-sk="volume">Volume</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Distance %</th><th data-sk="flip">Flip (TR)</th><th data-sk="signal">Signal</th><th>Add</th></tr></thead>
@@ -3646,6 +3651,7 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stBistStatus"></span>
       </div>
       <div class="scanner-note" id="stBistNote" style="margin:0 0 8px 0"></div>
+      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stBistTable">
           <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stBistChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
@@ -3666,6 +3672,7 @@ SCANNER_HTML = r'''<!doctype html>
         <span class="scanner-status" id="stUsStatus"></span>
       </div>
       <div class="scanner-note" id="stUsNote" style="margin:0 0 8px 0"></div>
+      <div class="st-disc" role="note"></div>
       <div class="table-scroll">
         <table class="datatable" id="stUsTable">
           <thead data-sk="symbol"><tr><th>Hisse</th><th class="num" data-sk="price">Fiyat</th><th class="num" id="stUsChgH" data-sk="change_pct">Günlük %</th><th class="num" data-sk="volume">Hacim</th><th class="num" data-sk="st">Supertrend</th><th class="num" data-sk="dist_pct">Uzaklık %</th><th data-sk="flip">Dönüş</th><th data-sk="signal">Sinyal</th><th>Ekle</th></tr></thead>
@@ -4066,6 +4073,18 @@ async function startScanner(force=false){document.getElementById('scannerStatus'
 // ---- helpers used by the Supertrend scan below ----
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
 const p15=x=>{ if(x==null||isNaN(Number(x))) return '—'; const n=Number(x), d=(Math.abs(n)<0.01&&n!==0)?6:4; return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
+
+
+// ---- Yasal uyari (standart ibare): Kripto, Borsa Istanbul, Wall Street tarama ekranlari ----
+const ST_DISC_TR='<b>Yasal Uyarı:</b> Bu ekranda listelenen hisse senetleri ve kripto paralar, yalnızca trend takip algoritmalarıyla tespit edilen trend başlangıç seviyelerini gösteren teknik gösterge değerleridir; <b>yatırım tavsiyesi niteliği taşımaz</b> ve yatırım danışmanlığı kapsamında değildir. Yükselen trend LONG, düşen trend SHORT olarak gösterilir. Bu gösterimler yalnızca bilgi amaçlıdır. Tarama ekranında LONG sinyali görünmesi ilgili hisse senedi veya kripto paranın fiyatının yükseleceğini, SHORT sinyali görünmesi ise düşeceğini <b>garanti etmez</b>. Geçmiş performans gelecekteki sonuçların göstergesi değildir. Hisse senedi ve kripto para işlemleri yüksek risk içerir ve yatırılan sermayenin tamamının veya bir kısmının kaybedilmesine yol açabilir. Herhangi bir işlem açmadan önce kendi risk analizinizi yapmanız gerekmektedir; işlem kararı ve doğabilecek sonuçlar tamamen size aittir.';
+const ST_DISC_EN='<b>Disclaimer:</b> The stocks and crypto assets listed on this screen are technical indicator values showing trend start levels detected solely by trend-following algorithms; they <b>do not constitute investment advice</b> or investment advisory services. An uptrend is shown as LONG and a downtrend as SHORT. These indications are for information purposes only. A LONG signal on the scan screen does not guarantee that the price of the stock or crypto asset will rise, and a SHORT signal does not guarantee that it will fall. Past performance is not indicative of future results. Trading stocks and crypto assets involves a high level of risk and may result in the loss of all or part of the invested capital. You should carry out your own risk analysis before opening any position; any trading decision and its consequences are entirely your own responsibility.';
+let _stDiscLang=null;
+function stDiscRender(){
+  let tr=true; try{ tr=(currentLang==='tr'); }catch(e){}
+  _stDiscLang=tr;
+  document.querySelectorAll('.st-disc').forEach(el=>{ el.innerHTML=tr?ST_DISC_TR:ST_DISC_EN; });
+}
+stDiscRender(); setInterval(()=>{ let tr=true; try{ tr=(currentLang==='tr'); }catch(e){} if(tr!==_stDiscLang) stDiscRender(); },700);
 
 // ---- Supertrend scan (crypto: 15m, hourly automatic) ----
 const stCaches={'15m|LIQ100':{results:[],status:'IDLE'}};
@@ -4938,6 +4957,8 @@ applyTranslation(_initialLang);
 # two backtests the team already ran (ETH and BTC), hardcoded below. No
 # live data / JS fetch calls: the numbers are baked into the page.
 ANALYSIS_BODY = r'''<style>
+.st-disc{margin:10px 0 0 0;padding:8px 10px;border-left:3px solid var(--accent,#d6a84a);border-radius:4px;background:rgba(214,168,74,.07);color:var(--text-dim,#9aa4b2);font-size:11.5px;line-height:1.5}
+.st-disc b{color:var(--text,#e8ecf1)}
 .ta-bar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;align-items:center}
 .ta-bar select,.ta-bar input{background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
 .ta-bar input{flex:1;min-width:170px}
@@ -5012,15 +5033,23 @@ body.ta-nolock{overflow:hidden}
   </div>
   <div id="ownChartMsg" class="tv-chart-empty">Yukarıdaki arama çubuğundan bir coin veya hisse seçin.</div>
   <canvas id="ownChart" style="width:100%;height:460px;display:none;touch-action:none;cursor:crosshair"></canvas>
+  <div class="st-disc" role="note"></div>
   <div class="footnote">Yeşil çizgi yükseliş, kırmızı çizgi düşüş; kesikli çizgi çizginin sağa uzatımı; oklar trend dönüşleri. Açık deneme pozisyonu varsa giriş, TP, stop ve acil stop seviyeleri grafikte çizilir. Yakınlaştırmak için fare tekeri / iki parmak, kaydırmak için sürükleyin. Saatler UTC. Her yöne kaydırmak için sürükleyin; sağdaki fiyat ekseninde sürükleyerek (ya da Shift + tekerlek ile) fiyat ölçeğini değiştirin; ⟲ ile görünümü sıfırlayın, ⛶ ile tam ekrana geçin.</div>
 </section>
 <section class="panel" id="taAi">
   <div class="panel-head"><h2>Yapay Zeka Yorumu (Claude)</h2><button class="btn" id="taAiBtn">Grafiği yorumla</button></div>
   <div id="taAiBody" class="text-faint">Seçili grafiğin Supertrend durumunu, son mumları ve (varsa) açık pozisyonu Claude'a gönderip kısa bir teknik yorum alabilirsiniz.</div>
   <div class="footnote">Yorum otomatik üretilir ve yatırım tavsiyesi değildir; yalnızca fiyat/Supertrend verisine dayanır, haber veya temel analiz içermez.</div>
+  <div class="st-disc" role="note"></div>
 </section>
 '''
 ANALYSIS_SCRIPT = r'''<script>
+const TA_DISC_TR='<b>Yasal Uyarı:</b> Bu ekranda listelenen hisse senetleri ve kripto paralar, yalnızca trend takip algoritmalarıyla tespit edilen trend başlangıç seviyelerini gösteren teknik gösterge değerleridir; <b>yatırım tavsiyesi niteliği taşımaz</b> ve yatırım danışmanlığı kapsamında değildir. Yükselen trend LONG, düşen trend SHORT olarak gösterilir. Bu gösterimler yalnızca bilgi amaçlıdır. Tarama ekranında LONG sinyali görünmesi ilgili hisse senedi veya kripto paranın fiyatının yükseleceğini, SHORT sinyali görünmesi ise düşeceğini <b>garanti etmez</b>. Geçmiş performans gelecekteki sonuçların göstergesi değildir. Hisse senedi ve kripto para işlemleri yüksek risk içerir ve yatırılan sermayenin tamamının veya bir kısmının kaybedilmesine yol açabilir. Herhangi bir işlem açmadan önce kendi risk analizinizi yapmanız gerekmektedir; işlem kararı ve doğabilecek sonuçlar tamamen size aittir.';
+const TA_DISC_EN='<b>Disclaimer:</b> The stocks and crypto assets listed on this screen are technical indicator values showing trend start levels detected solely by trend-following algorithms; they <b>do not constitute investment advice</b> or investment advisory services. An uptrend is shown as LONG and a downtrend as SHORT. These indications are for information purposes only. A LONG signal on the scan screen does not guarantee that the price of the stock or crypto asset will rise, and a SHORT signal does not guarantee that it will fall. Past performance is not indicative of future results. Trading stocks and crypto assets involves a high level of risk and may result in the loss of all or part of the invested capital. You should carry out your own risk analysis before opening any position; any trading decision and its consequences are entirely your own responsibility.';
+let _taDiscLang=null;
+function taDiscRender(){ let tr=true; try{ tr=(currentLang==='tr'); }catch(e){} _taDiscLang=tr;
+  document.querySelectorAll('.st-disc').forEach(el=>{ el.innerHTML=tr?TA_DISC_TR:TA_DISC_EN; }); }
+taDiscRender(); setInterval(()=>{ let tr=true; try{ tr=(currentLang==='tr'); }catch(e){} if(tr!==_taDiscLang) taDiscRender(); },700);
 // ---- own candle chart with Supertrend (plain canvas, no external library) ----
 const _own={tv:null,label:'',seq:0,d:null,up:null,dn:null,flips:null,view:{bars:120,end:0},hover:null,wired:false};
 function ownTfFromInterval(i){ return ({'15':'15m','60':'1h','240':'4h','D':'1d','1D':'1d','W':'1w','1W':'1w'})[String(i||'240')]||'4h'; }
