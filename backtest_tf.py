@@ -73,7 +73,7 @@ def _get(path, params=None, retries=4):
                 if m:
                     ts = int(m.group(1)); ts = ts / 1000 if ts > 1e11 else ts
                     until = " Yasak bitisi (UTC): " + _dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
-                raise RuntimeError("Binance IP yasagi (418)." + until + " Yasak bitmeden tekrar calistirma; script durduruldu.")
+                print("\n>>> Binance IP yasagi (418)." + until + " Yasak bitmeden tekrar calistirma; script durduruldu.", file=sys.stderr); sys.exit(2)
             if code == 429:
                 wait = 30 * (k + 1)
                 print(f"  istek siniri ({code}), {wait} sn bekleniyor...", file=sys.stderr); time.sleep(wait)
