@@ -64,7 +64,17 @@ def _get(path, params=None, retries=4):
                 return json.loads(r.read().decode())
         except Exception as e:
             code = getattr(e, "code", None)
-            if code in (418, 429):
+            if code == 418:                       # IP yasagi: beklerken istek atmak yasagi uzatir -> hemen dur
+                import re as _re, datetime as _dt
+                try: body = e.read().decode()
+                except Exception: body = ""
+                m = _re.search(r"banned until (\d{10,13})", body)
+                until = ""
+                if m:
+                    ts = int(m.group(1)); ts = ts / 1000 if ts > 1e11 else ts
+                    until = " Yasak bitisi (UTC): " + _dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+                raise RuntimeError("Binance IP yasagi (418)." + until + " Yasak bitmeden tekrar calistirma; script durduruldu.")
+            if code == 429:
                 wait = 30 * (k + 1)
                 print(f"  istek siniri ({code}), {wait} sn bekleniyor...", file=sys.stderr); time.sleep(wait)
             else:
