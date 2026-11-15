@@ -97,7 +97,7 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0):
     """Tek coin: tum islemleri doner (liste of dict)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
@@ -118,6 +118,8 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             if side == 1 and not (c[i] > vwma[i] and vwma[i] > vwma[i - 1]): continue
             if side == -1 and not (c[i] < vwma[i] and vwma[i] < vwma[i - 1]): continue
         entry = o[i + 1]; peak = 0.0; exit_pct = None; reason = None; j = i + 1
+        sd = abs(entry - float(e.get("st", entry))) / entry * 100.0                             # giriste stop mesafesi (%)
+        if maxstop > 0 and sd > maxstop: continue                                               # stop cok uzak: robot da girmez (STOP_TOO_FAR)
         while j < n:
             adverse = (l[j] if side == 1 else h[j]); fav = (h[j] if side == 1 else l[j])
             adv_pct = side * (adverse - entry) / entry * 100
@@ -137,7 +139,7 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             exit_pct, reason, j = side * (c[-1] - entry) / entry * 100, "OPEN_END", n - 1
         busy_until = j
         trades.append({"side": "LONG" if side == 1 else "SHORT", "kind": e["type"], "bars": j - i,
-                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i + 1]})
+                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i + 1], "t_exit": df.index[j], "sd": sd})
     return trades
 
 

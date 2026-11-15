@@ -481,6 +481,18 @@ TANITIM_HTML = r'''<!doctype html>
   nav .nav-links{display:flex;align-items:center;gap:40px}
   nav .nav-links a{font-size:14px;font-weight:600;color:#B7C0C6}
   nav .nav-links a.active{color:#3DD9A8}
+  .arch{background:#11161A;border:1px solid #1E252B;border-radius:14px;overflow:hidden}
+  .arch-view{position:relative;background:#0A0D10;aspect-ratio:16/9}
+  .arch-view img{width:100%;height:100%;object-fit:contain;display:block}
+  .arch-btn{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:1px solid #2A3238;background:rgba(10,13,16,.78);color:#E9EDF0;font-size:22px;cursor:pointer;line-height:1}
+  .arch-btn:hover{border-color:#3DD9A8;color:#3DD9A8}
+  .arch-prev{left:12px}.arch-next{right:12px}
+  .arch-bar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 16px;border-top:1px solid #1E252B}
+  .arch-thumbs{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 14px}
+  .arch-thumbs button{flex:0 0 auto;width:104px;border:2px solid transparent;border-radius:8px;padding:0;background:none;cursor:pointer;opacity:.6}
+  .arch-thumbs button.on{border-color:#3DD9A8;opacity:1}
+  .arch-thumbs img{width:100%;display:block;border-radius:6px}
+  @media (max-width:900px){.arch-btn{width:36px;height:36px;font-size:18px}.arch-thumbs button{width:80px}}
   .nav-toggle{display:none;background:none;border:1px solid #2A3238;border-radius:8px;padding:9px 10px;cursor:pointer;flex-direction:column;justify-content:center;gap:4px}
   .nav-toggle span{display:block;width:19px;height:2px;background:#E9EDF0;border-radius:2px}
   @media (max-width:900px){
@@ -583,6 +595,48 @@ TANITIM_HTML = r'''<!doctype html>
     </div>
   </div>
 </div>
+
+<!-- ===== SİSTEM MİMARİSİ SUNUMU ===== -->
+<div id="mimari">
+  <div class="wrap" style="padding-top:20px;padding-bottom:30px">
+    <div style="text-align:center;margin-bottom:26px">
+      <span class="eyebrow">Sistem mimarisi</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Herobot-AI nasıl çalışır? Adım adım sunum</h2>
+      <p style="margin:12px auto 0 auto;font-size:15px;color:#97A0A6;max-width:680px;line-height:1.6">Piyasa evreninden risk kalkanlarına, pozisyon boyutlandırmadan bildirimlere kadar sistemin işlem mantığı 12 sayfada.</p>
+    </div>
+    <div class="arch" id="arch">
+      <div class="arch-view">
+        <img id="archImg" src="/static/mimari-01.jpg" alt="Herobot-AI sistem mimarisi — sayfa 1" loading="eager">
+        <button class="arch-btn arch-prev" id="archPrev" aria-label="Önceki sayfa">&#8249;</button>
+        <button class="arch-btn arch-next" id="archNext" aria-label="Sonraki sayfa">&#8250;</button>
+      </div>
+      <div class="arch-bar">
+        <span id="archCount" style="font-size:13px;font-weight:700;color:#B7C0C6">1 / 12</span>
+        <a href="/static/sistem-mimarisi.pdf" target="_blank" rel="noopener" class="btn btn-primary" style="padding:9px 18px;font-size:13.5px">PDF olarak indir</a>
+      </div>
+      <div class="arch-thumbs" id="archThumbs"></div>
+    </div>
+    <p style="margin:14px 0 0 0;font-size:12.5px;line-height:1.7;color:#7A8590">Sunumdaki örnek ekran görüntüleri ve rakamlar açıklama amaçlıdır. Sinyaller ve tarama sonuçları teknik gösterge değerleridir; yatırım tavsiyesi niteliği taşımaz, geçmiş performans geleceği garanti etmez.</p>
+  </div>
+</div>
+<script>
+(function(){
+  var N=12, cur=1, img=document.getElementById('archImg'), cnt=document.getElementById('archCount'), th=document.getElementById('archThumbs');
+  function src(i){return '/static/mimari-'+(i<10?'0':'')+i+'.jpg';}
+  function show(i){
+    cur=((i-1+N)%N)+1; img.src=src(cur); img.alt='Herobot-AI sistem mimarisi — sayfa '+cur; cnt.textContent=cur+' / '+N;
+    var bs=th.children; for(var k=0;k<bs.length;k++) bs[k].className=(k+1===cur)?'on':'';
+    var b=bs[cur-1]; if(b&&b.scrollIntoView) try{ th.scrollTo({left:b.offsetLeft-th.clientWidth/2+b.clientWidth/2,behavior:'smooth'}); }catch(e){}
+  }
+  for(var i=1;i<=N;i++){ (function(i){ var b=document.createElement('button'); b.type='button'; b.setAttribute('aria-label','Sayfa '+i);
+    var t=document.createElement('img'); t.src=src(i); t.loading='lazy'; t.alt=''; b.appendChild(t); b.onclick=function(){show(i)}; th.appendChild(b); })(i); }
+  document.getElementById('archPrev').onclick=function(){show(cur-1)};
+  document.getElementById('archNext').onclick=function(){show(cur+1)};
+  document.getElementById('arch').addEventListener('keydown',function(e){ if(e.key==='ArrowLeft')show(cur-1); if(e.key==='ArrowRight')show(cur+1); });
+  document.getElementById('arch').tabIndex=0;
+  show(1);
+})();
+</script>
 
 <!-- ===== TANITIM VİDEOSU ===== -->
 <div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126">
@@ -10129,7 +10183,10 @@ class Handler(BaseHTTPRequestHandler):
         allowed = {
             'tanitim.mp4': 'video/mp4',
             'tanitim-infografik.png': 'image/png',
+            'sistem-mimarisi.pdf': 'application/pdf',
         }
+        for _i in range(1, 13):                              # sistem mimarisi sunumu: mimari-01.jpg ... mimari-12.jpg
+            allowed['mimari-%02d.jpg' % _i] = 'image/jpeg'
         content_type = allowed.get(name)
         if not content_type or '/' in name or '..' in name:
             self.send_response(404); self.send_header('Content-Length', '0'); self.end_headers(); return
