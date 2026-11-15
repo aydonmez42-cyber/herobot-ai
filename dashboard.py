@@ -208,8 +208,8 @@ LANDING_HTML = r'''<!doctype html>
         <span style="font-size:13px;color:#7A8590;font-weight:600">piyasa, tek panel</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">15dk</span>
-        <span style="font-size:13px;color:#7A8590;font-weight:600">kripto işlem grafiği (mum periyodu)</span>
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">2 yön</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">LONG ve SHORT yönlü sinyal</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">100</span>
@@ -234,12 +234,12 @@ LANDING_HTML = r'''<!doctype html>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">01</span>
         <h3 style="margin:0;font-size:18px;font-weight:700">Kapanmış mumu okur</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Sinyal yalnızca kapanmış mumdan üretilir (kriptoda 15 dakikalık, BIST ve ABD hisselerinde günlük) — anlık fiyat gürültüsüne güvenilmez, yarım kalan mum işleme girmez.</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Sinyal yalnızca kapanmış mumdan üretilir — anlık fiyat gürültüsüne güvenilmez, yarım kalan mum işleme girmez.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">02</span>
         <h3 style="margin:0;font-size:18px;font-weight:700">Supertrend yön değişimini yakalar</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Supertrend çizgisi yön değiştirdiğinde son 3 kapanmış mumda LONG veya SHORT sinyali aranır. Sinyal eskiyse ya da sonrasında stop olayı yaşandıysa giriş yapılmaz.</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Supertrend çizgisi yön değiştirdiğinde LONG veya SHORT sinyali aranır. Sinyal eskiyse ya da sonrasında stop olayı yaşandıysa giriş yapılmaz.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">03</span>
@@ -255,7 +255,7 @@ LANDING_HTML = r'''<!doctype html>
   <div style="flex:0 0 340px;display:flex;flex-direction:column;gap:18px">
     <span class="eyebrow">Strateji motoru</span>
     <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Tek stratejiye odaklı, disiplinli bir sistem</h2>
-    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Karmaşık gösterge yığınları yerine Supertrend (ATR 10, çarpan 4.4) etrafında kurulu sade bir çerçeve. Koşullar uygun değilse — BTC ters yöndeyse, hacim zayıfsa, stop çok uzaksa — sistem susmayı tercih eder.</p>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Karmaşık gösterge yığınları yerine Supertrend etrafında kurulu sade bir çerçeve. Koşullar uygun değilse — piyasa yönü ters, hacim zayıf ya da stop çok uzaksa — sistem susmayı tercih eder.</p>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:14px 16px;background:#11161A;border:1px solid #1E252B;border-radius:10px">
       <span style="font-size:13px;color:#7A8590;font-weight:600">Giriş filtreleri: sinyal eskimişse, hacim zayıfsa, stop çok uzaksa ya da BTC trendi tersse yeni pozisyon açılmaz.</span>
     </div>
@@ -263,12 +263,12 @@ LANDING_HTML = r'''<!doctype html>
   <div class="grid2" style="flex:1">
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">YÖN</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend (ATR 10 · ×4.4)</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Çizginin yukarı kırılması LONG, aşağı kırılması SHORT sinyali üretir</div>
     </div>
     <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">TAZELİK</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Son 3 kapanmış mum</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Sinyal tazeliği</div>
       <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Sinyal eskimişse veya sonrasında stop olayı yaşanmışsa giriş yapılmaz</div>
     </div>
     <div class="card" style="padding:20px 22px">
@@ -555,14 +555,14 @@ TANITIM_HTML = r'''<!doctype html>
           <li><b style="color:#E9EDF0">BIST (Borsa İstanbul):</b> BIST 30, BIST 100 ve BIST Tümü evreni, günlük mumlarla Supertrend taraması (manuel).</li>
           <li><b style="color:#E9EDF0">ABD Hisseleri:</b> Dow Jones, Nasdaq 100 ve S&P 500 evreni, günlük mumlarla Supertrend taraması (manuel).</li>
         </ul>
-        <p style="margin:0 0 10px 0">Kripto tarafında sistem her saat başı 15 dakikalık grafikte son 3 kapanmış mum penceresini tarar ve yeni sinyalleri hem LONG hem SHORT yönünde değerlendirir. BIST ve ABD taramaları ise kullanıcının tek bir tuşla başlattığı günlük taramalardır.</p>
+        <p style="margin:0 0 10px 0">Kripto tarafında sistem her saat başı güncel kapanmış mumları tarar ve yeni sinyalleri hem LONG hem SHORT yönünde değerlendirir. BIST ve ABD taramaları ise kullanıcının tek bir tuşla başlattığı günlük taramalardır.</p>
       </div>
       <div>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">3. Stratejinin Kalbi: Tek Kurallı, Net Bir Supertrend Çerçevesi</h3>
         <p style="margin:0 0 10px 0">HeroBot AI’nın kararları onlarca göstergenin karmaşık oylamasından değil, tek ve şeffaf bir kuraldan gelir: Supertrend çizgisinin yön değiştirmesi. Bu kural bir dizi giriş filtresiyle korunur:</p>
         <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
-          <li><b style="color:#E9EDF0">Yön Sinyali:</b> Supertrend (ATR 10, çarpan 4.4) çizgisini yukarı kırarsa LONG, aşağı kırarsa SHORT sinyali oluşur.</li>
-          <li><b style="color:#E9EDF0">Tazelik Kontrolü:</b> Son 3 kapanmış muma bakılır; sinyal sonrasında stop olayı yaşanmışsa veya fiyat çizgiyi geri geçmişse robota ekleme yapılmaz.</li>
+          <li><b style="color:#E9EDF0">Yön Sinyali:</b> Supertrend çizgisi yukarı kırılırsa LONG, aşağı kırılırsa SHORT sinyali oluşur.</li>
+          <li><b style="color:#E9EDF0">Tazelik Kontrolü:</b> Yalnızca taze sinyaller değerlendirilir; sinyal sonrasında stop olayı yaşanmışsa veya fiyat çizgiyi geri geçmişse robota ekleme yapılmaz.</li>
           <li><b style="color:#E9EDF0">Hacim Filtresi:</b> Sinyal mumunun göreceli hacmi yetersizse giriş reddedilir.</li>
           <li><b style="color:#E9EDF0">BTC Rejimi:</b> Bitcoin trendine ters yöndeki girişler sınırlanır; BTC trendi yön değiştirdiğinde koruma devreye girer.</li>
         </ul>
@@ -722,9 +722,9 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <h2 class="disp">1. Genel Bakış</h2>
     <p>Herobot-AI; kripto vadeli işlemler (Binance USDT-M), Borsa İstanbul ve Wall Street piyasalarında Supertrend göstergesini temel alarak disiplinli trend takibi gerçekleştiren bir algoritmik ticaret ve tarama platformudur. Platformun temel amacı; insani ve duygusal kararlardan arındırılmış, matematiksel olarak tanımlanmış teknik kurallar, stop mesafesine dayalı risk boyutlandırması ve çok katmanlı güvenlik filtreleri çerçevesinde hem LONG hem de SHORT yönlü sinyaller üretmektir. Sistem varsayılan olarak 10.000 USD bakiyeli bir deneme (paper) hesabıyla çalışmaya başlar; kullanıcı dilerse kendi Binance API anahtarlarını bağlayarak canlı işlem moduna geçebilir.</p>
     <ul>
-      <li><b>Disiplinli trend takibi:</b> Supertrend (ATR 10, çarpan 4.4) göstergesi temel alınarak 15 dakikalık mumlarda sinyal üretilir; belirsiz veya yüksek riskli koşullarda sistem yeni pozisyon açmayarak sermayeyi korumayı tercih eder.</li>
+      <li><b>Disiplinli trend takibi:</b> Supertrend göstergesi temel alınarak kapanmış mumlarda sinyal üretilir; belirsiz veya yüksek riskli koşullarda sistem yeni pozisyon açmayarak sermayeyi korumayı tercih eder.</li>
       <li><b>Çoklu piyasa ve çift yönlü tarama:</b> Kripto vadeli işlemler, Borsa İstanbul (BIST 30, BIST 100, BIST Tümü) ve Wall Street (Dow Jones, Nasdaq 100, S&amp;P 500) piyasalarında hem yükseliş (LONG) hem düşüş (SHORT) yönlü tarama yapılır.</li>
-      <li><b>Dinamik risk ve sermaye koruma:</b> Pozisyon büyüklüğü sabit bir tutar yerine stop mesafesine göre hesaplanır. Acil stop (%15), kademeli kâr kilidi, BTC yön değişimi koruması, günlük maksimum zarar limiti ve yönetici acil durdurma anahtarı (kill switch) riski katmanlandırır.</li>
+      <li><b>Dinamik risk ve sermaye koruma:</b> Pozisyon büyüklüğü sabit bir tutar yerine stop mesafesine göre hesaplanır. Acil stop, kademeli kâr kilidi, BTC yön değişimi koruması, günlük maksimum zarar limiti ve yönetici acil durdurma anahtarı (kill switch) riski katmanlandırır.</li>
     </ul>
 
     <h2 class="disp">2. Platform ve Sistem Genel Bakışı</h2>
@@ -734,7 +734,7 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <h3>2.2. Desteklenen piyasalar ve kapsam</h3>
     <div class="tw"><table>
       <tr><th>Piyasa türü</th><th>Kapsam / evren</th><th>Zaman dilimi / tarama sıklığı</th></tr>
-      <tr><td>Kripto vadeli işlemler</td><td>Binance Futures USDT-M (en likit 100 kontrat otomatik; En Büyük 10, En Hacimli 20 veya Binance Tümü seçenekleriyle)</td><td>15 dakikalık mumlar / saat başı otomatik tarama (istek üzerine manuel tetikleme)</td></tr>
+      <tr><td>Kripto vadeli işlemler</td><td>Binance Futures USDT-M (en likit 100 kontrat otomatik; En Büyük 10, En Hacimli 20 veya Binance Tümü seçenekleriyle)</td><td>Saat başı otomatik tarama (istek üzerine manuel tetikleme)</td></tr>
       <tr><td>Borsa İstanbul</td><td>BIST 30, BIST 100 ve BIST Tümü</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
       <tr><td>Wall Street</td><td>Dow Jones, Nasdaq 100 ve S&amp;P 500</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
     </table></div>
@@ -743,28 +743,27 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <h3>3.1. Temel strateji parametreleri</h3>
     <p>Sistem, gösterge kirliliğini önlemek adına net ve sade bir parametre kümesi kullanır:</p>
     <ul>
-      <li><b>Temel gösterge:</b> Supertrend (ATR periyodu 10, çarpan 4.4).</li>
-      <li><b>Zaman dilimi (kripto):</b> 15 dakikalık mum periyodu.</li>
-      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; son 3 kapanmış mum içindeki yeni trend dönüşü sinyalleri değerlendirmeye alınır.</li>
+      <li><b>Temel gösterge:</b> Supertrend (trend takip göstergesi).</li>
+      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; yalnızca taze trend dönüşü sinyalleri değerlendirmeye alınır.</li>
       <li><b>İşlem yönü:</b> LONG (Supertrend çizgisinin yukarı kırılması) ve SHORT (Supertrend çizgisinin aşağı kırılması).</li>
-      <li><b>Eşzamanlı pozisyon sınırı:</b> Sistem genelinde aynı anda en fazla 10 açık pozisyon.</li>
+      <li><b>Eşzamanlı pozisyon sınırı:</b> Sistem genelinde aynı anda açık pozisyon sayısı sınırlandırılır.</li>
     </ul>
     <h3>3.2. Giriş filtreleri</h3>
     <p>Piyasa gürültüsünü, hacimsiz kırılımları ve yüksek riskli kurulumları elemek için aşağıdaki filtrelerden herhangi biri ihlal edildiğinde sistem yeni pozisyon açmaz:</p>
     <ul>
-      <li><b>Stop mesafesi sınırı:</b> Giriş fiyatı ile Supertrend stop çizgisi arasındaki mesafe %6'dan büyükse pozisyon açılmaz.</li>
-      <li><b>Göreceli hacim filtresi:</b> Sinyal mumunun hacmi, kendisinden önceki 20 mumun hacim ortalamasının en az 1,5 katı olmalıdır. Düşük hacimli zayıf kırılımlar elenir. Bu eşik sistem ayarlarından değiştirilebilir.</li>
-      <li><b>Sinyal tazelik kuralı:</b> Yalnızca son 3 kapanmış mum içindeki yeni sinyaller işleme alınır. Sinyal eskimişse veya sinyalden sonraki mumlarda bir stop olayı yaşanmışsa giriş yapılmaz.</li>
-      <li><b>BTC yön sınırı:</b> Bitcoin'in Supertrend durumu kırmızı (düşüş) ise en fazla 2 LONG; yeşil (yükseliş) ise en fazla 2 SHORT pozisyon açılabilir. BTC trendiyle aynı yöndeki işlemlerde bu sayısal kısıt uygulanmaz.</li>
-      <li><b>Yeni listeleme filtresi:</b> Fiyat geçmişi yetersiz olan, 14 günden yeni listelenmiş kontratlar tarama dışında bırakılır.</li>
-      <li><b>Toplam maruziyet kontrolü:</b> Toplam açık nominal pozisyon tutarı, mevcut bakiyenin 3 katını geçemez.</li>
+      <li><b>Stop mesafesi sınırı:</b> Giriş fiyatı ile Supertrend stop çizgisi arasındaki mesafe belirlenen sınırı aşıyorsa pozisyon açılmaz.</li>
+      <li><b>Göreceli hacim filtresi:</b> Sinyal mumunun hacmi, önceki mumların hacim ortalamasının belirgin biçimde üzerinde olmalıdır. Düşük hacimli zayıf kırılımlar elenir.</li>
+      <li><b>Sinyal tazelik kuralı:</b> Yalnızca yakın zamanda oluşmuş taze sinyaller işleme alınır. Sinyal eskimişse veya sinyalden sonraki mumlarda bir stop olayı yaşanmışsa giriş yapılmaz.</li>
+      <li><b>BTC yön sınırı:</b> Bitcoin'in Supertrend durumu kırmızı (düşüş) iken LONG, yeşil (yükseliş) iken SHORT pozisyon sayısı sınırlandırılır. BTC trendiyle aynı yöndeki işlemlerde bu kısıt uygulanmaz.</li>
+      <li><b>Yeni listeleme filtresi:</b> Fiyat geçmişi yetersiz olan, yakın zamanda listelenmiş kontratlar tarama dışında bırakılır.</li>
+      <li><b>Toplam maruziyet kontrolü:</b> Toplam açık nominal pozisyon tutarı, mevcut bakiyenin belirli bir katını geçemez.</li>
     </ul>
 
     <h2 class="disp">4. Pozisyon Büyüklüğü, Risk ve Çıkış Yönetimi</h2>
     <h3>4.1. Risk bazlı pozisyon büyüklüğü</h3>
     <p>Sistem, sabit tutarlı pozisyonlar yerine riski bakiye üzerinde sabitlemeyi hedefleyen dinamik bir boyutlandırma kullanır:</p>
     <div class="formula">Pozisyon Tutarı = (Bakiye × Risk %) ÷ Stop Mesafesi (%)</div>
-    <p>Varsayılan risk parametresi %0,25'tir. Stop mesafesi dar olan işlemlerde pozisyon boyutu otomatik olarak büyür, stop mesafesi geniş olan işlemlerde küçülür. Böylece stop çalıştığında kaybın bakiyenin yaklaşık %0,25'i ile sınırlı kalması hedeflenir. Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.</p>
+    <p>Risk parametresi bakiyenin küçük bir yüzdesidir. Stop mesafesi dar olan işlemlerde pozisyon boyutu otomatik olarak büyür, stop mesafesi geniş olan işlemlerde küçülür. Böylece stop çalıştığında kaybın bakiyenin küçük, önceden belirlenmiş bir oranıyla sınırlı kalması hedeflenir. Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.</p>
     <h3>4.2. Canlı işlem yöntemleri</h3>
     <p>Canlı Binance API bağlantısında kullanıcıya iki pozisyon tutarı seçeneği sunulur:</p>
     <ol>
@@ -774,23 +773,23 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <h3>4.3. Çıkış ve koruma protokolleri</h3>
     <ul>
       <li><b>Dinamik Supertrend stopu:</b> Stop seviyesi Supertrend çizgisiyle birlikte güncellenir ve anlık iğne hareketlerinden etkilenmemek için yalnızca mum kapanışında değerlendirilir.</li>
-      <li><b>Kademeli kâr kilidi:</b> Pozisyon kâra geçtikçe stop seviyesi kârı koruyacak şekilde yukarı çekilir: zirve kâr +%2,5 iken %1 kâr, +%4 iken %2,5 kâr, +%6 iken %4 kâr, +%8 iken %6 kâr kilitlenir. +%8'den sonra izleyen boşluk 2 puan, +%10'dan sonra 1,5 puan olarak uygulanır.</li>
-      <li><b>Acil stop:</b> Girişten itibaren %15 ters yönlü hareket oluşursa pozisyon mum kapanışı beklenmeden kapatılır. Canlı hesaplarda bu seviye, likidasyondan önce tetiklenecek şekilde doğrudan Binance emri olarak iletilir.</li>
-      <li><b>BTC yön değişimi koruması:</b> BTC Supertrend yönü değiştiğinde, BTC'ye ters yönde kalan pozisyonlardan %1 ve üzeri kârda olanlar kapatılır; kârdaki diğerleri başabaş (giriş) seviyesine çekilir; ters yön sınırı (2 pozisyon) aşılmışsa en çok zarar eden pozisyonlar sınıra inene kadar kapatılır.</li>
+      <li><b>Kademeli kâr kilidi:</b> Pozisyon kâra geçtikçe stop seviyesi kârı koruyacak şekilde yukarı çekilir: kâr belirli kademelere ulaştıkça kazancın bir bölümü kilitlenir, büyük kârlarda izleyen boşluk daraltılarak kârın geri verilmesi sınırlanır.</li>
+      <li><b>Acil stop:</b> Girişten itibaren belirlenen oranda ters yönlü hareket oluşursa pozisyon mum kapanışı beklenmeden kapatılır. Canlı hesaplarda bu seviye, likidasyondan önce tetiklenecek şekilde doğrudan Binance emri olarak iletilir.</li>
+      <li><b>BTC yön değişimi koruması:</b> BTC Supertrend yönü değiştiğinde, BTC'ye ters yönde kalan pozisyonlardan belirli bir kâr eşiğinin üzerindekiler kapatılır; kârdaki diğerleri başabaş (giriş) seviyesine çekilir; ters yön sınırı aşılmışsa en çok zarar eden pozisyonlar sınıra inene kadar kapatılır.</li>
     </ul>
     <h3>4.4. Canlı hesap güvenlik kontrolleri</h3>
     <ul>
       <li><b>Günlük maksimum zarar limiti:</b> Kullanıcının belirlediği USD cinsinden günlük zarar limitine ulaşıldığında o gün yeni pozisyon açılmaz; mevcut pozisyonlar yönetilmeye devam eder.</li>
-      <li><b>Kaldıraç tavanı:</b> Kullanıcı bazlı sınır (1–50x) ve sistem genelinde mutlak bir tavan uygulanır.</li>
+      <li><b>Kaldıraç tavanı:</b> Kullanıcı bazlı sınır ve sistem genelinde mutlak bir tavan uygulanır.</li>
       <li><b>Yönetici acil durdurma anahtarı (kill switch):</b> Olağanüstü durumlarda yönetici, tüm kullanıcılar için yeni işlem alımını tek tıkla durdurabilir.</li>
       <li><b>Risk onayı:</b> Canlı işleme geçişte kullanıcı, otomatik ticaretin risklerini okuyup açıkça onaylar.</li>
     </ul>
     <div class="tw"><table>
       <tr><th>Risk ve pozisyon parametresi</th><th>Deneme hesabı</th><th>Canlı hesap (Stratejik tutar)</th></tr>
-      <tr><td>Risk / işlem</td><td>Bakiyenin %0,25'i</td><td>Binance vadeli işlem bakiyesinin %0,25'i</td></tr>
-      <tr><td>Tek pozisyon üst sınırı</td><td>2.500 USD</td><td>Bakiyenin %25'i</td></tr>
-      <tr><td>Toplam açık nominal tutar</td><td>Bakiye × 3</td><td>Bakiye × 3 (kullanılabilir marj ve kaldıraç gözetilir)</td></tr>
-      <tr><td>Pozisyon alt sınırı</td><td>100 USD</td><td>10 USD</td></tr>
+      <tr><td>Risk / işlem</td><td>Bakiyenin küçük sabit bir yüzdesi</td><td>Binance vadeli işlem bakiyesinin küçük sabit bir yüzdesi</td></tr>
+      <tr><td>Tek pozisyon üst sınırı</td><td>Sabit bir USD üst sınırı</td><td>Bakiyenin belirli bir yüzdesi</td></tr>
+      <tr><td>Toplam açık nominal tutar</td><td>Bakiyenin belirli bir katı</td><td>Bakiyenin belirli bir katı (kullanılabilir marj ve kaldıraç gözetilir)</td></tr>
+      <tr><td>Pozisyon alt sınırı</td><td>Minimum tutar uygulanır</td><td>Minimum tutar uygulanır</td></tr>
       <tr><td>Ek kontroller</td><td>Algoritmik filtreler</td><td>Günlük zarar limiti, kaldıraç tavanı, kill switch, risk onayı</td></tr>
     </table></div>
 
@@ -4100,7 +4099,7 @@ function openTvChart(tvSymbol,label,interval){
     allow_symbol_change:true,
     withdateranges:true,
     save_image:false,
-    studies:["Supertrend@tv-basicstudies"],          // yalnizca Supertrend (ATR 10, carpan 4.4: grafik ayarindan kontrol edin)
+    studies:["Supertrend@tv-basicstudies"],          // yalnizca Supertrend
     support_host:"https://www.tradingview.com"
   };
   const script=document.createElement('script');
@@ -5558,18 +5557,18 @@ BLOG_BODY = r'''<style>
       <h2>2. Algoritmik Sistemden Öğrenilen 5 Kritik Ders</h2>
 
       <h3>Ders 1: Duygu Yok, Panik Yok — Karmaşa Yerine Tek ve Net Strateji</h3>
-      <p>Finansal piyasalarda başarılı olmanın yolu, yüzlerce karmaşık indikatörü aynı anda takip etmekten değil, tek ve net bir stratejiye sadık kalmaktan geçer. Sistem, Supertrend (ATR 10, çarpan 4.4) göstergesini temel alarak sade bir çerçeve çizer. Grafikteki anlık gürültüler yerine yalnızca tanımlı kurallar gerçekleştiğinde harekete geçer.</p>
-      <p>Piyasa koşulları stratejiye uygun olmadığında; örneğin hacim zayıfsa, stop mesafesi %6'dan fazla uzaksa ya da Bitcoin trendine ters yönde açılabilecek pozisyon sınırı dolmuşsa sistem yeni pozisyon açmaz ve “susmayı” tercih eder. İşlem yapma baskısını ortadan kaldıran bu yaklaşım, yatırımcılara önemli bir ticaret ilkesini hatırlatır: Bazen en kârlı işlem, hiç açılmayan işlemdir.</p>
+      <p>Finansal piyasalarda başarılı olmanın yolu, yüzlerce karmaşık indikatörü aynı anda takip etmekten değil, tek ve net bir stratejiye sadık kalmaktan geçer. Sistem, Supertrend göstergesini temel alarak sade bir çerçeve çizer. Grafikteki anlık gürültüler yerine yalnızca tanımlı kurallar gerçekleştiğinde harekete geçer.</p>
+      <p>Piyasa koşulları stratejiye uygun olmadığında; örneğin hacim zayıfsa, stop mesafesi çok uzaksa ya da Bitcoin trendine ters yönde açılabilecek pozisyon sınırı dolmuşsa sistem yeni pozisyon açmaz ve “susmayı” tercih eder. İşlem yapma baskısını ortadan kaldıran bu yaklaşım, yatırımcılara önemli bir ticaret ilkesini hatırlatır: Bazen en kârlı işlem, hiç açılmayan işlemdir.</p>
       <blockquote>“Duygu yok, panik yok. Sadece disiplinli sinyal.”</blockquote>
 
       <h3>Ders 2: Bakiyeyi Korumak Kazançtan Önce Gelir — Çok Katmanlı Risk Kontrolü</h3>
-      <p>Algoritmik sistemlerin sunduğu en büyük avantaj, sermaye korumasını her şeyin önüne koyan çok katmanlı risk yönetimi mekanizmalarıdır. İşlem başına %0,25 risk ilkesiyle çalışan sistemde pozisyon boyutu, canlı işlem panelinde sunulan “Stratejik tutar” seçeneği sayesinde stop mesafesine göre otomatik hesaplanır. Stop mesafesi yakınsa pozisyon boyutu büyür, stop uzaksa küçülür; alternatif olarak sunulan “Sabit tutar” seçeneğine kıyasla bu stratejik yaklaşım, stop çalıştığında kaybın sermayenin yaklaşık %0,25'i ile sınırlı kalmasını hedefler. (Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.)</p>
-      <p>Sermayeyi koruma kalkanı, sadece pozisyon boyutlandırmasıyla sınırlı kalmaz; sinyal mumu hacminin önceki 20 mumun ortalamasının en az 1.5 katı olması şartını arayan hacim filtresiyle zayıf sinyaller elenir. Ana piyasa yönüne karşı riskleri dizginlemek adına, BTC trendinin tersine açılabilecek pozisyon sayısı en fazla 2 ters pozisyonla sınırlandırılır. Ayrıca ani piyasa çöküşlerine karşı devreye giren %15 acil stop mekanizması ve kârı korumak için +%2,5 seviyesinde başlayan kademeli kâr kilidi, büyük sermaye kayıplarının ve kârın geri verilmesinin önüne geçmeyi hedefler.</p>
+      <p>Algoritmik sistemlerin sunduğu en büyük avantaj, sermaye korumasını her şeyin önüne koyan çok katmanlı risk yönetimi mekanizmalarıdır. İşlem başına bakiyenin küçük bir yüzdesini riske etme ilkesiyle çalışan sistemde pozisyon boyutu, canlı işlem panelinde sunulan “Stratejik tutar” seçeneği sayesinde stop mesafesine göre otomatik hesaplanır. Stop mesafesi yakınsa pozisyon boyutu büyür, stop uzaksa küçülür; alternatif olarak sunulan “Sabit tutar” seçeneğine kıyasla bu stratejik yaklaşım, stop çalıştığında kaybın sermayenin küçük, önceden belirlenmiş bir oranıyla sınırlı kalmasını hedefler. (Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.)</p>
+      <p>Sermayeyi koruma kalkanı, sadece pozisyon boyutlandırmasıyla sınırlı kalmaz; sinyal mumunun hacminin yakın geçmiş ortalamasının belirgin biçimde üzerinde olmasını arayan hacim filtresiyle zayıf sinyaller elenir. Ana piyasa yönüne karşı riskleri dizginlemek adına, BTC trendinin tersine açılabilecek pozisyon sayısı sınırlandırılır. Ayrıca ani piyasa çöküşlerine karşı devreye giren acil stop mekanizması ve kârı korumak için devreye giren kademeli kâr kilidi, büyük sermaye kayıplarının ve kârın geri verilmesinin önüne geçmeyi hedefler.</p>
 
       <h3>Ders 3: Tek Bir Ekrandan Üç Farklı Piyasayı İzlemek Mümkün</h3>
       <p>Disiplinli bir algoritmik çerçeve, varlık sınıfı ne olursa olsun aynı analitik kararlılıkla çalışır. Farklı piyasalar için ayrı sistemler kurmak yerine, tek bir motor üzerinden çoklu varlık takibi gerçekleştirmek mümkündür.</p>
       <ul>
-        <li><b>Kripto Vadeli İşlemler:</b> Binance USDT-M piyasasındaki en likit 100 kontrat, 15 dakikalık mumlar üzerinden saat başı otomatik taranır.</li>
+        <li><b>Kripto Vadeli İşlemler:</b> Binance USDT-M piyasasındaki en likit 100 kontrat saat başı otomatik taranır.</li>
         <li><b>Borsa İstanbul:</b> BIST 30, BIST 100 ve BIST Tümü evreninde günlük mumlarla Supertrend taraması yapılır.</li>
         <li><b>Wall Street:</b> Dow Jones, Nasdaq 100 ve S&amp;P 500 endekslerindeki hisseler günlük mumlarla izlenir.</li>
       </ul>
@@ -5582,7 +5581,7 @@ BLOG_BODY = r'''<style>
 
       <h3>Ders 5: İllüzyonsuz Gerçekçilik — Paper Trading ve Şeffaf Backtest Mantığı</h3>
       <p>Sistem, kullanıcıların stratejiyi riske girmeden deneyimlemeleri için varsayılan olarak 10.000 USD bakiyeli bir deneme (paper trading) hesabıyla çalışır. Canlı işleme geçiş ise tamamen kullanıcının kendi borsa API anahtarlarını bağlaması ve riski üstlenmesiyle gerçekleşir.</p>
-      <p>Canlı strateji taraması 15 dakikalık mumlar ve saatlik döngülerle yürütülürken, backtest aracı geçmiş veri simülasyonlarını Binance Futures verileri üzerinde çalıştırır. Simülasyonlarda işlem tarafı başına komisyon (%0,04) ve kayma (%0,02 / slipaj) oranları hesaba katılırken, sinyaller yalnızca kapanmış mumlar üzerinden değerlendirilerek ileriye bakış hatası (lookahead bias) engellenir. Geçmiş performansın geleceği garanti etmediğini vurgulayan bu şeffaf yaklaşım, finansal teknolojilerde illüzyonlardan uzak durmak ve gerçekçi beklentiler oluşturmak açısından hayati önem taşır.</p>
+      <p>Canlı strateji taraması saatlik döngülerle yürütülürken, backtest aracı geçmiş veri simülasyonlarını Binance Futures verileri üzerinde çalıştırır. Simülasyonlarda işlem tarafı başına komisyon (%0,04) ve kayma (%0,02 / slipaj) oranları hesaba katılırken, sinyaller yalnızca kapanmış mumlar üzerinden değerlendirilerek ileriye bakış hatası (lookahead bias) engellenir. Geçmiş performansın geleceği garanti etmediğini vurgulayan bu şeffaf yaklaşım, finansal teknolojilerde illüzyonlardan uzak durmak ve gerçekçi beklentiler oluşturmak açısından hayati önem taşır.</p>
 
       <h2>3. Sonuç ve Geleceğe Yönelik Değerlendirme</h2>
       <p>Algoritmik ticaret, piyasadaki duygusal gürültüyü susturarak yatırımcılara disiplinli, veri odaklı ve sürdürülebilir bir yol haritası sunar. Karmaşık indikatör kalabalığı yerine net bir Supertrend stratejisi, çok katmanlı risk kontrolleri ve şeffaf test süreçleri birleştiğinde, sermayeyi korumak ve objektif kararlar almak kolaylaşır. Finansal piyasalarda uzun vadeli başarının anahtarı; anlık heyecanlara değil, test edilmiş kurallara ve sıkı bir risk disiplinine sadık kalmaktır.</p>
@@ -10091,7 +10090,6 @@ def ta_chart_payload(tv, tf):
     d['st_state'] = {'direction': int(dr[-1]) if not _np.isnan(dr[-1]) else 0, 'line': float(line[-1]) if ok[-1] else None,
                      'lvl_long': None if _np.isnan(state['lvl_long']) else float(state['lvl_long']),
                      'lvl_short': None if _np.isnan(state['lvl_short']) else float(state['lvl_short'])}
-    d['st_params'] = {'period': _sts.ST_PERIOD, 'mult': _sts.ST_MULT}
     return d
 
 
@@ -10114,7 +10112,7 @@ def ta_symbols(market):
 
 
 _TA_AI_SYSTEM = (
-    "Sen deneyimli bir teknik analistsin. Yalnızca verilen fiyat ve Supertrend (ATR 10, çarpan 4.4) verisine dayan; "
+    "Sen deneyimli bir teknik analistsin. Yalnızca verilen fiyat ve Supertrend verisine dayan; Supertrend'in periyot veya çarpan gibi ayar değerlerini asla yazma; "
     "haber, temel analiz veya veride olmayan bir şey uydurma. Türkçe, kısa ve net yaz. Şu başlıkları kullan: "
     "1) Genel görünüm 2) Supertrend durumu ve kritik seviye 3) Destek / direnç 4) Olası senaryolar (yükseliş / düşüş) "
     "ve senaryoyu geçersiz kılan seviye 5) Risk notu. Kesin getiri vaadi verme. Toplam 230 kelimeyi geçme. "

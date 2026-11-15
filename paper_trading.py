@@ -1992,7 +1992,7 @@ def st_entry_message(pos):
             f"Giriş: {_fmt_px(pos['entry_price'])} USDT\n"
             f"Stop (Supertrend çizgisi, mum kapanışında; çizgiyle birlikte hareket eder): {_fmt_px(pos['st_level']) + ' USDT' if pos.get('st_level') else '-'}\n"
             + (f"TP (%{sts.TP_PCT:g}): {_fmt_px(pos['tp'])} USDT\n" if sts.TP_PCT > 0 else f"Sabit TP yok · ilk kilit hedefi: {_fmt_px(pos['tp'])} USDT\n")
-            + f"Kâr kilidi (zirve → korunan kâr): {sts.lock_tiers_text()}\n"
+            + "Kâr kilidi: kademeli (aktif)\n"
             + (f"Acil stop (%{sts.EMERGENCY_STOP_PCT:g}): {_fmt_px(pos['emergency_stop'])} USDT\n" if pos.get('emergency_stop') else "")
             +
             f"Sinyal: {kind} · {_tr_time(pos['signal_time'])} (TR)" + TG_DISCLAIMER)
