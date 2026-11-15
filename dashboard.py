@@ -538,7 +538,7 @@ TANITIM_HTML = r'''<!doctype html>
       <span class="eyebrow">Tanıtım</span>
       <h1 class="disp" style="margin:0;font-size:36px;font-weight:700;line-height:1.25">Finansal Evrenin Yeni Hakimi: HeroBot AI ile Duygusuz ve Disiplinli Yatırımın Sırları</h1>
     </div>
-    <img src="/static/tanitim-infografik.png" alt="HeroBot AI özellik infografiği" style="width:100%;border-radius:14px;border:1px solid #1E252B;display:block">
+    <img src="/static/tanitim-infografik-yeni.jpg" alt="Herobot-AI: disiplinli ve otomatik ticaret motoru — özet infografik" width="1200" height="2150" style="width:100%;max-width:560px;height:auto;margin:0 auto;border-radius:14px;border:1px solid #1E252B;display:block">
     <div style="display:flex;flex-direction:column;gap:26px;font-size:15px;line-height:1.85;color:#B7C0C6">
       <div>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">1. Giriş: Yatırımın Duygusal Yükünden Kurtulmak</h3>
@@ -641,18 +641,8 @@ TANITIM_HTML = r'''<!doctype html>
 <!-- ===== TANITIM VİDEOSU ===== -->
 <div style="background:#0D1114;border-top:1px solid #1B2126;border-bottom:1px solid #1B2126">
   <div class="wrap" style="padding:84px 0">
-    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:40px">
-      <span class="eyebrow">Bizi tanıyın</span>
-      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Herobot-ai'ı anlatan kısa video</h2>
-    </div>
-    <div class="card" style="max-width:900px;margin:0 auto;padding:10px;overflow:hidden">
-      <video controls preload="metadata" playsinline style="width:100%;display:block;border-radius:8px;background:#000">
-        <source src="/static/tanitim.mp4" type="video/mp4">
-        Tarayıcınız video oynatmayı desteklemiyor.
-      </video>
-    </div>
   
-    <div style="text-align:center;margin:44px 0 22px 0">
+    <div style="text-align:center;margin:0 0 22px 0">
       <span class="eyebrow">Kısa video</span>
       <h2 class="disp" style="margin:12px 0 0 0;font-size:28px;font-weight:700">Herobot-AI’nın duygusuz trend takip mantığı</h2>
     </div>
@@ -10192,8 +10182,8 @@ class Handler(BaseHTTPRequestHandler):
         # No path traversal: only a bare filename from our fixed whitelist,
         # never anything containing '/' or '..'.
         allowed = {
-            'tanitim.mp4': 'video/mp4',
             'tanitim-infografik.png': 'image/png',
+            'tanitim-infografik-yeni.jpg': 'image/jpeg',
             'sistem-mimarisi.pdf': 'application/pdf',
             'duygusuz-trend.mp4': 'video/mp4',
             'duygusuz-trend.jpg': 'image/jpeg',
