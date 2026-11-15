@@ -171,6 +171,7 @@ LANDING_HTML = r'''<!doctype html>
       <a href="#piyasalar">Piyasalar</a>
       <a href="#guvenlik">Güvenlik</a>
       <a href="/tanitim">Tanıtım</a>
+      <a href="/prensipler">Çalışma Prensipleri</a>
       <a href="/login">Panel</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
@@ -445,6 +446,7 @@ LANDING_HTML = r'''<!doctype html>
         <a href="#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
         <a href="#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
         <a href="/tanitim" style="font-size:13px;color:#7A8590;font-weight:600">Tanıtım</a>
+        <a href="/prensipler" style="font-size:13px;color:#7A8590;font-weight:600">Prensipler</a>
         <a href="/login" style="font-size:13px;color:#7A8590;font-weight:600">Panel</a>
       </div>
     </div>
@@ -520,6 +522,7 @@ TANITIM_HTML = r'''<!doctype html>
       <a href="/#piyasalar">Piyasalar</a>
       <a href="/#guvenlik">Güvenlik</a>
       <a href="/tanitim" class="active">Tanıtım</a>
+      <a href="/prensipler">Çalışma Prensipleri</a>
       <a href="/login">Panel</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
@@ -673,6 +676,7 @@ TANITIM_HTML = r'''<!doctype html>
         <a href="/#piyasalar" style="font-size:13px;color:#7A8590;font-weight:600">Piyasalar</a>
         <a href="/#guvenlik" style="font-size:13px;color:#7A8590;font-weight:600">Güvenlik</a>
         <a href="/tanitim" style="font-size:13px;color:#7A8590;font-weight:600">Tanıtım</a>
+        <a href="/prensipler" style="font-size:13px;color:#7A8590;font-weight:600">Prensipler</a>
         <a href="/login" style="font-size:13px;color:#7A8590;font-weight:600">Panel</a>
       </div>
     </div>
@@ -688,6 +692,135 @@ TANITIM_HTML = r'''<!doctype html>
 # trial-expired page (TRIAL_EXPIRED_HTML, where it's the main call to
 # action). __USERNAME__/__USDT_ADDRESS__/__USDT_NETWORK__ are replaced the
 # same way __USERNAME__ already is elsewhere in these templates.
+
+# ---- Herkese acik: "Robotun Calisma Prensipleri" (/prensipler) — Tanitim kabugunu yeniden kullanir
+PRENS_CSS = r'''
+  .pr h1{font-size:34px;line-height:1.2;margin:10px 0 8px 0;font-weight:700}
+  .pr .sub{color:#97A0A6;font-size:15px;margin:0 0 26px 0}
+  .pr h2{font-size:24px;margin:38px 0 12px 0;font-weight:700}
+  .pr h3{font-size:17.5px;margin:24px 0 8px 0;color:#3DD9A8;font-weight:700}
+  .pr p,.pr li{font-size:15.5px;line-height:1.8;color:#C9D1D6}
+  .pr p{margin:0 0 14px 0}
+  .pr ul,.pr ol{margin:0 0 16px 0;padding-left:22px}
+  .pr li{margin:0 0 7px 0}
+  .pr b{color:#E9EDF0}
+  .pr .formula{margin:14px 0 16px 0;padding:14px 16px;border:1px solid #1E252B;border-left:3px solid #3DD9A8;border-radius:10px;background:#11161A;font-family:'Space Grotesk',system-ui,sans-serif;font-size:16px;color:#E9EDF0;overflow-x:auto}
+  .pr .tw{overflow-x:auto;margin:0 0 18px 0;border:1px solid #1E252B;border-radius:12px}
+  .pr table{width:100%;border-collapse:collapse;min-width:560px}
+  .pr th,.pr td{padding:11px 14px;text-align:left;font-size:14px;line-height:1.55;border-bottom:1px solid #1E252B;color:#C9D1D6;vertical-align:top}
+  .pr th{background:#11161A;color:#E9EDF0;font-weight:700}
+  .pr tr:last-child td{border-bottom:none}
+  .pr .disc{margin:34px 0 0 0;padding:14px 16px;border:1px solid #1E252B;border-radius:12px;background:#11161A;color:#97A0A6;font-size:13px;line-height:1.7}
+'''
+PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
+<div class="wrap" style="padding-top:44px;padding-bottom:56px">
+  <article class="pr" style="max-width:860px;margin:0 auto">
+    <span class="eyebrow">Sistem mimarisi</span>
+    <h1 class="disp">Robotun Çalışma Prensipleri</h1>
+    <p class="sub">Herobot-AI platformunun strateji, risk yönetimi ve arayüz mimarisine genel bakış.</p>
+
+    <h2 class="disp">1. Genel Bakış</h2>
+    <p>Herobot-AI; kripto vadeli işlemler (Binance USDT-M), Borsa İstanbul ve Wall Street piyasalarında Supertrend göstergesini temel alarak disiplinli trend takibi gerçekleştiren bir algoritmik ticaret ve tarama platformudur. Platformun temel amacı; insani ve duygusal kararlardan arındırılmış, matematiksel olarak tanımlanmış teknik kurallar, stop mesafesine dayalı risk boyutlandırması ve çok katmanlı güvenlik filtreleri çerçevesinde hem LONG hem de SHORT yönlü sinyaller üretmektir. Sistem varsayılan olarak 10.000 USD bakiyeli bir deneme (paper) hesabıyla çalışmaya başlar; kullanıcı dilerse kendi Binance API anahtarlarını bağlayarak canlı işlem moduna geçebilir.</p>
+    <ul>
+      <li><b>Disiplinli trend takibi:</b> Supertrend (ATR 10, çarpan 4.4) göstergesi temel alınarak 15 dakikalık mumlarda sinyal üretilir; belirsiz veya yüksek riskli koşullarda sistem yeni pozisyon açmayarak sermayeyi korumayı tercih eder.</li>
+      <li><b>Çoklu piyasa ve çift yönlü tarama:</b> Kripto vadeli işlemler, Borsa İstanbul (BIST 30, BIST 100, BIST Tümü) ve Wall Street (Dow Jones, Nasdaq 100, S&amp;P 500) piyasalarında hem yükseliş (LONG) hem düşüş (SHORT) yönlü tarama yapılır.</li>
+      <li><b>Dinamik risk ve sermaye koruma:</b> Pozisyon büyüklüğü sabit bir tutar yerine stop mesafesine göre hesaplanır. Acil stop (%15), kademeli kâr kilidi, BTC yön değişimi koruması, günlük maksimum zarar limiti ve yönetici acil durdurma anahtarı (kill switch) riski katmanlandırır.</li>
+    </ul>
+
+    <h2 class="disp">2. Platform ve Sistem Genel Bakışı</h2>
+    <h3>2.1. Robot tanımı ve temel işleyiş</h3>
+    <p>Herobot-AI, temelde Supertrend göstergesinin trend dönüşlerini izleyen ve bu dönüşlere göre otomatik veya yarı otomatik kararlar üreten bir algoritma motorudur.</p>
+    <p>Sistem ilk kurulumda 10.000 USD sanal bakiyeli bir deneme (paper) hesabı üzerinden gerçek piyasa verilerini canlı olarak simüle eder. Kullanıcılar kendi Binance hesaplarına ait API anahtarlarını sisteme bağlayıp canlı işlem modunu aktif hale getirdiklerinde, deneme hesabındaki sinyal, filtre ve çıkış mantığı canlı hesaba da yansıtılır. Platform; teknik analiz ekranları, Anthropic Claude altyapılı yapay zekâ destekli grafik yorumlama, salt okunur AI trade analisti ve Telegram bildirim entegrasyonu sunar.</p>
+    <h3>2.2. Desteklenen piyasalar ve kapsam</h3>
+    <div class="tw"><table>
+      <tr><th>Piyasa türü</th><th>Kapsam / evren</th><th>Zaman dilimi / tarama sıklığı</th></tr>
+      <tr><td>Kripto vadeli işlemler</td><td>Binance Futures USDT-M (en likit 100 kontrat otomatik; En Büyük 10, En Hacimli 20 veya Binance Tümü seçenekleriyle)</td><td>15 dakikalık mumlar / saat başı otomatik tarama (istek üzerine manuel tetikleme)</td></tr>
+      <tr><td>Borsa İstanbul</td><td>BIST 30, BIST 100 ve BIST Tümü</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
+      <tr><td>Wall Street</td><td>Dow Jones, Nasdaq 100 ve S&amp;P 500</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
+    </table></div>
+
+    <h2 class="disp">3. Strateji Mimarisi ve Giriş Filtreleri</h2>
+    <h3>3.1. Temel strateji parametreleri</h3>
+    <p>Sistem, gösterge kirliliğini önlemek adına net ve sade bir parametre kümesi kullanır:</p>
+    <ul>
+      <li><b>Temel gösterge:</b> Supertrend (ATR periyodu 10, çarpan 4.4).</li>
+      <li><b>Zaman dilimi (kripto):</b> 15 dakikalık mum periyodu.</li>
+      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; son 3 kapanmış mum içindeki yeni trend dönüşü sinyalleri değerlendirmeye alınır.</li>
+      <li><b>İşlem yönü:</b> LONG (Supertrend çizgisinin yukarı kırılması) ve SHORT (Supertrend çizgisinin aşağı kırılması).</li>
+      <li><b>Eşzamanlı pozisyon sınırı:</b> Sistem genelinde aynı anda en fazla 10 açık pozisyon.</li>
+    </ul>
+    <h3>3.2. Giriş filtreleri</h3>
+    <p>Piyasa gürültüsünü, hacimsiz kırılımları ve yüksek riskli kurulumları elemek için aşağıdaki filtrelerden herhangi biri ihlal edildiğinde sistem yeni pozisyon açmaz:</p>
+    <ul>
+      <li><b>Stop mesafesi sınırı:</b> Giriş fiyatı ile Supertrend stop çizgisi arasındaki mesafe %6'dan büyükse pozisyon açılmaz.</li>
+      <li><b>Göreceli hacim filtresi:</b> Sinyal mumunun hacmi, kendisinden önceki 20 mumun hacim ortalamasının en az 1,5 katı olmalıdır. Düşük hacimli zayıf kırılımlar elenir. Bu eşik sistem ayarlarından değiştirilebilir.</li>
+      <li><b>Sinyal tazelik kuralı:</b> Yalnızca son 3 kapanmış mum içindeki yeni sinyaller işleme alınır. Sinyal eskimişse veya sinyalden sonraki mumlarda bir stop olayı yaşanmışsa giriş yapılmaz.</li>
+      <li><b>BTC yön sınırı:</b> Bitcoin'in Supertrend durumu kırmızı (düşüş) ise en fazla 2 LONG; yeşil (yükseliş) ise en fazla 2 SHORT pozisyon açılabilir. BTC trendiyle aynı yöndeki işlemlerde bu sayısal kısıt uygulanmaz.</li>
+      <li><b>Yeni listeleme filtresi:</b> Fiyat geçmişi yetersiz olan, 14 günden yeni listelenmiş kontratlar tarama dışında bırakılır.</li>
+      <li><b>Toplam maruziyet kontrolü:</b> Toplam açık nominal pozisyon tutarı, mevcut bakiyenin 3 katını geçemez.</li>
+    </ul>
+
+    <h2 class="disp">4. Pozisyon Büyüklüğü, Risk ve Çıkış Yönetimi</h2>
+    <h3>4.1. Risk bazlı pozisyon büyüklüğü</h3>
+    <p>Sistem, sabit tutarlı pozisyonlar yerine riski bakiye üzerinde sabitlemeyi hedefleyen dinamik bir boyutlandırma kullanır:</p>
+    <div class="formula">Pozisyon Tutarı = (Bakiye × Risk %) ÷ Stop Mesafesi (%)</div>
+    <p>Varsayılan risk parametresi %0,25'tir. Stop mesafesi dar olan işlemlerde pozisyon boyutu otomatik olarak büyür, stop mesafesi geniş olan işlemlerde küçülür. Böylece stop çalıştığında kaybın bakiyenin yaklaşık %0,25'i ile sınırlı kalması hedeflenir. Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.</p>
+    <h3>4.2. Canlı işlem yöntemleri</h3>
+    <p>Canlı Binance API bağlantısında kullanıcıya iki pozisyon tutarı seçeneği sunulur:</p>
+    <ol>
+      <li><b>Sabit tutar:</b> Kullanıcının kontrol panelinden belirlediği sabit USD miktarı her işlemde standart pozisyon büyüklüğü olarak kullanılır.</li>
+      <li><b>Stratejik tutar:</b> Pozisyon büyüklüğü, kullanıcının gerçek Binance vadeli işlem bakiyesi esas alınarak yukarıdaki risk bazlı formülle otomatik hesaplanır.</li>
+    </ol>
+    <h3>4.3. Çıkış ve koruma protokolleri</h3>
+    <ul>
+      <li><b>Dinamik Supertrend stopu:</b> Stop seviyesi Supertrend çizgisiyle birlikte güncellenir ve anlık iğne hareketlerinden etkilenmemek için yalnızca mum kapanışında değerlendirilir.</li>
+      <li><b>Kademeli kâr kilidi:</b> Pozisyon kâra geçtikçe stop seviyesi kârı koruyacak şekilde yukarı çekilir: zirve kâr +%2,5 iken %1 kâr, +%4 iken %2,5 kâr, +%6 iken %4 kâr, +%8 iken %6 kâr kilitlenir. +%8'den sonra izleyen boşluk 2 puan, +%10'dan sonra 1,5 puan olarak uygulanır.</li>
+      <li><b>Acil stop:</b> Girişten itibaren %15 ters yönlü hareket oluşursa pozisyon mum kapanışı beklenmeden kapatılır. Canlı hesaplarda bu seviye, likidasyondan önce tetiklenecek şekilde doğrudan Binance emri olarak iletilir.</li>
+      <li><b>BTC yön değişimi koruması:</b> BTC Supertrend yönü değiştiğinde, BTC'ye ters yönde kalan pozisyonlardan %1 ve üzeri kârda olanlar kapatılır; kârdaki diğerleri başabaş (giriş) seviyesine çekilir; ters yön sınırı (2 pozisyon) aşılmışsa en çok zarar eden pozisyonlar sınıra inene kadar kapatılır.</li>
+    </ul>
+    <h3>4.4. Canlı hesap güvenlik kontrolleri</h3>
+    <ul>
+      <li><b>Günlük maksimum zarar limiti:</b> Kullanıcının belirlediği USD cinsinden günlük zarar limitine ulaşıldığında o gün yeni pozisyon açılmaz; mevcut pozisyonlar yönetilmeye devam eder.</li>
+      <li><b>Kaldıraç tavanı:</b> Kullanıcı bazlı sınır (1–50x) ve sistem genelinde mutlak bir tavan uygulanır.</li>
+      <li><b>Yönetici acil durdurma anahtarı (kill switch):</b> Olağanüstü durumlarda yönetici, tüm kullanıcılar için yeni işlem alımını tek tıkla durdurabilir.</li>
+      <li><b>Risk onayı:</b> Canlı işleme geçişte kullanıcı, otomatik ticaretin risklerini okuyup açıkça onaylar.</li>
+    </ul>
+    <div class="tw"><table>
+      <tr><th>Risk ve pozisyon parametresi</th><th>Deneme hesabı</th><th>Canlı hesap (Stratejik tutar)</th></tr>
+      <tr><td>Risk / işlem</td><td>Bakiyenin %0,25'i</td><td>Binance vadeli işlem bakiyesinin %0,25'i</td></tr>
+      <tr><td>Tek pozisyon üst sınırı</td><td>2.500 USD</td><td>Bakiyenin %25'i</td></tr>
+      <tr><td>Toplam açık nominal tutar</td><td>Bakiye × 3</td><td>Bakiye × 3 (kullanılabilir marj ve kaldıraç gözetilir)</td></tr>
+      <tr><td>Pozisyon alt sınırı</td><td>100 USD</td><td>10 USD</td></tr>
+      <tr><td>Ek kontroller</td><td>Algoritmik filtreler</td><td>Günlük zarar limiti, kaldıraç tavanı, kill switch, risk onayı</td></tr>
+    </table></div>
+
+    <h2 class="disp">5. Platform Ekranları ve Kullanıcı Arayüzü</h2>
+    <h3>5.1. Canlı panel ve tarama ekranı</h3>
+    <p>Arayüz, kullanıcının piyasa hareketlerini ve bot durumunu tek ekrandan izlemesine imkân tanır. Tarama ekranında Kripto, Borsa İstanbul ve Wall Street sekmeleri bulunur. Kripto tarafında En Likit 100 (varsayılan), En Büyük 10, En Hacimli 20 ve Binance Tümü evren seçenekleri yer alır. Liste varsayılan olarak fiyata göre büyükten küçüğe sıralı açılır. Panel başlığındaki yeşil LONG ve kırmızı SHORT sayaçları tıklanabilir filtre görevi görür.</p>
+    <h3>5.2. Teknik analiz ve yapay zekâ entegrasyonu</h3>
+    <p>Seçilen sembolün mum grafiğinde Supertrend çizgisi, dönüş okları ve açık pozisyon seviyeleri (giriş, TP, stop ve acil stop) görselleştirilir. “Grafiği Yorumla” butonuyla Anthropic Claude yapay zekâ modeli güncel Supertrend durumunu ve son mumları analiz ederek anlık bir teknik yorum üretir. Kullanıcılar beğendikleri coinleri “Robota Ekle” seçeneğiyle izleme listesine dahil edebilir.</p>
+    <h3>5.3. AI Trade Analyst ve bildirimler</h3>
+    <ul>
+      <li><b>AI Trade Analyst:</b> Kapanan işlemleri periyodik olarak inceleyen, kazanma oranı (win rate), profit factor ve sebep bazlı kırılımları raporlayan salt okunur bir yapay zekâ modülüdür. Stratejiye müdahale etmez, yalnızca analitik bir ayna görevi görür.</li>
+      <li><b>Telegram bildirimleri:</b> Yeni pozisyon açılışlarında, kapanışlarda, otomatik eklenen coin durumlarında, BTC yön değişimlerinde ve her sabah 09:00'da (Europe/Istanbul) günlük özet olarak iletilir. Her bildirimin altında kısa bir yasal uyarı bulunur. Sistem yeniden başlatmalarında gereksiz mesaj gönderilmez.</li>
+    </ul>
+
+    <h2 class="disp">6. Yasal Sorumluluk Reddi</h2>
+    <div class="disc">Herobot-AI platformunda gösterilen tarama sonuçları, sinyaller, grafikler ve işlem bilgileri yalnızca trend takip algoritmalarıyla tespit edilen teknik gösterge değerleridir; yatırım tavsiyesi niteliği taşımaz ve yatırım danışmanlığı kapsamında değerlendirilemez. Tarama ekranlarında veya bildirimlerde yer alan LONG veya SHORT gösterimleri yalnızca bilgi amaçlıdır ve ilgili enstrümanın fiyatının yükseleceğini veya düşeceğini garanti etmez. Geçmiş backtest ve deneme hesabı performansları, gelecekte elde edilecek sonuçların göstergesi veya garantisi değildir. Hisse senedi ve kripto para piyasalarında işlem yapmak yüksek derecede risk içerir ve yatırılan sermayenin tamamının veya bir kısmının kaybedilmesine yol açabilir. Herhangi bir canlı işlem açmadan önce kullanıcıların kendi risk analizlerini yapmaları gerekir; alınan işlem kararları ve bunlardan doğabilecek tüm mali ve hukuki sonuçlar tamamen kullanıcının kendi sorumluluğundadır.</div>
+    <div style="margin-top:28px"><a href="/register" class="btn btn-primary">Ücretsiz Dene</a></div>
+  </article>
+</div>
+
+'''
+_pi = TANITIM_HTML.index('<!-- ===== MAKALE ===== -->')
+_pj = TANITIM_HTML.index('<!-- ===== FOOTER ===== -->')
+PRENSIPLER_HTML = TANITIM_HTML[:_pi] + PRENS_BODY + TANITIM_HTML[_pj:]
+PRENSIPLER_HTML = PRENSIPLER_HTML.replace('</style>', PRENS_CSS + '</style>', 1)
+PRENSIPLER_HTML = PRENSIPLER_HTML.replace('<a href="/tanitim" class="active">Tanıtım</a>', '<a href="/tanitim">Tanıtım</a>')
+PRENSIPLER_HTML = PRENSIPLER_HTML.replace('<a href="/prensipler">Çalışma Prensipleri</a>', '<a href="/prensipler" class="active">Çalışma Prensipleri</a>', 1)
+PRENSIPLER_HTML = PRENSIPLER_HTML.replace('<title>Tanıtım — Herobot-ai</title>', '<title>Robotun Çalışma Prensipleri — Herobot-ai</title>')
+PRENSIPLER_HTML = __import__('re').sub(r'<meta name="description" content="[^"]*">', '<meta name="description" content="Herobot-ai\'nın Supertrend tabanlı strateji, giriş filtreleri, risk yönetimi ve canlı işlem mimarisine genel bakış.">', PRENSIPLER_HTML, count=1)
+
 ACCOUNT_EXTRAS_HTML = r'''
 <div class="stack-gap">
   <div class="account-row">
@@ -5415,7 +5548,7 @@ BLOG_BODY = r'''<style>
   <div class="panel-head"><h2>Blog</h2></div>
   <div class="position-body">
     <article class="blog-art">
-      <p class="blog-meta">Herobot-AI · 15 Kasım 2026</p>
+      <p class="blog-meta">Herobot-AI</p>
       <h1>Piyasa Gürültüsünü Susturmak: Disiplinli ve Algoritmik Ticaretten Çıkarılan 5 Şaşırtıcı Ders</h1>
 
       <h2>1. Giriş: Duygusal İşlemlerin Maliyeti ve Sistem Arayışı</h2>
@@ -10373,6 +10506,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path=='/tanitim':
             self._send_html(TANITIM_HTML); return
+
+        if path=='/prensipler':
+            self._send_html(PRENSIPLER_HTML); return
 
         if path=='/login':
             if self._current_user():
