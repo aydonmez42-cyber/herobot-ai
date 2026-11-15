@@ -107,7 +107,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbols", default="BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,BNBUSDT")
     ap.add_argument("--start", default="2020-08-01"); ap.add_argument("--end", default="2026-11-14")
-    ap.add_argument("--fee", type=float, default=0.05); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
+    ap.add_argument("--fee", type=float, default=0.06, help="yon basina komisyon+kayma %% (sunumdaki: 0.04 komisyon + 0.02 kayma)"); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
     ap.add_argument("--maxstop", type=float, default=sts.MAX_STOP_DIST_PCT); ap.add_argument("--volmult", type=float, default=sts.MIN_REL_VOL)
     ap.add_argument("--risk", type=float, default=0.25); ap.add_argument("--cap", type=float, default=25.0); ap.add_argument("--balance", type=float, default=10000.0)
     ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
