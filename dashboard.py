@@ -651,6 +651,17 @@ TANITIM_HTML = r'''<!doctype html>
         Tarayıcınız video oynatmayı desteklemiyor.
       </video>
     </div>
+  
+    <div style="text-align:center;margin:44px 0 22px 0">
+      <span class="eyebrow">Kısa video</span>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:28px;font-weight:700">Herobot-AI’nın duygusuz trend takip mantığı</h2>
+    </div>
+    <div class="card" style="max-width:380px;margin:0 auto;padding:10px;overflow:hidden">
+      <video controls preload="metadata" playsinline poster="/static/duygusuz-trend.jpg" style="width:100%;display:block;border-radius:10px;background:#000;aspect-ratio:9/16">
+        <source src="/static/duygusuz-trend.mp4" type="video/mp4">
+        Tarayıcınız video oynatmayı desteklemiyor.
+      </video>
+    </div>
   </div>
 </div>
 
@@ -10184,6 +10195,8 @@ class Handler(BaseHTTPRequestHandler):
             'tanitim.mp4': 'video/mp4',
             'tanitim-infografik.png': 'image/png',
             'sistem-mimarisi.pdf': 'application/pdf',
+            'duygusuz-trend.mp4': 'video/mp4',
+            'duygusuz-trend.jpg': 'image/jpeg',
         }
         for _i in range(1, 13):                              # sistem mimarisi sunumu: mimari-01.jpg ... mimari-12.jpg
             allowed['mimari-%02d.jpg' % _i] = 'image/jpeg'
