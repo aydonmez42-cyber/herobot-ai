@@ -2176,7 +2176,13 @@ def _st_try_open_manual(state, symbol, now, sig=None):
         if sig is None:
             return False
     else:
-        sig = dict(sig)
+        # dashboard'dan gelen sinyal eskimis / sonradan bozulmus olabilir: son 3 kapanmis mumda hala gecerli mi?
+        fresh = sts.latest_entry_signal(ind)
+        if (fresh is None or fresh['side'] != sig.get('side')
+                or str(pd.Timestamp(fresh['signal_time']).isoformat()) != str(pd.Timestamp(sig['signal_time']).isoformat())):
+            print(f"ST MANUEL | {sig.get('side')} {symbol} atlandi: SIGNAL_STALE (sinyal artik gecerli degil)", flush=True)
+            return False
+        sig = dict(fresh)
     if state.get('st_traded', {}).get(symbol) == str(pd.Timestamp(sig['signal_time']).isoformat()):
         return False
     ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
