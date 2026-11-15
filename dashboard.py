@@ -8203,6 +8203,11 @@ LIVE_HTML = r'''<!doctype html>
 </section>
 
 <section class="panel">
+  <div id="liveSkipBox" style="display:none;margin-top:0;font-size:12.5px"></div>
+  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
+</section>
+
+<section class="panel">
   <div class="panel-head"><h2 data-i18n="liveSec.closed">Closed Live Trades</h2></div>
   <div class="table-scroll" style="margin-top:0">
     <table class="datatable">
@@ -8210,8 +8215,6 @@ LIVE_HTML = r'''<!doctype html>
       <tbody id="liveMineClosedRows"><tr><td colspan="7" class="empty" data-i18n="panel.loading">Loading…</td></tr></tbody>
     </table>
   </div>
-  <div id="liveSkipBox" style="display:none;margin-top:12px;font-size:12.5px"></div>
-  <div class="footnote" data-i18n="liveAccount.footnote" data-i18n-html="1">This panel only shows live trades on <b>your own</b> Binance account — it's never mixed with the paper/demo panel above or with other users; no one but you can see this.</div>
 </section>
 
 <section class="panel">
