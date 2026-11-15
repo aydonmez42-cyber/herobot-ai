@@ -432,6 +432,23 @@ def get_user_closed_trades(username, limit=20):
 _account_cache = {}  # username -> {'ts': float, 'data': dict}
 _account_cache_lock = threading.Lock()
 ACCOUNT_CACHE_SECONDS = 45
+ACCOUNT_LASTGOOD_FILE = os.environ.get('LIVE_ACCOUNT_LASTGOOD_FILE', os.path.join(DATA_DIR, 'live_account_lastgood.json') if DATA_DIR else 'live_account_lastgood.json')
+
+
+def _lastgood_load(username):
+    try:
+        return (_read_json(ACCOUNT_LASTGOOD_FILE, {}) or {}).get(username)
+    except Exception:
+        return None
+
+
+def _lastgood_save(username, data):
+    try:
+        allv = _read_json(ACCOUNT_LASTGOOD_FILE, {}) or {}
+        allv[username] = {k: v for k, v in data.items() if k not in ('error', 'stale_error')}
+        _write_json(ACCOUNT_LASTGOOD_FILE, allv)
+    except Exception:
+        pass
 
 
 def get_binance_account_summary(username):
@@ -458,12 +475,20 @@ def get_binance_account_summary(username):
             result, err = None, f'{type(e).__name__}'
         data = result if result else {'error': err or 'Bilinmeyen hata'}
         data['fetched_at'] = datetime.now(timezone.utc).isoformat()
+        if result:
+            _lastgood_save(username, data)
     with _account_cache_lock:
         old = _account_cache.get(username)
         # keep the last good numbers visible if a refresh fails (e.g. 429)
         if 'error' in data and old and 'error' not in old['data']:
             stale = dict(old['data']); stale['stale_error'] = data['error']
             data = stale
+        elif 'error' in data:
+            # yeniden baslatma sonrasi bellek bos: diskteki son bilinen bakiyeyi 'guncel degil' notuyla goster
+            lg = _lastgood_load(username)
+            if lg:
+                stale = dict(lg); stale['stale_error'] = data['error']
+                data = stale
         _account_cache[username] = {'ts': now, 'data': data}
     return data
 

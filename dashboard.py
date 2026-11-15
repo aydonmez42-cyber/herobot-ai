@@ -3622,7 +3622,7 @@ SCANNER_HTML = r'''<!doctype html>
     <div id="stCard" style="padding:14px 16px 10px">
       <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik</b></div>
       <div class="scanner-controls">
-        <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü</option></select>
+        <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü (manuel)</option></select>
         <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>

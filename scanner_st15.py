@@ -38,7 +38,8 @@ FAPI = os.environ.get('BINANCE_FAPI_URL', 'https://fapi.binance.com')
 
 # ---- Evrenler: LIQ100 (varsayilan, robotun otomatik taramasi) / TOP10 (piyasa degeri) / VOL20 (24s hacim) / ALL (tum USDT-M) ----
 UNIVERSES = ('LIQ100', 'TOP10', 'VOL20', 'ALL')
-PACE_ALL_S = float(os.environ.get('SCAN_ST_PACE_ALL_S', '0.25'))
+PACE_ALL_S = float(os.environ.get('SCAN_ST_PACE_ALL_S', '0.5'))
+MIN_GAP_ALL_S = float(os.environ.get('SCAN_ST_MIN_GAP_ALL_S', '900'))   # 'Binance tumu' taramasi en sik 15 dk'da bir
 COINGECKO_URL = os.environ.get('COINGECKO_MARKETS_URL', 'https://api.coingecko.com/api/v3/coins/markets')
 TOP10_FALLBACK = [x.strip().upper() for x in os.environ.get(
     'ST_TOP10_FALLBACK', 'BTC,ETH,BNB,XRP,SOL,DOGE,TRX,ADA,LINK,AVAX').split(',') if x.strip()]
@@ -266,7 +267,8 @@ def start_scan(tf=None, aligned=False, universe=None):
             return False, 'Tarama zaten calisiyor.'
     if blive.in_rate_limit_cooldown():
         return False, 'Binance istek siniri bekleme suresi aktif; birkac dakika sonra deneyin.'
-    wait = MIN_GAP_S - (time.time() - _last_finish_ts) if _last_finish_ts else 0
+    gap = MIN_GAP_ALL_S if u == 'ALL' else MIN_GAP_S
+    wait = gap - (time.time() - _last_finish_ts) if _last_finish_ts else 0
     if wait > 0:
         return False, f'Son taramanin uzerinden cok az zaman gecti; {int(wait)} sn sonra tekrar deneyin.'
     now = pd.Timestamp.now(tz='UTC')

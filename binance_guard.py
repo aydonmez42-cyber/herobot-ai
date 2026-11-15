@@ -53,6 +53,10 @@ _next_slot = 0.0
 _used_weight = 0
 _used_weight_at = 0.0
 _installed = False
+# Telemetri: son dakikada uc nokta basina istek sayisi (hangi islem IP butcesini harciyor gorulsun)
+TELEMETRY_EVERY_S = 60
+_tele = {}
+_tele_since = time.time()
 
 
 class BinanceCooldown(requests.exceptions.RequestException):
@@ -111,8 +115,30 @@ def _before_public():
         _check_cooldown()
 
 
+def _telemetry(resp):
+    global _tele_since
+    try:
+        path = urlparse(str(resp.request.url)).path
+        tail = path.split('/')[-1] or path
+        with _lock:
+            _tele[tail] = _tele.get(tail, 0) + 1
+            now = time.time()
+            if now - _tele_since < TELEMETRY_EVERY_S:
+                return
+            snap, since = dict(_tele), _tele_since
+            _tele.clear(); _tele_since = now
+            used, fresh = _used_weight, now - _used_weight_at < 120
+        total = sum(snap.values())
+        if total >= 60 or (fresh and used >= 600):
+            top = ', '.join(f'{k}={v}' for k, v in sorted(snap.items(), key=lambda kv: -kv[1])[:6])
+            print(f'BINANCE GUARD | son {int(now - since)} sn: {total} istek ({top}) | IP agirligi={used if fresh else "?"}/dk (limit 2400)', flush=True)
+    except Exception:
+        pass
+
+
 def _after(resp):
     global _cooldown_until, _used_weight, _used_weight_at
+    _telemetry(resp)
     try:
         w = resp.headers.get('X-MBX-USED-WEIGHT-1M')
         if w:
