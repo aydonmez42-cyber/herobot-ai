@@ -158,6 +158,33 @@ def position_notional(equity, open_notional, price, level, base_usd):
     return float(n), None
 
 
+# Hacim filtresi: sinyal mumunun hacmi / onceki REL_VOL_N mumun ortalamasi >= MIN_REL_VOL olmali (0 = kapali).
+# Backtest (12 coin, 90 ve 180 gun): 1.5 esigi her iki donemde PF'yi yukseltti.
+MIN_REL_VOL = float(os.environ.get("ST_MIN_REL_VOL", "1.5"))
+REL_VOL_N = 20
+
+
+def signal_rel_volume(ind, signal_time, n=None):
+    """Sinyal mumunun goreli hacmi. ind: kapanmis mumlar (index = close_time, 'volume' sutunu). Hesaplanamazsa None."""
+    n = n or REL_VOL_N
+    if "volume" not in ind.columns:
+        return None
+    ts = pd.Timestamp(signal_time)
+    if ind.index.tz is not None and ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    elif ind.index.tz is None and ts.tzinfo is not None:
+        ts = ts.tz_convert("UTC").tz_localize(None)
+    try:
+        i = int(ind.index.get_loc(ts))
+    except Exception:
+        return None
+    if i < n:
+        return None
+    v = ind["volume"].to_numpy(dtype=float)
+    prev = float(np.mean(v[i - n:i]))
+    return float(v[i] / prev) if prev > 0 else None
+
+
 def regime_direction(df_closed):
     """Kapanmis mumlarla REGIME_SYMBOL'un Supertrend yonu: 'LONG' | 'SHORT' | None."""
     st = supertrend(df_closed["high"], df_closed["low"], df_closed["close"], ST_PERIOD, ST_MULT)

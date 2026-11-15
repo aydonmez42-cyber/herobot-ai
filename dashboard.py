@@ -4106,7 +4106,7 @@ function stTfChange(){
 function stFmtTR(v){ try{ return new Date(v).toLocaleString('sv-SE',{timeZone:'Europe/Istanbul'}).slice(5,16); }catch(e){ return '—'; } }
 
 // ---- Tarama tablolarinda baslik tiklayinca kucukten buyuge / buyukten kucuge siralama ----
-const stSortState={St:null,Bist:null,Us:null};
+const stSortState={St:{k:'price',dir:-1},Bist:null,Us:null};   // kripto: varsayilan fiyat buyukten kucuge
 const stSortTbl={stTable:'St',stBistTable:'Bist',stUsTable:'Us'};
 function stSortVal(x,k){
   if(k==='symbol'||k==='signal') return String(x[k]||'');

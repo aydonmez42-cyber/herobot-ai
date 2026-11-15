@@ -2041,6 +2041,14 @@ def st_extra_gate(state, symbol, sig, price):
             return False, f'NEW_LISTING(<{scanner_st15.MIN_LISTING_DAYS:g}g)'
     except Exception:
         pass
+    if sts.MIN_REL_VOL > 0 and sig.get('signal_time') is not None:
+        try:
+            _dv = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+            _rv = sts.signal_rel_volume(_dv.iloc[:-1].copy().set_index('close_time'), sig['signal_time'])
+            if _rv is not None and _rv < sts.MIN_REL_VOL:
+                return False, f'LOW_VOLUME(goreli hacim {_rv:.2f} < {sts.MIN_REL_VOL:g})'
+        except Exception as e:
+            print(f'ST GATE | {symbol} hacim filtresi okunamadi ({type(e).__name__}); kural atlandi', flush=True)
     if sts.COUNTER_TREND_MAX >= 0 and symbol != sts.REGIME_SYMBOL:
         reg = None
         try:
