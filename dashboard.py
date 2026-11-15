@@ -113,7 +113,7 @@ LANDING_HTML = r'''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Herobot-ai — Kripto, BIST ve ABD Hisseleri için Otomatik Strateji Motoru</title>
-<meta name="description" content="Herobot-ai; kripto vadeli işlemler, BIST ve ABD hisselerinde 4 saatlik teknik sinyalleri tarayan, ATR bazlı risk yönetimiyle çalışan bir strateji motorudur.">
+<meta name="description" content="Herobot-ai; kripto vadeli işlemler, BIST ve ABD hisselerinde Supertrend tabanlı sinyalleri tarayan, pozisyon boyutunu stop mesafesine göre ayarlayan bir strateji motorudur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -195,8 +195,7 @@ LANDING_HTML = r'''<!doctype html>
       Duygu yok, panik yok.<br>Sadece <span style="color:#3DD9A8">disiplinli sinyal.</span>
     </h1>
     <p style="margin:26px 0 0 0;font-size:19px;line-height:1.6;color:#B7C0C6;max-width:640px;font-weight:500">
-      Herobot-ai, kripto vadeli işlemler, BIST ve ABD hisselerinde 4 saatlik teknik sinyalleri
-      7/24 tarayan, ATR bazlı risk yönetimiyle çalışan bir strateji motorudur.
+      Herobot-ai; kripto vadeli işlemler, BIST ve ABD hisselerinde Supertrend tabanlı sinyalleri tarayan, pozisyon boyutunu stop mesafesine göre ayarlayan, LONG ve SHORT yönlü çalışan bir strateji motorudur.
     </p>
     <div style="display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;justify-content:center">
       <a href="/register" class="btn btn-primary">Ücretsiz Dene</a>
@@ -208,12 +207,12 @@ LANDING_HTML = r'''<!doctype html>
         <span style="font-size:13px;color:#7A8590;font-weight:600">piyasa, tek panel</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">~15dk</span>
-        <span style="font-size:13px;color:#7A8590;font-weight:600">otomatik tarama sıklığı</span>
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">15dk</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">kripto işlem grafiği (mum periyodu)</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">8+</span>
-        <span style="font-size:13px;color:#7A8590;font-weight:600">teknik onay katmanı</span>
+        <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">100</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">en likit kripto kontratı, saatlik tarama</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">7/24</span>
@@ -234,17 +233,17 @@ LANDING_HTML = r'''<!doctype html>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">01</span>
         <h3 style="margin:0;font-size:18px;font-weight:700">Kapanmış mumu okur</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Sinyal yalnızca kapanmış 4 saatlik mumdan üretilir — anlık fiyat gürültüsüne asla güvenilmez, yarım kalan mum işleme girmez.</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Sinyal yalnızca kapanmış mumdan üretilir (kriptoda 15 dakikalık, BIST ve ABD hisselerinde günlük) — anlık fiyat gürültüsüne güvenilmez, yarım kalan mum işleme girmez.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">02</span>
-        <h3 style="margin:0;font-size:18px;font-weight:700">Çoklu katman onaylar</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Trend, Momentum, Hacim, Volatilite göstergeleri aynı anda hizalanmadan pozisyon açılmaz. Tek indikatöre güvenilmez.</p>
+        <h3 style="margin:0;font-size:18px;font-weight:700">Supertrend yön değişimini yakalar</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Supertrend çizgisi yön değiştirdiğinde son 3 kapanmış mumda LONG veya SHORT sinyali aranır. Sinyal eskiyse ya da sonrasında stop olayı yaşandıysa giriş yapılmaz.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:14px">
         <span class="disp" style="font-size:15px;font-weight:700;color:#3DD9A8">03</span>
-        <h3 style="margin:0;font-size:18px;font-weight:700">ATR ile riski çizer</h3>
-        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Stop-loss, take-profit ve trailing stop sabit yüzde değil, o anki volatiliteye göre otomatik hesaplanır.</p>
+        <h3 style="margin:0;font-size:18px;font-weight:700">Riski stop mesafesine göre çizer</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#97A0A6">Stop seviyesi Supertrend çizgisidir ve mum kapanışında izlenir. Pozisyon büyüklüğü, hesabın küçük bir yüzdesini riske edecek şekilde stop mesafesine göre hesaplanır.</p>
       </div>
     </div>
   </div>
@@ -254,42 +253,42 @@ LANDING_HTML = r'''<!doctype html>
 <div class="wrap split" style="padding:88px 0;display:flex;gap:64px;align-items:flex-start" id="strateji">
   <div style="flex:0 0 340px;display:flex;flex-direction:column;gap:18px">
     <span class="eyebrow">Strateji motoru</span>
-    <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Sekiz göstergenin hizalanmasını bekleyen bir sistem</h2>
-    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Trend, momentum ve volatilite filtreleri birlikte çalışır. Piyasa yatay ya da aşırı uçtaysa sistem susmayı tercih eder — her mumda işlem açmaz.</p>
+    <h2 class="disp" style="margin:0;font-size:30px;font-weight:700;line-height:1.2">Tek stratejiye odaklı, disiplinli bir sistem</h2>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#97A0A6">Karmaşık gösterge yığınları yerine Supertrend (ATR 10, çarpan 4.4) etrafında kurulu sade bir çerçeve. Koşullar uygun değilse — BTC ters yöndeyse, hacim zayıfsa, stop çok uzaksa — sistem susmayı tercih eder.</p>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:14px 16px;background:#11161A;border:1px solid #1E252B;border-radius:10px">
-      <span style="font-size:13px;color:#7A8590;font-weight:600">Volatilite vetosu: piyasa aşırı sakin ya da aşırı oynak bir uçtaysa sistem yeni pozisyon açmaz.</span>
+      <span style="font-size:13px;color:#7A8590;font-weight:600">Giriş filtreleri: sinyal eskimişse, hacim zayıfsa, stop çok uzaksa ya da BTC trendi tersse yeni pozisyon açılmaz.</span>
     </div>
   </div>
   <div class="grid2" style="flex:1">
     <div class="card" style="padding:20px 22px">
-      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">TREND</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Üstel hareketli ortalama değerleri</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Uzun vadeli yön filtresi</div>
-    </div>
-    <div class="card" style="padding:20px 22px">
       <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">YÖN</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Trend teyidi</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Supertrend (ATR 10 · ×4.4)</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Çizginin yukarı kırılması LONG, aşağı kırılması SHORT sinyali üretir</div>
     </div>
     <div class="card" style="padding:20px 22px">
-      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">GÜÇ</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Ortalama Yön Endeksi</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Fiyat trendinin gücünün ölçümü — Gerçek trend / yatay piyasa ayrımı</div>
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">TAZELİK</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Son 3 kapanmış mum</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Sinyal eskimişse veya sonrasında stop olayı yaşanmışsa giriş yapılmaz</div>
     </div>
     <div class="card" style="padding:20px 22px">
-      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">MOMENTUM</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">RSI hassas ayarları</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">LONG ve SHORT bantları ayrı</div>
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">REJİM</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">BTC koruması</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Bitcoin yönüne ters girişler sınırlanır; BTC trend yön değiştirdiğinde koruma devreye girer</div>
     </div>
     <div class="card" style="padding:20px 22px">
-      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">ONAY</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Momentum, Kanal hareketleri, Dip tepe tespitleri, Hareketli ortalamaların uzaklaşma ve yakınlaşmaları</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Çoklu filtre yanlış sinyali eler</div>
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">HACİM</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Göreceli hacim filtresi</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Ortalamanın altında hacimle gelen zayıf sinyaller elenir</div>
     </div>
     <div class="card" style="padding:20px 22px">
-      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">RİSK</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Volatilite Bazlı SL / TP / Trailing Stop</div>
-      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Long · Short pozisyon çıkışları ve kar alım ve zarar kes seviyeleri</div>
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">STOP</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Dinamik Supertrend stopu</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Mum kapanışında izlenir; acil stop ek güvence olarak her pozisyonda bulunur</div>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div style="font-size:13px;font-weight:700;color:#3DD9A8;margin-bottom:6px">KÂR</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">Kademeli kâr kilidi</div>
+      <div style="font-size:13.5px;color:#7A8590;line-height:1.55">Kâr belirli kademelere ulaştıkça stop yukarı çekilerek kazanç kilitlenir</div>
     </div>
   </div>
 </div>
@@ -308,21 +307,21 @@ LANDING_HTML = r'''<!doctype html>
           <div style="width:18px;height:18px;border-radius:50%;border:3px solid #3DD9A8"></div>
         </div>
         <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">Kripto Vadeli İşlem</h3>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Binance Futures USDT-M perpetual sözleşmelerinin tamamı otomatik keşfedilir ve taranır.</p>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Binance Futures USDT-M’de en likit 100 kontrat saatlik olarak taranır; LONG ve SHORT sinyaller. Tüm evren isteğe bağlı, manuel taranır.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
         <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
           <div style="width:18px;height:12px;border-bottom:3px solid #3DD9A8;border-left:3px solid #3DD9A8;border-right:3px solid #3DD9A8"></div>
         </div>
-        <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">BIST Tüm</h3>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">BIST 100 + Tüm-100 evreninde, TradingView'in native 4 saatlik verisiyle sinyal taraması.</p>
+        <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">Borsa İstanbul</h3>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">BIST 30, BIST 100 ve BIST Tümü evreninde günlük mumlarla Supertrend taraması (manuel).</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
         <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
           <div style="width:18px;height:18px;border-radius:4px;border:3px solid #3DD9A8"></div>
         </div>
         <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">ABD Hisseleri</h3>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">NASDAQ, NYSE ve AMEX'te otomatik borsa tespiti ile geniş bir hisse evreni taranır.</p>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Dow Jones, Nasdaq 100 ve S&P 500 evreninde günlük mumlarla Supertrend taraması (manuel).</p>
       </div>
     </div>
   </div>
@@ -355,14 +354,14 @@ LANDING_HTML = r'''<!doctype html>
   <div class="wrap" style="padding:84px 0">
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:44px">
       <span class="eyebrow">Risk kontrolleri</span>
-      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Kurumsal seviye güvenlik rayları</h2>
-      <p style="margin:14px 0 0 0;font-size:16px;color:#97A0A6;max-width:620px">Paper modda sıfır risk; gerçek işleme geçenler için ise sıkı, kullanıcı bazlı sınırlar.</p>
+      <h2 class="disp" style="margin:12px 0 0 0;font-size:32px;font-weight:700">Çok katmanlı risk kontrolleri</h2>
+      <p style="margin:14px 0 0 0;font-size:16px;color:#97A0A6;max-width:620px">Paper modda sıfır risk; canlı işleme geçenler için kullanıcı bazlı sınırlar.</p>
     </div>
     <div class="grid4">
       <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
         <span style="font-size:20px">🔒</span>
-        <div style="font-size:15px;font-weight:700">Sabit pozisyon büyüklüğü</div>
-        <div style="font-size:13px;line-height:1.6;color:#7A8590">Bakiyenin rastgele yüzdesi değil, kullanıcı bazlı sabit USD tutarı</div>
+        <div style="font-size:15px;font-weight:700">Esnek pozisyon boyutu</div>
+        <div style="font-size:13px;line-height:1.6;color:#7A8590">Sabit USD tutarı ya da stop mesafesine göre risk bazlı “Stratejik tutar” — seçim sizin</div>
       </div>
       <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:10px">
         <span style="font-size:20px">🛑</span>
@@ -401,7 +400,7 @@ LANDING_HTML = r'''<!doctype html>
           <div style="width:8px;height:8px;border-radius:50%;background:#3DD9A8"></div>
           <span style="font-size:13px;font-weight:700;color:#3DD9A8">Bot aktif</span>
         </div>
-        <span style="font-size:12px;color:#7A8590;font-weight:600">ETHUSD_PERP</span>
+        <span style="font-size:12px;color:#7A8590;font-weight:600">ETHUSDT · örnek</span>
       </div>
       <div style="display:flex;justify-content:space-between;padding:16px;background:#0D1114;border-radius:10px;border:1px solid #1B2126;flex-wrap:wrap;gap:10px">
         <div style="display:flex;flex-direction:column;gap:4px">
@@ -415,10 +414,10 @@ LANDING_HTML = r'''<!doctype html>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #1B2126">
-          <span style="font-size:13px;color:#97A0A6">RSI</span><span style="font-size:13px;font-weight:700">58.2</span>
+          <span style="font-size:13px;color:#97A0A6">Stop (Supertrend)</span><span style="font-size:13px;font-weight:700">2631.10</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #1B2126">
-          <span style="font-size:13px;color:#97A0A6">ADX</span><span style="font-size:13px;font-weight:700">31.4</span>
+          <span style="font-size:13px;color:#97A0A6">Göreceli hacim</span><span style="font-size:13px;font-weight:700">1.8x</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:10px 4px">
           <span style="font-size:13px;color:#97A0A6">Supertrend</span><span style="font-size:13px;font-weight:700;color:#3DD9A8">Boğa</span>
@@ -432,7 +431,7 @@ LANDING_HTML = r'''<!doctype html>
 <div style="border-top:1px solid #1B2126">
   <div class="wrap" style="padding:44px 0 52px 0;display:flex;flex-direction:column;gap:22px">
     <div class="card" style="padding:18px 22px">
-      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem şu anda paper-trading (demo) modda çalışır; gerçek emir göndermez. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
+      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem varsayılan olarak paper-trading (demo) modda çalışır; canlı işlem yalnızca kullanıcının kendi Binance API anahtarını bağlayıp özelliği kendisinin açmasıyla yapılır ve tüm risk kullanıcıya aittir. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -462,7 +461,7 @@ TANITIM_HTML = r'''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tanıtım — Herobot-ai</title>
-<meta name="description" content="HeroBot AI: kripto, BIST ve ABD hisselerinde duygusuz, disiplinli ve 7/24 çalışan bir strateji motoru.">
+<meta name="description" content="HeroBot AI: kripto, BIST ve ABD hisselerinde Supertrend tabanlı, duygusuz ve disiplinli bir strateji motoru.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -534,28 +533,29 @@ TANITIM_HTML = r'''<!doctype html>
         <p style="margin:0">Finansal piyasalarda işlem yapmak, çoğu zaman bir veri savaşından ziyade bir irade savaşına dönüşür. Yatırımcılar; bilgi kirliliği, FOMO (fırsatı kaçırma korkusu) ve ani fiyat hareketlerinin tetiklediği panik ataklar arasında sıkışıp kalır. Açık konuşalım; bir ekranın başında mumların hareketine bakarak ter dökmek, strateji değil, modern bir işkence yöntemidir. İşte tam bu noktada, "Gölgelerin gücü adına değil, verinin gücü adına" diyerek sahneye HeroBot AI (He-Robot) çıkıyor. İnsan psikolojisinin o meşhur zayıflıklarını — açgözlülük, korku ve kararsızlık — devre dışı bırakan bu teknoloji, 7/24 çalışan disiplinli bir strateji motoru olarak karşımıza çıkıyor. HeroBot AI, piyasanın gürültüsünü susturup sadece rakamların fısıldadığı gerçeklere odaklanarak yatırım dünyasında kuralları yeniden yazıyor.</p>
       </div>
       <div>
-        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">2. Sınırsız Kripto Likiditesi ve Küresel Hisse Piyasaları</h3>
-        <p style="margin:0 0 10px 0">Geleneksel yatırımcılar bir piyasadan diğerine geçerken platformlar arasında boğulurken, HeroBot AI tek bir panelden küresel bir hakimiyet alanı kuruyor. Bu sadece bir erişim kolaylığı değil, stratejik bir üstünlüktür:</p>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">2. Kripto Likiditesi ve Küresel Hisse Piyasaları</h3>
+        <p style="margin:0 0 10px 0">Geleneksel yatırımcılar bir piyasadan diğerine geçerken platformlar arasında boğulurken, HeroBot AI tek bir panelden üç piyasayı aynı mantıkla izler:</p>
         <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
-          <li><b style="color:#E9EDF0">Kripto Paralar:</b> Binance Futures USDT-M altındaki tüm perpetual sözleşmelerin otomatik taranması.</li>
-          <li><b style="color:#E9EDF0">BIST (Borsa İstanbul):</b> BIST 100 ve Tüm-100 evreninin tamamı (TradingView native 4H verisiyle).</li>
-          <li><b style="color:#E9EDF0">ABD Hisseleri:</b> NASDAQ, NYSE ve AMEX borsalarında yer alan devasa hisse havuzu.</li>
+          <li><b style="color:#E9EDF0">Kripto Paralar:</b> Binance Futures USDT-M’deki en likit 100 perpetual sözleşme saatlik olarak otomatik taranır; tüm evrenin taranması isteğe bağlı olarak manuel yapılır.</li>
+          <li><b style="color:#E9EDF0">BIST (Borsa İstanbul):</b> BIST 30, BIST 100 ve BIST Tümü evreni, günlük mumlarla Supertrend taraması (manuel).</li>
+          <li><b style="color:#E9EDF0">ABD Hisseleri:</b> Dow Jones, Nasdaq 100 ve S&P 500 evreni, günlük mumlarla Supertrend taraması (manuel).</li>
         </ul>
-        <p style="margin:0">Sistem, piyasa kapanışlarını beklemenizi gerektirmez; siz de beklemezsiniz. Yaklaşık 15 dakikada bir yapılan otomatik taramaların yanı sıra, kullanıcının tek bir tuşla tüm piyasayı o an süzgeçten geçirebileceği "Tümünü Tara" (Scan All) özelliği mevcuttur. Hızın para ettiği bir dünyada, bu anlık tarama kapasitesi sizi kalabalığın fersah fersah önüne geçirir.</p>
+        <p style="margin:0 0 10px 0">Kripto tarafında sistem her saat başı 15 dakikalık grafikte son 3 kapanmış mum penceresini tarar ve yeni sinyalleri hem LONG hem SHORT yönünde değerlendirir. BIST ve ABD taramaları ise kullanıcının tek bir tuşla başlattığı günlük taramalardır.</p>
       </div>
       <div>
-        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">3. Stratejinin Kalbi: Veri Odaklı ve Çok Katmanlı Onay Mekanizması</h3>
-        <p style="margin:0 0 10px 0">HeroBot AI'nın zekası, rastgele tahminlerden değil, çok katmanlı bir teknik analiz süzgecinden gelir. Sistem, bir işlemin onaylanması için adeta bir "senato onayı" bekler:</p>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">3. Stratejinin Kalbi: Tek Kurallı, Net Bir Supertrend Çerçevesi</h3>
+        <p style="margin:0 0 10px 0">HeroBot AI’nın kararları onlarca göstergenin karmaşık oylamasından değil, tek ve şeffaf bir kuraldan gelir: Supertrend çizgisinin yön değiştirmesi. Bu kural bir dizi giriş filtresiyle korunur:</p>
         <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
-          <li><b style="color:#E9EDF0">Yön ve Trend Teyidi:</b> EMA (Hareketli Ortalamalar) ve Supertrend filtreleri ile ana yön belirlenir.</li>
-          <li><b style="color:#E9EDF0">Piyasa Karakteri:</b> ADX indikatörü ile piyasanın gerçek bir trendde mi yoksa sadece yatayda "patinaj mı" yaptığı ayırt edilir.</li>
-          <li><b style="color:#E9EDF0">Momentum ve Onay:</b> RSI, CCI, Stoch RSI ve MACD gibi indikatörler birer onay katmanı oluşturur.</li>
+          <li><b style="color:#E9EDF0">Yön Sinyali:</b> Supertrend (ATR 10, çarpan 4.4) çizgisini yukarı kırarsa LONG, aşağı kırarsa SHORT sinyali oluşur.</li>
+          <li><b style="color:#E9EDF0">Tazelik Kontrolü:</b> Son 3 kapanmış muma bakılır; sinyal sonrasında stop olayı yaşanmışsa veya fiyat çizgiyi geri geçmişse robota ekleme yapılmaz.</li>
+          <li><b style="color:#E9EDF0">Hacim Filtresi:</b> Sinyal mumunun göreceli hacmi yetersizse giriş reddedilir.</li>
+          <li><b style="color:#E9EDF0">BTC Rejimi:</b> Bitcoin trendine ters yöndeki girişler sınırlanır; BTC trendi yön değiştirdiğinde koruma devreye girer.</li>
         </ul>
-        <p style="margin:0">Sistemin en katı kurallarından biri, yalnızca kapanmış mumlardan sinyal üretilmesidir. Anlık fiyat iğnelerine ve piyasa gürültüsüne asla güvenmeyen bu yaklaşım, yatırımcıyı "fake" sinyallerden ve ani piyasa manipülasyonlarından korur.</p>
+        <p style="margin:0 0 10px 0">Sistem yalnızca kapanmış mumlardan sinyal üretir. Anlık fiyat iğnelerine ve piyasa gürültüsüne güvenmeyen bu yaklaşım, yatırımcıyı sahte sinyallerden korumayı hedefler.</p>
       </div>
       <div>
-        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">4. Akıllı Risk Yönetimi: ATRP ile Piyasanın Nabzını Tutmak</h3>
-        <p style="margin:0">Çoğu algoritma, piyasanın ruhunu anlamadan sabit yüzdeli stop-loss seviyeleri kullanır. HeroBot AI ise ATR (Average True Range) bazlı dinamik bir risk yönetimi uygular. Ancak burada asıl otoriter dokunuş, ATRP (365 günlük volatilite veto filtresi) ile gelir. Eğer piyasa oynaklığı (ATRP), son 365 günlük yüzdelik dilimde aşırı uçlardaysa, sistem yeni pozisyon açmayı reddeder. Çünkü bazen en kârlı işlem, hiç açılmamış olandır. "Sistem 'sakin kalması gerektiğini bilir'." Piyasa rasyonel olmayan bir çılgınlığa kapıldığında, HeroBot AI soğukkanlılığını koruyarak sermayenizi emniyete alır.</p>
+        <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">4. Akıllı Risk Yönetimi: Stop Mesafesine Göre Pozisyon Boyutu</h3>
+        <p style="margin:0">Stop seviyesi sabit bir yüzde değil, Supertrend çizgisinin kendisidir ve mum kapanışında dinamik olarak izlenir. Pozisyon büyüklüğü, hesabın küçük bir yüzdesini riske edecek şekilde stop mesafesine göre hesaplanır; stop çok uzaksa giriş yapılmaz. Kâr, kademeli kâr kilidi ile korunur: kâr belirli seviyelere ulaştıkça stop yukarı çekilir. Her pozisyonda ayrıca bir acil stop güvencesi bulunur. Çünkü bazen en iyi işlem, hiç açılmamış olandır.</p>
       </div>
       <div>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">5. Yapay Zeka Destekli Performans Analisti: Claude ile Tanışın</h3>
@@ -565,16 +565,16 @@ TANITIM_HTML = r'''<!doctype html>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">6. Kurumsal Seviye Güvenlik ve Şeffaflık</h3>
         <p style="margin:0 0 10px 0">HeroBot AI, "önce güvenlik" diyen kurumsal bir disipline sahiptir:</p>
         <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
-          <li><b style="color:#E9EDF0">Paper (Demo) Modu:</b> Sistem şu anda demo modunda çalışmaktadır. Gerçek emir göndermez ve API anahtarı gerektirmez; böylece stratejiyi sıfır riskle, laboratuvar ortamında izleyebilirsiniz.</li>
+          <li><b style="color:#E9EDF0">Paper (Demo) Modu:</b> Varsayılan olarak sistem paper modda çalışır; gerçek emir göndermez ve API anahtarı gerektirmez. Stratejiyi sıfır riskle izleyebilirsiniz.</li>
           <li><b style="color:#E9EDF0">Acil Durdurma Protokolü (Admin Stop Switch):</b> Kurumsal ciddiyetin bir kanıtı olarak, admin gerektiğinde tek bir tıkla tüm kullanıcılar için yeni işlemleri durdurabilir; bu, sistemin kontrol dışı kalmasını engelleyen en büyük sigortadır.</li>
           <li><b style="color:#E9EDF0">Maksimum Zarar Limiti:</b> Günlük zarar limiti dolduğunda sistem yeni pozisyonları otomatik olarak durdurur.</li>
-          <li><b style="color:#E9EDF0">Uptime ve Hız:</b> %99.9 uptime garantisi ve 200ms ortalama yanıt süresi ile kesintisiz veri işleme.</li>
+          <li><b style="color:#E9EDF0">Canlı İşlem (isteğe bağlı):</b> Dilerseniz kendi Binance API anahtarınızı (para çekme izni olmadan) bağlayıp canlı işlemi kendiniz açarsınız; “Sabit tutar” veya “Stratejik tutar” modunu seçebilirsiniz. Tüm risk size aittir.</li>
           <li><b style="color:#E9EDF0">Sessiz Disiplin:</b> Telegram entegrasyonu ile sadece kritik anlarda bildirim alırsınız; spam yok, sadece stratejik bilgi var.</li>
         </ul>
       </div>
       <div>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">7. Sonuç: Geleceğin Teknolojisi Bugün Burada mı?</h3>
-        <p style="margin:0">HeroBot AI, 50.000'den fazla aktif kullanıcının parçası olduğu bir vizyonla, yatırım süreçlerini "akıllı otomasyon" ve "AI destekli analiz" ile yeniden tanımlıyor. Bu sistem, sadece bir yazılım değil; finansal teknoloji dünyasındaki sınırsız olasılıkların bir temsilcisidir. Her ne kadar bu sistem şu an paper-trading modunda çalışsa ve geçmiş başarılar geleceğin garantisi olmasa da (çünkü finansın doğasında bu vardır), HeroBot AI bize bir şeyi kanıtlıyor: Geleceğin başarılı yatırımcısı, duygularıyla değil, kusursuz çalışan algoritmalarıyla hareket eden kişidir.</p>
+        <p style="margin:0">HeroBot AI, yatırım süreçlerini “akıllı otomasyon” ve “AI destekli analiz” ile yeniden tanımlamayı hedefliyor. Sistem varsayılan olarak paper-trading modunda çalışır; canlı işlem tamamen kullanıcının tercihidir. Geçmiş başarılar geleceğin garantisi değildir ve bu içerik yatırım tavsiyesi değildir. Ancak kural tabanlı, disiplinli bir sistem, duygularınızın yerine koyabileceğiniz tutarlı bir çerçeve sunar.</p>
       </div>
     </div>
     <p style="text-align:center;font-size:18px;font-weight:700;color:#E9EDF0;margin:10px 0 0 0;line-height:1.6">Yatırım kararlarınızda duygularınızı bir kenara bırakıp, stratejinin soğukkanlı disiplinine güvenmeye hazır mısınız?</p>
@@ -604,7 +604,7 @@ TANITIM_HTML = r'''<!doctype html>
 <div style="border-top:1px solid #1B2126">
   <div class="wrap" style="padding:44px 0 52px 0;display:flex;flex-direction:column;gap:22px">
     <div class="card" style="padding:18px 22px">
-      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem şu anda paper-trading (demo) modda çalışır; gerçek emir göndermez. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
+      <p style="margin:0;font-size:12.5px;line-height:1.7;color:#7A8590">Bu sistem varsayılan olarak paper-trading (demo) modda çalışır; canlı işlem yalnızca kullanıcının kendi Binance API anahtarını bağlayıp özelliği kendisinin açmasıyla yapılır ve tüm risk kullanıcıya aittir. Herhangi bir algoritmik strateji geçmiş performansa dayanır ve gelecekteki sonuçları garanti etmez — bu bir yatırım tavsiyesi değildir.</p>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -1164,7 +1164,7 @@ const translations = {
   "faq.q5": "Which markets are traded?",
   "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.",
   "faq.q6": "How often are signals generated?",
-  "faq.a6": "The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.",
+  "faq.a6": "For crypto, the system scans the 100 most liquid contracts hourly; signals are generated only from closed 15-minute candles. BIST and US scans use daily candles and are started manually.",
   "faq.q7": "How do I turn on Telegram notifications?",
   "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
   "faq.q8": "What should I do if I need to urgently close an open position?",
@@ -1451,7 +1451,7 @@ const translations = {
   "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
   "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.",
   "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
-  "faq.a6": "Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.",
+  "faq.a6": "Kripto tarafında sistem saatlik olarak en likit 100 kontratı tarar; sinyaller yalnızca kapanmış 15 dakikalık mumlardan üretilir. BIST ve ABD taramaları günlük mumlarla, manuel başlatılır.",
   "faq.q7": "Telegram bildirimlerini nasıl açarım?",
   "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
   "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
@@ -1738,7 +1738,7 @@ const translations = {
   "faq.q5": "交易哪些市场？",
   "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所以及美股（NASDAQ/NYSE/AMEX）— 均可在同一面板中扫描。",
   "faq.q6": "信号多久生成一次？",
-  "faq.a6": "系统大约每 15 分钟自动扫描一次；信号仅基于已收盘的4小时K线生成，不会受瞬时价格噪声影响。",
+  "faq.a6": "加密货币方面，系统每小时扫描流动性最高的100个合约；信号仅基于已收盘的15分钟K线生成。BIST 与美股使用日线，需手动启动扫描。",
   "faq.q7": "如何开启Telegram通知？",
   "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
   "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
@@ -2025,7 +2025,7 @@ const translations = {
   "faq.q5": "An welchen Märkten wird gehandelt?",
   "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul sowie US-Aktien (NASDAQ/NYSE/AMEX) — alle werden von einem einzigen Panel aus gescannt.",
   "faq.q6": "Wie oft werden Signale generiert?",
-  "faq.a6": "Das System führt etwa alle 15 Minuten einen automatischen Scan durch; Signale werden nur aus geschlossenen 4-Stunden-Kerzen generiert, nicht aus kurzfristigem Preisrauschen.",
+  "faq.a6": "Im Kryptobereich scannt das System stündlich die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen 15-Minuten-Kerzen. BIST- und US-Scans nutzen Tageskerzen und werden manuell gestartet.",
   "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
   "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
   "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
@@ -2599,7 +2599,7 @@ const translations = {
   "faq.q5": "¿En qué mercados se opera?",
   "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul y acciones de EE. UU. (NASDAQ/NYSE/AMEX) — todos escaneados desde un solo panel.",
   "faq.q6": "¿Con qué frecuencia se generan las señales?",
-  "faq.a6": "El sistema realiza un escaneo automático aproximadamente cada 15 minutos; las señales solo se generan a partir de velas de 4 horas cerradas, no del ruido de precio instantáneo.",
+  "faq.a6": "En cripto, el sistema escanea cada hora los 100 contratos más líquidos; las señales solo se generan a partir de velas cerradas de 15 minutos. Los escaneos de BIST y EE. UU. usan velas diarias y se inician manualmente.",
   "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
   "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
   "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
@@ -4744,7 +4744,7 @@ FAQ_HTML = r'''<!doctype html>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q6">How often are signals generated?</summary>
-        <p data-i18n="faq.a6">The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.</p>
+        <p data-i18n="faq.a6">For crypto, the system scans the 100 most liquid contracts hourly; signals are generated only from closed 15-minute candles. BIST and US scans use daily candles and are started manually.</p>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q7">How do I turn on Telegram notifications?</summary>
@@ -4785,7 +4785,7 @@ const translations = {
     "faq.q5": "Which markets are traded?",
     "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul, and US stocks (NASDAQ/NYSE/AMEX) — all scanned from a single panel.",
     "faq.q6": "How often are signals generated?",
-    "faq.a6": "The system runs an automatic scan roughly every 15 minutes; signals are only generated from closed 4-hour candles, not from instantaneous price noise.",
+    "faq.a6": "For crypto, the system scans the 100 most liquid contracts hourly; signals are generated only from closed 15-minute candles. BIST and US scans use daily candles and are started manually.",
     "faq.q7": "How do I turn on Telegram notifications?",
     "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
     "faq.q8": "What should I do if I need to urgently close an open position?",
@@ -4810,7 +4810,7 @@ const translations = {
     "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
     "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul ve ABD hisseleri (NASDAQ/NYSE/AMEX) — hepsi tek panelden taranır.",
     "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
-    "faq.a6": "Sistem yaklaşık 15 dakikada bir otomatik tarama yapar; sinyaller yalnızca kapanmış 4 saatlik mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez.",
+    "faq.a6": "Kripto tarafında sistem saatlik olarak en likit 100 kontratı tarar; sinyaller yalnızca kapanmış 15 dakikalık mumlardan üretilir. BIST ve ABD taramaları günlük mumlarla, manuel başlatılır.",
     "faq.q7": "Telegram bildirimlerini nasıl açarım?",
     "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
     "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
@@ -4835,7 +4835,7 @@ const translations = {
     "faq.q5": "交易哪些市场？",
     "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所以及美股（NASDAQ/NYSE/AMEX）— 均可在同一面板中扫描。",
     "faq.q6": "信号多久生成一次？",
-    "faq.a6": "系统大约每 15 分钟自动扫描一次；信号仅基于已收盘的4小时K线生成，不会受瞬时价格噪声影响。",
+    "faq.a6": "加密货币方面，系统每小时扫描流动性最高的100个合约；信号仅基于已收盘的15分钟K线生成。BIST 与美股使用日线，需手动启动扫描。",
     "faq.q7": "如何开启Telegram通知？",
     "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
     "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
@@ -4860,7 +4860,7 @@ const translations = {
     "faq.q5": "An welchen Märkten wird gehandelt?",
     "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul sowie US-Aktien (NASDAQ/NYSE/AMEX) — alle werden von einem einzigen Panel aus gescannt.",
     "faq.q6": "Wie oft werden Signale generiert?",
-    "faq.a6": "Das System führt etwa alle 15 Minuten einen automatischen Scan durch; Signale werden nur aus geschlossenen 4-Stunden-Kerzen generiert, nicht aus kurzfristigem Preisrauschen.",
+    "faq.a6": "Im Kryptobereich scannt das System stündlich die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen 15-Minuten-Kerzen. BIST- und US-Scans nutzen Tageskerzen und werden manuell gestartet.",
     "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
     "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
     "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
@@ -4885,7 +4885,7 @@ const translations = {
     "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
     "faq.a5": "Binance Futures (contrats perpétuels crypto), Borsa Istanbul et actions américaines (NASDAQ/NYSE/AMEX) — tous scannés depuis un seul panneau.",
     "faq.q6": "À quelle fréquence les signaux sont-ils générés ?",
-    "faq.a6": "Le système effectue un scan automatique environ toutes les 15 minutes ; les signaux ne sont générés qu'à partir de bougies de 4 heures clôturées, jamais du bruit de prix instantané.",
+    "faq.a6": "Côté crypto, le système scanne chaque heure les 100 contrats les plus liquides ; les signaux ne proviennent que de bougies de 15 minutes clôturées. Les scans BIST et US utilisent des bougies journalières et se lancent manuellement.",
     "faq.q7": "Comment activer les notifications Telegram ?",
     "faq.a7": "Il suffit d'obtenir un code de liaison depuis la section « Connexion Telegram » du panneau et de démarrer le bot sur Telegram — les notifications d'ouverture/clôture et le résumé quotidien arrivent alors automatiquement.",
     "faq.q8": "Que dois-je faire si je dois fermer d'urgence une position ouverte ?",
@@ -4910,7 +4910,7 @@ const translations = {
     "faq.q5": "¿En qué mercados se opera?",
     "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul y acciones de EE. UU. (NASDAQ/NYSE/AMEX) — todos escaneados desde un solo panel.",
     "faq.q6": "¿Con qué frecuencia se generan las señales?",
-    "faq.a6": "El sistema realiza un escaneo automático aproximadamente cada 15 minutos; las señales solo se generan a partir de velas de 4 horas cerradas, no del ruido de precio instantáneo.",
+    "faq.a6": "En cripto, el sistema escanea cada hora los 100 contratos más líquidos; las señales solo se generan a partir de velas cerradas de 15 minutos. Los escaneos de BIST y EE. UU. usan velas diarias y se inician manualmente.",
     "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
     "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
     "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
