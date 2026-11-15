@@ -65,7 +65,7 @@ def account_sim(trades, risk_pct, cap_pct, start_bal, max_sd):
     eq = start_bal; peak = eq; mdd = 0.0; curve = []; n = 0
     for t in sorted(trades, key=lambda x: x["t_exit"]):
         sd = max(t["sd"], 0.3)
-        if sd > max_sd: continue
+        if max_sd > 0 and sd > max_sd: continue
         notional = min(eq * risk_pct / 100 / (sd / 100), eq * cap_pct / 100)
         eq += notional * t["net"] / 100; n += 1
         peak = max(peak, eq); mdd = min(mdd, (eq / peak - 1) * 100)
@@ -110,7 +110,7 @@ def main():
     ap.add_argument("--fee", type=float, default=0.06, help="yon basina komisyon+kayma %% (sunumdaki: 0.04 komisyon + 0.02 kayma)"); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
     ap.add_argument("--maxstop", type=float, default=sts.MAX_STOP_DIST_PCT); ap.add_argument("--volmult", type=float, default=sts.MIN_REL_VOL)
     ap.add_argument("--risk", type=float, default=0.25); ap.add_argument("--cap", type=float, default=25.0); ap.add_argument("--balance", type=float, default=10000.0)
-    ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--tf", default="15m", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     syms = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
     data = {}
@@ -124,9 +124,12 @@ def main():
             df = pd.concat([pd.DataFrame(df.iloc[:600].values, columns=df.columns, index=idx[:600] - pd.Timedelta(days=7)), df]) if False else df
         else:
             print(f"{s}: indiriliyor/okunuyor...", flush=True); df = load(s, a.start, a.end)
+        if a.tf != "15m":
+            rule = {"1h": "1h", "4h": "4h"}[a.tf]
+            df = df.resample(rule).agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna()
         data[s] = df; print(f"  {s}: {len(df)} mum, {df.index[0]} -> {df.index[-1]}", flush=True)
     print(f"Supertrend {sts.ST_PERIOD}/{sts.ST_MULT:g} | kilit [{sts.lock_tiers_text()}] | acil %{a.emerg:g} | stop siniri %{a.maxstop:g} | goreli hacim>={a.volmult:g}\n")
-    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": "15m", "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}",
+    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": a.tf, "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}",
            "komisyon_kayma_yon_%": a.fee, "acil_stop_%": a.emerg, "stop_siniri_%": a.maxstop, "kilit": sts.lock_tiers_text(),
            "coin_baslangic": {s: str(d.index[0].date()) for s, d in data.items()}, "senaryolar": []}
     lines = []; trades_A = None
