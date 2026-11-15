@@ -124,7 +124,7 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             adverse = (l[j] if side == 1 else h[j]); fav = (h[j] if side == 1 else l[j])
             adv_pct = side * (adverse - entry) / entry * 100
             fl = sts.lock_floor(peak)
-            if adv_pct <= -emerg:
+            if emerg > 0 and adv_pct <= -emerg:                    # emerg=0: acil stop kapali
                 exit_pct, reason = -emerg, "EMERGENCY_STOP"; break
             if fl is not None and adv_pct <= fl:
                 exit_pct, reason = fl, "TRAIL_LOCK"; break
