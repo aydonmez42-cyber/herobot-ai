@@ -5313,7 +5313,7 @@ body.ta-nolock{overflow:hidden}
   <div class="panel-head ta-head3">
     <div class="ta-head-left"><h2>Teknik Grafik</h2>
       <select id="ownChartTf" onchange="loadOwnChart()">
-        <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
+        <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h" selected>4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
       </select></div>
     <div class="ta-head-mid">
       <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
@@ -10715,7 +10715,7 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/ta/chart':
             _q=parse_qs(urlparse(self.path).query)
             try:
-                self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+                self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['4h'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
             return
@@ -10738,7 +10738,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'Çok sık istek: birkaç dakika sonra tekrar deneyin.'}, status=429); return
             _q=parse_qs(urlparse(self.path).query)
             try:
-                self._send_json(ta_ai_comment((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+                self._send_json(ta_ai_comment((_q.get('tv') or [''])[0], (_q.get('tf') or ['4h'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
             return
