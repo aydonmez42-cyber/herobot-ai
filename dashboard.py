@@ -104,7 +104,7 @@ ACCOUNT_ALWAYS_ALLOWED = {
     '/api/account/ask-admin', '/api/account/subscription-request',
     # FAQ and backtest results are useful for a trial/expired user deciding
     # whether to subscribe, so they stay reachable even after access lapses.
-    '/faq', '/backtest', '/account', '/live',
+    '/faq', '/blog', '/backtest', '/account', '/live',
 }
 
 LANDING_HTML = r'''<!doctype html>
@@ -1087,6 +1087,7 @@ th.sort-active{color:var(--accent)}
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -1139,7 +1140,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
@@ -1426,7 +1427,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
@@ -1713,7 +1714,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
@@ -2000,7 +2001,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
@@ -2287,7 +2288,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
@@ -2574,7 +2575,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
@@ -3579,6 +3580,7 @@ SCANNER_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -4310,7 +4312,7 @@ const translations = {
   "nav.live": "Live Trading",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.faq": "FAQ",
   "nav.account": "My Account",
   "faq.backToDashboard": "← Dashboard",
@@ -4375,7 +4377,7 @@ const translations = {
   "nav.live": "Canlı İşlemler",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.faq": "SSS",
   "nav.account": "Hesabım",
   "faq.backToDashboard": "← Panel",
@@ -4440,7 +4442,7 @@ const translations = {
   "nav.live": "实盘交易",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.faq": "常见问题",
   "nav.account": "我的账户",
   "faq.backToDashboard": "← 仪表盘",
@@ -4505,7 +4507,7 @@ const translations = {
   "nav.live": "Live-Handel",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.faq": "FAQ",
   "nav.account": "Mein Konto",
   "faq.backToDashboard": "← Übersicht",
@@ -4570,7 +4572,7 @@ const translations = {
   "nav.live": "Trading en direct",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.faq": "FAQ",
   "nav.account": "Mon compte",
   "faq.backToDashboard": "← Tableau de bord",
@@ -4635,7 +4637,7 @@ const translations = {
   "nav.live": "Operaciones en vivo",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.faq": "Preguntas frecuentes",
   "nav.account": "Mi cuenta",
   "faq.backToDashboard": "← Panel",
@@ -4770,6 +4772,7 @@ FAQ_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" class="active" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -4826,7 +4829,7 @@ FAQ_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
     "faq.title": "FAQ — Frequently Asked Questions",
     "faq.backToDashboard": "← Dashboard",
     "faq.q1": "Does this bot trade with real money?",
@@ -4851,7 +4854,7 @@ const translations = {
     "faq.a10": "New entries pass through several safety checks: (1) BTC lock — if Bitcoin drops sharply in a short time, new LONG entries are paused; (2) Loss brake — if several stop-losses hit within a short window, new entries pause for a few hours; (3) Direction limit — the number of open positions in the same direction is capped; (4) Late-entry filter — no entry if price already ran far from the signal or moved against it; (5) Break-even stop — once a position is far enough in profit, its stop moves to the entry price. These apply to both demo and live trading; open positions are managed only by their own stop-loss / take-profit / trailing rules. They reduce risk but cannot prevent losses, and this is not investment advice.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
     "faq.title": "FAQ — Sıkça Sorulan Sorular",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "Bu bot gerçek parayla mı işlem yapıyor?",
@@ -4876,7 +4879,7 @@ const translations = {
     "faq.a10": "Yeni girişler birkaç güvenlik kontrolünden geçer: (1) BTC kilidi — Bitcoin kısa sürede sert düşerse yeni LONG girişleri durur; (2) Zarar freni — kısa sürede üst üste birkaç stop olursa yeni girişler birkaç saat durur; (3) Yön limiti — aynı yönde açılabilecek pozisyon sayısı sınırlıdır; (4) Geç giriş filtresi — fiyat sinyalden çok uzaklaştıysa veya sinyalin tersine gittiyse giriş yapılmaz; (5) Başabaş stop — pozisyon yeterince kâra geçince stop giriş fiyatına çekilir. Bu korumalar hem deneme hem canlı işlemlerde geçerlidir; açık pozisyonları yalnızca kendi stop / kâr al / trailing kuralları yönetir. Riski azaltır ama kaybı tamamen önleyemez ve yatırım tavsiyesi değildir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.blog": "博客", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
     "faq.title": "常见问题（FAQ）",
     "faq.backToDashboard": "← 仪表盘",
     "faq.q1": "这个机器人会用真实资金交易吗？",
@@ -4901,7 +4904,7 @@ const translations = {
     "faq.a10": "新的入场会经过多项安全检查：(1) BTC 锁——比特币短时间内大幅下跌时，暂停新的做多入场；(2) 亏损刹车——短时间内连续触发多次止损，新入场暂停数小时；(3) 方向限制——同方向的持仓数量有上限；(4) 迟到入场过滤——价格已远离信号或与信号相反时不入场；(5) 保本止损——持仓盈利达到一定程度后，止损移至入场价。这些保护同时适用于模拟和实盘；已有持仓仅由各自的止损/止盈/移动止损规则管理。它们可以降低风险，但无法完全避免亏损，也不构成投资建议。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
     "faq.title": "FAQ — Häufig gestellte Fragen",
     "faq.backToDashboard": "← Übersicht",
     "faq.q1": "Handelt dieser Bot mit echtem Geld?",
@@ -4926,7 +4929,7 @@ const translations = {
     "faq.a10": "Neue Einstiege durchlaufen mehrere Sicherheitsprüfungen: (1) BTC-Sperre – fällt Bitcoin kurzfristig stark, werden neue LONG-Einstiege pausiert; (2) Verlustbremse – lösen innerhalb kurzer Zeit mehrere Stop-Losses aus, pausieren neue Einstiege einige Stunden; (3) Richtungslimit – die Zahl offener Positionen in dieselbe Richtung ist begrenzt; (4) Spät-Einstiegs-Filter – kein Einstieg, wenn der Kurs sich bereits weit vom Signal entfernt oder dagegen bewegt hat; (5) Break-even-Stop – ist eine Position weit genug im Plus, wird der Stop auf den Einstiegspreis gezogen. Diese Schutzmechanismen gelten für Demo- und Live-Handel; offene Positionen werden nur durch ihre eigenen Stop-Loss-/Take-Profit-/Trailing-Regeln verwaltet. Sie senken das Risiko, können Verluste aber nicht verhindern, und sind keine Anlageberatung.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
     "faq.title": "FAQ — Questions fréquentes",
     "faq.backToDashboard": "← Tableau de bord",
     "faq.q1": "Ce bot trade-t-il avec de l'argent réel ?",
@@ -4951,7 +4954,7 @@ const translations = {
     "faq.a10": "Les nouvelles entrées passent par plusieurs contrôles : (1) Verrou BTC — si Bitcoin chute fortement en peu de temps, les nouvelles entrées LONG sont suspendues ; (2) Frein de pertes — si plusieurs stop-loss sont touchés en peu de temps, les nouvelles entrées sont suspendues quelques heures ; (3) Limite de direction — le nombre de positions ouvertes dans le même sens est plafonné ; (4) Filtre d’entrée tardive — pas d’entrée si le prix s’est déjà éloigné du signal ou a évolué à l’opposé ; (5) Stop au point mort — une fois la position suffisamment en gain, le stop est ramené au prix d’entrée. Ces protections s’appliquent au mode démo comme au réel ; les positions ouvertes ne sont gérées que par leurs propres règles de stop-loss / take-profit / trailing. Elles réduisent le risque sans empêcher les pertes et ne constituent pas un conseil en investissement.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
     "faq.title": "Preguntas frecuentes",
     "faq.backToDashboard": "← Panel",
     "faq.q1": "¿Este bot opera con dinero real?",
@@ -5394,6 +5397,75 @@ ANALYSIS_HTML = ANALYSIS_HTML.replace('<a href="/faq" class="active"', '<a href=
 ANALYSIS_HTML = _re_ta.sub(r'<title>[^<]*</title>', '<title>Teknik Analiz — Herobot-AI Trading Platform</title>', ANALYSIS_HTML, count=1)
 ANALYSIS_HTML = _re_ta.sub(r'(<div class="brand-sub"[^>]*>)[^<]*(</div>)', r'\1Teknik Analiz\2', ANALYSIS_HTML, count=1)
 
+# ---- Blog (statik makale sayfasi) — FAQ kabugunu yeniden kullanir
+BLOG_BODY = r'''<style>
+.blog-art{max-width:780px;margin:0 auto;padding:6px 4px 10px}
+.blog-meta{color:var(--text-faint,#7A8590);font-size:12.5px;margin:0 0 6px 0}
+.blog-art h1{font-family:var(--font-d,inherit);font-size:28px;line-height:1.25;margin:0 0 18px 0}
+.blog-art h2{font-size:20px;margin:30px 0 10px 0}
+.blog-art h3{font-size:17px;margin:26px 0 8px 0;color:var(--accent)}
+.blog-art p,.blog-art li{font-size:15px;line-height:1.8;color:var(--text,#E9EDF0)}
+.blog-art p{margin:0 0 14px 0}
+.blog-art ul{margin:0 0 14px 0;padding-left:22px}
+.blog-art li{margin:0 0 6px 0}
+.blog-art blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--accent);background:var(--accent-soft,rgba(214,168,74,.08));border-radius:6px;font-weight:600;font-size:15px;line-height:1.6}
+.blog-disc{margin:26px 0 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2,rgba(255,255,255,.03));color:var(--text-dim,#9aa4b2);font-size:12.5px;line-height:1.65}
+</style>
+<section class="panel">
+  <div class="panel-head"><h2>Blog</h2></div>
+  <div class="position-body">
+    <article class="blog-art">
+      <p class="blog-meta">Herobot-AI · 15 Kasım 2026</p>
+      <h1>Piyasa Gürültüsünü Susturmak: Disiplinli ve Algoritmik Ticaretten Çıkarılan 5 Şaşırtıcı Ders</h1>
+
+      <h2>1. Giriş: Duygusal İşlemlerin Maliyeti ve Sistem Arayışı</h2>
+      <p>Finansal piyasalarda işlem yapan birçok yatırımcı, kararlarını duygusal tepkilerle şekillendirmenin ağır maliyetleriyle yüzleşir. Fırsatları kaçırma korkusu (FOMO) ile tepe noktalarından işleme girmek ya da ani düşüşlerde panik satışı yaparak zararı katlamak, piyasa gürültüsüne yenik düşmenin en yaygın sonuçlarıdır. Grafikleri kaplayan karmaşık gösterge yığınları ise netlik sağlamak yerine çoğu zaman kafa karışıklığını ve kararsızlığı daha da artırır.</p>
+      <p>Bu karmaşanın ve duygusal yıpranmanın çözümü, kararları anlık hislerden arındıran disiplinli ve kurallı bir sistemde yatmaktadır. Herobot-AI gibi algoritmik sistemler, piyasa gürültüsünü filtreleyerek yatırımcılara net, ölçülebilir ve risk yönetimi odaklı bir çerçeve sunar. Algoritmik ticaret disiplininden çıkarılan kritik dersler, sürdürülebilir bir yatırım yaklaşımının kapılarını aralamaktadır.</p>
+
+      <h2>2. Algoritmik Sistemden Öğrenilen 5 Kritik Ders</h2>
+
+      <h3>Ders 1: Duygu Yok, Panik Yok — Karmaşa Yerine Tek ve Net Strateji</h3>
+      <p>Finansal piyasalarda başarılı olmanın yolu, yüzlerce karmaşık indikatörü aynı anda takip etmekten değil, tek ve net bir stratejiye sadık kalmaktan geçer. Sistem, Supertrend (ATR 10, çarpan 4.4) göstergesini temel alarak sade bir çerçeve çizer. Grafikteki anlık gürültüler yerine yalnızca tanımlı kurallar gerçekleştiğinde harekete geçer.</p>
+      <p>Piyasa koşulları stratejiye uygun olmadığında; örneğin hacim zayıfsa, stop mesafesi %6'dan fazla uzaksa ya da Bitcoin trendine ters yönde açılabilecek pozisyon sınırı dolmuşsa sistem yeni pozisyon açmaz ve “susmayı” tercih eder. İşlem yapma baskısını ortadan kaldıran bu yaklaşım, yatırımcılara önemli bir ticaret ilkesini hatırlatır: Bazen en kârlı işlem, hiç açılmayan işlemdir.</p>
+      <blockquote>“Duygu yok, panik yok. Sadece disiplinli sinyal.”</blockquote>
+
+      <h3>Ders 2: Bakiyeyi Korumak Kazançtan Önce Gelir — Çok Katmanlı Risk Kontrolü</h3>
+      <p>Algoritmik sistemlerin sunduğu en büyük avantaj, sermaye korumasını her şeyin önüne koyan çok katmanlı risk yönetimi mekanizmalarıdır. İşlem başına %0,25 risk ilkesiyle çalışan sistemde pozisyon boyutu, canlı işlem panelinde sunulan “Stratejik tutar” seçeneği sayesinde stop mesafesine göre otomatik hesaplanır. Stop mesafesi yakınsa pozisyon boyutu büyür, stop uzaksa küçülür; alternatif olarak sunulan “Sabit tutar” seçeneğine kıyasla bu stratejik yaklaşım, stop çalıştığında kaybın sermayenin yaklaşık %0,25'i ile sınırlı kalmasını hedefler. (Hızlı fiyat hareketleri ve kayma nedeniyle gerçekleşen kayıp bundan farklı olabilir.)</p>
+      <p>Sermayeyi koruma kalkanı, sadece pozisyon boyutlandırmasıyla sınırlı kalmaz; sinyal mumu hacminin önceki 20 mumun ortalamasının en az 1.5 katı olması şartını arayan hacim filtresiyle zayıf sinyaller elenir. Ana piyasa yönüne karşı riskleri dizginlemek adına, BTC trendinin tersine açılabilecek pozisyon sayısı en fazla 2 ters pozisyonla sınırlandırılır. Ayrıca ani piyasa çöküşlerine karşı devreye giren %15 acil stop mekanizması ve kârı korumak için +%2,5 seviyesinde başlayan kademeli kâr kilidi, büyük sermaye kayıplarının ve kârın geri verilmesinin önüne geçmeyi hedefler.</p>
+
+      <h3>Ders 3: Tek Bir Ekrandan Üç Farklı Piyasayı İzlemek Mümkün</h3>
+      <p>Disiplinli bir algoritmik çerçeve, varlık sınıfı ne olursa olsun aynı analitik kararlılıkla çalışır. Farklı piyasalar için ayrı sistemler kurmak yerine, tek bir motor üzerinden çoklu varlık takibi gerçekleştirmek mümkündür.</p>
+      <ul>
+        <li><b>Kripto Vadeli İşlemler:</b> Binance USDT-M piyasasındaki en likit 100 kontrat, 15 dakikalık mumlar üzerinden saat başı otomatik taranır.</li>
+        <li><b>Borsa İstanbul:</b> BIST 30, BIST 100 ve BIST Tümü evreninde günlük mumlarla Supertrend taraması yapılır.</li>
+        <li><b>Wall Street:</b> Dow Jones, Nasdaq 100 ve S&amp;P 500 endekslerindeki hisseler günlük mumlarla izlenir.</li>
+      </ul>
+      <p>Piyasalar ve varlık türleri değişse de uygulanan analitik disiplin ve risk mantığı değişmez. Yatırımcı, tek bir panel üzerinden üç farklı piyasayı izleyerek ciddi bir zaman kazancı elde eder ve odağını dağıtmadan fırsatları takip edebilir.</p>
+
+      <h3>Ders 4: Yapay Zeka Müdahale Etmemeli, Sadece Ayna Tutmalı</h3>
+      <p>Yapay zekanın niceliksel (kantitatif) ticaretteki rolü, algoritmik strateji kurallarını veya pozisyon parametrelerini anlık kararlarla değiştirmek değildir. LLM ve yapay zeka modelleri, nicel alım-satım kurallarına doğrudan müdahale etmek yerine, mevcut performansa nitel bir ayna tutarak nesnel değerlendirmeler sunmalıdır. Platformda yer alan Claude destekli teknik yorum grafiklerin teknik durumunu incelerken, AI Trade Analyst ise kapanan işlemleri periyodik olarak değerlendirir.</p>
+      <p>AI Trade Analyst; kazanma oranı, profit factor ve sebep bazlı kırılımları raporlayarak sistemin kendi geçmişini okumasını sağlar. Doğrudan canlı işlemlere veya matematiksel strateji parametrelerine müdahale etmeyen bu yapay zeka entegrasyonu, sistemin rasyonel disiplinini bozmadan yatırımcıya objektif bir geri bildirim mekanizması sağlar.</p>
+      <blockquote>“Salt okunur — stratejiye asla müdahale etmez, sadece aynayı tutar.”</blockquote>
+
+      <h3>Ders 5: İllüzyonsuz Gerçekçilik — Paper Trading ve Şeffaf Backtest Mantığı</h3>
+      <p>Sistem, kullanıcıların stratejiyi riske girmeden deneyimlemeleri için varsayılan olarak 10.000 USD bakiyeli bir deneme (paper trading) hesabıyla çalışır. Canlı işleme geçiş ise tamamen kullanıcının kendi borsa API anahtarlarını bağlaması ve riski üstlenmesiyle gerçekleşir.</p>
+      <p>Canlı strateji taraması 15 dakikalık mumlar ve saatlik döngülerle yürütülürken, backtest aracı geçmiş veri simülasyonlarını Binance Futures verileri üzerinde çalıştırır. Simülasyonlarda işlem tarafı başına komisyon (%0,04) ve kayma (%0,02 / slipaj) oranları hesaba katılırken, sinyaller yalnızca kapanmış mumlar üzerinden değerlendirilerek ileriye bakış hatası (lookahead bias) engellenir. Geçmiş performansın geleceği garanti etmediğini vurgulayan bu şeffaf yaklaşım, finansal teknolojilerde illüzyonlardan uzak durmak ve gerçekçi beklentiler oluşturmak açısından hayati önem taşır.</p>
+
+      <h2>3. Sonuç ve Geleceğe Yönelik Değerlendirme</h2>
+      <p>Algoritmik ticaret, piyasadaki duygusal gürültüyü susturarak yatırımcılara disiplinli, veri odaklı ve sürdürülebilir bir yol haritası sunar. Karmaşık indikatör kalabalığı yerine net bir Supertrend stratejisi, çok katmanlı risk kontrolleri ve şeffaf test süreçleri birleştiğinde, sermayeyi korumak ve objektif kararlar almak kolaylaşır. Finansal piyasalarda uzun vadeli başarının anahtarı; anlık heyecanlara değil, test edilmiş kurallara ve sıkı bir risk disiplinine sadık kalmaktır.</p>
+      <p><b>Bir sonraki işleminizde kararı veren şey teknik veriler ve sıkı bir risk planı mı olacak, yoksa anlık bir piyasa telaşı mı?</b></p>
+
+      <div class="blog-disc">Bu yazı genel bilgilendirme amaçlıdır; yatırım tavsiyesi niteliği taşımaz. Herobot-AI platformunda gösterilen tarama sonuçları, sinyaller ve işlem bilgileri trend takip algoritmalarıyla tespit edilen teknik gösterge değerleridir. Geçmiş performans, backtest ve deneme hesabı sonuçları gelecekteki sonuçların göstergesi veya garantisi değildir. Hisse senedi ve kripto para piyasalarında işlem yapmak yüksek risk içerir ve yatırılan sermayenin tamamının veya bir kısmının kaybedilmesine yol açabilir. Tüm işlem kararları ve sonuçları kullanıcının kendi sorumluluğundadır.</div>
+    </article>
+  </div>
+</section>
+
+'''
+BLOG_HTML = FAQ_HTML[:_fa] + BLOG_BODY + FAQ_HTML[_fb:]
+BLOG_HTML = BLOG_HTML.replace('<a href="/faq" class="active"', '<a href="/faq"').replace('<a href="/blog" data-i18n', '<a href="/blog" class="active" data-i18n')
+BLOG_HTML = _re_ta.sub(r'<title>[^<]*</title>', '<title>Blog — Herobot-AI Trading Platform</title>', BLOG_HTML, count=1)
+BLOG_HTML = _re_ta.sub(r'<div class="brand-sub"[^>]*>[^<]*</div>', '<div class="brand-sub">Blog</div>', BLOG_HTML, count=1)
+
 BACKTEST_HTML = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backtest — Herobot-AI Trading Platform</title>
@@ -5431,6 +5503,7 @@ BACKTEST_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" class="active" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -5642,7 +5715,7 @@ BACKTEST_HTML = r'''<!doctype html>
 <script>
 const translations = {
   en: {
-    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
+    "nav.live": "Live Trading", "nav.scanner": "Scan", "nav.dashboard": "Dashboard", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "My Account", "nav.closedTrades": "Closed Trades", "nav.trades": "Robot Trade Tracking", "nav.analysis": "Technical Analysis",
     "backtest.title": "Backtest Results",
     "backtest.backToDashboard": "← Dashboard",
     "backtest.intro": "This report replays the exact same entry/exit logic the live bot uses — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI confluence scoring for entries, and ATR-based stop-loss/take-profit/trailing-stop for exits — against historical Binance Futures 4-hour candles, using the same fee (0.04%/side) and slippage (0.02%) assumptions as production. Every signal is evaluated on a closed candle and executed at the next candle's open, so there is no lookahead. This is a static, one-time snapshot of two backtests already run by the team, not a live or auto-updating report.",
@@ -5685,7 +5758,7 @@ const translations = {
     "backtest.caveat3": "Every parameter was tuned against ETH's own historical data, which carries real overfitting risk — past performance, especially in a backtest whose parameters were fitted to that same history, does not guarantee future results, and live results can diverge meaningfully from what's shown here.",
   },
   tr: {
-    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
+    "nav.live": "Canlı İşlemler", "nav.scanner": "Tarama", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "SSS", "nav.account": "Hesabım", "nav.closedTrades": "Kapanan İşlemler", "nav.trades": "Robot İşlem Takibi", "nav.analysis": "Teknik Analiz",
     "backtest.title": "Backtest Sonuçları",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Bu rapor, canlı botun kullandığı giriş/çıkış mantığının birebir aynısını — girişler için EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI birleşim skorlaması, çıkışlar için ATR tabanlı stop-loss/take-profit/trailing-stop — Binance Futures'ın geçmiş 4 saatlik mumları üzerinde, üretimle aynı komisyon (%0.04/işlem tarafı) ve slipaj (%0.02) varsayımlarıyla yeniden oynatır. Her sinyal kapanmış bir mum üzerinde değerlendirilir ve bir sonraki mumun açılışında uygulanır; yani ileriye bakış (lookahead) yoktur. Bu, ekibin daha önce çalıştırdığı iki backtest'in statik, tek seferlik bir görüntüsüdür; canlı veya otomatik güncellenen bir rapor değildir.",
@@ -5728,7 +5801,7 @@ const translations = {
     "backtest.caveat3": "Her parametre ETH'nin kendi geçmiş verisine göre ayarlandı; bu da gerçek bir aşırı uyum (overfitting) riski taşır — geçmiş performans, özellikle parametreleri aynı geçmişe uydurulmuş bir backtest'te, gelecekteki sonuçları garanti etmez ve canlı sonuçlar burada gösterilenden belirgin şekilde farklılaşabilir.",
   },
   zh: {
-    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
+    "nav.live": "实盘交易", "nav.scanner": "扫描", "nav.dashboard": "仪表盘", "nav.backtest": "回测", "nav.blog": "博客", "nav.faq": "常见问题", "nav.account": "我的账户", "nav.closedTrades": "已平仓交易", "nav.trades": "机器人交易跟踪", "nav.analysis": "技术分析",
     "backtest.title": "回测结果",
     "backtest.backToDashboard": "← 仪表盘",
     "backtest.intro": "本报告在 Binance 合约的历史4小时K线上，完全复现实盘机器人所用的进出场逻辑——入场使用 EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI 综合评分，出场使用基于 ATR 的止损/止盈/移动止损——并采用与生产环境相同的手续费（每边 0.04%）和滑点（0.02%）假设。每个信号都在K线收盘后评估，并在下一根K线开盘时执行，不存在前视（lookahead）偏差。这是团队此前已运行的两次回测的静态、一次性快照，并非实时或自动更新的报告。",
@@ -5771,7 +5844,7 @@ const translations = {
     "backtest.caveat3": "所有参数均基于 ETH 自身的历史数据进行调优，这存在真实的过拟合风险——过往表现，尤其是在参数已针对同一段历史数据拟合的回测中，并不能保证未来的结果，实盘结果可能与此处展示的结果有明显差异。",
   },
   de: {
-    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
+    "nav.live": "Live-Handel", "nav.scanner": "Scan", "nav.dashboard": "Übersicht", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "Mein Konto", "nav.closedTrades": "Geschlossene Trades", "nav.trades": "Roboter-Handelsübersicht", "nav.analysis": "Technische Analyse",
     "backtest.title": "Backtest-Ergebnisse",
     "backtest.backToDashboard": "← Übersicht",
     "backtest.intro": "Dieser Bericht spielt exakt dieselbe Entry-/Exit-Logik ab, die der Live-Bot verwendet — EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI-Konfluenz-Scoring für Einstiege und ATR-basierte Stop-Loss-/Take-Profit-/Trailing-Stop-Regeln für Ausstiege — gegen historische 4-Stunden-Kerzen von Binance Futures, mit denselben Gebühren- (0,04 %/Seite) und Slippage-Annahmen (0,02 %) wie in der Produktion. Jedes Signal wird auf einer geschlossenen Kerze ausgewertet und zum Eröffnungskurs der nächsten Kerze ausgeführt — es gibt also kein Lookahead. Dies ist eine statische Momentaufnahme zweier bereits vom Team durchgeführter Backtests, kein Live- oder automatisch aktualisierter Bericht.",
@@ -5814,7 +5887,7 @@ const translations = {
     "backtest.caveat3": "Jeder Parameter wurde anhand der eigenen historischen Daten von ETH optimiert, was ein reales Overfitting-Risiko birgt — vergangene Performance, insbesondere in einem Backtest, dessen Parameter an genau diese Historie angepasst wurden, garantiert keine zukünftigen Ergebnisse, und Live-Ergebnisse können deutlich von den hier gezeigten abweichen.",
   },
   fr: {
-    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
+    "nav.live": "Trading en direct", "nav.scanner": "Scan", "nav.dashboard": "Tableau de bord", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "FAQ", "nav.account": "Mon compte", "nav.closedTrades": "Trades clôturés", "nav.trades": "Suivi des trades du robot", "nav.analysis": "Analyse technique",
     "backtest.title": "Résultats du backtest",
     "backtest.backToDashboard": "← Tableau de bord",
     "backtest.intro": "Ce rapport rejoue exactement la même logique d'entrée/sortie que celle utilisée par le bot en direct — scoring de confluence EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI pour les entrées, et stop-loss/take-profit/trailing-stop basés sur l'ATR pour les sorties — sur des bougies historiques de 4 heures de Binance Futures, avec les mêmes hypothèses de frais (0,04 %/côté) et de slippage (0,02 %) qu'en production. Chaque signal est évalué sur une bougie clôturée et exécuté à l'ouverture de la bougie suivante, donc sans anticipation (lookahead). Il s'agit d'un instantané statique et ponctuel de deux backtests déjà réalisés par l'équipe, pas d'un rapport en direct ou mis à jour automatiquement.",
@@ -5857,7 +5930,7 @@ const translations = {
     "backtest.caveat3": "Chaque paramètre a été calibré sur les données historiques propres à ETH, ce qui comporte un risque réel de surajustement (overfitting) — les performances passées, en particulier dans un backtest dont les paramètres ont été ajustés sur ce même historique, ne garantissent pas les résultats futurs, et les résultats en direct peuvent diverger sensiblement de ce qui est présenté ici.",
   },
   es: {
-    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
+    "nav.live": "Operaciones en vivo", "nav.scanner": "Escaneo", "nav.dashboard": "Panel", "nav.backtest": "Backtest", "nav.blog": "Blog", "nav.faq": "Preguntas frecuentes", "nav.account": "Mi cuenta", "nav.closedTrades": "Operaciones cerradas", "nav.trades": "Seguimiento del robot", "nav.analysis": "Análisis técnico",
     "backtest.title": "Resultados del backtest",
     "backtest.backToDashboard": "← Panel",
     "backtest.intro": "Este informe reproduce exactamente la misma lógica de entrada/salida que usa el bot en vivo — puntuación de confluencia EMA/Supertrend/ADX/RSI/MACD/CCI/StochRSI para las entradas, y stop-loss/take-profit/trailing-stop basados en ATR para las salidas — sobre velas históricas de 4 horas de Binance Futures, con los mismos supuestos de comisión (0,04%/lado) y deslizamiento (0,02%) que en producción. Cada señal se evalúa en una vela cerrada y se ejecuta en la apertura de la siguiente vela, por lo que no hay adelanto de información (lookahead). Se trata de una instantánea estática y puntual de dos backtests ya ejecutados por el equipo, no de un informe en vivo ni de actualización automática.",
@@ -5997,6 +6070,7 @@ ACCOUNT_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" class="active" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -6161,7 +6235,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
@@ -6312,7 +6386,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
@@ -6463,7 +6537,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
@@ -6614,7 +6688,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
@@ -6765,7 +6839,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
@@ -6916,7 +6990,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
@@ -7163,6 +7237,7 @@ TRADES_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -7349,7 +7424,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
@@ -7397,7 +7472,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
@@ -7445,7 +7520,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
@@ -7493,7 +7568,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
@@ -7541,7 +7616,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
@@ -7589,7 +7664,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
@@ -7767,6 +7842,7 @@ CLOSED_TRADES_HTML = r'''<!doctype html>
   <a href="/closed-trades" class="active" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -7952,7 +8028,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
@@ -7986,7 +8062,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
@@ -8020,7 +8096,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
@@ -8054,7 +8130,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
@@ -8088,7 +8164,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
@@ -8122,7 +8198,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
@@ -8224,6 +8300,7 @@ LIVE_HTML = r'''<!doctype html>
   <a href="/closed-trades" data-i18n="nav.closedTrades">Closed Trades</a>
   <a href="/backtest" data-i18n="nav.backtest">Backtest</a>
   <a href="/faq" data-i18n="nav.faq">FAQ</a>
+  <a href="/blog" data-i18n="nav.blog">Blog</a>
   <a href="/account" data-i18n="nav.account">My Account</a>
 </nav>
 
@@ -8711,7 +8788,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technical Analysis",
   "nav.live": "Live Trading",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot Trade Tracking",
   "nav.closedTrades": "Closed Trades",
   "nav.faq": "FAQ",
@@ -8809,7 +8886,7 @@ const translations = {
   "nav.scanner": "Tarama",
   "nav.analysis": "Teknik Analiz",
   "nav.live": "Canlı İşlemler",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Robot İşlem Takibi",
   "nav.closedTrades": "Kapanan İşlemler",
   "nav.faq": "SSS",
@@ -8907,7 +8984,7 @@ const translations = {
   "nav.scanner": "扫描",
   "nav.analysis": "技术分析",
   "nav.live": "实盘交易",
-  "nav.backtest": "回测",
+  "nav.backtest": "回测", "nav.blog": "博客",
   "nav.trades": "机器人交易跟踪",
   "nav.closedTrades": "已平仓交易",
   "nav.faq": "常见问题",
@@ -9005,7 +9082,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Technische Analyse",
   "nav.live": "Live-Handel",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Roboter-Handelsübersicht",
   "nav.closedTrades": "Geschlossene Trades",
   "nav.faq": "FAQ",
@@ -9103,7 +9180,7 @@ const translations = {
   "nav.scanner": "Scan",
   "nav.analysis": "Analyse technique",
   "nav.live": "Trading en direct",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Suivi des trades du robot",
   "nav.closedTrades": "Trades clôturés",
   "nav.faq": "FAQ",
@@ -9201,7 +9278,7 @@ const translations = {
   "nav.scanner": "Escaneo",
   "nav.analysis": "Análisis técnico",
   "nav.live": "Operaciones en vivo",
-  "nav.backtest": "Backtest",
+  "nav.backtest": "Backtest", "nav.blog": "Blog",
   "nav.trades": "Seguimiento del robot",
   "nav.closedTrades": "Operaciones cerradas",
   "nav.faq": "Preguntas frecuentes",
@@ -10415,6 +10492,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path=='/faq':
             self._send_html(FAQ_HTML); return
+
+        if path=='/blog':
+            self._send_html(BLOG_HTML); return
 
         if path=='/live':
             self._send_html(LIVE_HTML); return
