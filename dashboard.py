@@ -213,7 +213,7 @@ LANDING_HTML = r'''<!doctype html>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">100</span>
-        <span style="font-size:13px;color:#7A8590;font-weight:600">en likit kripto kontratı, saatlik tarama</span>
+        <span style="font-size:13px;color:#7A8590;font-weight:600">en likit kripto kontratı, 4 saatte bir tarama</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         <span class="disp" style="font-size:28px;font-weight:700;color:#3DD9A8">7/24</span>
@@ -308,7 +308,7 @@ LANDING_HTML = r'''<!doctype html>
           <div style="width:18px;height:18px;border-radius:50%;border:3px solid #3DD9A8"></div>
         </div>
         <h3 style="margin:6px 0 0 0;font-size:17px;font-weight:700">Kripto Vadeli İşlem</h3>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Binance Futures USDT-M’de en likit 100 kontrat saatlik olarak taranır; LONG ve SHORT sinyaller. Tüm evren isteğe bağlı, manuel taranır.</p>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#97A0A6">Binance Futures USDT-M’de en likit 100 kontrat 4 saatte bir taranır; LONG ve SHORT sinyaller. Tüm evren isteğe bağlı, manuel taranır.</p>
       </div>
       <div class="card" style="padding:30px;display:flex;flex-direction:column;gap:12px">
         <div style="width:44px;height:44px;border-radius:11px;background:rgba(61,217,168,0.12);display:flex;align-items:center;justify-content:center">
@@ -551,11 +551,11 @@ TANITIM_HTML = r'''<!doctype html>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">2. Kripto Likiditesi ve Küresel Hisse Piyasaları</h3>
         <p style="margin:0 0 10px 0">Geleneksel yatırımcılar bir piyasadan diğerine geçerken platformlar arasında boğulurken, HeroBot AI tek bir panelden üç piyasayı aynı mantıkla izler:</p>
         <ul style="margin:0 0 10px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
-          <li><b style="color:#E9EDF0">Kripto Paralar:</b> Binance Futures USDT-M’deki en likit 100 perpetual sözleşme saatlik olarak otomatik taranır; tüm evrenin taranması isteğe bağlı olarak manuel yapılır.</li>
+          <li><b style="color:#E9EDF0">Kripto Paralar:</b> Binance Futures USDT-M’deki en likit 100 perpetual sözleşme 4 saatte bir otomatik taranır; tüm evrenin taranması isteğe bağlı olarak manuel yapılır.</li>
           <li><b style="color:#E9EDF0">BIST (Borsa İstanbul):</b> BIST 30, BIST 100 ve BIST Tümü evreni, günlük mumlarla Supertrend taraması (manuel).</li>
           <li><b style="color:#E9EDF0">ABD Hisseleri:</b> Dow Jones, Nasdaq 100 ve S&P 500 evreni, günlük mumlarla Supertrend taraması (manuel).</li>
         </ul>
-        <p style="margin:0 0 10px 0">Kripto tarafında sistem her saat başı güncel kapanmış mumları tarar ve yeni sinyalleri hem LONG hem SHORT yönünde değerlendirir. BIST ve ABD taramaları ise kullanıcının tek bir tuşla başlattığı günlük taramalardır.</p>
+        <p style="margin:0 0 10px 0">Kripto tarafında sistem her 4 saatte bir güncel kapanmış mumları tarar ve yeni sinyalleri hem LONG hem SHORT yönünde değerlendirir. BIST ve ABD taramaları ise kullanıcının tek bir tuşla başlattığı günlük taramalardır.</p>
       </div>
       <div>
         <h3 class="disp" style="margin:0 0 10px 0;font-size:19px;font-weight:700;color:#E9EDF0">3. Stratejinin Kalbi: Tek Kurallı, Net Bir Supertrend Çerçevesi</h3>
@@ -734,7 +734,7 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <h3>2.2. Desteklenen piyasalar ve kapsam</h3>
     <div class="tw"><table>
       <tr><th>Piyasa türü</th><th>Kapsam / evren</th><th>Zaman dilimi / tarama sıklığı</th></tr>
-      <tr><td>Kripto vadeli işlemler</td><td>Binance Futures USDT-M (en likit 100 kontrat otomatik; En Büyük 10, En Hacimli 20 veya Binance Tümü seçenekleriyle)</td><td>Saat başı otomatik tarama (istek üzerine manuel tetikleme)</td></tr>
+      <tr><td>Kripto vadeli işlemler</td><td>Binance Futures USDT-M (en likit 100 kontrat otomatik; En Büyük 10, En Hacimli 20 veya Binance Tümü seçenekleriyle)</td><td>4 saatte bir otomatik tarama (istek üzerine manuel tetikleme)</td></tr>
       <tr><td>Borsa İstanbul</td><td>BIST 30, BIST 100 ve BIST Tümü</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
       <tr><td>Wall Street</td><td>Dow Jones, Nasdaq 100 ve S&amp;P 500</td><td>Günlük mumlar / manuel Supertrend taraması</td></tr>
     </table></div>
@@ -744,7 +744,7 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <p>Sistem, gösterge kirliliğini önlemek adına net ve sade bir parametre kümesi kullanır:</p>
     <ul>
       <li><b>Temel gösterge:</b> Supertrend (trend takip göstergesi).</li>
-      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; yalnızca taze trend dönüşü sinyalleri değerlendirmeye alınır.</li>
+      <li><b>Tarama rutini:</b> 4 saatte bir otomatik çalışma; yalnızca taze trend dönüşü sinyalleri değerlendirmeye alınır.</li>
       <li><b>İşlem yönü:</b> LONG (Supertrend çizgisinin yukarı kırılması) ve SHORT (Supertrend çizgisinin aşağı kırılması).</li>
       <li><b>Eşzamanlı pozisyon sınırı:</b> Sistem genelinde aynı anda açık pozisyon sayısı sınırlandırılır.</li>
     </ul>
@@ -1352,7 +1352,7 @@ const translations = {
   "faq.q5": "Which markets are traded?",
   "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul (BIST 30, BIST 100, all BIST) and Wall Street (Dow Jones, Nasdaq 100, S&P 500) — all scanned from a single panel; both LONG and SHORT signals are evaluated.",
   "faq.q6": "How often are signals generated?",
-  "faq.a6": "For crypto, the system automatically scans the 100 most liquid contracts every hour; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.",
+  "faq.a6": "For crypto, the system automatically scans the 100 most liquid contracts every 4 hours; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.",
   "faq.q7": "How do I turn on Telegram notifications?",
   "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
   "faq.q8": "What should I do if I need to urgently close an open position?",
@@ -1397,7 +1397,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 4h closed candle · scan every 4 hours · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -1647,7 +1647,7 @@ const translations = {
   "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
   "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul (BIST 30, BIST 100, BIST Tümü) ve Wall Street (Dow Jones, Nasdaq 100, S&P 500) — hepsi tek panelden taranır; LONG ve SHORT yönlü sinyaller değerlendirilir.",
   "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
-  "faq.a6": "Kripto tarafında sistem her saat başı en likit 100 kontratı otomatik tarar; sinyaller yalnızca kapanmış mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez. BIST ve Wall Street taramaları günlük mumlarla çalışır ve tarama ekranından manuel başlatılır.",
+  "faq.a6": "Kripto tarafında sistem her 4 saatte bir en likit 100 kontratı otomatik tarar; sinyaller yalnızca kapanmış mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez. BIST ve Wall Street taramaları günlük mumlarla çalışır ve tarama ekranından manuel başlatılır.",
   "faq.q7": "Telegram bildirimlerini nasıl açarım?",
   "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
   "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
@@ -1692,7 +1692,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 4s kapalı mum · 4 saatte bir tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -1942,7 +1942,7 @@ const translations = {
   "faq.q5": "交易哪些市场？",
   "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所（BIST 30、BIST 100、BIST 全部）以及华尔街（道琼斯、纳斯达克 100、标普 500）— 均可在同一面板中扫描，并同时评估做多和做空信号。",
   "faq.q6": "信号多久生成一次？",
-  "faq.a6": "加密货币方面，系统每小时自动扫描流动性最高的100个合约；信号仅基于已收盘的K线生成，不会受瞬时价格噪声影响。BIST 与华尔街使用日线，需在扫描页面手动启动。",
+  "faq.a6": "加密货币方面，系统每4小时自动扫描流动性最高的100个合约；信号仅基于已收盘的K线生成，不会受瞬时价格噪声影响。BIST 与华尔街使用日线，需在扫描页面手动启动。",
   "faq.q7": "如何开启Telegram通知？",
   "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
   "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
@@ -1987,7 +1987,7 @@ const translations = {
   "scanner.tabCrypto": "Binance 合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 每4小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -2237,7 +2237,7 @@ const translations = {
   "faq.q5": "An welchen Märkten wird gehandelt?",
   "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul (BIST 30, BIST 100, gesamter BIST) und Wall Street (Dow Jones, Nasdaq 100, S&P 500) — alle werden von einem einzigen Panel aus gescannt; sowohl LONG- als auch SHORT-Signale werden bewertet.",
   "faq.q6": "Wie oft werden Signale generiert?",
-  "faq.a6": "Im Kryptobereich scannt das System jede Stunde automatisch die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen Kerzen, nicht aus kurzfristigem Preisrauschen. BIST- und Wall-Street-Scans nutzen Tageskerzen und werden manuell im Scan-Bildschirm gestartet.",
+  "faq.a6": "Im Kryptobereich scannt das System alle 4 Stunden automatisch die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen Kerzen, nicht aus kurzfristigem Preisrauschen. BIST- und Wall-Street-Scans nutzen Tageskerzen und werden manuell im Scan-Bildschirm gestartet.",
   "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
   "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
   "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
@@ -2282,7 +2282,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 4h-Kerze · Scan alle 4 Stunden · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -2532,7 +2532,7 @@ const translations = {
   "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
   "faq.a5": "Binance Futures (contrats perpétuels crypto), Borsa Istanbul (BIST 30, BIST 100, tout le BIST) et Wall Street (Dow Jones, Nasdaq 100, S&P 500) — tous scannés depuis un seul panneau ; les signaux LONG comme SHORT sont évalués.",
   "faq.q6": "À quelle fréquence les signaux sont-ils générés ?",
-  "faq.a6": "Côté crypto, le système scanne automatiquement chaque heure les 100 contrats les plus liquides ; les signaux ne proviennent que de bougies clôturées, jamais du bruit de prix instantané. Les scans BIST et Wall Street utilisent des bougies journalières et se lancent manuellement depuis l'écran de scan.",
+  "faq.a6": "Côté crypto, le système scanne automatiquement toutes les 4 heures les 100 contrats les plus liquides ; les signaux ne proviennent que de bougies clôturées, jamais du bruit de prix instantané. Les scans BIST et Wall Street utilisent des bougies journalières et se lancent manuellement depuis l'écran de scan.",
   "faq.q7": "Comment activer les notifications Telegram ?",
   "faq.a7": "Il suffit d'obtenir un code de liaison depuis la section « Connexion Telegram » du panneau et de démarrer le bot sur Telegram — les notifications d'ouverture/clôture et le résumé quotidien arrivent alors automatiquement.",
   "faq.q8": "Que dois-je faire si je dois fermer d'urgence une position ouverte ?",
@@ -2577,7 +2577,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 4h clôturée · scan toutes les 4 heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -2827,7 +2827,7 @@ const translations = {
   "faq.q5": "¿En qué mercados se opera?",
   "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul (BIST 30, BIST 100, todo el BIST) y Wall Street (Dow Jones, Nasdaq 100, S&P 500) — todos escaneados desde un solo panel; se evalúan señales LONG y SHORT.",
   "faq.q6": "¿Con qué frecuencia se generan las señales?",
-  "faq.a6": "En cripto, el sistema escanea automáticamente cada hora los 100 contratos más líquidos; las señales solo salen de velas cerradas, nunca del ruido de precio instantáneo. Los escaneos de BIST y Wall Street usan velas diarias y se inician manualmente desde la pantalla de escaneo.",
+  "faq.a6": "En cripto, el sistema escanea automáticamente cada 4 horas los 100 contratos más líquidos; las señales solo salen de velas cerradas, nunca del ruido de precio instantáneo. Los escaneos de BIST y Wall Street usan velas diarias y se inician manualmente desde la pantalla de escaneo.",
   "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
   "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
   "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
@@ -2872,7 +2872,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 4h cerrada · escaneo cada 4 horas · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
@@ -3768,7 +3768,7 @@ SCANNER_HTML = r'''<!doctype html>
   <div class="panel-head scanner-tabs">
     <button class="tab active" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
-    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 15m closed candle &middot; hourly scan &middot; for signal purposes only, no real orders</div>
+    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 4h closed candle &middot; scan every 4 hours &middot; for signal purposes only, no real orders</div>
   </div>
 
   <div class="tabpane active" id="tab-bist">
@@ -3857,13 +3857,13 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-crypto">
     <div id="stCard" style="padding:14px 16px 10px">
-      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">4 saat · her 4 saatte bir otomatik</b></div>
       <div class="scanner-controls">
         <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü (manuel)</option></select>
-        <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
+        <select id="stTf" onchange="stTfChange()"><option value="4h">4 saat</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3" selected>Son 3 mum (45 dk)</option><option value="4">Son 4 mum (1 saat)</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1" selected>Son 1 mum (4 saat)</option><option value="2">Son 2 mum (8 saat)</option><option value="3">Son 3 mum (12 saat)</option><option value="4">Son 4 mum (16 saat)</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
@@ -4302,7 +4302,7 @@ async function refreshScanner(){
   document.getElementById('scannerStatus').textContent=txt;renderScanner();
 }
 async function startScanner(force=false){document.getElementById('scannerStatus').textContent=t('scanner.startingScan');try{await fetch('/api/scanner/scan?force='+(force?'1':'0'),{cache:'no-store'})}catch(e){}refreshScanner();}
-// normal kripto taramasi kaldirildi: tek kripto taramasi Supertrend (15 dk, saat basi)
+// normal kripto taramasi kaldirildi: tek kripto taramasi Supertrend (4 saat, 4 saatte bir)
 
 // ---- helpers used by the Supertrend scan below ----
 const T15=(tr,en)=>{ try{ return (currentLang==='tr')?tr:en; }catch(e){ return en; } };
@@ -4320,10 +4320,10 @@ function stDiscRender(){
 }
 stDiscRender(); setInterval(()=>{ let tr=true; try{ tr=(currentLang==='tr'); }catch(e){} if(tr!==_stDiscLang) stDiscRender(); },700);
 
-// ---- Supertrend scan (crypto: 15m, hourly automatic) ----
-const stCaches={'15m|LIQ100':{results:[],status:'IDLE'}};
-let stCache=stCaches['15m|LIQ100'], stTimer=null;
-function stTfVal(){ return '15m'; }
+// ---- Supertrend scan (crypto: 4h, automatic every 4 hours) ----
+const stCaches={'4h|LIQ100':{results:[],status:'IDLE'}};
+let stCache=stCaches['4h|LIQ100'], stTimer=null;
+function stTfVal(){ return '4h'; }
 function stUniVal(){ return document.getElementById('stUni')?.value||'LIQ100'; }
 function stKey(){ return stTfVal()+'|'+stUniVal(); }
 function stSlot(key){ return stCaches[key] || (stCaches[key]={results:[],status:'IDLE'}); }
@@ -4393,14 +4393,14 @@ function renderSt(){
     if(stCache.status==='SCANNING') st.textContent=T15('Taranıyor… ','Scanning… ')+(stCache.progress||0)+'/'+(stCache.total||'?');
     else if(busy) st.textContent=T15('Başka bir tarama çalışıyor…','Another scan is running…');
     else if(stCache.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · '+stSideLinks(nL,nS,'stFilter');
-    else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
+    else st.textContent=T15('İlk 4 saatlik taraması bekleniyor…','Waiting for the first 4-hour scan…');
   }
-  const lblTr='15 dakikalık', lblEn='15m';
+  const lblTr='4 saatlik', lblEn='4h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 4 saat, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 4h, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
-  const iv='15';
+  const iv='240';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · ${tf.toUpperCase()}','${iv}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${fl(x)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
@@ -4504,7 +4504,7 @@ const translations = {
   "scanner.tabCrypto": "Crypto Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 4h closed candle · scan every 4 hours · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -4569,7 +4569,7 @@ const translations = {
   "scanner.tabCrypto": "Kripto Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 4s kapalı mum · 4 saatte bir tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -4634,7 +4634,7 @@ const translations = {
   "scanner.tabCrypto": "加密货币合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 4小时已收盘K线 · 每4小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -4699,7 +4699,7 @@ const translations = {
   "scanner.tabCrypto": "Krypto-Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 4h-Kerze · Scan alle 4 Stunden · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -4764,7 +4764,7 @@ const translations = {
   "scanner.tabCrypto": "Futures Crypto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 4h clôturée · scan toutes les 4 heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -4829,7 +4829,7 @@ const translations = {
   "scanner.tabCrypto": "Futuros Cripto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 4h cerrada · escaneo cada 4 horas · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
@@ -4982,7 +4982,7 @@ FAQ_HTML = r'''<!doctype html>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q6">How often are signals generated?</summary>
-        <p data-i18n="faq.a6">For crypto, the system automatically scans the 100 most liquid contracts every hour; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.</p>
+        <p data-i18n="faq.a6">For crypto, the system automatically scans the 100 most liquid contracts every 4 hours; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.</p>
       </details>
       <details class="faq-item">
         <summary data-i18n="faq.q7">How do I turn on Telegram notifications?</summary>
@@ -5039,7 +5039,7 @@ const translations = {
     "faq.q5": "Which markets are traded?",
     "faq.a5": "Binance Futures (crypto perpetuals), Borsa Istanbul (BIST 30, BIST 100, all BIST) and Wall Street (Dow Jones, Nasdaq 100, S&P 500) — all scanned from a single panel; both LONG and SHORT signals are evaluated.",
     "faq.q6": "How often are signals generated?",
-    "faq.a6": "For crypto, the system automatically scans the 100 most liquid contracts every hour; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.",
+    "faq.a6": "For crypto, the system automatically scans the 100 most liquid contracts every 4 hours; signals come only from closed candles, never from instantaneous price noise. BIST and Wall Street scans use daily candles and are started manually from the scan screen.",
     "faq.q7": "How do I turn on Telegram notifications?",
     "faq.a7": "Just get a link code from the “Telegram Connection” section on the panel and start the bot on Telegram — open/close and daily summary notifications arrive automatically.",
     "faq.q8": "What should I do if I need to urgently close an open position?",
@@ -5072,7 +5072,7 @@ const translations = {
     "faq.q5": "Hangi piyasalarda işlem yapılıyor?",
     "faq.a5": "Binance Futures (kripto vadeli işlemler), Borsa İstanbul (BIST 30, BIST 100, BIST Tümü) ve Wall Street (Dow Jones, Nasdaq 100, S&P 500) — hepsi tek panelden taranır; LONG ve SHORT yönlü sinyaller değerlendirilir.",
     "faq.q6": "Sinyaller ne sıklıkta üretiliyor?",
-    "faq.a6": "Kripto tarafında sistem her saat başı en likit 100 kontratı otomatik tarar; sinyaller yalnızca kapanmış mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez. BIST ve Wall Street taramaları günlük mumlarla çalışır ve tarama ekranından manuel başlatılır.",
+    "faq.a6": "Kripto tarafında sistem her 4 saatte bir en likit 100 kontratı otomatik tarar; sinyaller yalnızca kapanmış mumlardan üretilir, anlık fiyat gürültüsüne güvenilmez. BIST ve Wall Street taramaları günlük mumlarla çalışır ve tarama ekranından manuel başlatılır.",
     "faq.q7": "Telegram bildirimlerini nasıl açarım?",
     "faq.a7": "Panelde “Telegram Bağlantısı” bölümünden bir bağlantı kodu alıp Telegram'da botu başlatmanız yeterli — açılış/kapanış ve günlük özet bildirimleri otomatik gelir.",
     "faq.q8": "Açık bir pozisyonu acil kapatmam gerekirse ne yapmalıyım?",
@@ -5105,7 +5105,7 @@ const translations = {
     "faq.q5": "交易哪些市场？",
     "faq.a5": "Binance 合约（加密货币永续合约）、伊斯坦布尔交易所（BIST 30、BIST 100、BIST 全部）以及华尔街（道琼斯、纳斯达克 100、标普 500）— 均可在同一面板中扫描，并同时评估做多和做空信号。",
     "faq.q6": "信号多久生成一次？",
-    "faq.a6": "加密货币方面，系统每小时自动扫描流动性最高的100个合约；信号仅基于已收盘的K线生成，不会受瞬时价格噪声影响。BIST 与华尔街使用日线，需在扫描页面手动启动。",
+    "faq.a6": "加密货币方面，系统每4小时自动扫描流动性最高的100个合约；信号仅基于已收盘的K线生成，不会受瞬时价格噪声影响。BIST 与华尔街使用日线，需在扫描页面手动启动。",
     "faq.q7": "如何开启Telegram通知？",
     "faq.a7": "只需在面板的“Telegram 连接”部分获取绑定代码，并在 Telegram 中启动机器人 — 开仓/平仓及每日汇总通知将自动到达。",
     "faq.q8": "如需紧急平仓已开仓位，该怎么做？",
@@ -5138,7 +5138,7 @@ const translations = {
     "faq.q5": "An welchen Märkten wird gehandelt?",
     "faq.a5": "Binance Futures (Krypto-Perpetuals), Borsa Istanbul (BIST 30, BIST 100, gesamter BIST) und Wall Street (Dow Jones, Nasdaq 100, S&P 500) — alle werden von einem einzigen Panel aus gescannt; sowohl LONG- als auch SHORT-Signale werden bewertet.",
     "faq.q6": "Wie oft werden Signale generiert?",
-    "faq.a6": "Im Kryptobereich scannt das System jede Stunde automatisch die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen Kerzen, nicht aus kurzfristigem Preisrauschen. BIST- und Wall-Street-Scans nutzen Tageskerzen und werden manuell im Scan-Bildschirm gestartet.",
+    "faq.a6": "Im Kryptobereich scannt das System alle 4 Stunden automatisch die 100 liquidesten Kontrakte; Signale entstehen nur aus geschlossenen Kerzen, nicht aus kurzfristigem Preisrauschen. BIST- und Wall-Street-Scans nutzen Tageskerzen und werden manuell im Scan-Bildschirm gestartet.",
     "faq.q7": "Wie aktiviere ich Telegram-Benachrichtigungen?",
     "faq.a7": "Holen Sie sich einfach einen Verknüpfungscode im Bereich „Telegram-Verbindung“ im Panel und starten Sie den Bot in Telegram — Öffnungs-/Schließungs- und tägliche Zusammenfassungen kommen dann automatisch an.",
     "faq.q8": "Was soll ich tun, wenn ich eine offene Position dringend schließen muss?",
@@ -5171,7 +5171,7 @@ const translations = {
     "faq.q5": "Sur quels marchés le trading a-t-il lieu ?",
     "faq.a5": "Binance Futures (contrats perpétuels crypto), Borsa Istanbul (BIST 30, BIST 100, tout le BIST) et Wall Street (Dow Jones, Nasdaq 100, S&P 500) — tous scannés depuis un seul panneau ; les signaux LONG comme SHORT sont évalués.",
     "faq.q6": "À quelle fréquence les signaux sont-ils générés ?",
-    "faq.a6": "Côté crypto, le système scanne automatiquement chaque heure les 100 contrats les plus liquides ; les signaux ne proviennent que de bougies clôturées, jamais du bruit de prix instantané. Les scans BIST et Wall Street utilisent des bougies journalières et se lancent manuellement depuis l'écran de scan.",
+    "faq.a6": "Côté crypto, le système scanne automatiquement toutes les 4 heures les 100 contrats les plus liquides ; les signaux ne proviennent que de bougies clôturées, jamais du bruit de prix instantané. Les scans BIST et Wall Street utilisent des bougies journalières et se lancent manuellement depuis l'écran de scan.",
     "faq.q7": "Comment activer les notifications Telegram ?",
     "faq.a7": "Il suffit d'obtenir un code de liaison depuis la section « Connexion Telegram » du panneau et de démarrer le bot sur Telegram — les notifications d'ouverture/clôture et le résumé quotidien arrivent alors automatiquement.",
     "faq.q8": "Que dois-je faire si je dois fermer d'urgence une position ouverte ?",
@@ -5204,7 +5204,7 @@ const translations = {
     "faq.q5": "¿En qué mercados se opera?",
     "faq.a5": "Binance Futures (perpetuos cripto), Borsa Istanbul (BIST 30, BIST 100, todo el BIST) y Wall Street (Dow Jones, Nasdaq 100, S&P 500) — todos escaneados desde un solo panel; se evalúan señales LONG y SHORT.",
     "faq.q6": "¿Con qué frecuencia se generan las señales?",
-    "faq.a6": "En cripto, el sistema escanea automáticamente cada hora los 100 contratos más líquidos; las señales solo salen de velas cerradas, nunca del ruido de precio instantáneo. Los escaneos de BIST y Wall Street usan velas diarias y se inician manualmente desde la pantalla de escaneo.",
+    "faq.a6": "En cripto, el sistema escanea automáticamente cada 4 horas los 100 contratos más líquidos; las señales solo salen de velas cerradas, nunca del ruido de precio instantáneo. Los escaneos de BIST y Wall Street usan velas diarias y se inician manualmente desde la pantalla de escaneo.",
     "faq.q7": "¿Cómo activo las notificaciones de Telegram?",
     "faq.a7": "Simplemente obtén un código de enlace desde la sección “Conexión Telegram” del panel e inicia el bot en Telegram — las notificaciones de apertura/cierre y el resumen diario llegarán automáticamente.",
     "faq.q8": "¿Qué debo hacer si necesito cerrar urgentemente una posición abierta?",
@@ -5530,7 +5530,7 @@ async function taAddToBot(){
     if(!d.ok){ show(d.error||'Eklenemedi.',true); btn.textContent=old; btn.disabled=false; return; }
     if(d.status==='in_position') show('✓ '+d.symbol+' için robotun zaten açık pozisyonu var.');
     else if(d.status==='opening') show('✓ '+d.symbol+' robota eklendi. Geçerli bir '+d.side+' sinyali var; pozisyon birkaç saniye içinde açılır (Robot İşlem Takibi\'nde görünür).');
-    else if(d.status==='watching') show('✓ '+d.symbol+' robota eklendi ve takip ediliyor. Şu an giriş şartı sağlanmıyor: '+d.why+'. Saat başı taramada geçerli bir sinyal oluşursa robot pozisyon açar.');
+    else if(d.status==='watching') show('✓ '+d.symbol+' robota eklendi ve takip ediliyor. Şu an giriş şartı sağlanmıyor: '+d.why+'. 4 saatlik taramada geçerli bir sinyal oluşursa robot pozisyon açar.');
     else show('✓ '+d.symbol+' takip listesine eklendi.');
     btn.textContent='Robotta ✓';
   }catch(e){ show('Bağlantı hatası.',true); btn.textContent=old; btn.disabled=false; }
@@ -5550,7 +5550,7 @@ function taOpen(tv,label,iv){
   TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
   document.getElementById('taMarket').value=TA.market;
   document.getElementById('taSymbol').value=taSymFromTv(tv);
-  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'15m':'1d');
+  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'4h':'1d');
   document.getElementById('ownChartTf').value=tf;
   try{ history.replaceState(null,'','/analysis?tv='+encodeURIComponent(tv)+'&iv='+encodeURIComponent(iv||'')); }catch(e){}
   _own.tv=tv; _own.label=label||taSymFromTv(tv); _own.marks=[];
@@ -5680,7 +5680,7 @@ BLOG_BODY = r'''<style>
       <h3>Ders 3: Tek Bir Ekrandan Üç Farklı Piyasayı İzlemek Mümkün</h3>
       <p>Disiplinli bir algoritmik çerçeve, varlık sınıfı ne olursa olsun aynı analitik kararlılıkla çalışır. Farklı piyasalar için ayrı sistemler kurmak yerine, tek bir motor üzerinden çoklu varlık takibi gerçekleştirmek mümkündür.</p>
       <ul>
-        <li><b>Kripto Vadeli İşlemler:</b> Binance USDT-M piyasasındaki en likit 100 kontrat saat başı otomatik taranır.</li>
+        <li><b>Kripto Vadeli İşlemler:</b> Binance USDT-M piyasasındaki en likit 100 kontrat 4 saatte bir otomatik taranır.</li>
         <li><b>Borsa İstanbul:</b> BIST 30, BIST 100 ve BIST Tümü evreninde günlük mumlarla Supertrend taraması yapılır.</li>
         <li><b>Wall Street:</b> Dow Jones, Nasdaq 100 ve S&amp;P 500 endekslerindeki hisseler günlük mumlarla izlenir.</li>
       </ul>
@@ -5693,7 +5693,7 @@ BLOG_BODY = r'''<style>
 
       <h3>Ders 5: İllüzyonsuz Gerçekçilik — Paper Trading ve Şeffaf Backtest Mantığı</h3>
       <p>Sistem, kullanıcıların stratejiyi riske girmeden deneyimlemeleri için varsayılan olarak 10.000 USD bakiyeli bir deneme (paper trading) hesabıyla çalışır. Canlı işleme geçiş ise tamamen kullanıcının kendi borsa API anahtarlarını bağlaması ve riski üstlenmesiyle gerçekleşir.</p>
-      <p>Canlı strateji taraması saatlik döngülerle yürütülürken, backtest aracı geçmiş veri simülasyonlarını Binance Futures verileri üzerinde çalıştırır. Simülasyonlarda işlem tarafı başına komisyon (%0,04) ve kayma (%0,02 / slipaj) oranları hesaba katılırken, sinyaller yalnızca kapanmış mumlar üzerinden değerlendirilerek ileriye bakış hatası (lookahead bias) engellenir. Geçmiş performansın geleceği garanti etmediğini vurgulayan bu şeffaf yaklaşım, finansal teknolojilerde illüzyonlardan uzak durmak ve gerçekçi beklentiler oluşturmak açısından hayati önem taşır.</p>
+      <p>Canlı strateji taraması 4 saatlik döngülerle yürütülürken, backtest aracı geçmiş veri simülasyonlarını Binance Futures verileri üzerinde çalıştırır. Simülasyonlarda işlem tarafı başına komisyon (%0,04) ve kayma (%0,02 / slipaj) oranları hesaba katılırken, sinyaller yalnızca kapanmış mumlar üzerinden değerlendirilerek ileriye bakış hatası (lookahead bias) engellenir. Geçmiş performansın geleceği garanti etmediğini vurgulayan bu şeffaf yaklaşım, finansal teknolojilerde illüzyonlardan uzak durmak ve gerçekçi beklentiler oluşturmak açısından hayati önem taşır.</p>
 
       <h2>3. Sonuç ve Geleceğe Yönelik Değerlendirme</h2>
       <p>Algoritmik ticaret, piyasadaki duygusal gürültüyü susturarak yatırımcılara disiplinli, veri odaklı ve sürdürülebilir bir yol haritası sunar. Karmaşık indikatör kalabalığı yerine net bir Supertrend stratejisi, çok katmanlı risk kontrolleri ve şeffaf test süreçleri birleştiğinde, sermayeyi korumak ve objektif kararlar almak kolaylaşır. Finansal piyasalarda uzun vadeli başarının anahtarı; anlık heyecanlara değil, test edilmiş kurallara ve sıkı bir risk disiplinine sadık kalmaktır.</p>
@@ -10167,7 +10167,7 @@ _TA_AI_CACHE = {}
 
 
 def ta_chart_payload(tv, tf):
-    """chart_st'ten mumlari alir; Supertrend'i BOTUN KENDI motoruyla (ATR 10, carpan 4.4) yeniden hesaplar,
+    """chart_st'ten mumlari alir; Supertrend'i BOTUN KENDI motoruyla yeniden hesaplar,
     boylece grafikteki cizgi ve oklar robotun sinyalleriyle birebir ayni olur."""
     import chart_st
     import numpy as _np
@@ -10181,7 +10181,13 @@ def ta_chart_payload(tv, tf):
     idx = _pd.to_datetime([c['time'] for c in C], unit='s', utc=True)
     ind = _pd.DataFrame({'open': [c['open'] for c in C], 'high': [c['high'] for c in C],
                          'low': [c['low'] for c in C], 'close': [c['close'] for c in C]}, index=idx)
-    st = _stf(ind['high'], ind['low'], ind['close'], _sts.ST_PERIOD, _sts.ST_MULT)
+    _per, _mul = _sts.ST_PERIOD, _sts.ST_MULT
+    try:
+        if ta_parse_market(tv)[1] != 'crypto':        # hisse grafikleri hisse taramasinin kendi ayarini kullanir
+            from scanner_st import PERIOD as _per, FACTOR as _mul
+    except Exception:
+        pass
+    st = _stf(ind['high'], ind['low'], ind['close'], _per, _mul)
     line = st['supertrend'].to_numpy(dtype=float)
     dr = st['supertrend_direction'].to_numpy(dtype=float)
     times = [c['time'] for c in C]
@@ -10233,7 +10239,7 @@ _TA_AI_SYSTEM = (
 
 
 _BOT_WHY_TR = {
-    'NO_SIGNAL': 'son 3 kapanmış mumda yeni bir Supertrend dönüşü yok',
+    'NO_SIGNAL': 'son kapanmış 4 saatlik mumda yeni bir Supertrend dönüşü yok',
     'LAST_CANDLE_WRONG_SIDE_OF_ST': 'son kapanmış mum Supertrend çizgisinin yanlış tarafında',
     'BELOW_LEVEL': 'fiyat kırılan çizginin altına geri dönmüş',
     'ABOVE_LEVEL': 'fiyat kırılan çizginin üstüne geri dönmüş',
@@ -10261,7 +10267,7 @@ def ta_bot_check(symbol):
     import supertrend_signal as _sts
     import pandas as _pd
     df = scanner_st15._klines(symbol)
-    asof = _pd.Timestamp.now(tz='UTC').floor('15min')
+    asof = _pd.Timestamp.now(tz='UTC').floor('4h')
     closed = df[df['close_time'] <= asof].reset_index(drop=True)
     if len(closed) < 60:
         return {'ok': False, 'why': 'NO_DATA', 'sig': None}

@@ -110,8 +110,9 @@ def main():
     ap.add_argument("--fee", type=float, default=0.06, help="yon basina komisyon+kayma %% (sunumdaki: 0.04 komisyon + 0.02 kayma)"); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
     ap.add_argument("--maxstop", type=float, default=sts.MAX_STOP_DIST_PCT); ap.add_argument("--volmult", type=float, default=sts.MIN_REL_VOL)
     ap.add_argument("--risk", type=float, default=0.25); ap.add_argument("--cap", type=float, default=25.0); ap.add_argument("--balance", type=float, default=10000.0)
-    ap.add_argument("--tf", default="15m", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--mult", type=float, default=None, help="Supertrend carpani (varsayilan: canli ayar)"); ap.add_argument("--tf", default="15m", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
+    if a.mult: sts.ST_MULT = a.mult
     syms = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
     data = {}
     for s in syms:

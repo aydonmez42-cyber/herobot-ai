@@ -14,7 +14,10 @@ import pandas as pd
 from indicators import supertrend
 
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "4.4"))
+ST_MULT = float(os.environ.get("ST_MULT", "5.2"))                       # altcoin (4s mum) taramasi ve islemleri
+# BTC yon/rejim Supertrend (15 dk mum): rejim kapisi + yon degisimi korumasi bu ayarla calisir
+REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
+REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "3.7"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
@@ -120,13 +123,13 @@ def lock_tiers_text():
         t += " · sonrasında zirvenin " + ", ".join(f"+%{a:g}'dan itibaren {g:g}" for a, g in TRAIL_GAPS) + " puan altı"
     return t
 
-MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
+MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "1"))   # yalnizca SON kapanmis (4 saatlik) mumda olusan taze sinyal (backtest ile ayni: sonraki mum acilisinda giris)
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
 EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
 # Girişte Supertrend stopu fiyattan bu % den uzaksa islem acilmaz (cok oynak coin; acil stop yok -> kayip siniri). 0 = kapali
-MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "6"))
+MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "0"))   # 4s modunda kapali (backtest "sinirsiz"); risk pozisyon boyutu + acil stop ile sinirlanir
 
 
 # Pozisyon boyutu (paper): risk bazli. Stop olursa kaybedilecek tutar = guncel bakiyenin RISK_PCT %'si
@@ -187,7 +190,7 @@ def signal_rel_volume(ind, signal_time, n=None):
 
 def regime_direction(df_closed):
     """Kapanmis mumlarla REGIME_SYMBOL'un Supertrend yonu: 'LONG' | 'SHORT' | None."""
-    st = supertrend(df_closed["high"], df_closed["low"], df_closed["close"], ST_PERIOD, ST_MULT)
+    st = supertrend(df_closed["high"], df_closed["low"], df_closed["close"], REGIME_ST_PERIOD, REGIME_ST_MULT)
     d = st["supertrend_direction"].iloc[-1]
     if np.isnan(d):
         return None

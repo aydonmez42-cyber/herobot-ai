@@ -260,16 +260,18 @@ DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() i
 
 _btc_cache = {'ts': 0.0, 'data': None}
 
-# --- Crypto timeframe (changed 2026-11-05: 4h -> 15m) -----------------------------------
+# --- Crypto timeframe (changed 2026-11-15: 15m -> 4h; BTC regime stays on 15m) ---------------
 # The live crypto bot (main ETH engine, watchlist coins, scanner) now reads CLOSED candles of
 # cfg.CRYPTO_INTERVAL (default 15m; Railway variable CRYPTO_INTERVAL=4h restores the old mode).
 # Things that are deliberately NOT tied to it: the entry-wait 4h check (still a real 4h
 # candle), the trend stop (TREND_SL_INTERVAL, default 4h), the BTC 1h/4h drop lock, stocks.
-CRYPTO_INTERVAL = '15m'   # robot yalnizca 15 dakikalik grafikle calisir
+CRYPTO_INTERVAL = '4h'    # altcoin taramasi, giris ve Supertrend stop: 4 saatlik KAPANMIS mumlar
+BTC_REGIME_INTERVAL = (os.environ.get('BTC_REGIME_INTERVAL', '15m').strip() or '15m')   # yalnizca BTC yonu (rejim + yon degisimi korumasi) bu mumla izlenir
+_IV_FLOOR = {'15m': '15min', '30m': '30min', '1h': '1h', '2h': '2h', '4h': '4h'}
 CRYPTO_ENTRY_MIN_SCORE = int(getattr(cfg, 'CRYPTO_ENTRY_MIN_SCORE', 0) or 0)
-SCAN_EVERY_MIN = max(1, int(_env_float('SCANNER_EVERY_MIN', 60)))
+SCAN_EVERY_MIN = max(1, int(_env_float('SCANNER_EVERY_MIN', 240)))     # 4 saatte bir (00/04/08/12/16/20 UTC mum kapanisi)
 BTC_ST_LOCK_INTERVAL = os.environ.get('BTC_ST_LOCK_INTERVAL', CRYPTO_INTERVAL).strip() or CRYPTO_INTERVAL
-TREND_SL_INTERVAL = '15m'
+TREND_SL_INTERVAL = '4h'
 _IV_LABEL = {'1m': '1dk', '3m': '3dk', '5m': '5dk', '15m': '15dk', '30m': '30dk', '1h': '1s', '2h': '2s', '4h': '4s', '1d': '1g'}
 
 
@@ -2052,7 +2054,7 @@ def st_extra_gate(state, symbol, sig, price):
     if sts.COUNTER_TREND_MAX >= 0 and symbol != sts.REGIME_SYMBOL:
         reg = None
         try:
-            _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', CRYPTO_INTERVAL, 300)
+            _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', BTC_REGIME_INTERVAL, 300)
             reg = sts.regime_direction(_d.iloc[:-1])
         except Exception as e:
             if time.time() - _REGIME_WARN['t'] > 600:
@@ -2233,8 +2235,12 @@ def st_regime_flip_check(state, now):
     Her donus yalnizca BIR kez islenir; rejim okunamazsa atlanir."""
     if not sts.REGIME_FLIP or sts.COUNTER_TREND_MAX < 0:
         return
+    # BTC her BTC_REGIME_INTERVAL mum kapanisinda bir kez sorgulanir (30 sn'lik turlarda bos istek atilmaz)
+    _bnd = pd.Timestamp(now).floor(_IV_FLOOR.get(BTC_REGIME_INTERVAL, '15min')).isoformat()
+    if state.get('btc_regime_bnd') == _bnd:
+        return
     try:
-        _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', CRYPTO_INTERVAL, 300)
+        _d = fetch_cached(sts.REGIME_SYMBOL, 'USD_M', BTC_REGIME_INTERVAL, 300)
         reg = sts.regime_direction(_d.iloc[:-1])
     except Exception as e:
         if type(e).__name__ != 'BinanceCooldown' and time.time() - _REGIME_WARN['t'] > 600:
@@ -2245,7 +2251,9 @@ def st_regime_flip_check(state, now):
         return
     prev = state.get('btc_regime')
     if prev == reg:
+        state['btc_regime_bnd'] = _bnd
         return
+    state['btc_regime_bnd'] = _bnd
     state['btc_regime'] = reg
     save_state(state)
     if not prev:
@@ -2261,6 +2269,7 @@ def st_regime_flip_check(state, now):
             if type(e).__name__ == 'BinanceCooldown':
                 print('ST REJIM | Binance bekleme suresi aktif; donus islemi bir sonraki turda denenir', flush=True)
                 state['btc_regime'] = prev            # bir sonraki turda yeniden dene
+                state.pop('btc_regime_bnd', None)
                 return
             continue
         sign = 1.0 if p['side'] == 'LONG' else -1.0
@@ -2387,15 +2396,15 @@ def st_reentry_check(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-11-10 st-only r17 | entry-quality + pullback-entry + entry-context-log | 15m-mode + hourly-scan + 8of8 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
-    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
+    print('VERSION | paper_trading 2026-11-15 st-only r18 4h-mode | entry-quality + pullback-entry + entry-context-log | 4h-mode + 4h-scan + btc-regime-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (4s mum kapanışı) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
           f'IDLE_REMOVE={IDLE_REMOVE_MODE} | STOP_REMOVE={STOP_REMOVE_MODE} | AUTO_ADD={AUTO_ADD_MODE} (en fazla {AUTO_ADD_MAX_PER_SCAN}/tarama, 24s değişim %{AUTO_ADD_MIN_CHANGE_PCT:g}..%{AUTO_ADD_MAX_CHANGE_PCT:g}) | ENTRY_WAIT={ENTRY_WAIT_MODE} | TREND_SL={TREND_SL_MODE} ({iv_label(TREND_SL_INTERVAL)} Supertrend dönüşü) | M15_EXIT={M15_EXIT_MODE} ({M15_EXIT_COUNT} ters 15dk sinyal) | BTC_ST_LOCK={BTC_ST_LOCK_MODE} ({iv_label(BTC_ST_LOCK_INTERVAL)}) | TIME_STOP={TIME_STOP_MODE} ({TIME_STOP_HOURS:.0f}s, kâr<${TIME_STOP_MIN_PNL_USD:.0f}) | LOSS_CAP=${MAX_LOSS_USD:.0f} | LOCK=${PROFIT_LOCK_ARM_USD:.0f}/${PROFIT_LOCK_USD:.0f} {PROFIT_LOCK_TIERS} | BREAKEVEN={BREAKEVEN_MODE} (+{BREAKEVEN_ATR} ATR, buffer {BREAKEVEN_BUFFER_ATR}) | EARLY_EXIT={EARLY_EXIT_MODE} (loss>{EARLY_EXIT_LOSS_ATR} ATR under BTC lock)', flush=True)
     threading.Thread(target=start_dashboard, daemon=True).start()
     threading.Thread(target=scanner_st15.background_loop, daemon=True).start()
-    print(f'SUPERTREND | 15dk | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | saat basi tarama | TP {sts.tp_text()} | kar kilidi {sts.lock_tiers_text()}  '
+    print(f'SUPERTREND | {CRYPTO_INTERVAL} | ATR {sts.ST_PERIOD} x {sts.ST_MULT} | BTC rejimi {BTC_REGIME_INTERVAL} ATR {sts.REGIME_ST_PERIOD} x {sts.REGIME_ST_MULT} | {SCAN_EVERY_MIN} dk tarama | TP {sts.tp_text()} | kar kilidi {sts.lock_tiers_text()}  '
           f'stop={sts.ST_STOP_MODE} | acil stop {sts.EMERGENCY_STOP_PCT:g} (0=kapali) | max mesafe %{sts.MAX_STOP_DIST_PCT:g} | en fazla {ST_MAX_OPEN} pozisyon', flush=True)
     state = load_state()
     if state.get('position'):
