@@ -14,10 +14,10 @@ import pandas as pd
 from indicators import supertrend
 
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "5.2"))                       # altcoin (4s mum) taramasi ve islemleri
-# BTC yon/rejim Supertrend (15 dk mum): rejim kapisi + yon degisimi korumasi bu ayarla calisir
+ST_MULT = float(os.environ.get("ST_MULT", "4.1"))                       # altcoin (15 dk mum) taramasi ve islemleri
+# BTC yon/rejim Supertrend (15 dk mum; eski sistemde altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
 REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
-REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "3.7"))
+REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.1"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
@@ -123,13 +123,14 @@ def lock_tiers_text():
         t += " · sonrasında zirvenin " + ", ".join(f"+%{a:g}'dan itibaren {g:g}" for a, g in TRAIL_GAPS) + " puan altı"
     return t
 
-MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "1"))   # yalnizca SON kapanmis (4 saatlik) mumda olusan taze sinyal (backtest ile ayni: sonraki mum acilisinda giris)
+MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
+WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "16"))   # son 16 mum (15 dk x 16 = 4 saat) icinde ters yonlu Supertrend donusu olduysa giris reddedilir (0 = kapali)
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
 EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
 # Girişte Supertrend stopu fiyattan bu % den uzaksa islem acilmaz (cok oynak coin; acil stop yok -> kayip siniri). 0 = kapali
-MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "0"))   # 4s modunda kapali (backtest "sinirsiz"); risk pozisyon boyutu + acil stop ile sinirlanir
+MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "6"))
 
 
 # Pozisyon boyutu (paper): risk bazli. Stop olursa kaybedilecek tutar = guncel bakiyenin RISK_PCT %'si
@@ -275,6 +276,29 @@ def latest_entry_signal(df, max_age_bars=None):
     return None
 
 
+def whipsaw_blocked(ind, sig, bars=None):
+    """Testere (whipsaw) filtresi: sinyalin LONG/SHORT donusunden onceki `bars` mum icinde TERS yonlu
+    bir Supertrend donusu varsa (trend < `bars` mum yasadi) True doner. ind: kapanmis mumlar."""
+    bars = WHIPSAW_BARS if bars is None else bars
+    if bars <= 0 or ind is None or sig is None:
+        return False
+    df = ind.iloc[-ST_WARMUP_BARS:]
+    events, _ = run_state_machine(df)
+    last = len(df) - 1
+    side = sig.get("side")
+    opp = "SHORT" if side == "LONG" else "LONG"
+    try:
+        sig_t = pd.Timestamp(sig.get("signal_time"))
+    except Exception:
+        sig_t = None
+    i_sig = last
+    if sig_t is not None:
+        for e in events:
+            if pd.Timestamp(e["time"]) == sig_t and e["type"] in ("LONG", "RE_LONG", "SHORT", "RE_SHORT"):
+                i_sig = e["i"]
+    return any(e["type"] == opp and 0 < i_sig - e["i"] < bars for e in events)
+
+
 def last_closed_side_ok(ind, side):
     """Giris kurali: LONG icin SON KAPANMIS mum Supertrend cizgisinin USTUNDE (trend yukari), SHORT icin ALTINDA."""
     st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
@@ -295,6 +319,8 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         return False, "EXCLUDED_SYMBOL"
     if ind is not None and not last_closed_side_ok(ind, sig["side"]):
         return False, "LAST_CANDLE_WRONG_SIDE_OF_ST"
+    if ind is not None and whipsaw_blocked(ind, sig):
+        return False, "WHIPSAW_16"
     if MAX_STOP_DIST_PCT > 0 and last_price:
         line = None
         if ind is not None:

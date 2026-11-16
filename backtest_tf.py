@@ -107,17 +107,22 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0):
-    """Tek coin: tum islemleri doner (liste of dict)."""
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0):
+    """Tek coin: tum islemleri doner (liste of dict). whipsaw=N: sinyalden onceki N mum icinde ters yonlu ST donusu varsa girme (0=kapali)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
         d = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
     o, h, l, c = (df[k].to_numpy() for k in ("open", "high", "low", "close"))
     n = len(df); trades = []; busy_until = -1
     emerg = sts.EMERGENCY_STOP_PCT if emerg is None else emerg
+    last_flip = {"LONG": -10**9, "SHORT": -10**9}
     for e in events:
         if e["type"] not in ("LONG", "SHORT", "RE_LONG", "RE_SHORT"): continue
         i = e["i"]
+        _opp = "SHORT" if e["type"] in ("LONG", "RE_LONG") else "LONG"
+        _whip = whipsaw > 0 and 0 < i - last_flip[_opp] < whipsaw                                 # ters yonlu donus son N mum icinde
+        if e["type"] in ("LONG", "SHORT"): last_flip[e["type"]] = i
+        if _whip: continue
         if i < warm or i + 1 >= n or i <= busy_until: continue
         if adx_min > 0 and adx_arr is not None and not (adx_arr[i] >= adx_min): continue        # trend zayif (NaN de elenir)
         if atr_min > 0 and atrp_arr is not None and not (atrp_arr[i] >= atr_min): continue      # oynaklik cok dusuk
