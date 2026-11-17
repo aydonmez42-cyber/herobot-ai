@@ -1,11 +1,11 @@
 """
-Supertrend taramasi - 1 SAATLIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.1).
+Supertrend taramasi - 1 SAATLIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 3.7).
 
 Sinyal mantigi supertrend_signal.py icindedir (TradingView "ST Sinyal" Pine kodunun birebir karsiligi):
   LONG  = Supertrend'i yukari kirip ustunde mum kapatti (veya stop sonrasi yeniden giris),
   SHORT = Supertrend'i asagi kirip altinda mum kapatti.
-Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir. Listelenen/islem acan sinyal: LONG/SHORT donusunden
-CONFIRM_BARS (5) kapanmis mum sonra, arada ters donus olmamis ONAYLI sinyaldir. Olusmakta olan mum her zaman atilir.
+Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir. Listelenen/islem acan sinyal: SON kapanmis mumdaki LONG/SHORT donusudur (yas 0).
+Olusmakta olan mum taramada atilir; mum-ici SHORT girisi paper_trading.st_intrabar_short_check ile canli fiyattan yapilir.
 
 Dashboard: /api/scanner_st rotalari bu modulu kullanir (scanner_st.py 4s/1g/1h taramasi DEGISMEDEN kalir; grafik ve hisse taramalari onu kullanir).
 Evren: en likit SCAN_ST_TOP_N (varsayilan 100) USDT-M surekli kontrat.

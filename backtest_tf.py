@@ -107,7 +107,7 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0, confirm=0):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0, confirm=0, short_intrabar=False):
     """Tek coin: tum islemleri doner (liste of dict). whipsaw=N: sinyalden onceki N mum icinde ters yonlu ST donusu varsa girme (0=kapali)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
@@ -142,6 +142,9 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             if side == -1 and not (c[i] < vwma[i] and vwma[i] < vwma[i - 1]): continue
         i0 = i + confirm                                     # son onay mumu; giris bir sonraki mumun acilisinda
         entry = o[i0 + 1]; peak = 0.0; exit_pct = None; reason = None; j = i0 + 1
+        _ibs = short_intrabar and e["type"] in ("SHORT", "RE_SHORT")        # mum-ici SHORT: kirilan cizgide (aciliş bosluklu ise acilista) gir, kapanisi bekleme
+        if _ibs:
+            entry = min(o[i], float(e["level"])) if e.get("level") is not None else o[i]; j = i + 1
         _stl = float(_line[i0]) if confirm > 0 else float(e.get("st", entry))
         sd = abs(entry - _stl) / entry * 100.0                             # giriste stop mesafesi (%)
         if maxstop > 0 and sd > maxstop: continue                                               # stop cok uzak: robot da girmez (STOP_TOO_FAR)
@@ -164,7 +167,7 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             exit_pct, reason, j = side * (c[-1] - entry) / entry * 100, "OPEN_END", n - 1
         busy_until = j
         trades.append({"side": "LONG" if side == 1 else "SHORT", "kind": e["type"], "bars": j - i,
-                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i0 + 1], "t_exit": df.index[j], "sd": sd})
+                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i if _ibs else i0 + 1], "t_exit": df.index[j], "sd": sd})
     return trades
 
 

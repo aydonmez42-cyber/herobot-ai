@@ -3863,7 +3863,7 @@ SCANNER_HTML = r'''<!doctype html>
         <select id="stTf" onchange="stTfChange()"><option value="1h">1 saat</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="7" selected>Onaylı sinyaller</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="1" selected>Son 1 mum</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
@@ -4398,8 +4398,8 @@ function renderSt(){
   }
   const lblTr='1 saatlik', lblEn='1h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 1 saat, sinyal mum kapanışından sonra ters yöne dönmemişse (onaylı), '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 1h, signals confirmed only if the price did not break back afterwards, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 1 saat, yalnızca son 1 mum değerlendirilir: LONG ve SHORT sinyalleri mum kapanışıyla onaylanır, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 1h, only the last candle counts: LONG and SHORT signals are confirmed on candle close, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='60';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
@@ -10241,7 +10241,7 @@ _TA_AI_SYSTEM = (
 
 
 _BOT_WHY_TR = {
-    'NO_SIGNAL': 'onaylanmış (ters yöne dönmemiş) yeni bir Supertrend sinyali yok',
+    'NO_SIGNAL': 'son 1 mumda yeni bir Supertrend sinyali yok',
     'LAST_CANDLE_WRONG_SIDE_OF_ST': 'son kapanmış mum Supertrend çizgisinin yanlış tarafında',
     'BELOW_LEVEL': 'fiyat kırılan çizginin altına geri dönmüş',
     'ABOVE_LEVEL': 'fiyat kırılan çizginin üstüne geri dönmüş',

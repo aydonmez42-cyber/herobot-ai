@@ -2095,6 +2095,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
         'trail_active': False, 'trail_stop': None, 'highest_high': px, 'lowest_low': px,
         'entry_fee': fee(px * qty), 'source': 'st',
         'st_level': level, 'st_kind': sig.get('kind'), 'peak_pct': 0.0,
+        'st_intrabar': bool(sig.get('intrabar')), 'st_confirmed': not sig.get('intrabar'),
         'emergency_stop': (px * (1 - sign * sts.EMERGENCY_STOP_PCT / 100.0)) if sts.EMERGENCY_STOP_PCT > 0 else None,
     }
     state.setdefault('positions', {})[symbol] = pos
@@ -2107,7 +2108,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     state.setdefault('st_traded', {})[symbol] = pos['signal_time']
     save_state(state)
     send_message(st_entry_message(pos))
-    print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
+    print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')}{' (mum-ici)' if sig.get('intrabar') else ''} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
           f"acil stop={('%.6f' % pos['emergency_stop']) if pos.get('emergency_stop') else 'kapali'}", flush=True)
     try:
         live_trading.on_entry_signal(symbol, side, px, source='watchlist', stop_level=level,
@@ -2163,6 +2164,73 @@ def st_scan_and_trade(state, now):
             print(f'ST ENTRY | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
     st_manual_watch_scan(state, now, skip_symbols={r['symbol'] for r in rows})
     save_state(state)
+
+
+_PX_CACHE = {'t': 0.0, 'd': {}}
+_IB_SKIP = {}
+
+
+def _all_prices():
+    """Tum USDT-M sembollerin canli fiyati (tek istek, 15 sn onbellek)."""
+    if time.time() - _PX_CACHE['t'] < 15.0 and _PX_CACHE['d']:
+        return _PX_CACHE['d']
+    data = scanner_st15._get(f"{scanner_st15.FAPI}/fapi/v1/ticker/price", {})
+    d = {x['symbol']: float(x['price']) for x in data if x.get('symbol') and x.get('price')}
+    _PX_CACHE['d'] = d; _PX_CACHE['t'] = time.time()
+    return d
+
+
+def st_intrabar_short_check(state, now):
+    """MUM-ICI SHORT: son saat-basi taramada trendi YUKARI olan coinlerde, canli fiyat yesil cizginin altina inerse
+    mum kapanisini beklemeden SHORT acar (ayni giris kapilari: hacim, BTC rejimi, boyut/maruziyet, stop mesafesi).
+    SL: kirmizi cizginin hemen ustu, mum KAPANISINDA calisir (check_exit)."""
+    if not sts.SHORT_INTRABAR:
+        return
+    snap = scanner_st15.snapshot()
+    if snap.get('status') != 'READY' or not snap.get('asof'):
+        return
+    if pd.Timestamp(snap['asof']) != pd.Timestamp(now).floor(_IV_FLOOR.get(CRYPTO_INTERVAL, '1h')):
+        return                                            # tarama bu saatin mumuna ait degil: cizgiler guncel degil
+    if len(state.get('positions') or {}) >= ST_MAX_OPEN:
+        return
+    rows = [r for r in snap.get('results', []) if r.get('trend') == 'UP' and r.get('st') and r['symbol'] not in (state.get('positions') or {})]
+    if not rows:
+        return
+    px = _all_prices()
+    trig = [r for r in rows if px.get(r['symbol']) and px[r['symbol']] < float(r['st'])]
+    trig.sort(key=lambda r: -(r.get('volume') or 0))
+    for r in trig:
+        symbol = r['symbol']
+        try:
+            if symbol in (state.get('positions') or {}):
+                continue
+            if time.time() - _IB_SKIP.get(symbol, 0.0) < 300.0:
+                continue                                  # yakin zamanda reddedildi: 5 dk sonra tekrar bak
+            if len(state.get('positions') or {}) >= ST_MAX_OPEN:
+                break
+            df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+            price = float(df.iloc[-1]['close'])
+            ind = df.iloc[:-1].copy().set_index('close_time')
+            sig = sts.intrabar_short_signal(df, df.iloc[-1]['close_time'])
+            if not sig:
+                _IB_SKIP[symbol] = time.time()
+                continue
+            if state.get('st_traded', {}).get(symbol) == pd.Timestamp(sig['signal_time']).isoformat():
+                continue                                  # bu mumda zaten islem acildi
+            ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
+            if ok:
+                gsig = dict(sig); gsig['signal_time'] = ind.index[-1]       # hacim filtresi: son KAPANMIS mumun goreli hacmi
+                ok, why = st_extra_gate(state, symbol, gsig, price)
+            if not ok:
+                _IB_SKIP[symbol] = time.time()
+                print(f"ST ENTRY | SHORT {symbol} (mum-ici) atlandi: {why}", flush=True)
+                continue
+            st_open_position(state, symbol, sig, price, r.get('atr'), now)
+        except Exception as e:
+            if type(e).__name__ == 'BinanceCooldown':
+                print('ST INTRABAR | Binance bekleme suresi aktif, bu tur atlandi', flush=True)
+                break
+            print(f'ST INTRABAR | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
 def _st_try_open_manual(state, symbol, now, sig=None):
@@ -2330,8 +2398,10 @@ def st_manage_positions(state, now):
             p['tp'] = p['entry_price'] * (1 + sign * _tgt / 100.0)          # TP kapaliysa: bir sonraki kilit basamagi
             if sts.ST_STOP_MODE == 'flip':
                 try:
-                    _ln = float(sts.supertrend(ind['high'], ind['low'], ind['close'], sts.ST_PERIOD, sts.ST_MULT)['supertrend'].iloc[-1])
-                    if _ln == _ln and _ln > 0:
+                    _stx = sts.supertrend(ind['high'], ind['low'], ind['close'], sts.ST_PERIOD, sts.ST_MULT)
+                    _ln = float(_stx['supertrend'].iloc[-1]); _dr = int(_stx['supertrend_direction'].iloc[-1])
+                    _wait_confirm = bool(p.get('st_intrabar')) and not p.get('st_confirmed') and _dr == 1   # mum-ici SHORT, donus henuz teyitsiz
+                    if _ln == _ln and _ln > 0 and not _wait_confirm:
                         p['st_level'] = _ln; p['sl'] = _ln      # dinamik (trailing) stop: cizgi hareket ettikce stop da hareket eder
                 except Exception:
                     pass
@@ -2398,8 +2468,8 @@ def st_reentry_check(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-11-17 st-only r20 | entry-quality + pullback-entry + entry-context-log | 1h-mode + hourly-scan + confirm-5 + btc-st-1h | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
-    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | onay={sts.CONFIRM_BARS} mum (+{sts.CONFIRM_EXTRA_BARS}) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
+    print('VERSION | paper_trading 2026-11-17 st-only r21 | entry-quality + pullback-entry + entry-context-log | 1h-mode + hourly-scan + short-intrabar + btc-st-1h | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | LONG mum kapanışında, SHORT mum-içi={'açık' if sts.SHORT_INTRABAR else 'kapalı'} | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
@@ -2482,6 +2552,7 @@ def main():
                 print(f'LIVE RESTORE | ERROR | {type(e).__name__}: {e}', flush=True)
             try:
                 st_scan_and_trade(state, now)
+                st_intrabar_short_check(state, now)
                 st_manual_requests(state, now)
                 st_manage_positions(state, now)
                 st_reentry_check(state, now)

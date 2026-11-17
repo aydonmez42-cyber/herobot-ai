@@ -14,10 +14,10 @@ import pandas as pd
 from indicators import supertrend
 
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "4.1"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
+ST_MULT = float(os.environ.get("ST_MULT", "3.7"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
 # BTC yon/rejim Supertrend (1 saatlik mum, altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
 REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
-REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.1"))
+REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "3.7"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
@@ -123,10 +123,14 @@ def lock_tiers_text():
         t += " · sonrasında zirvenin " + ", ".join(f"+%{a:g}'dan itibaren {g:g}" for a, g in TRAIL_GAPS) + " puan altı"
     return t
 
-# ONAY KURALI (1 saatlik mum): Supertrend LONG/SHORT verdikten sonra CONFIRM_BARS kapanmis mum boyunca fiyat kirdigi cizgiyi geri kirmadiysa
-# (ters donus / stop yok) giris acilir. Sinyal mumundan CONFIRM_BARS mum sonra (yas = CONFIRM_BARS) ve en gec CONFIRM_BARS+CONFIRM_EXTRA_BARS mum sonra gecerlidir.
-CONFIRM_BARS = int(os.environ.get("ST_CONFIRM_BARS", "5"))
-CONFIRM_EXTRA_BARS = int(os.environ.get("ST_CONFIRM_EXTRA_BARS", "1"))
+# GIRIS ZAMANLAMASI (1 saatlik mum): yalnizca SON kapanmis mumdaki sinyale girilir (yas 0). LONG: mum cizgi ustunde KAPANDIKTAN sonra.
+# SHORT: LONG gibi mum kapanisinda onaylanir (sahte kirilim riski nedeniyle). Mum-ici SHORT (SHORT_INTRABAR) varsayilan KAPALI; ST_SHORT_INTRABAR=1 ile acilir.
+# Eski "N mum onay" kurali (CONFIRM_BARS) varsayilan olarak kapali (0); istenirse ST_CONFIRM_BARS ile acilir.
+CONFIRM_BARS = int(os.environ.get("ST_CONFIRM_BARS", "0"))
+CONFIRM_EXTRA_BARS = int(os.environ.get("ST_CONFIRM_EXTRA_BARS", "0"))
+SHORT_INTRABAR = os.environ.get("ST_SHORT_INTRABAR", "0").strip().lower() in ("1", "true", "on", "yes")
+# Mum-ici SHORT'ta mum kapanisinda donus teyit edilmediyse (fiyat cizgi ustune geri kapandiysa) hemen cik (1) / yalnizca kirmizi cizgi ustu kapanista cik (0, varsayilan)
+INTRABAR_FAKEOUT_EXIT = os.environ.get("ST_INTRABAR_FAKEOUT_EXIT", "0").strip().lower() in ("1", "true", "on", "yes")
 MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", str(CONFIRM_BARS + CONFIRM_EXTRA_BARS + 1)))   # yas <= bu-1
 WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
@@ -319,6 +323,21 @@ def last_closed_side_ok(ind, side):
     return (d == 1 and close > line) if side == "LONG" else (d == -1 and close < line)
 
 
+def intrabar_short_signal(df, forming_close_time=None):
+    """Mum-ici SHORT: df = kapanmis mumlar + SON satir olusmakta olan mum (close = canli fiyat).
+    Son kapanmis mum trend YUKARI iken, olusan mumda fiyat yesil cizgiyi asagi kirdiysa (mum o fiyatta kapansaydi donus olurdu)
+    SHORT sinyali doner. 'st' = olusan (gecici) kirmizi cizgi; 'level' = kirilan yesil cizgi."""
+    if df is None or len(df) < 20:
+        return None
+    st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)
+    d = st["supertrend_direction"].to_numpy()
+    line = st["supertrend"].to_numpy()
+    if d[-2] != 1 or d[-1] != -1 or np.isnan(line[-1]) or np.isnan(line[-2]):
+        return None
+    return {"side": "SHORT", "kind": "SHORT", "signal_time": forming_close_time, "signal_close": float(df["close"].iloc[-1]),
+            "level": float(line[-2]), "st": float(line[-1]), "age_bars": 0, "intrabar": True}
+
+
 def entry_allowed(sig, last_price, ind=None, symbol=None):
     """Tarama filtreleri. (ok, neden) doner. 24s degisim filtresi YOK (kaldirildi).
     ind verilirse (kapanmis mumlar) son mumun Supertrend'e gore konumu da sart."""
@@ -326,13 +345,14 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         return False, "NO_SIGNAL"
     if is_excluded(symbol):
         return False, "EXCLUDED_SYMBOL"
-    if ind is not None and not last_closed_side_ok(ind, sig["side"]):
+    _ib = bool(sig.get("intrabar"))                # mum-ici SHORT: son kapanmis mum henuz yesil cizgi ustunde
+    if ind is not None and not _ib and not last_closed_side_ok(ind, sig["side"]):
         return False, "LAST_CANDLE_WRONG_SIDE_OF_ST"
-    if ind is not None and whipsaw_blocked(ind, sig):
+    if ind is not None and not _ib and whipsaw_blocked(ind, sig):
         return False, "WHIPSAW_16"
     if MAX_STOP_DIST_PCT > 0 and last_price:
         line = None
-        if ind is not None:
+        if ind is not None and not _ib:
             _st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
             line = float(_st["supertrend"].iloc[-1])
             line = None if np.isnan(line) else line
@@ -387,6 +407,18 @@ def check_exit(pos, df, last_price):
         if (ST_STOP_MODE == "level" and level is not None and close < level) or direction == -1:
             return "ST_STOP"
     else:
+        if pos.get("st_intrabar") and not pos.get("st_confirmed"):
+            # Mum-ici SHORT: donus mum kapanisinda teyit edilene kadar ters yonlu ST cizgisi stop sayilmaz.
+            if len(since) == 0:
+                return None                                   # giris mumu henuz kapanmadi
+            if direction == -1:
+                pos["st_confirmed"] = True                    # mum asagi donusle kapandi: normal Supertrend stopu
+            else:
+                if INTRABAR_FAKEOUT_EXIT:
+                    return "ST_STOP"
+                if level is not None and close > level:       # SL: kirmizi cizginin ustunde MUM KAPANISI
+                    return "ST_STOP"
+                return None
         if (ST_STOP_MODE == "level" and level is not None and close > level) or direction == 1:
             return "ST_STOP"
     return None

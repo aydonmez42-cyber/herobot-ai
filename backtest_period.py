@@ -92,7 +92,7 @@ def run_scenario(name, data, start, a, vol_min):
     for sym, df in data.items():
         warm = int(df.index.searchsorted(pd.Timestamp(start)))
         ev, d = bt.prep(df); fa, fp = bt.filt_arrays(sym, df); rv, vw = bt.vol_arrays(sym, df, 0)
-        for t in bt.simulate(df, a.fee, warm, emerg=a.emerg, events=ev, d=d, adx_arr=fa, atrp_arr=fp, relvol=rv, vol_min=vol_min, maxstop=a.maxstop, whipsaw=a.whipsaw, confirm=a.confirm):
+        for t in bt.simulate(df, a.fee, warm, emerg=a.emerg, events=ev, d=d, adx_arr=fa, atrp_arr=fp, relvol=rv, vol_min=vol_min, maxstop=a.maxstop, whipsaw=a.whipsaw, confirm=a.confirm, short_intrabar=bool(a.short_ib)):
             t["symbol"] = sym; allt.append(t)
     res = {"ad": name, "hacim_filtresi": vol_min, "genel": block(allt), "coin": {}, "yil": {}}
     for sym in data: res["coin"][sym] = block([t for t in allt if t["symbol"] == sym])
@@ -111,7 +111,7 @@ def main():
     ap.add_argument("--fee", type=float, default=0.06, help="yon basina komisyon+kayma %% (sunumdaki: 0.04 komisyon + 0.02 kayma)"); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
     ap.add_argument("--maxstop", type=float, default=sts.MAX_STOP_DIST_PCT); ap.add_argument("--volmult", type=float, default=sts.MIN_REL_VOL)
     ap.add_argument("--risk", type=float, default=0.25); ap.add_argument("--cap", type=float, default=25.0); ap.add_argument("--balance", type=float, default=10000.0)
-    ap.add_argument("--confirm", type=int, default=0, help="onay kurali: sinyalden N mum sonra, arada ters donus yoksa gir (0=kapali, canli: 5)"); ap.add_argument("--whipsaw", type=int, default=0, help="testere filtresi: son N mumda ters yonlu ST donusu varsa girme (0=kapali, canli: 16)"); ap.add_argument("--mult", type=float, default=None, help="Supertrend carpani (varsayilan: canli ayar)"); ap.add_argument("--tf", default="1h", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--short-intrabar", dest="short_ib", type=int, default=0, help="1: SHORT'larda mum kapanisini beklemeden kirilan cizgide gir (canli: aciik). NOT: kapanista donusle sonuclanmayan (sahte kirilim) mum-ici girisleri modellemez, iyimser"); ap.add_argument("--confirm", type=int, default=0, help="onay kurali: sinyalden N mum sonra, arada ters donus yoksa gir (0=kapali, canli: 5)"); ap.add_argument("--whipsaw", type=int, default=0, help="testere filtresi: son N mumda ters yonlu ST donusu varsa girme (0=kapali, canli: 16)"); ap.add_argument("--mult", type=float, default=None, help="Supertrend carpani (varsayilan: canli ayar)"); ap.add_argument("--tf", default="1h", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     if a.mult: sts.ST_MULT = a.mult
     syms = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
@@ -131,7 +131,7 @@ def main():
             df = df.resample(rule).agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna()
         data[s] = df; print(f"  {s}: {len(df)} mum, {df.index[0]} -> {df.index[-1]}", flush=True)
     print(f"Supertrend {sts.ST_PERIOD}/{sts.ST_MULT:g} | kilit [{sts.lock_tiers_text()}] | acil %{a.emerg:g} | stop siniri %{a.maxstop:g} | goreli hacim>={a.volmult:g}\n")
-    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": a.tf, "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}", "testere_mum": a.whipsaw, "onay_mum": a.confirm,
+    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": a.tf, "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}", "testere_mum": a.whipsaw, "onay_mum": a.confirm, "short_mum_ici": bool(a.short_ib),
            "komisyon_kayma_yon_%": a.fee, "acil_stop_%": a.emerg, "stop_siniri_%": a.maxstop, "kilit": sts.lock_tiers_text(),
            "coin_baslangic": {s: str(d.index[0].date()) for s, d in data.items()}, "senaryolar": []}
     lines = []; trades_A = None
