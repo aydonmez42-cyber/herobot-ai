@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.4 sinyal motoru (15 dk) - TradingView "ST Sinyal" Pine kodunun birebir Python karsiligi.
+Supertrend 10 / 4.1 sinyal motoru (1 saatlik mum) - TradingView "ST Sinyal" Pine kodunun birebir Python karsiligi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -14,8 +14,8 @@ import pandas as pd
 from indicators import supertrend
 
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "4.1"))                       # altcoin (15 dk mum) taramasi ve islemleri
-# BTC yon/rejim Supertrend (15 dk mum; eski sistemde altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
+ST_MULT = float(os.environ.get("ST_MULT", "4.1"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
+# BTC yon/rejim Supertrend (1 saatlik mum, altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
 REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
 REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.1"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
@@ -123,8 +123,12 @@ def lock_tiers_text():
         t += " · sonrasında zirvenin " + ", ".join(f"+%{a:g}'dan itibaren {g:g}" for a, g in TRAIL_GAPS) + " puan altı"
     return t
 
-MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", "3"))   # yalnizca son 3 kapanmis 15 dk mumda olusan taze sinyal
-WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "16"))   # son 16 mum (15 dk x 16 = 4 saat) icinde ters yonlu Supertrend donusu olduysa giris reddedilir (0 = kapali)
+# ONAY KURALI (1 saatlik mum): Supertrend LONG/SHORT verdikten sonra CONFIRM_BARS kapanmis mum boyunca fiyat kirdigi cizgiyi geri kirmadiysa
+# (ters donus / stop yok) giris acilir. Sinyal mumundan CONFIRM_BARS mum sonra (yas = CONFIRM_BARS) ve en gec CONFIRM_BARS+CONFIRM_EXTRA_BARS mum sonra gecerlidir.
+CONFIRM_BARS = int(os.environ.get("ST_CONFIRM_BARS", "5"))
+CONFIRM_EXTRA_BARS = int(os.environ.get("ST_CONFIRM_EXTRA_BARS", "1"))
+MAX_SIGNAL_AGE_BARS = int(os.environ.get("ST_MAX_SIGNAL_AGE_BARS", str(CONFIRM_BARS + CONFIRM_EXTRA_BARS + 1)))   # yas <= bu-1
+WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
@@ -257,22 +261,27 @@ def run_state_machine(df, stop_mode=None):
     return events, state
 
 
-def latest_entry_signal(df, max_age_bars=None):
-    """Son `max_age_bars` kapanmis mum icinde LONG/SHORT (flip veya yeniden giris) var mi?
-    En yeni sinyali doner, yoksa None. age_bars: 0 = son kapanmis mum."""
+def latest_entry_signal(df, max_age_bars=None, min_age_bars=None):
+    """ONAYLANMIS LONG/SHORT sinyali (flip veya yeniden giris): sinyal mumundan en az `min_age_bars` (varsayilan CONFIRM_BARS)
+    ve en fazla `max_age_bars`-1 mum gecmis, aradaki mumlarda sinyalin tersine donus/stop OLMAMIS olmali.
+    En yeni gecerli sinyali doner, yoksa None. age_bars: 0 = son kapanmis mum.
+    "st" alani = SU ANKI Supertrend cizgisi (onay beklerken cizgi hareket eder; stop/boyutlandirma guncel cizgiye gore)."""
     max_age_bars = MAX_SIGNAL_AGE_BARS if max_age_bars is None else max_age_bars
+    min_age_bars = CONFIRM_BARS if min_age_bars is None else min_age_bars
     df = df.iloc[-ST_WARMUP_BARS:]
     events, _ = run_state_machine(df)
     last = len(df) - 1
     for k, e in enumerate(reversed(events)):
-        if e["type"] in ("LONG", "RE_LONG", "SHORT", "RE_SHORT") and last - e["i"] <= max_age_bars - 1:
+        if e["type"] in ("LONG", "RE_LONG", "SHORT", "RE_SHORT") and min_age_bars <= last - e["i"] <= max_age_bars - 1:
             newer = list(reversed(events))[:k]            # bu sinyalden SONRAKI olaylar
             side_of = "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT"
             if any(x["type"] == "STOP_" + side_of for x in newer):
                 return None                               # sinyal sonradan stop oldu: girme
+            _st_now = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)["supertrend"].iloc[-1]
             return {"side": "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT",
                     "kind": e["type"], "signal_time": e["time"], "signal_close": e["close"],
-                    "level": e["level"], "st": e["st"], "age_bars": last - e["i"]}
+                    "level": e["level"], "st": (float(_st_now) if _st_now == _st_now else e["st"]), "st_signal": e["st"],
+                    "age_bars": last - e["i"]}
     return None
 
 
@@ -338,6 +347,8 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         if sig["side"] == "SHORT" and last_price >= lvl:
             return False, "ABOVE_LEVEL"
     sc = sig["signal_close"]
+    if ind is not None and CONFIRM_BARS > 0 and int(sig.get("age_bars") or 0) >= CONFIRM_BARS:
+        sc = float(ind["close"].iloc[-1])           # onay beklenirken fiyat zaten kosmus olabilir: "gec giris" olcusu son kapanmis mumdan
     move = (last_price - sc) / sc * 100.0
     move = move if sig["side"] == "LONG" else -move          # + = lehe, - = aleyhe
     if move > LATE_ENTRY_MAX_MOVE_PCT:
@@ -347,7 +358,7 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
 
 def check_exit(pos, df, last_price):
     """Acik pozisyon icin cikis karari. pos: side, entry_price, entry_time, st_level.
-    df: KAPANMIS 15 dk mumlar (en az giristen sonrasini icermeli). Doner: cikis nedeni veya None.
+    df: KAPANMIS 1 saatlik mumlar (en az giristen sonrasini icermeli). Doner: cikis nedeni veya None.
     Oncelik: EMERGENCY_STOP > TP > TRAIL_LOCK > ST_STOP."""
     side, entry = pos["side"], float(pos["entry_price"])
     sign = 1.0 if side == "LONG" else -1.0

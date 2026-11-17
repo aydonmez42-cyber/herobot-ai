@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Herobot-AI | Yeni sistem (Supertrend 10 / 4.4) donem backtesti.
+Herobot-AI | Yeni sistem (Supertrend 10 / 4.1, 1 saatlik mum) donem backtesti.
 
 Robotun kendi motorunu kullanir (supertrend_signal.py): dinamik Supertrend stopu, kademeli kar kilidi, %15 acil stop,
 goreli hacim filtresi, stop mesafesi siniri. Proje klasorunde (backtest_tf.py, indicators.py, supertrend_signal.py yan yana) calistirin:
 
-    python3 backtest_period.py                                   # BTC,ETH,SOL,XRP,BNB  2020-08-01 -> 2026-11-14, 15 dk
+    python3 backtest_period.py                                   # BTC,ETH,SOL,XRP,BNB  2020-08-01 -> 2026-11-14, 1 saatlik mum
+    python3 backtest_period.py --confirm 5                       # canli sistemdeki 5 mum onay kurali ile
     python3 backtest_period.py --symbols BTCUSDT,ETHUSDT
     python3 backtest_period.py --start 2020-08-01 --end 2026-11-14 --out backtest_yeni
 
 Cikti: <out>.json (siteye islenecek), <out>.txt (okunur ozet), <out>_islemler.csv (senaryo A islemleri).
-Veri onbellegi: veri_onbellek/<SEMBOL>_15m.csv (tekrar calistirmada yeniden indirmez).
+Veri onbellegi: veri_onbellek/<SEMBOL>_15m.csv (Binance'ten 15 dk'lik ham mumlar indirilir; 1 saatlik/4 saatlik mumlar bunlardan birlestirilir; tekrar calistirmada yeniden indirmez).
 
 Varsayimlar: giris sinyal mumunu izleyen mumun acilisi; Supertrend stopu mum kapanisinda; acil stop/kar kilidi mum ici (temkinli sira);
 komisyon+kayma yon basina --fee %; ayni coinde tek pozisyon. Robotun BTC rejim korumasi, portfoy/maruziyet limiti ve canli
@@ -91,7 +92,7 @@ def run_scenario(name, data, start, a, vol_min):
     for sym, df in data.items():
         warm = int(df.index.searchsorted(pd.Timestamp(start)))
         ev, d = bt.prep(df); fa, fp = bt.filt_arrays(sym, df); rv, vw = bt.vol_arrays(sym, df, 0)
-        for t in bt.simulate(df, a.fee, warm, emerg=a.emerg, events=ev, d=d, adx_arr=fa, atrp_arr=fp, relvol=rv, vol_min=vol_min, maxstop=a.maxstop, whipsaw=a.whipsaw):
+        for t in bt.simulate(df, a.fee, warm, emerg=a.emerg, events=ev, d=d, adx_arr=fa, atrp_arr=fp, relvol=rv, vol_min=vol_min, maxstop=a.maxstop, whipsaw=a.whipsaw, confirm=a.confirm):
             t["symbol"] = sym; allt.append(t)
     res = {"ad": name, "hacim_filtresi": vol_min, "genel": block(allt), "coin": {}, "yil": {}}
     for sym in data: res["coin"][sym] = block([t for t in allt if t["symbol"] == sym])
@@ -110,7 +111,7 @@ def main():
     ap.add_argument("--fee", type=float, default=0.06, help="yon basina komisyon+kayma %% (sunumdaki: 0.04 komisyon + 0.02 kayma)"); ap.add_argument("--emerg", type=float, default=sts.EMERGENCY_STOP_PCT)
     ap.add_argument("--maxstop", type=float, default=sts.MAX_STOP_DIST_PCT); ap.add_argument("--volmult", type=float, default=sts.MIN_REL_VOL)
     ap.add_argument("--risk", type=float, default=0.25); ap.add_argument("--cap", type=float, default=25.0); ap.add_argument("--balance", type=float, default=10000.0)
-    ap.add_argument("--whipsaw", type=int, default=0, help="testere filtresi: son N mumda ters yonlu ST donusu varsa girme (0=kapali, canli: 16)"); ap.add_argument("--mult", type=float, default=None, help="Supertrend carpani (varsayilan: canli ayar)"); ap.add_argument("--tf", default="15m", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--confirm", type=int, default=0, help="onay kurali: sinyalden N mum sonra, arada ters donus yoksa gir (0=kapali, canli: 5)"); ap.add_argument("--whipsaw", type=int, default=0, help="testere filtresi: son N mumda ters yonlu ST donusu varsa girme (0=kapali, canli: 16)"); ap.add_argument("--mult", type=float, default=None, help="Supertrend carpani (varsayilan: canli ayar)"); ap.add_argument("--tf", default="1h", choices=["15m","1h","4h"], help="mum periyodu (15 dakikalik onbellekten birlestirilir, yeniden indirmez)"); ap.add_argument("--out", default="backtest_yeni"); ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     if a.mult: sts.ST_MULT = a.mult
     syms = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
@@ -130,7 +131,7 @@ def main():
             df = df.resample(rule).agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna()
         data[s] = df; print(f"  {s}: {len(df)} mum, {df.index[0]} -> {df.index[-1]}", flush=True)
     print(f"Supertrend {sts.ST_PERIOD}/{sts.ST_MULT:g} | kilit [{sts.lock_tiers_text()}] | acil %{a.emerg:g} | stop siniri %{a.maxstop:g} | goreli hacim>={a.volmult:g}\n")
-    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": a.tf, "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}", "testere_mum": a.whipsaw,
+    out = {"olusturma": time.strftime("%Y-%m-%d %H:%M"), "baslangic": a.start, "bitis": a.end, "mum": a.tf, "supertrend": f"{sts.ST_PERIOD}/{sts.ST_MULT:g}", "testere_mum": a.whipsaw, "onay_mum": a.confirm,
            "komisyon_kayma_yon_%": a.fee, "acil_stop_%": a.emerg, "stop_siniri_%": a.maxstop, "kilit": sts.lock_tiers_text(),
            "coin_baslangic": {s: str(d.index[0].date()) for s, d in data.items()}, "senaryolar": []}
     lines = []; trades_A = None

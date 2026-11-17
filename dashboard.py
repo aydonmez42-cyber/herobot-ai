@@ -744,7 +744,7 @@ PRENS_BODY = r'''<!-- ===== ÇALIŞMA PRENSİPLERİ ===== -->
     <p>Sistem, gösterge kirliliğini önlemek adına net ve sade bir parametre kümesi kullanır:</p>
     <ul>
       <li><b>Temel gösterge:</b> Supertrend (trend takip göstergesi).</li>
-      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; yalnızca taze trend dönüşü sinyalleri değerlendirmeye alınır.</li>
+      <li><b>Tarama rutini:</b> Saat başı otomatik çalışma; yalnızca onaylanmış trend dönüşü sinyalleri (kısa süre içinde ters yöne dönmemiş olanlar) değerlendirmeye alınır.</li>
       <li><b>İşlem yönü:</b> LONG (Supertrend çizgisinin yukarı kırılması) ve SHORT (Supertrend çizgisinin aşağı kırılması).</li>
       <li><b>Eşzamanlı pozisyon sınırı:</b> Sistem genelinde aynı anda açık pozisyon sayısı sınırlandırılır.</li>
     </ul>
@@ -1397,7 +1397,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 1h closed candle · hourly scan · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -1692,7 +1692,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 1s kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -1987,7 +1987,7 @@ const translations = {
   "scanner.tabCrypto": "Binance 合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 1小时已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -2282,7 +2282,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 1h-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -2577,7 +2577,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 1h clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -2872,7 +2872,7 @@ const translations = {
   "scanner.tabCrypto": "Binance Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 1h cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
@@ -3768,7 +3768,7 @@ SCANNER_HTML = r'''<!doctype html>
   <div class="panel-head scanner-tabs">
     <button class="tab active" data-tab="bist" onclick="switchTab('bist')" data-i18n="scanner.tabBist">Borsa Istanbul</button>
     <button class="tab" data-tab="us" onclick="switchTab('us')" data-i18n="scanner.tabUs">Wall Street</button>
-    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 15m closed candle &middot; hourly scan &middot; for signal purposes only, no real orders</div>
+    <div class="scanner-note" id="scannerNote" data-i18n="scanner.note">USDT-M perpetual &middot; 1h closed candle &middot; hourly scan &middot; for signal purposes only, no real orders</div>
   </div>
 
   <div class="tabpane active" id="tab-bist">
@@ -3857,13 +3857,13 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-crypto">
     <div id="stCard" style="padding:14px 16px 10px">
-      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk · her saat başı otomatik</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">1 saat · her saat başı otomatik</b></div>
       <div class="scanner-controls">
         <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü (manuel)</option></select>
-        <select id="stTf" onchange="stTfChange()"><option value="15m">15 dakika</option></select>
+        <select id="stTf" onchange="stTfChange()"><option value="1h">1 saat</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
-        <select id="stBars" onchange="renderSt()"><option value="1">Son 1 mum</option><option value="2">Son 2 mum</option><option value="3" selected>Son 3 mum (45 dk)</option><option value="4">Son 4 mum (1 saat)</option></select>
+        <select id="stBars" onchange="renderSt()"><option value="7" selected>Onaylı sinyaller</option></select>
         <span class="scanner-status" id="stStatus"></span>
       </div>
       <div class="scanner-note" id="stNote" style="margin:0 0 8px 0"></div>
@@ -4021,22 +4021,23 @@ async function loadOwnChart(){
 }
 function ownFmtPrice(v){ const a=Math.abs(v); return a>=1000?v.toFixed(1):a>=1?v.toFixed(3):a>=0.01?v.toFixed(5):v.toPrecision(4); }
 function ownFmtTime(t,tf){ const x=new Date(t*1000).toISOString(); return tf==='1d'?x.slice(5,10):x.slice(5,10)+' '+x.slice(11,16); }
+function ownClampEnd(e,n,bars){ return Math.max(Math.min(n,5),Math.min(n+Math.round(bars*0.8),e)); }
 function ownGeom(){
   const cv=document.getElementById('ownChart'), d=_own.d, n=d.candles.length, W=cv.clientWidth, H=cv.clientHeight;
   const padR=66, padB=22, padT=8, plotW=W-padR, plotH=H-padB-padT;
   const bars=Math.max(20,Math.min(n,Math.round(_own.view.bars)));
-  const end=Math.max(bars,Math.min(n,Math.round(_own.view.end)));
-  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,step:plotW/bars};
+  const end=Math.round(ownClampEnd(_own.view.end,n,bars));
+  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,i0:Math.max(0,end-bars),i1:Math.min(n,end),step:plotW/bars};
 }
 function ownDraw(){
   const cv=document.getElementById('ownChart'); if(!cv||!_own.d||cv.style.display==='none') return;
-  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step}=G, C=d.candles, tf=_own.tf;
+  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step,i0,i1}=G, C=d.candles, tf=_own.tf;
   const dpr=window.devicePixelRatio||1;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
   const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
   g.fillStyle='#0D1114'; g.fillRect(0,0,W,H);
   let lo=Infinity, hi=-Infinity;
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     lo=Math.min(lo,C[i].low); hi=Math.max(hi,C[i].high);
     const u=_own.up.get(C[i].time), v=_own.dn.get(C[i].time);
     if(u!=null){ lo=Math.min(lo,u); hi=Math.max(hi,u); }
@@ -4050,10 +4051,10 @@ function ownDraw(){
     g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.textAlign='left'; g.fillText(ownFmtPrice(v),plotW+6,y); }
   g.textAlign='center'; g.textBaseline='top';
   const every=Math.max(1,Math.round(bars/5));
-  for(let i=start+Math.floor(every/2);i<end;i+=every){ g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
+  for(let i=start+Math.floor(every/2);i<end;i+=every){ if(i<0||i>=C.length) continue; g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
   g.save(); g.beginPath(); g.rect(0,0,plotW,padT+plotH); g.clip();
   const bw=Math.max(1,step*0.7);
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     const c=C[i], up=c.close>=c.open, col=up?'#2fbf71':'#e5534b', x=X(i);
     g.strokeStyle=col; g.fillStyle=col; g.lineWidth=1;
     g.beginPath(); g.moveTo(Math.round(x)+.5,Y(c.high)); g.lineTo(Math.round(x)+.5,Y(c.low)); g.stroke();
@@ -4063,14 +4064,14 @@ function ownDraw(){
   g.lineWidth=2; g.lineJoin='round';
   [[_own.up,'#2fbf71'],[_own.dn,'#e5534b']].forEach(([m,col])=>{
     g.strokeStyle=col; g.beginPath(); let pen=false;
-    for(let i=Math.max(0,start-1);i<end;i++){
+    for(let i=Math.max(0,start-1);i<i1;i++){
       const v=m.get(C[i].time);
       if(v==null){ pen=false; continue; }
       if(!pen){ g.moveTo(X(i),Y(v)); pen=true; } else g.lineTo(X(i),Y(v));
     }
     g.stroke();
   });
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     const dir=_own.flips.get(C[i].time); if(!dir) continue;
     const x=X(i), s=Math.max(4,Math.min(7,step*0.6));
     g.fillStyle=dir==='UP'?'#2fbf71':'#e5534b'; g.beginPath();
@@ -4081,7 +4082,7 @@ function ownDraw(){
   g.restore();
   const h=_own.hover;
   if(h&&h.x>=0&&h.x<=plotW){
-    const i=Math.max(start,Math.min(end-1,start+Math.floor(h.x/step))), c=C[i];
+    const i=Math.max(i0,Math.min(i1-1,start+Math.floor(h.x/step))), c=C[i];
     g.strokeStyle='rgba(255,255,255,.25)'; g.lineWidth=1; g.setLineDash([4,4]);
     g.beginPath(); g.moveTo(X(i),padT); g.lineTo(X(i),padT+plotH); g.moveTo(0,h.y); g.lineTo(plotW,h.y); g.stroke(); g.setLineDash([]);
     if(h.y>=padT&&h.y<=padT+plotH){ const pv=hi-(h.y-padT)/plotH*(hi-lo), t=ownFmtPrice(pv);
@@ -4110,7 +4111,7 @@ function ownWire(cv){
         if(lastDist){ _own.view.bars=Math.max(20,Math.min(G.n,G.bars*lastDist/dist)); }
         lastDist=dist;
       } else {
-        _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars;
+        _own.view.end=ownClampEnd((_own.view.end==null?G.end:_own.view.end)-(p.x-prev.x)/G.step,G.n,G.bars); _own.view.bars=G.bars;
         _own.hover=p;
       }
     } else _own.hover=p;
@@ -4119,7 +4120,7 @@ function ownWire(cv){
   cv.addEventListener('wheel',e=>{
     if(!_own.d) return; e.preventDefault();
     const G=ownGeom(), f=e.deltaY>0?1.12:1/1.12, nb=Math.max(20,Math.min(G.n,G.bars*f));
-    _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw();
+    _own.view.bars=nb; _own.view.end=ownClampEnd(G.end,G.n,nb); ownDraw();
   },{passive:false});
   if(window.ResizeObserver) new ResizeObserver(()=>ownDraw()).observe(cv);
   window.addEventListener('resize',ownDraw);
@@ -4321,9 +4322,9 @@ function stDiscRender(){
 stDiscRender(); setInterval(()=>{ let tr=true; try{ tr=(currentLang==='tr'); }catch(e){} if(tr!==_stDiscLang) stDiscRender(); },700);
 
 // ---- Supertrend scan (crypto: 15m, hourly automatic) ----
-const stCaches={'15m|LIQ100':{results:[],status:'IDLE'}};
-let stCache=stCaches['15m|LIQ100'], stTimer=null;
-function stTfVal(){ return '15m'; }
+const stCaches={'1h|LIQ100':{results:[],status:'IDLE'}};
+let stCache=stCaches['1h|LIQ100'], stTimer=null;
+function stTfVal(){ return '1h'; }
 function stUniVal(){ return document.getElementById('stUni')?.value||'LIQ100'; }
 function stKey(){ return stTfVal()+'|'+stUniVal(); }
 function stSlot(key){ return stCaches[key] || (stCaches[key]={results:[],status:'IDLE'}); }
@@ -4395,12 +4396,12 @@ function renderSt(){
     else if(stCache.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · '+stSideLinks(nL,nS,'stFilter');
     else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
   }
-  const lblTr='15 dakikalık', lblEn='15m';
+  const lblTr='1 saatlik', lblEn='1h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 15dk, Son 3 mum, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 15m, last 3 candles, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 1 saat, sinyal mum kapanışından sonra ters yöne dönmemişse (onaylı), '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 1h, signals confirmed only if the price did not break back afterwards, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
-  const iv='15';
+  const iv='60';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · ${tf.toUpperCase()}','${iv}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${fl(x)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
@@ -4504,7 +4505,7 @@ const translations = {
   "scanner.tabCrypto": "Crypto Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15m closed candle · hourly scan · for signal purposes only, no real orders",
+  "scanner.note": "USDT-M perpetual · 1h closed candle · hourly scan · for signal purposes only, no real orders",
   "scanner.coinSearchPlaceholder": "Search coin (e.g. BTC)",
   "scanner.stockSearchPlaceholderBist": "Search stock (e.g. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Search stock (e.g. AAPL)",
@@ -4569,7 +4570,7 @@ const translations = {
   "scanner.tabCrypto": "Kripto Futures",
   "scanner.tabBist": "Borsa İstanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M perpetual · 15dk kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
+  "scanner.note": "USDT-M perpetual · 1s kapalı mum · saat başı tarama · sinyal amaçlı, gerçek emir yok",
   "scanner.coinSearchPlaceholder": "Coin ara (örn. BTC)",
   "scanner.stockSearchPlaceholderBist": "Hisse ara (örn. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Hisse ara (örn. AAPL)",
@@ -4634,7 +4635,7 @@ const translations = {
   "scanner.tabCrypto": "加密货币合约",
   "scanner.tabBist": "伊斯坦布尔交易所",
   "scanner.tabUs": "美股",
-  "scanner.note": "USDT-M 永续合约 · 15分钟已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
+  "scanner.note": "USDT-M 永续合约 · 1小时已收盘K线 · 每小时扫描 · 仅供信号参考，无真实订单",
   "scanner.coinSearchPlaceholder": "搜索币种（如 BTC）",
   "scanner.stockSearchPlaceholderBist": "搜索股票（如 THYAO）",
   "scanner.stockSearchPlaceholderUs": "搜索股票（如 AAPL）",
@@ -4699,7 +4700,7 @@ const translations = {
   "scanner.tabCrypto": "Krypto-Futures",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "USDT-M Perpetual · geschlossene 15m-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
+  "scanner.note": "USDT-M Perpetual · geschlossene 1h-Kerze · stündlicher Scan · nur zu Signalzwecken, keine echten Orders",
   "scanner.coinSearchPlaceholder": "Coin suchen (z. B. BTC)",
   "scanner.stockSearchPlaceholderBist": "Aktie suchen (z. B. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Aktie suchen (z. B. AAPL)",
@@ -4764,7 +4765,7 @@ const translations = {
   "scanner.tabCrypto": "Futures Crypto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpétuel USDT-M · bougie 15m clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
+  "scanner.note": "Perpétuel USDT-M · bougie 1h clôturée · scan toutes les heures · à titre de signal uniquement, aucun ordre réel",
   "scanner.coinSearchPlaceholder": "Rechercher un coin (ex. BTC)",
   "scanner.stockSearchPlaceholderBist": "Rechercher une action (ex. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Rechercher une action (ex. AAPL)",
@@ -4829,7 +4830,7 @@ const translations = {
   "scanner.tabCrypto": "Futuros Cripto",
   "scanner.tabBist": "Borsa Istanbul",
   "scanner.tabUs": "Wall Street",
-  "scanner.note": "Perpetuo USDT-M · vela 15m cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
+  "scanner.note": "Perpetuo USDT-M · vela 1h cerrada · escaneo cada hora · solo con fines de señal, sin órdenes reales",
   "scanner.coinSearchPlaceholder": "Buscar moneda (ej. BTC)",
   "scanner.stockSearchPlaceholderBist": "Buscar acción (ej. THYAO)",
   "scanner.stockSearchPlaceholderUs": "Buscar acción (ej. AAPL)",
@@ -5313,7 +5314,7 @@ body.ta-nolock{overflow:hidden}
   <div class="panel-head ta-head3">
     <div class="ta-head-left"><h2>Teknik Grafik</h2>
       <select id="ownChartTf" onchange="loadOwnChart()">
-        <option value="15m">15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
+        <option value="15m">15 dk</option><option value="1h" selected>1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
       </select></div>
     <div class="ta-head-mid">
       <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
@@ -5378,22 +5379,23 @@ async function loadOwnChart(){
 }
 function ownFmtPrice(v){ const a=Math.abs(v); return a>=1000?v.toFixed(1):a>=1?v.toFixed(3):a>=0.01?v.toFixed(5):v.toPrecision(4); }
 function ownFmtTime(t,tf){ const x=new Date(t*1000).toISOString(); return tf==='1d'?x.slice(5,10):x.slice(5,10)+' '+x.slice(11,16); }
+function ownClampEnd(e,n,bars){ return Math.max(Math.min(n,5),Math.min(n+Math.round(bars*0.8),e)); }
 function ownGeom(){
   const cv=document.getElementById('ownChart'), d=_own.d, n=d.candles.length, W=cv.clientWidth, H=cv.clientHeight;
   const padR=66, padB=22, padT=8, plotW=W-padR, plotH=H-padB-padT;
   const bars=Math.max(20,Math.min(n,Math.round(_own.view.bars)));
-  const end=Math.max(bars,Math.min(n,Math.round(_own.view.end)));
-  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,step:plotW/bars};
+  const end=Math.round(ownClampEnd(_own.view.end,n,bars));
+  return {cv,d,n,W,H,padR,padB,padT,plotW,plotH,bars,end,start:end-bars,i0:Math.max(0,end-bars),i1:Math.min(n,end),step:plotW/bars};
 }
 function ownDraw(){
   const cv=document.getElementById('ownChart'); if(!cv||!_own.d||cv.style.display==='none') return;
-  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step}=G, C=d.candles, tf=_own.tf;
+  const G=ownGeom(), {d,W,H,padR,padB,padT,plotW,plotH,bars,end,start,step,i0,i1}=G, C=d.candles, tf=_own.tf;
   const dpr=window.devicePixelRatio||1;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
   const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
   g.fillStyle='#0D1114'; g.fillRect(0,0,W,H);
   let lo=Infinity, hi=-Infinity;
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     lo=Math.min(lo,C[i].low); hi=Math.max(hi,C[i].high);
     const u=_own.up.get(C[i].time), v=_own.dn.get(C[i].time);
     if(u!=null){ lo=Math.min(lo,u); hi=Math.max(hi,u); }
@@ -5408,10 +5410,10 @@ function ownDraw(){
     g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.textAlign='left'; g.fillText(ownFmtPrice(v),plotW+6,y); }
   g.textAlign='center'; g.textBaseline='top';
   const every=Math.max(1,Math.round(bars/5));
-  for(let i=start+Math.floor(every/2);i<end;i+=every){ g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
+  for(let i=start+Math.floor(every/2);i<end;i+=every){ if(i<0||i>=C.length) continue; g.fillText(ownFmtTime(C[i].time,tf),X(i),H-padB+5); }
   g.save(); g.beginPath(); g.rect(0,0,plotW,padT+plotH); g.clip();
   const bw=Math.max(1,step*0.7);
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     const c=C[i], up=c.close>=c.open, col=up?'#2fbf71':'#e5534b', x=X(i);
     g.strokeStyle=col; g.fillStyle=col; g.lineWidth=1;
     g.beginPath(); g.moveTo(Math.round(x)+.5,Y(c.high)); g.lineTo(Math.round(x)+.5,Y(c.low)); g.stroke();
@@ -5421,17 +5423,17 @@ function ownDraw(){
   g.lineWidth=2; g.lineJoin='round';
   [[_own.up,'#2fbf71'],[_own.dn,'#e5534b']].forEach(([m,col])=>{
     g.strokeStyle=col; g.beginPath(); let pen=false;
-    for(let i=Math.max(0,start-1);i<end;i++){
+    for(let i=Math.max(0,start-1);i<i1;i++){
       const v=m.get(C[i].time);
       if(v==null){ pen=false; continue; }
       if(!pen){ g.moveTo(X(i),Y(v)); pen=true; } else g.lineTo(X(i),Y(v));
     }
     g.stroke();
   });
-  if(end===C.length){ const lt=C[end-1].time, uu=_own.up.get(lt), dd=_own.dn.get(lt), v=(uu!=null?uu:dd);
-    if(v!=null){ g.setLineDash([6,5]); g.lineWidth=1.5; g.strokeStyle=uu!=null?'#2fbf71':'#e5534b'; g.beginPath(); g.moveTo(X(end-1),Y(v)); g.lineTo(plotW,Y(v)); g.stroke(); g.setLineDash([]); } }
+  if(i1===C.length){ const lt=C[i1-1].time, uu=_own.up.get(lt), dd=_own.dn.get(lt), v=(uu!=null?uu:dd);
+    if(v!=null){ g.setLineDash([6,5]); g.lineWidth=1.5; g.strokeStyle=uu!=null?'#2fbf71':'#e5534b'; g.beginPath(); g.moveTo(X(i1-1),Y(v)); g.lineTo(plotW,Y(v)); g.stroke(); g.setLineDash([]); } }
   (_own.marks||[]).forEach(m=>{ if(m.v<lo||m.v>hi) return; const y=Math.round(Y(m.v))+.5; g.setLineDash([3,4]); g.lineWidth=1; g.strokeStyle=m.c; g.beginPath(); g.moveTo(0,y); g.lineTo(plotW,y); g.stroke(); g.setLineDash([]); g.fillStyle=m.c; g.font='10px system-ui,sans-serif'; g.textAlign='left'; g.textBaseline='bottom'; g.fillText(m.l,4,y-2); });
-  for(let i=start;i<end;i++){
+  for(let i=i0;i<i1;i++){
     const dir=_own.flips.get(C[i].time); if(!dir) continue;
     const x=X(i), s=Math.max(4,Math.min(7,step*0.6));
     g.fillStyle=dir==='UP'?'#2fbf71':'#e5534b'; g.beginPath();
@@ -5442,7 +5444,7 @@ function ownDraw(){
   g.restore();
   const h=_own.hover;
   if(h&&h.x>=0&&h.x<=plotW){
-    const i=Math.max(start,Math.min(end-1,start+Math.floor(h.x/step))), c=C[i];
+    const i=Math.max(i0,Math.min(i1-1,start+Math.floor(h.x/step))), c=C[i];
     g.strokeStyle='rgba(255,255,255,.25)'; g.lineWidth=1; g.setLineDash([4,4]);
     g.beginPath(); g.moveTo(X(i),padT); g.lineTo(X(i),padT+plotH); g.moveTo(0,h.y); g.lineTo(plotW,h.y); g.stroke(); g.setLineDash([]);
     if(h.y>=padT&&h.y<=padT+plotH){ const pv=hi-(h.y-padT)/plotH*(hi-lo), t=ownFmtPrice(pv);
@@ -5472,7 +5474,7 @@ function ownWire(cv){
         lastDist=dist;
       } else {
         if(_own.yscale){ _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*Math.exp((p.y-prev.y)*0.006))); _own.view.end=G.end; _own.view.bars=G.bars; }
-        else { _own.view.end=Math.max(G.bars,Math.min(G.n,G.end-(p.x-prev.x)/G.step)); _own.view.bars=G.bars; _own.view.ys=(_own.view.ys||0)+(p.y-prev.y)/G.plotH*(_own.view.yz||1); }
+        else { _own.view.end=ownClampEnd((_own.view.end==null?G.end:_own.view.end)-(p.x-prev.x)/G.step,G.n,G.bars); _own.view.bars=G.bars; _own.view.ys=(_own.view.ys||0)+(p.y-prev.y)/G.plotH*(_own.view.yz||1); }
         _own.hover=p;
       }
     } else _own.hover=p;
@@ -5482,7 +5484,7 @@ function ownWire(cv){
     if(!_own.d) return; e.preventDefault();
     { const _r=cv.getBoundingClientRect(); if(e.shiftKey||(e.clientX-_r.left)>ownGeom().plotW){ _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*(e.deltaY>0?1.12:1/1.12))); ownDraw(); return; } }
     const G=ownGeom(), f=e.deltaY>0?1.12:1/1.12, nb=Math.max(20,Math.min(G.n,G.bars*f));
-    _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw();
+    _own.view.bars=nb; _own.view.end=ownClampEnd(G.end,G.n,nb); ownDraw();
   },{passive:false});
   if(window.ResizeObserver) new ResizeObserver(()=>ownDraw()).observe(cv);
   window.addEventListener('resize',ownDraw);
@@ -5502,7 +5504,7 @@ function taBuildTv(market,sym){
 }
 
 
-function taZoom(f){ if(!_own||!_own.d) return; const G=ownGeom(), nb=Math.max(20,Math.min(G.n,G.bars*f)); _own.view.bars=nb; _own.view.end=Math.max(nb,Math.min(G.n,G.end)); ownDraw(); }
+function taZoom(f){ if(!_own||!_own.d) return; const G=ownGeom(), nb=Math.max(20,Math.min(G.n,G.bars*f)); _own.view.bars=nb; _own.view.end=ownClampEnd(G.end,G.n,nb); ownDraw(); }
 function taYZoom(f){ if(!_own||!_own.d) return; _own.view.yz=Math.max(0.05,Math.min(20,(_own.view.yz||1)*f)); ownDraw(); }
 function taResetView(){ if(!_own||!_own.d) return; const n=_own.d.candles.length; _own.view={bars:Math.min(120,n),end:n}; ownDraw(); }
 function taFull(on){
@@ -5550,7 +5552,7 @@ function taOpen(tv,label,iv){
   TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
   document.getElementById('taMarket').value=TA.market;
   document.getElementById('taSymbol').value=taSymFromTv(tv);
-  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'15m':'1d');
+  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'1h':'1d');
   document.getElementById('ownChartTf').value=tf;
   try{ history.replaceState(null,'','/analysis?tv='+encodeURIComponent(tv)+'&iv='+encodeURIComponent(iv||'')); }catch(e){}
   _own.tv=tv; _own.label=label||taSymFromTv(tv); _own.marks=[];
@@ -10239,7 +10241,7 @@ _TA_AI_SYSTEM = (
 
 
 _BOT_WHY_TR = {
-    'NO_SIGNAL': 'son 3 kapanmış mumda yeni bir Supertrend dönüşü yok',
+    'NO_SIGNAL': 'onaylanmış (ters yöne dönmemiş) yeni bir Supertrend sinyali yok',
     'LAST_CANDLE_WRONG_SIDE_OF_ST': 'son kapanmış mum Supertrend çizgisinin yanlış tarafında',
     'BELOW_LEVEL': 'fiyat kırılan çizginin altına geri dönmüş',
     'ABOVE_LEVEL': 'fiyat kırılan çizginin üstüne geri dönmüş',
@@ -10268,7 +10270,7 @@ def ta_bot_check(symbol):
     import supertrend_signal as _sts
     import pandas as _pd
     df = scanner_st15._klines(symbol)
-    asof = _pd.Timestamp.now(tz='UTC').floor('15min')
+    asof = _pd.Timestamp.now(tz='UTC').floor('1h')
     closed = df[df['close_time'] <= asof].reset_index(drop=True)
     if len(closed) < 60:
         return {'ok': False, 'why': 'NO_DATA', 'sig': None}
@@ -10716,7 +10718,7 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/api/ta/chart':
             _q=parse_qs(urlparse(self.path).query)
             try:
-                self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+                self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['1h'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
             return
@@ -10739,7 +10741,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'Çok sık istek: birkaç dakika sonra tekrar deneyin.'}, status=429); return
             _q=parse_qs(urlparse(self.path).query)
             try:
-                self._send_json(ta_ai_comment((_q.get('tv') or [''])[0], (_q.get('tf') or ['15m'])[0]))
+                self._send_json(ta_ai_comment((_q.get('tv') or [''])[0], (_q.get('tf') or ['1h'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
             return

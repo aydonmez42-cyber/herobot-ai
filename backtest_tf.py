@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-15 dk ve 4 saatlik zaman dilimini AYNI kurallarla karsilastiran geriye donuk test.
+15 dk, 1 saat ve 4 saatlik zaman dilimlerini AYNI kurallarla karsilastiran geriye donuk test.
 
 Robotun kendi motorunu kullanir (supertrend_signal.py: Supertrend 10 / 4.1, dinamik Supertrend stopu,
-basamakli kar kilidi, %6 acil stop). Proje klasorunde calistirin (indicators.py ve supertrend_signal.py yan yana olmali):
+basamakli kar kilidi, %15 acil stop). Proje klasorunde calistirin (indicators.py ve supertrend_signal.py yan yana olmali):
 
     python3 backtest_tf.py                      # 40 coin, 90 gun, komisyon %0.05/yon
     python3 backtest_tf.py --coins 80 --days 120
@@ -107,7 +107,7 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0, confirm=0):
     """Tek coin: tum islemleri doner (liste of dict). whipsaw=N: sinyalden onceki N mum icinde ters yonlu ST donusu varsa girme (0=kapali)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
@@ -116,6 +116,10 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
     n = len(df); trades = []; busy_until = -1
     emerg = sts.EMERGENCY_STOP_PCT if emerg is None else emerg
     last_flip = {"LONG": -10**9, "SHORT": -10**9}
+    if confirm > 0:                                          # onay kurali: sinyalden `confirm` mum sonra, arada ters donus/stop yoksa gir
+        import bisect
+        _stops = {s: [x["i"] for x in events if x["type"] == "STOP_" + s] for s in ("LONG", "SHORT")}
+        _line = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend"].to_numpy()
     for e in events:
         if e["type"] not in ("LONG", "SHORT", "RE_LONG", "RE_SHORT"): continue
         i = e["i"]
@@ -123,7 +127,11 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
         _whip = whipsaw > 0 and 0 < i - last_flip[_opp] < whipsaw                                 # ters yonlu donus son N mum icinde
         if e["type"] in ("LONG", "SHORT"): last_flip[e["type"]] = i
         if _whip: continue
-        if i < warm or i + 1 >= n or i <= busy_until: continue
+        if i < warm or i + 1 + confirm >= n or i <= busy_until: continue
+        if confirm > 0:
+            _sd = "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT"
+            _k = bisect.bisect_right(_stops[_sd], i)
+            if _k < len(_stops[_sd]) and _stops[_sd][_k] <= i + confirm: continue     # onay suresinde ters donus: reddet
         if adx_min > 0 and adx_arr is not None and not (adx_arr[i] >= adx_min): continue        # trend zayif (NaN de elenir)
         if atr_min > 0 and atrp_arr is not None and not (atrp_arr[i] >= atr_min): continue      # oynaklik cok dusuk
         side = 1 if e["type"] in ("LONG", "RE_LONG") else -1
@@ -132,8 +140,10 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             if not (vwma[i] == vwma[i] and vwma[i - 1] == vwma[i - 1]): continue
             if side == 1 and not (c[i] > vwma[i] and vwma[i] > vwma[i - 1]): continue
             if side == -1 and not (c[i] < vwma[i] and vwma[i] < vwma[i - 1]): continue
-        entry = o[i + 1]; peak = 0.0; exit_pct = None; reason = None; j = i + 1
-        sd = abs(entry - float(e.get("st", entry))) / entry * 100.0                             # giriste stop mesafesi (%)
+        i0 = i + confirm                                     # son onay mumu; giris bir sonraki mumun acilisinda
+        entry = o[i0 + 1]; peak = 0.0; exit_pct = None; reason = None; j = i0 + 1
+        _stl = float(_line[i0]) if confirm > 0 else float(e.get("st", entry))
+        sd = abs(entry - _stl) / entry * 100.0                             # giriste stop mesafesi (%)
         if maxstop > 0 and sd > maxstop: continue                                               # stop cok uzak: robot da girmez (STOP_TOO_FAR)
         while j < n:
             adverse = (l[j] if side == 1 else h[j]); fav = (h[j] if side == 1 else l[j])
@@ -154,7 +164,7 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
             exit_pct, reason, j = side * (c[-1] - entry) / entry * 100, "OPEN_END", n - 1
         busy_until = j
         trades.append({"side": "LONG" if side == 1 else "SHORT", "kind": e["type"], "bars": j - i,
-                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i + 1], "t_exit": df.index[j], "sd": sd})
+                       "gross": exit_pct, "net": exit_pct - fee_pct * 2, "reason": reason, "t": df.index[i0 + 1], "t_exit": df.index[j], "sd": sd})
     return trades
 
 

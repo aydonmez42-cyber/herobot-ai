@@ -1,11 +1,11 @@
 """
-Supertrend taramasi - 15 DAKIKALIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.1).
+Supertrend taramasi - 1 SAATLIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.1).
 
 Sinyal mantigi supertrend_signal.py icindedir (TradingView "ST Sinyal" Pine kodunun birebir karsiligi):
   LONG  = Supertrend'i yukari kirip ustunde mum kapatti (veya stop sonrasi yeniden giris),
   SHORT = Supertrend'i asagi kirip altinda mum kapatti.
-Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir; son 4 kapanmis 15 dk mumdaki
-(= bir onceki saatin tamami) sinyaller listelenir. Olusmakta olan mum her zaman atilir.
+Her saat basinda (hh:00) o ana kadar KAPANMIS son mum kullanilir. Listelenen/islem acan sinyal: LONG/SHORT donusunden
+CONFIRM_BARS (5) kapanmis mum sonra, arada ters donus olmamis ONAYLI sinyaldir. Olusmakta olan mum her zaman atilir.
 
 Dashboard: /api/scanner_st rotalari bu modulu kullanir (scanner_st.py 4s/1g/1h taramasi DEGISMEDEN kalir; grafik ve hisse taramalari onu kullanir).
 Evren: en likit SCAN_ST_TOP_N (varsayilan 100) USDT-M surekli kontrat.
@@ -25,8 +25,8 @@ from indicators import supertrend as _st_df
 
 PERIOD = sts.ST_PERIOD
 FACTOR = sts.ST_MULT
-INTERVAL = '15m'
-TIMEFRAMES = ('15m',)
+INTERVAL = '1h'
+TIMEFRAMES = ('1h',)
 TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '100'))
 _EXCLUDE = {x.strip().upper() for x in os.environ.get('ST_EXCLUDE_SYMBOLS', 'PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT').split(',') if x.strip()}
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))
@@ -202,7 +202,8 @@ def _analyse(symbol, vol, chg, asof):
     }
     if sig:
         row.update({'signal': sig['side'], 'signal_kind': sig['kind'], 'signal_age': int(sig['age_bars']),
-                    'level': sig['level'], 'signal_st': sig.get('st'), 'signal_close': sig['signal_close'],
+                    'level': sig['level'], 'signal_st': sig.get('st'),       # = guncel Supertrend cizgisi (onay beklerken hareket eder)
+                     'signal_close': sig['signal_close'],
                     'signal_time': pd.Timestamp(sig['signal_time']).isoformat()})
     return row
 
@@ -257,7 +258,7 @@ def _run(asof, universe_name='LIQ100'):
 
 
 def start_scan(tf=None, aligned=False, universe=None):
-    """(started, message). aligned=True: saat basi mumuna gore; False: manuel (son kapanmis 15 dk mum).
+    """(started, message). aligned=True: saat basi mumuna gore; False: manuel (son kapanmis 1 saatlik mum).
     Yalnizca LIQ100 evreni robotun otomatik taramasidir; diger evrenler yalniz manuel ve gosterim amaclidir."""
     u = _u(universe)
     if aligned:
@@ -272,7 +273,7 @@ def start_scan(tf=None, aligned=False, universe=None):
     if wait > 0:
         return False, f'Son taramanin uzerinden cok az zaman gecti; {int(wait)} sn sonra tekrar deneyin.'
     now = pd.Timestamp.now(tz='UTC')
-    asof = now.floor(f'{SCAN_EVERY_MIN}min') if aligned else now.floor('15min')
+    asof = now.floor(f'{SCAN_EVERY_MIN}min') if aligned else now.floor(INTERVAL.replace('m', 'min'))
     with _lock:
         _states[u].update({'status': 'SCANNING', 'progress': 0, 'total': 0, 'last_error': None, 'partial': False,
                            'started_at': datetime.now(timezone.utc).isoformat()})

@@ -70,7 +70,7 @@ BTC_LOCK_RELEASE_PCT = _env_float('BTC_LOCK_RELEASE_PCT', 0.5)     # release whe
 BTC_LOCK_MIN_HOURS = _env_float('BTC_LOCK_MIN_HOURS', 2.0)         # never release before this many hours
 
 # BTC Supertrend lock: while BTC is below its Supertrend on BTC_ST_LOCK_INTERVAL (default
-# = the crypto interval, 15m: trend DOWN on the last closed candle, or the live price under
+# = the crypto interval, 1h: trend DOWN on the last closed candle, or the live price under
 # the line) NO new LONG is opened on any coin. Released only
 # when BTC trades above the line AND the closed-candle trend is UP again. Open positions are
 # not touched. 'log' only reports it. Independent of DEMO_ENTRY_GUARDS.
@@ -152,6 +152,7 @@ PROFIT_LOCK_TIERS = _parse_lock_tiers(os.environ.get('PROFIT_LOCK_TIERS', '90:65
 EARLY_EXIT_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)              # 'log' = only report what it would close
 EARLY_EXIT_LOSS_ATR = _env_float('EARLY_EXIT_LOSS_ATR', 1.5)        # LONG already down this many ATR while BTC lock is active
 
+# [KAPALI / eski ozellik - M15_EXIT_MODE='off'; canli sistem yalnizca 1 saatlik Supertrend kullanir]
 # 15-minute reversal exit. The position is opened on a crypto-interval signal, but once it is
 # open the 15m chart is watched on CLOSED 15m candles: a LONG is closed when the
 # 15m strategy gives SHORT_COUNT SHORT signals in a row (no LONG signal in
@@ -171,6 +172,7 @@ M15_EXIT_COUNT = max(1, int(_env_float('M15_EXIT_COUNT', 2)))
 TREND_SL_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_signal.py)
 TREND_SL_EMA = int(_env_float('TREND_SL_EMA', 50))
 
+# [KAPALI / eski ozellik - ENTRY_WAIT_MODE='off'; yerini 1 saatlik Supertrend 5 mum onay kurali aldi]
 # Entry wait ("Ekle" lock). A coin added from the scanner does NOT open a position
 # at once: the signal may be up to an hour old. The bot waits until the last CLOSED
 # 15m, 1h and 4h candles all point the trade's way (LONG: close > open), then
@@ -182,7 +184,7 @@ ENTRY_WAIT_MODE = 'off'  # kaldirildi: sistem yalnizca Supertrend (supertrend_si
 ENTRY_WAIT_MAX_HOURS = _env_float('ENTRY_WAIT_MAX_HOURS', 24)
 ENTRY_WAIT_RED_COUNT = max(1, int(_env_float('ENTRY_WAIT_RED_COUNT', 3)))
 
-# Auto add: after every (hourly, 15m-candle) scan the coins that give a LONG signal are added to the
+# Auto add: after every (hourly, 1h-candle) scan the coins that give a LONG signal are added to the
 # watchlist by the bot itself (what the "+ Ekle" button did by hand). Each new
 # coin then goes through the entry wait above, so a position opens only when the
 # 15m / 1h / 4h candles agree. At most AUTO_ADD_MAX_PER_SCAN coins are added per
@@ -260,18 +262,18 @@ DEMO_ENTRY_GUARDS = os.environ.get('DEMO_ENTRY_GUARDS', 'off').strip().lower() i
 
 _btc_cache = {'ts': 0.0, 'data': None}
 
-# --- Crypto timeframe (changed 2026-11-16: back to 15m, hourly scan; was 4h on 2026-11-15) ---
+# --- Crypto timeframe (changed 2026-11-17: 1h candles, hourly scan, 5-candle confirmation; 15m on 11-16, 4h on 11-15) ---
 # The live crypto bot (main ETH engine, watchlist coins, scanner) now reads CLOSED candles of
-# cfg.CRYPTO_INTERVAL (default 15m; Railway variable CRYPTO_INTERVAL=4h restores the old mode).
+# cfg.CRYPTO_INTERVAL (default 1h; the mode is fixed in code below).
 # Things that are deliberately NOT tied to it: the entry-wait 4h check (still a real 4h
 # candle), the trend stop (TREND_SL_INTERVAL, default 4h), the BTC 1h/4h drop lock, stocks.
-CRYPTO_INTERVAL = '15m'   # robot yalnizca 15 dakikalik grafikle calisir (altcoin taramasi, giris, Supertrend stop)
-BTC_REGIME_INTERVAL = (os.environ.get('BTC_REGIME_INTERVAL', '15m').strip() or '15m')   # yalnizca BTC yonu (rejim + yon degisimi korumasi) bu mumla izlenir
+CRYPTO_INTERVAL = '1h'    # altcoin taramasi, giris ve Supertrend stop: 1 saatlik KAPANMIS mumlar
+BTC_REGIME_INTERVAL = (os.environ.get('BTC_REGIME_INTERVAL', '1h').strip() or '1h')   # yalnizca BTC yonu (rejim + yon degisimi korumasi) bu mumla izlenir
 _IV_FLOOR = {'15m': '15min', '30m': '30min', '1h': '1h', '2h': '2h', '4h': '4h'}
 CRYPTO_ENTRY_MIN_SCORE = int(getattr(cfg, 'CRYPTO_ENTRY_MIN_SCORE', 0) or 0)
 SCAN_EVERY_MIN = max(1, int(_env_float('SCANNER_EVERY_MIN', 60)))      # saat basi, kapanmis mumlar
 BTC_ST_LOCK_INTERVAL = os.environ.get('BTC_ST_LOCK_INTERVAL', CRYPTO_INTERVAL).strip() or CRYPTO_INTERVAL
-TREND_SL_INTERVAL = '15m'
+TREND_SL_INTERVAL = '1h'
 _IV_LABEL = {'1m': '1dk', '3m': '3dk', '5m': '5dk', '15m': '15dk', '30m': '30dk', '1h': '1s', '2h': '2s', '4h': '4s', '1d': '1g'}
 
 
@@ -846,7 +848,7 @@ def check_trend_stop(state, symbol, closed, now, price):
     if not p or p.get('side') not in ('LONG', 'SHORT') or p.get('source') == 'restored_live':
         return False
     if TREND_SL_INTERVAL != CRYPTO_INTERVAL:
-        # The trend stop keeps its own timeframe (default 4h) while the bot trades 15m.
+        # The trend stop keeps its own timeframe (default 1h, same as the crypto interval).
         # Skip the request when the newest closed candle of that timeframe was already seen.
         _now = pd.Timestamp(now)
         if _now.tzinfo is None:
@@ -1942,12 +1944,12 @@ def sync_bist_watchlist_signals(state, now):
 
 
 # =============================================================================
-# SUPERTREND MOTORU (15 dk, saat basi tarama) - tek giris/cikis sistemi
+# SUPERTREND MOTORU (1 saatlik mum, saat basi tarama, 5 mum onay) - tek giris/cikis sistemi
 #   Giris : scanner_st'in saat basi taramasindaki LONG/SHORT sinyali (supertrend_signal.py)
 #   Cikis : basamakli kar kilidi (ST_LOCK_TIERS, sabit TP yok) |
 #           Supertrend stop'u (dinamik: LONG yesil cizginin altinda, SHORT kirmizi cizginin ustunde mum kapanisi) |
 #           felaket freni (girisen ST_EMERGENCY_STOP_PCT % ters hareket; 0 = kapali)
-#   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal
+#   ATR stop/trailing, breakeven, time stop, profit lock, zarar freni, trend-SL, 15dk reversal (eski, kapali)
 #   cikisi ve 8-puan stratejisi bu yolda KULLANILMAZ.
 # =============================================================================
 ST_MAX_OPEN = int(_env_float('ST_MAX_OPEN_POSITIONS', 10))
@@ -2098,7 +2100,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     state.setdefault('positions', {})[symbol] = pos
     state.setdefault('watchlist', {})[symbol] = {
         'symbol': symbol, 'market': 'crypto', 'added_at': now.isoformat(), 'added_signal': side,
-        'note': 'Supertrend 15dk', 'st_auto': True}
+        'note': f'Supertrend {iv_label(CRYPTO_INTERVAL)}', 'st_auto': True}
     state['equity'] -= pos['entry_fee']
     state.setdefault('watchlist_signals', {})[symbol] = {'price': px, 'final': side, 'updated_at': now.isoformat()}
     (state.get('st_rewatch') or {}).pop(symbol, None)
@@ -2236,7 +2238,7 @@ def st_regime_flip_check(state, now):
     if not sts.REGIME_FLIP or sts.COUNTER_TREND_MAX < 0:
         return
     # BTC her BTC_REGIME_INTERVAL mum kapanisinda bir kez sorgulanir (30 sn'lik turlarda bos istek atilmaz)
-    _bnd = pd.Timestamp(now).floor(_IV_FLOOR.get(BTC_REGIME_INTERVAL, '15min')).isoformat()
+    _bnd = pd.Timestamp(now).floor(_IV_FLOOR.get(BTC_REGIME_INTERVAL, '1h')).isoformat()
     if state.get('btc_regime_bnd') == _bnd:
         return
     try:
@@ -2305,7 +2307,7 @@ def st_regime_flip_check(state, now):
 
 
 def st_manage_positions(state, now):
-    """Acik kripto pozisyonlarini her turda (30 sn) yonetir; Supertrend stop'u kapanmis 15 dk mumlara bakar."""
+    """Acik kripto pozisyonlarini her turda (30 sn) yonetir; Supertrend stop'u kapanmis 1 saatlik mumlara bakar."""
     try:
         st_regime_flip_check(state, now)
     except Exception as e:
@@ -2354,7 +2356,7 @@ ST_REWATCH_HOURS = _env_float('ST_REWATCH_HOURS', 24.0)
 
 
 def st_reentry_check(state, now):
-    """Supertrend stop'u ile kapanan coinleri her 15 dk mum kapanisinda izler (saat basi taramasini beklemez):
+    """Supertrend stop'u ile kapanan coinleri her 1 saatlik mum kapanisinda izler (saat basi taramasini beklemez):
     stop sonrasi cizgi yeniden asilirsa/kirilirsa (yeni LONG/SHORT veya yeniden giris) pozisyon acar."""
     rewatch = state.get('st_rewatch') or {}
     for symbol, info in list(rewatch.items()):
@@ -2371,7 +2373,7 @@ def st_reentry_check(state, now):
             df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
             ind = df.iloc[:-1].copy().set_index('close_time')
             # stop sonrasi izleme: yalnizca en son kapanan mum | elle eklenen (Robota Ekle): tarama ile ayni 'son 3 mum' kurali
-            sig = sts.latest_entry_signal(ind, max_age_bars=(sts.MAX_SIGNAL_AGE_BARS if info.get('manual') else 1))
+            sig = sts.latest_entry_signal(ind)      # onay kurali: sinyalden CONFIRM_BARS mum sonra, arada ters donus yoksa
             if not sig or state.get('st_traded', {}).get(symbol) == pd.Timestamp(sig['signal_time']).isoformat():
                 continue
             price = float(df.iloc[-1]['close'])
@@ -2396,8 +2398,8 @@ def st_reentry_check(state, now):
 
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
-    print('VERSION | paper_trading 2026-11-16 st-only r19 | entry-quality + pullback-entry + entry-context-log | 15m-mode + hourly-scan + whipsaw-16 + btc-st-15m | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
-    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | whipsaw={sts.WHIPSAW_BARS} mum | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
+    print('VERSION | paper_trading 2026-11-17 st-only r20 | entry-quality + pullback-entry + entry-context-log | 1h-mode + hourly-scan + confirm-5 + btc-st-1h | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
+    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | onay={sts.CONFIRM_BARS} mum (+{sts.CONFIRM_EXTRA_BARS}) | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '

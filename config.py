@@ -7,10 +7,9 @@ LONG_SYMBOL = "ETHUSD_PERP"
 SHORT_SYMBOL = "ETHUSDT"
 INTERVAL = "4h"              # backtests / stock engines (unchanged)
 
-# LIVE CRYPTO bot + crypto scanner timeframe (changed 2026-11-05: 4h -> 15m, because the 4h
-# candle reacted too slowly to sudden market drops). Roll back without a code change by
-# setting the Railway variable CRYPTO_INTERVAL=4h (and CRYPTO_ENTRY_MIN_SCORE=7).
-CRYPTO_INTERVAL = os.environ.get("CRYPTO_INTERVAL", "15m")
+# LIVE CRYPTO bot + crypto scanner timeframe (changed 2026-11-17: 1h candles, hourly scan, 5-candle
+# confirmation; history: 4h -> 15m on 2026-11-05, 4h/15m trials on 2026-11-15/16).
+CRYPTO_INTERVAL = os.environ.get("CRYPTO_INTERVAL", "1h")
 # Crypto entry bar on top of ENTRY_MIN_SCORE (which the stock/backtest code still uses):
 # only coins that score this many of the 8 conditions are signalled / traded.
 CRYPTO_ENTRY_MIN_SCORE = int(os.environ.get("CRYPTO_ENTRY_MIN_SCORE", "8"))
