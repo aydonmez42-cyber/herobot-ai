@@ -2469,7 +2469,8 @@ def st_reentry_check(state, now):
 def main():
     print('TEST32 PAPER TRADING | REAL MARKET DATA | NO REAL ORDERS', flush=True)
     print('VERSION | paper_trading 2026-11-17 st-only r21 | entry-quality + pullback-entry + entry-context-log | 1h-mode + hourly-scan + short-intrabar + btc-st-1h | 24h-min + btc-st-lock + wait-signal-drop + pump-filter + time-stop + idle-remove + auto-add + stop-remove + entry-wait + trend-sl + m15-exit', flush=True)
-    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | LONG mum kapanışında, SHORT mum-içi={'açık' if sts.SHORT_INTRABAR else 'kapalı'} | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
+    _ib_txt = "açık" if sts.SHORT_INTRABAR else "kapalı"
+    print(f'TIMEFRAME | kripto mum={CRYPTO_INTERVAL} | BTC yönü={BTC_REGIME_INTERVAL} | tarama her {SCAN_EVERY_MIN} dk (saat başı, kapanmış mum) | LONG mum kapanışında, SHORT mum-içi={_ib_txt} | giriş puanı >= {CRYPTO_ENTRY_MIN_SCORE}/8 | BTC ST kilidi={BTC_ST_LOCK_INTERVAL} | trend stop={TREND_SL_INTERVAL}', flush=True)
     print(f'ENTRY GUARDS | BTC_LOCK={BTC_LOCK_MODE} (1h>={BTC_LOCK_1H_DROP_PCT}% / 4h>={BTC_LOCK_4H_DROP_PCT}% drop, release>-{BTC_LOCK_RELEASE_PCT}% after {BTC_LOCK_MIN_HOURS}h) | '
           f'LOSS_BRAKE={LOSS_BRAKE_MODE} ({LOSS_BRAKE_STOP_COUNT} stops/{LOSS_BRAKE_WINDOW_MIN:.0f}min -> pause {LOSS_BRAKE_PAUSE_HOURS:g}h)', flush=True)
     print(f'ENTRY GUARDS | DIRECTION_LIMIT={DIRECTION_LIMIT_MODE} (max {MAX_SAME_DIRECTION}) | LATE_ENTRY={LATE_ENTRY_MODE} (chase>{LATE_ENTRY_CHASE_ATR} / adverse>{LATE_ENTRY_ADVERSE_ATR} ATR) | '
