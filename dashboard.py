@@ -8786,20 +8786,22 @@ function liveFreshness(msg){
   }
   if(msg){ el.textContent=msg; el.style.display='block'; } else { el.style.display='none'; }
 }
-let _liveLastOk=0;
+let _liveLastOk=0, _liveFails=0;
 async function refreshMyLive(){
   let d;
   try{
-    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),20000);
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),45000);
     const r=await fetch('/api/live/my-positions',{cache:'no-store',signal:ctl.signal}); clearTimeout(to);
     if(!r.ok) throw new Error('http '+r.status);
     d=await r.json();
   }catch(e){
+    _liveFails++;
+    if(_liveFails<2) return;          // tek seferlik gecikmede uyari gosterme; ust uste 2 basarisizlikta goster
     const mins=_liveLastOk?Math.round((Date.now()-_liveLastOk)/60000):null;
     liveFreshness('⚠ Sunucuya ulaşılamıyor; gösterilen veriler'+(mins!=null?` ${mins} dk önceki`:'')+' olabilir. Sayfa otomatik yeniden denenecek.');
     return;
   }
-  _liveLastOk=Date.now();
+  _liveLastOk=Date.now(); _liveFails=0;
   renderMyLive(d);
   const ps=d.price_status||{}, op=d.open||[];
   const noPrice=op.filter(x=>x.price_src==='entry').length;
