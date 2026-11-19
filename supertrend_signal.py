@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: yalnizca son kapanmis mumda cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
+Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: yalnizca son 3 kapanmis mumdan birinde cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -144,7 +144,9 @@ CONFIRM_EXTRA_BARS = int(os.environ.get("ST_CONFIRM_EXTRA_BARS", "0"))
 SHORT_INTRABAR = os.environ.get("ST_SHORT_INTRABAR", "0").strip().lower() in ("1", "true", "on", "yes")
 # Mum-ici SHORT'ta mum kapanisinda donus teyit edilmediyse (fiyat cizgi ustune geri kapandiysa) hemen cik (1) / yalnizca kirmizi cizgi ustu kapanista cik (0, varsayilan)
 INTRABAR_FAKEOUT_EXIT = os.environ.get("ST_INTRABAR_FAKEOUT_EXIT", "0").strip().lower() in ("1", "true", "on", "yes")
-MAX_SIGNAL_AGE_BARS = CONFIRM_BARS + CONFIRM_EXTRA_BARS + 1   # SABIT: yalnizca son kapanmis mum (yas 0). Ortam degiskeniyle degistirilemez (eski Railway ayari 4+ mumluk sinyali geciriyordu)
+# Giris penceresi: cizgi kirilimi SON 3 kapanmis mumda olduysa (yas 0, 1, 2) giris yapilir. Eski ST_MAX_SIGNAL_AGE_BARS degiskeni artik OKUNMAZ; yalnizca ST_ENTRY_WINDOW_BARS.
+ENTRY_WINDOW_BARS = max(1, int(float(os.environ.get("ST_ENTRY_WINDOW_BARS", "3"))))
+MAX_SIGNAL_AGE_BARS = CONFIRM_BARS + CONFIRM_EXTRA_BARS + ENTRY_WINDOW_BARS
 WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
@@ -382,7 +384,7 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         return False, "NO_SIGNAL"
     if is_excluded(symbol):
         return False, "EXCLUDED_SYMBOL"
-    if int(sig.get("age_bars") or 0) > CONFIRM_BARS + CONFIRM_EXTRA_BARS:
+    if int(sig.get("age_bars") or 0) > CONFIRM_BARS + CONFIRM_EXTRA_BARS + ENTRY_WINDOW_BARS - 1:
         return False, "SIGNAL_TOO_OLD"           # son kapanmis mumdan eski sinyalle giris yok
     _ib = bool(sig.get("intrabar"))                # mum-ici SHORT: son kapanmis mum henuz yesil cizgi ustunde
     if ind is not None and not _ib and not last_closed_side_ok(ind, sig["side"]):
