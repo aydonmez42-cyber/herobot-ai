@@ -10017,7 +10017,7 @@ def status():
         total_open_pnl+=unreal
     for wsym, wp in (s.get('positions', {}) or {}).items():
         wsig=(s.get('watchlist_signals', {}) or {}).get(wsym, {})
-        cp=f(wsig.get('price', wp.get('entry_price')))
+        cp=f(_fresh_price(wsym, wsig, wp.get('entry_price')))     # Robot Islem Takibi tablosuyla ayni fiyat kaynagi (bayat fiyat -> Binance)
         qty=f(wp.get('qty_eth', 0)); ep=f(wp.get('entry_price'))
         unreal=(cp-ep)*qty if wp.get('side')=='LONG' else (ep-cp)*qty
         total_open_pnl+=unreal
@@ -10122,6 +10122,23 @@ def closed_trades_csv(q):
     if data.get('to'): parts.append(data['to'])
     return ('\ufeff' + buf.getvalue()).encode('utf-8'), '_'.join(parts) + '.csv'
 
+def _fresh_price(symbol, sig, fallback):
+    """Pozisyon fiyati: tarama/izleme fiyati 120 sn'den eskiyse (veya yoksa) Binance mark price. Panel KPI'si ve Robot Islem Takibi ayni degeri gosterir."""
+    cp_raw = (sig or {}).get('price')
+    try:
+        import time as _t
+        from datetime import datetime as _dt
+        stale = (not (sig or {}).get('updated_at')) or (_t.time() - _dt.fromisoformat(sig['updated_at']).timestamp() > 120)
+    except Exception:
+        stale = True
+    if cp_raw is None or stale:
+        try:
+            import binance_live as _bl
+            cp_raw = _bl.get_mark_price(symbol) or cp_raw
+        except Exception:
+            pass
+    return cp_raw if cp_raw is not None else fallback
+
 def watchlist_status():
     s = read_state()
     watchlist = s.get('watchlist', {}) or {}
@@ -10133,19 +10150,7 @@ def watchlist_status():
         pos = None
         p = positions.get(symbol)
         if p:
-            cp_raw = sig.get('price')
-            try:
-                import time as _t
-                from datetime import datetime as _dt
-                _stale = (not sig.get('updated_at')) or (_t.time() - _dt.fromisoformat(sig['updated_at']).timestamp() > 120)
-            except Exception:
-                _stale = True
-            if cp_raw is None or _stale:
-                try:
-                    import binance_live as _bl
-                    cp_raw = _bl.get_mark_price(symbol) or cp_raw
-                except Exception:
-                    pass
+            cp_raw = _fresh_price(symbol, sig, None)
             cp = f(cp_raw if cp_raw is not None else p.get('entry_price'))
             qty = f(p.get('qty_eth', 0)); ep = f(p.get('entry_price'))
             unreal = (cp - ep) * qty if p.get('side') == 'LONG' else (ep - cp) * qty
