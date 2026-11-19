@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Giris: son kapanmis mum cizginin ustunde LONG, altinda SHORT (ST_ENTRY_MODE=state); cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
+Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: yalnizca son kapanmis mumda cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -15,8 +15,8 @@ from indicators import supertrend
 
 # Supertrend kaynagi: "ohlc4" = (Acilis+Yuksek+Dusuk+Kapanis)/4 (varsayilan) | "hl2" = (Yuksek+Dusuk)/2
 ST_SOURCE = os.environ.get("ST_SOURCE", "ohlc4").strip().lower()
-# Giris modu: "state" = son kapanmis mum cizginin ustunde -> LONG, altinda -> SHORT (donus beklenmez) | "flip" = yalnizca yeni donus sinyali
-ENTRY_MODE = os.environ.get("ST_ENTRY_MODE", "state").strip().lower()
+# Giris modu: "flip" (VARSAYILAN) = yalnizca SON kapanmis mumda cizgiyi kirip kapatan coin | "state" = cizginin dogru tarafindaki her coin (onerilmez). Tarama LISTESI her zaman durum bazlidir (state_entry_signal).
+ENTRY_MODE = os.environ.get("ST_ENTRY_MODE", "flip").strip().lower()
 
 
 def st_calc(df, period, mult):

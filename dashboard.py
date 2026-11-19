@@ -4385,7 +4385,7 @@ function renderSt(){
   const tf=stTfVal(); stCache=stSlot(stKey());
   const f=document.getElementById('stFilter')?.value||'ALL';
   const n=Number(document.getElementById('stBars')?.value||1);
-  const all=(stCache.results||[]).map(x=>({...x,signal:(x.signal&&x.signal_age!=null&&x.signal_age<n)?x.signal:'NO SIGNAL'}));
+  const all=(stCache.results||[]).map(x=>({...x,signal:x.signal||'NO SIGNAL'}));
   const rows=stSortRows(all.filter(x=>f==='ALL'?true:x.signal===f).sort((a,b)=>(a.signal_age??99)-(b.signal_age??99)||Number(b.change_pct||0)-Number(a.change_pct||0)),'St');
   const nL=all.filter(x=>x.signal==='LONG').length, nS=all.filter(x=>x.signal==='SHORT').length;
   const st=document.getElementById('stStatus'), note=document.getElementById('stNote'), btn=document.getElementById('stBtn');
@@ -4398,8 +4398,8 @@ function renderSt(){
   }
   const lblTr='1 saatlik', lblEn='1h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Her coin son kapanan 1 saatlik mumun Supertrend çizgisine göre listelenir: mum çizginin üzerinde kapandıysa LONG, altında kapandıysa SHORT. Robot da aynı kuralla pozisyon açar; çıkış, mum çizginin ters tarafında kapanınca olur. Supertrend 10/4.6, kaynak OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'Every coin is listed by the last closed 1h candle vs the Supertrend line: closed above the line = LONG, below = SHORT. The robot opens positions by the same rule; exits when a candle closes on the other side of the line. Supertrend 10/4.6, source OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Her coin son kapanan 1 saatlik mumun Supertrend çizgisine göre listelenir: çizginin üzerindekiler LONG, altındakiler SHORT. Robot yalnızca SON mumda çizgiyi kırıp mumu kırılan tarafta kapatan coine pozisyon açar (yaş 0); diğerleri yalnızca listedir. Çıkış, mum çizginin ters tarafında kapanınca olur. Supertrend 10/4.6, kaynak OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'Every coin is listed by the last closed 1h candle vs the Supertrend line: above = LONG, below = SHORT. The robot opens a position only on a coin whose LAST candle broke the line and closed beyond it (age 0); the rest are list-only. Exits when a candle closes on the other side of the line. Supertrend 10/4.6, source OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='60';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);

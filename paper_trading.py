@@ -2132,7 +2132,7 @@ def st_scan_and_trade(state, now):
         print('ST SCAN | sonuc cok eski, islem acilmadi', flush=True)
         save_state(state)
         return
-    rows = [r for r in snap.get('results', []) if r.get('signal') in ('LONG', 'SHORT')]
+    rows = [r for r in snap.get('results', []) if r.get('signal') in ('LONG', 'SHORT') and r.get('entry')]     # yalnizca SON mumda cizgiyi kirip kapatanlar; listedeki diger coinler islem acmaz
     rows.sort(key=lambda r: -(r.get('volume') or 0))
     print(f"ST SCAN | {len(rows)} sinyal | asof={asof.isoformat()}", flush=True)
     for r in rows:

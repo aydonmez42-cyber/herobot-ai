@@ -191,17 +191,21 @@ def _analyse(symbol, vol, chg, asof):
     while j > 0 and d[j - 1] == d[last]:
         j -= 1
     price = float(df.iloc[-1]['close'])
-    sig = sts.latest_entry_signal(ind)
+    sig = sts.latest_entry_signal(ind)              # islem sinyali: SON kapanmis mumda cizgi kirilip mum kapandi (yas 0)
+    lst = sts.state_entry_signal(ind)               # liste: cizgi ustu = LONG, alti = SHORT
     row = {
         'symbol': symbol, 'price': price, 'change_pct': chg, 'volume': vol,
         'trend': 'UP' if up else 'DOWN', 'st': line,
         'dist_pct': (price - line) / price * 100.0 if price else None,
         'flip_bars': int(last - j), 'flip_time': ind.index[j].isoformat(),
         'atr': _wilder_atr(closed), 'candle_time': ind.index[last].isoformat(),
-        'signal': None, 'signal_kind': None, 'signal_age': None, 'level': None, 'signal_close': None,
+        'signal': None, 'signal_kind': None, 'signal_age': None, 'level': None, 'signal_close': None, 'entry': False,
     }
+    if lst:                                         # her coin listelenir; yas = trendin basladigi mumdan beri gecen mum (0 = bu mumda kirildi)
+        row.update({'signal': lst['side'], 'signal_kind': lst['kind'], 'signal_age': int(last - j), 'level': lst['level'], 'signal_st': lst['st'],
+                    'signal_close': lst['signal_close'], 'signal_time': pd.Timestamp(lst['signal_time']).isoformat()})
     if sig:
-        row.update({'signal': sig['side'], 'signal_kind': sig['kind'], 'signal_age': int(sig['age_bars']),
+        row.update({'entry': True, 'signal': sig['side'], 'signal_kind': sig['kind'], 'signal_age': int(sig['age_bars']),
                     'level': sig['level'], 'signal_st': sig.get('st'),       # = guncel Supertrend cizgisi (onay beklerken hareket eder)
                      'signal_close': sig['signal_close'],
                     'signal_time': pd.Timestamp(sig['signal_time']).isoformat()})
