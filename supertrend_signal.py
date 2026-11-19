@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.1 sinyal motoru (1 saatlik mum) - TradingView "ST Sinyal" Pine kodunun birebir Python karsiligi.
+Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Giris: son kapanmis mum cizginin ustunde LONG, altinda SHORT (ST_ENTRY_MODE=state); cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -13,11 +13,24 @@ import numpy as np
 import pandas as pd
 from indicators import supertrend
 
+# Supertrend kaynagi: "ohlc4" = (Acilis+Yuksek+Dusuk+Kapanis)/4 (varsayilan) | "hl2" = (Yuksek+Dusuk)/2
+ST_SOURCE = os.environ.get("ST_SOURCE", "ohlc4").strip().lower()
+# Giris modu: "state" = son kapanmis mum cizginin ustunde -> LONG, altinda -> SHORT (donus beklenmez) | "flip" = yalnizca yeni donus sinyali
+ENTRY_MODE = os.environ.get("ST_ENTRY_MODE", "state").strip().lower()
+
+
+def st_calc(df, period, mult):
+    """Projedeki TUM Supertrend hesaplari bu fonksiyondan gecer (kaynak ayari tek yerde)."""
+    src = None
+    if ST_SOURCE == "ohlc4" and "open" in df.columns:
+        src = (df["open"] + df["high"] + df["low"] + df["close"]) / 4.0
+    return supertrend(df["high"], df["low"], df["close"], period, mult, src=src)
+
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "3.7"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
+ST_MULT = float(os.environ.get("ST_MULT", "4.6"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
 # BTC yon/rejim Supertrend (1 saatlik mum, altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
 REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
-REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "3.7"))
+REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.6"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 
@@ -39,7 +52,7 @@ def _parse_tiers(txt):
 
 # Basamakli kar kilidi: "zirve_kar:kilitli_kar" ciftleri (fiyat uzerinden %). Zirve kar ilk degere ulasinca
 # kar o seviyenin kilidine iner, kilit zirve buyudukce yukselir. Son basamagin ustunde kilit = zirve - (son_zirve - son_kilit).
-LOCK_TIERS = _parse_tiers(os.environ.get("ST_LOCK_TIERS", "2.5:1,4:2.5,6:4,8:6"))
+LOCK_TIERS = _parse_tiers(os.environ.get("ST_LOCK_TIERS", "1.5:1,2:1.5,3:2,4:3"))
 TRAIL_ARM_PCT = LOCK_TIERS[0][0]
 TRAIL_FLOOR_PCT = LOCK_TIERS[0][1]
 
@@ -59,7 +72,7 @@ def _parse_gaps(txt):
 
 # Son basamagin ustunde izleyen kilit: zirve kar >= esik oldugunda taban = zirve - bosluk (puan). Ornek "8:2,10:1.5":
 # +%8..+%10 arasi zirvenin 2 puan, +%10 ustunde 1.5 puan altinda. Bos birakirsaniz ("none") yalnizca basamaklar gecerli.
-TRAIL_GAPS = _parse_gaps(os.environ.get("ST_TRAIL_GAPS", "8:2,10:1.5"))
+TRAIL_GAPS = _parse_gaps(os.environ.get("ST_TRAIL_GAPS", "none"))      # son basamak (+%4 -> %3) ustunde kilit = zirve - 1 puan (+%5 -> %4, +%6 -> %5 ...)
 
 
 def _gap_for(peak):
@@ -199,7 +212,7 @@ def signal_rel_volume(ind, signal_time, n=None):
 
 def regime_direction(df_closed):
     """Kapanmis mumlarla REGIME_SYMBOL'un Supertrend yonu: 'LONG' | 'SHORT' | None."""
-    st = supertrend(df_closed["high"], df_closed["low"], df_closed["close"], REGIME_ST_PERIOD, REGIME_ST_MULT)
+    st = st_calc(df_closed, REGIME_ST_PERIOD, REGIME_ST_MULT)
     d = st["supertrend_direction"].iloc[-1]
     if np.isnan(d):
         return None
@@ -216,7 +229,7 @@ def run_state_machine(df, stop_mode=None):
       type in LONG | SHORT | RE_LONG | RE_SHORT | STOP_LONG | STOP_SHORT
     """
     stop_mode = stop_mode or ST_STOP_MODE
-    st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)
+    st = st_calc(df, ST_PERIOD, ST_MULT)
     line = st["supertrend"].to_numpy()
     d = st["supertrend_direction"].to_numpy()          # +1 yukselis, -1 dusus
     c = df["close"].to_numpy()
@@ -265,7 +278,31 @@ def run_state_machine(df, stop_mode=None):
     return events, state
 
 
+def state_entry_signal(df):
+    """Durum bazli giris: SON KAPANMIS mum Supertrend cizgisinin ustunde (yon +1) ise LONG, altinda (yon -1) ise SHORT.
+    Sinyal zamani = mevcut trendin basladigi mum (ayni trendde cikistan sonra tekrar girilmez). age_bars daima 0."""
+    df = df.iloc[-ST_WARMUP_BARS:]
+    st = st_calc(df, ST_PERIOD, ST_MULT)
+    d = st["supertrend_direction"].to_numpy()
+    line = st["supertrend"].to_numpy()
+    if len(d) < 2 or np.isnan(d[-1]) or np.isnan(line[-1]):
+        return None
+    j = len(d) - 1
+    while j > 0 and not np.isnan(d[j - 1]) and d[j - 1] == d[-1]:
+        j -= 1
+    side = "LONG" if int(d[-1]) == 1 else "SHORT"
+    ln = float(line[-1])
+    return {"side": side, "kind": side, "signal_time": df.index[j], "signal_close": float(df["close"].iloc[-1]),
+            "level": ln, "st": ln, "st_signal": ln, "age_bars": 0}
+
+
 def latest_entry_signal(df, max_age_bars=None, min_age_bars=None):
+    if ENTRY_MODE == "state":
+        return state_entry_signal(df)
+    return _flip_entry_signal(df, max_age_bars, min_age_bars)
+
+
+def _flip_entry_signal(df, max_age_bars=None, min_age_bars=None):
     """ONAYLANMIS LONG/SHORT sinyali (flip veya yeniden giris): sinyal mumundan en az `min_age_bars` (varsayilan CONFIRM_BARS)
     ve en fazla `max_age_bars`-1 mum gecmis, aradaki mumlarda sinyalin tersine donus/stop OLMAMIS olmali.
     En yeni gecerli sinyali doner, yoksa None. age_bars: 0 = son kapanmis mum.
@@ -281,7 +318,7 @@ def latest_entry_signal(df, max_age_bars=None, min_age_bars=None):
             side_of = "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT"
             if any(x["type"] == "STOP_" + side_of for x in newer):
                 return None                               # sinyal sonradan stop oldu: girme
-            _st_now = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)["supertrend"].iloc[-1]
+            _st_now = st_calc(df, ST_PERIOD, ST_MULT)["supertrend"].iloc[-1]
             return {"side": "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT",
                     "kind": e["type"], "signal_time": e["time"], "signal_close": e["close"],
                     "level": e["level"], "st": (float(_st_now) if _st_now == _st_now else e["st"]), "st_signal": e["st"],
@@ -314,7 +351,7 @@ def whipsaw_blocked(ind, sig, bars=None):
 
 def last_closed_side_ok(ind, side):
     """Giris kurali: LONG icin SON KAPANMIS mum Supertrend cizgisinin USTUNDE (trend yukari), SHORT icin ALTINDA."""
-    st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
+    st = st_calc(ind, ST_PERIOD, ST_MULT)
     close = float(ind["close"].iloc[-1])
     line = float(st["supertrend"].iloc[-1])
     d = int(st["supertrend_direction"].iloc[-1])
@@ -329,7 +366,7 @@ def intrabar_short_signal(df, forming_close_time=None):
     SHORT sinyali doner. 'st' = olusan (gecici) kirmizi cizgi; 'level' = kirilan yesil cizgi."""
     if df is None or len(df) < 20:
         return None
-    st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)
+    st = st_calc(df, ST_PERIOD, ST_MULT)
     d = st["supertrend_direction"].to_numpy()
     line = st["supertrend"].to_numpy()
     if d[-2] != 1 or d[-1] != -1 or np.isnan(line[-1]) or np.isnan(line[-2]):
@@ -355,7 +392,7 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
     if MAX_STOP_DIST_PCT > 0 and last_price:
         line = None
         if ind is not None and not _ib:
-            _st = supertrend(ind["high"], ind["low"], ind["close"], ST_PERIOD, ST_MULT)
+            _st = st_calc(ind, ST_PERIOD, ST_MULT)
             line = float(_st["supertrend"].iloc[-1])
             line = None if np.isnan(line) else line
         if line is None and sig.get("st") is not None:
@@ -402,7 +439,7 @@ def check_exit(pos, df, last_price):
     if _fl is not None and profit <= _fl:
         return "TRAIL_LOCK"
 
-    st = supertrend(df["high"], df["low"], df["close"], ST_PERIOD, ST_MULT)
+    st = st_calc(df, ST_PERIOD, ST_MULT)
     close, direction = float(df["close"].iloc[-1]), int(st["supertrend_direction"].iloc[-1])
     level = pos.get("st_level")
     if side == "LONG":

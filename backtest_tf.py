@@ -107,11 +107,11 @@ def fetch(symbol, tf, days):
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
-def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0, confirm=0, short_intrabar=False):
+def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, atrp_arr=None, adx_min=0.0, atr_min=0.0, relvol=None, vol_min=0.0, vwma=None, maxstop=0.0, whipsaw=0, confirm=0, short_intrabar=False, state_mode=None):
     """Tek coin: tum islemleri doner (liste of dict). whipsaw=N: sinyalden onceki N mum icinde ters yonlu ST donusu varsa girme (0=kapali)."""
     if events is None:
         events, _ = sts.run_state_machine(df)
-        d = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
+        d = sts.st_calc(df, sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
     o, h, l, c = (df[k].to_numpy() for k in ("open", "high", "low", "close"))
     n = len(df); trades = []; busy_until = -1
     emerg = sts.EMERGENCY_STOP_PCT if emerg is None else emerg
@@ -119,15 +119,36 @@ def simulate(df, fee_pct, warm, emerg=None, events=None, d=None, adx_arr=None, a
     if confirm > 0:                                          # onay kurali: sinyalden `confirm` mum sonra, arada ters donus/stop yoksa gir
         import bisect
         _stops = {s: [x["i"] for x in events if x["type"] == "STOP_" + s] for s in ("LONG", "SHORT")}
-        _line = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend"].to_numpy()
+        _line = sts.st_calc(df, sts.ST_PERIOD, sts.ST_MULT)["supertrend"].to_numpy()
+    state_mode = (sts.ENTRY_MODE == "state") if state_mode is None else state_mode
+    if state_mode:                                           # durum bazli giris: her trend icin bir aday; mum cizginin dogru tarafinda kapandiysa gir
+        _ln = sts.st_calc(df, sts.ST_PERIOD, sts.ST_MULT)["supertrend"].to_numpy()
+        events = []; _s0 = None
+        for _k in range(n):
+            if d[_k] != d[_k] or _ln[_k] != _ln[_k]:
+                continue
+            if _s0 is None:
+                _s0 = _k
+            elif d[_k] != d[_k - 1]:
+                events.append({"i": _s0, "end": _k - 1, "type": "LONG" if d[_k - 1] == 1 else "SHORT"}); _s0 = _k
+        if _s0 is not None:
+            events.append({"i": _s0, "end": n - 1, "type": "LONG" if d[n - 1] == 1 else "SHORT"})
     for e in events:
         if e["type"] not in ("LONG", "SHORT", "RE_LONG", "RE_SHORT"): continue
         i = e["i"]
+        if state_mode:
+            if i < warm:
+                i = warm
+            _lastr = trades[-1]["reason"] if trades else None
+            if i < busy_until or (i == busy_until and _lastr != "ST_STOP"):
+                i = busy_until + 1
+            if i > e["end"]: continue
+            e = dict(e); e["st"] = float(_ln[i]); e["level"] = e["st"]
         _opp = "SHORT" if e["type"] in ("LONG", "RE_LONG") else "LONG"
         _whip = whipsaw > 0 and 0 < i - last_flip[_opp] < whipsaw                                 # ters yonlu donus son N mum icinde
         if e["type"] in ("LONG", "SHORT"): last_flip[e["type"]] = i
         if _whip: continue
-        if i < warm or i + 1 + confirm >= n or i <= busy_until: continue
+        if i < warm or i + 1 + confirm >= n or (i <= busy_until and not state_mode): continue
         if confirm > 0:
             _sd = "LONG" if e["type"] in ("LONG", "RE_LONG") else "SHORT"
             _k = bisect.bisect_right(_stops[_sd], i)
@@ -191,7 +212,7 @@ def fmt(name, s):
 
 def prep(df):
     ev, _ = sts.run_state_machine(df)
-    d = sts.supertrend(df["high"], df["low"], df["close"], sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
+    d = sts.st_calc(df, sts.ST_PERIOD, sts.ST_MULT)["supertrend_direction"].to_numpy()
     return ev, d
 
 

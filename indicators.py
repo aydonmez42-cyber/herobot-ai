@@ -85,15 +85,15 @@ def stoch_rsi(close, rsi_length=14, stoch_length=14, k_smooth=3, d_smooth=3):
 
 
 
-def supertrend(high, low, close, period=10, multiplier=3.0):
-    """ATR-based Supertrend. Direction: +1 bullish, -1 bearish."""
+def supertrend(high, low, close, period=10, multiplier=3.0, src=None):
+    """ATR-based Supertrend. Direction: +1 bullish, -1 bearish. src: bant orta noktasi kaynagi (varsayilan hl2; ornek ohlc4)."""
     tr1 = high - low
     tr2 = (high - close.shift()).abs()
     tr3 = (low - close.shift()).abs()
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     atr_value = tr.ewm(alpha=1 / period, adjust=False, min_periods=period).mean()
 
-    hl2 = (high + low) / 2.0
+    hl2 = (high + low) / 2.0 if src is None else src
     basic_upper = hl2 + multiplier * atr_value
     basic_lower = hl2 - multiplier * atr_value
 

@@ -4398,8 +4398,8 @@ function renderSt(){
   }
   const lblTr='1 saatlik', lblEn='1h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Kırmızı çizgi yukarı kırılırsa mum kapanışı ile LONG, Yeşil çizgi aşağı kırılırsa mum kapanışı ile SHORT sinyali, robota ekleniyor. Periyod 1 saat, yalnızca son 1 mum değerlendirilir: LONG ve SHORT sinyalleri mum kapanışıyla onaylanır, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'If the red line is broken upward on a candle close: LONG; if the green line is broken downward on a candle close: SHORT signal, added to the robot. Period 1h, only the last candle counts: LONG and SHORT signals are confirmed on candle close, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Her coin son kapanan 1 saatlik mumun Supertrend çizgisine göre listelenir: mum çizginin üzerinde kapandıysa LONG, altında kapandıysa SHORT. Robot da aynı kuralla pozisyon açar; çıkış, mum çizginin ters tarafında kapanınca olur. Supertrend 10/4.6, kaynak OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'Every coin is listed by the last closed 1h candle vs the Supertrend line: closed above the line = LONG, below = SHORT. The robot opens positions by the same rule; exits when a candle closes on the other side of the line. Supertrend 10/4.6, source OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='60';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
@@ -10196,7 +10196,12 @@ def ta_chart_payload(tv, tf):
             from scanner_st import PERIOD as _per, FACTOR as _mul
     except Exception:
         pass
-    st = _stf(ind['high'], ind['low'], ind['close'], _per, _mul)
+    _crypto = True
+    try:
+        _crypto = (ta_parse_market(tv)[1] == 'crypto')
+    except Exception:
+        pass
+    st = _sts.st_calc(ind, _per, _mul) if _crypto else _stf(ind['high'], ind['low'], ind['close'], _per, _mul)
     line = st['supertrend'].to_numpy(dtype=float)
     dr = st['supertrend_direction'].to_numpy(dtype=float)
     times = [c['time'] for c in C]

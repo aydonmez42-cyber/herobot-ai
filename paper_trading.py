@@ -2398,7 +2398,7 @@ def st_manage_positions(state, now):
             p['tp'] = p['entry_price'] * (1 + sign * _tgt / 100.0)          # TP kapaliysa: bir sonraki kilit basamagi
             if sts.ST_STOP_MODE == 'flip':
                 try:
-                    _stx = sts.supertrend(ind['high'], ind['low'], ind['close'], sts.ST_PERIOD, sts.ST_MULT)
+                    _stx = sts.st_calc(ind, sts.ST_PERIOD, sts.ST_MULT)
                     _ln = float(_stx['supertrend'].iloc[-1]); _dr = int(_stx['supertrend_direction'].iloc[-1])
                     _wait_confirm = bool(p.get('st_intrabar')) and not p.get('st_confirmed') and _dr == 1   # mum-ici SHORT, donus henuz teyitsiz
                     if _ln == _ln and _ln > 0 and not _wait_confirm:
