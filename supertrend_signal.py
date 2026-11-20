@@ -157,7 +157,7 @@ EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))       
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
 EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
 # Girişte Supertrend stopu fiyattan bu % den uzaksa islem acilmaz (cok oynak coin; acil stop yok -> kayip siniri). 0 = kapali
-MAX_STOP_DIST_PCT = float(os.environ.get("ST_MAX_STOP_DIST_PCT", "6"))
+MAX_STOP_DIST_PCT = 0.0   # stop mesafesi siniri KALDIRILDI (STOP_TOO_FAR yok). Boyut risk bazli: bakiye x ST_RISK_PCT / stop mesafesi; Railway ST_MAX_STOP_DIST_PCT degiskeni artik okunmaz
 
 
 # Pozisyon boyutu (paper): risk bazli. Stop olursa kaybedilecek tutar = guncel bakiyenin RISK_PCT %'si
@@ -302,10 +302,86 @@ def state_entry_signal(df):
             "level": ln, "st": ln, "st_signal": ln, "age_bars": 0}
 
 
+# ---- UT Bot Alerts (2. indikator): Supertrend trendi ile UYUMLU ikinci sans girisi ----
+UT_ENABLED = os.environ.get("ST_UT_ENABLED", "1").strip().lower() not in ("0", "false", "off", "no")
+UT_ATR_PERIOD = int(float(os.environ.get("ST_UT_ATR_PERIOD", "10")))
+UT_KEY_VALUE = float(os.environ.get("ST_UT_KEY", "4"))
+UT_WINDOW_BARS = max(1, int(float(os.environ.get("ST_UT_WINDOW_BARS", "2"))))      # UT sinyali son N kapanmis mumdan birinde olduysa gecerli (yas 0..N-1)
+
+
+def ut_bot(df, period=None, key=None):
+    """UT Bot Alerts (HPotter/QuantNomad Pine surumu, kaynak = kapanis, Heikin Ashi KAPALI).
+    Doner: (buy, sell, trailing_stop) numpy dizileri. ATR = Wilder RMA (TradingView ta.atr)."""
+    period = UT_ATR_PERIOD if period is None else period
+    key = UT_KEY_VALUE if key is None else key
+    c = df["close"].to_numpy(dtype=float)
+    h = df["high"].to_numpy(dtype=float)
+    lo = df["low"].to_numpy(dtype=float)
+    n = len(c)
+    tr = np.empty(n)
+    tr[0] = h[0] - lo[0]
+    tr[1:] = np.maximum(h[1:] - lo[1:], np.maximum(np.abs(h[1:] - c[:-1]), np.abs(lo[1:] - c[:-1])))
+    atr = np.full(n, np.nan)
+    if n >= period:
+        atr[period - 1] = tr[:period].mean()                     # RMA tohumu = ilk `period` TR ortalamasi (TradingView gibi)
+        for i in range(period, n):
+            atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period
+    ts = np.zeros(n)
+    for i in range(1, n):
+        nl = key * atr[i] if atr[i] == atr[i] else 0.0
+        prev, src, src1 = ts[i - 1], c[i], c[i - 1]
+        if src > prev and src1 > prev:
+            ts[i] = max(prev, src - nl)
+        elif src < prev and src1 < prev:
+            ts[i] = min(prev, src + nl)
+        elif src > prev:
+            ts[i] = src - nl
+        else:
+            ts[i] = src + nl
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    valid = ~np.isnan(atr)
+    for i in range(1, n):
+        if not valid[i - 1]:
+            continue
+        buy[i] = c[i] > ts[i] and c[i - 1] <= ts[i - 1]           # crossover(close, trailing stop)
+        sell[i] = c[i] < ts[i] and c[i - 1] >= ts[i - 1]          # crossover(trailing stop, close)
+    return buy, sell, ts
+
+
+def ut_entry_signal(df):
+    """Ikinci sans: SON kapanmis mumlarda UT Bot BUY, Supertrend trendi YUKARI ise LONG; UT Bot SELL, trend ASAGI ise SHORT.
+    Trende ters UT sinyali yok sayilir. Sinyal yalnizca KAPANMIS mumda degerlendirilir (mum-ici sonen sinyal sayilmaz)."""
+    if not UT_ENABLED or df is None or len(df) < max(UT_ATR_PERIOD, ST_PERIOD) + 5:
+        return None
+    df = df.iloc[-ST_WARMUP_BARS:]
+    st = st_calc(df, ST_PERIOD, ST_MULT)
+    d = st["supertrend_direction"].to_numpy()
+    line = st["supertrend"].to_numpy()
+    n = len(d)
+    if np.isnan(d[-1]) or np.isnan(line[-1]):
+        return None
+    buy, sell, _ = ut_bot(df)
+    for age in range(0, min(UT_WINDOW_BARS, n)):
+        i = n - 1 - age
+        if np.isnan(d[i]) or d[i] != d[-1]:
+            break                                             # sinyalden sonra Supertrend yonu degismis: gecersiz
+        side = None
+        if buy[i] and d[-1] == 1:
+            side = "LONG"
+        elif sell[i] and d[-1] == -1:
+            side = "SHORT"
+        if side:
+            ln = float(line[-1])
+            return {"side": side, "kind": "UT_" + side, "signal_time": df.index[i], "signal_close": float(df["close"].iloc[i]),
+                    "level": None, "st": ln, "st_signal": ln, "age_bars": age, "ut": True}
+    return None
+
+
 def latest_entry_signal(df, max_age_bars=None, min_age_bars=None):
     if ENTRY_MODE == "state":
         return state_entry_signal(df)
-    return _flip_entry_signal(df, max_age_bars, min_age_bars)
+    return _flip_entry_signal(df, max_age_bars, min_age_bars)     # UT Bot ikinci sansi AYRI sinyaldir: ut_entry_signal (robot once Supertrend sinyalini, olmazsa UT sinyalini dener)
 
 
 def _flip_entry_signal(df, max_age_bars=None, min_age_bars=None):

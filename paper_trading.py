@@ -1986,7 +1986,8 @@ TG_DISCLAIMER = "\n\n⚠️ Yasal Uyarı: Bu mesaj yatırım tavsiyesi değildir
 def st_entry_message(pos):
     side = pos['side']
     kind = {'LONG': 'Supertrend yukarı kırıldı', 'SHORT': 'Supertrend aşağı kırıldı',
-            'RE_LONG': 'Stop sonrası yeniden LONG', 'RE_SHORT': 'Stop sonrası yeniden SHORT'}.get(pos.get('st_kind'), 'Supertrend sinyali')
+            'RE_LONG': 'Stop sonrası yeniden LONG', 'RE_SHORT': 'Stop sonrası yeniden SHORT',
+            'UT_LONG': 'UT Bot BUY (ikinci şans)', 'UT_SHORT': 'UT Bot SELL (ikinci şans)'}.get(pos.get('st_kind'), 'Supertrend sinyali')
     base = pos['symbol'].replace('USDT', '')
     notional = pos['entry_price'] * pos['qty_eth']
     return (f"{'🟢' if side == 'LONG' else '🔴'} HEROBOT-AI — YENİ POZİSYON\n\n"
@@ -2105,7 +2106,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     state['equity'] -= pos['entry_fee']
     state.setdefault('watchlist_signals', {})[symbol] = {'price': px, 'final': side, 'updated_at': now.isoformat()}
     (state.get('st_rewatch') or {}).pop(symbol, None)
-    state.setdefault('st_traded', {})[symbol] = pos['signal_time']
+    state.setdefault('ut_traded' if sig.get('ut') else 'st_traded', {})[symbol] = pos['signal_time']      # UT ikinci sans girisi Supertrend sinyalinin kaydini ezmez
     save_state(state)
     send_message(st_entry_message(pos))
     print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')}{' (mum-ici)' if sig.get('intrabar') else ''} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
@@ -2132,31 +2133,43 @@ def st_scan_and_trade(state, now):
         print('ST SCAN | sonuc cok eski, islem acilmadi', flush=True)
         save_state(state)
         return
-    rows = [r for r in snap.get('results', []) if r.get('signal') in ('LONG', 'SHORT') and r.get('entry')]     # yalnizca SON mumda cizgiyi kirip kapatanlar; listedeki diger coinler islem acmaz
+    rows = [r for r in snap.get('results', []) if (r.get('signal') in ('LONG', 'SHORT') and r.get('entry')) or r.get('ut_side')]     # Supertrend kirilimi (son 10 mum) VEYA UT Bot ikinci sans sinyali
     rows.sort(key=lambda r: -(r.get('volume') or 0))
-    print(f"ST SCAN | {len(rows)} sinyal | asof={asof.isoformat()}", flush=True)
+    print(f"ST SCAN | {sum(1 for r in rows if r.get('entry'))} supertrend sinyali, {sum(1 for r in rows if r.get('ut_side'))} UT Bot sinyali | asof={asof.isoformat()}", flush=True)
     for r in rows:
         symbol = r['symbol']
         try:
             if symbol in (state.get('positions') or {}):
                 continue
-            if state.get('st_traded', {}).get(symbol) == r.get('signal_time'):
-                continue                          # bu sinyalle zaten islem acildi
-            if len(state.get('positions') or {}) >= ST_MAX_OPEN:
-                print(f'ST ENTRY | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
+            attempts = []
+            if r.get('signal') in ('LONG', 'SHORT') and r.get('entry') and r.get('signal_time'):
+                attempts.append(('ST', {'side': r['signal'], 'kind': r.get('signal_kind'), 'signal_time': r['signal_time'],
+                                        'signal_close': r['signal_close'], 'level': r.get('level'), 'st': r.get('signal_st'), 'age_bars': r.get('signal_age')}))
+            if r.get('ut_side') and r.get('ut_time'):
+                attempts.append(('UT', {'side': r['ut_side'], 'kind': 'UT_' + r['ut_side'], 'signal_time': r['ut_time'],
+                                        'signal_close': r['ut_close'], 'level': None, 'st': r.get('ut_st') or r.get('st'),
+                                        'age_bars': r.get('ut_age'), 'ut': True}))
+            df = None
+            for src, sig in attempts:
+                if state.get('ut_traded' if src == 'UT' else 'st_traded', {}).get(symbol) == sig['signal_time']:
+                    continue                      # bu sinyalle zaten islem acildi
+                if len(state.get('positions') or {}) >= ST_MAX_OPEN:
+                    print(f'ST ENTRY | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
+                    raise StopIteration
+                if df is None:
+                    df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
+                    price = float(df.iloc[-1]['close'])
+                    ind = df.iloc[:-1].copy().set_index('close_time')
+                ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
+                if ok:
+                    ok, why = st_extra_gate(state, symbol, sig, price)
+                if not ok:
+                    print(f"{'UT ENTRY' if src == 'UT' else 'ST ENTRY'} | {sig['side']} {symbol} atlandi: {why}", flush=True)
+                    continue                      # Supertrend girisi reddedildiyse sirada UT Bot ikinci sansi var
+                st_open_position(state, symbol, sig, price, r.get('atr'), now)
                 break
-            sig = {'side': r['signal'], 'kind': r.get('signal_kind'), 'signal_time': r['signal_time'],
-                   'signal_close': r['signal_close'], 'level': r.get('level'), 'st': r.get('signal_st'), 'age_bars': r.get('signal_age')}
-            df = fetch_cached(symbol, 'USD_M', CRYPTO_INTERVAL, 300)
-            price = float(df.iloc[-1]['close'])
-            ind = df.iloc[:-1].copy().set_index('close_time')
-            ok, why = sts.entry_allowed(sig, price, ind, symbol=symbol)
-            if ok:
-                ok, why = st_extra_gate(state, symbol, sig, price)
-            if not ok:
-                print(f"ST ENTRY | {r['signal']} {symbol} atlandi: {why}", flush=True)
-                continue
-            st_open_position(state, symbol, sig, price, r.get('atr'), now)
+        except StopIteration:
+            break
         except Exception as e:
             if type(e).__name__ == 'BinanceCooldown':
                 print('ST SCAN | Binance bekleme suresi aktif, kalan sinyaller atlandi', flush=True)

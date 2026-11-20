@@ -193,6 +193,7 @@ def _analyse(symbol, vol, chg, asof):
     price = float(df.iloc[-1]['close'])
     sig = sts.latest_entry_signal(ind)              # islem sinyali: SON kapanmis mumda cizgi kirilip mum kapandi (yas 0)
     lst = sts.state_entry_signal(ind)               # liste: cizgi ustu = LONG, alti = SHORT
+    ut = sts.ut_entry_signal(ind)                   # UT Bot ikinci sans sinyali (Supertrend trendiyle uyumlu, kapanmis mum)
     row = {
         'symbol': symbol, 'price': price, 'change_pct': chg, 'volume': vol,
         'trend': 'UP' if up else 'DOWN', 'st': line,
@@ -200,6 +201,7 @@ def _analyse(symbol, vol, chg, asof):
         'flip_bars': int(last - j), 'flip_time': ind.index[j].isoformat(),
         'atr': _wilder_atr(closed), 'candle_time': ind.index[last].isoformat(),
         'signal': None, 'signal_kind': None, 'signal_age': None, 'level': None, 'signal_close': None, 'entry': False,
+        'ut_side': None, 'ut_age': None, 'ut_time': None, 'ut_close': None,
     }
     if lst:                                         # her coin listelenir; yas = trendin basladigi mumdan beri gecen mum (0 = bu mumda kirildi)
         row.update({'signal': lst['side'], 'signal_kind': lst['kind'], 'signal_age': int(last - j), 'level': lst['level'], 'signal_st': lst['st'],
@@ -209,6 +211,9 @@ def _analyse(symbol, vol, chg, asof):
                     'level': sig['level'], 'signal_st': sig.get('st'),       # = guncel Supertrend cizgisi (onay beklerken hareket eder)
                      'signal_close': sig['signal_close'],
                     'signal_time': pd.Timestamp(sig['signal_time']).isoformat()})
+    if ut:
+        row.update({'ut_side': ut['side'], 'ut_age': int(ut['age_bars']), 'ut_time': pd.Timestamp(ut['signal_time']).isoformat(),
+                    'ut_close': ut['signal_close'], 'ut_st': ut['st']})
     return row
 
 
@@ -228,6 +233,7 @@ def _run(asof, universe_name='LIQ100'):
     st = _states[universe_name]
     pace = PACE_ALL_S if universe_name == 'ALL' else PACE_S
     results, partial, err, approx, source = [], False, None, False, None
+    n_fail, first_fail = 0, None
     try:
         universe, approx, source = _universe_for(universe_name)
         with _lock:
@@ -244,13 +250,18 @@ def _run(asof, universe_name='LIQ100'):
                 if getattr(e.response, 'status_code', None) in (418, 429):
                     partial, err = True, f'Binance istek siniri (HTTP {e.response.status_code}): tarama yarida durduruldu.'
                     break
-            except Exception:
-                pass
+            except Exception as e:
+                n_fail += 1
+                if first_fail is None:
+                    first_fail = f'{sym}: {type(e).__name__}: {str(e)[:120]}'
+                    print(f'SCAN-ST | satir hatasi (ilk) {first_fail}', flush=True)
             with _lock:
                 st['progress'] = n
             time.sleep(pace)
     except Exception as e:
         err = f'{type(e).__name__}: {str(e)[:160]}'
+    if n_fail and not err:
+        err = f'{n_fail} coin analiz edilemedi (ilk hata: {first_fail})' if n_fail >= max(3, len(results)) else None
     with _lock:
         st.update({'results': results, 'partial': partial, 'last_error': err,
                    'status': 'ERROR' if (err and not results) else 'READY',
@@ -299,6 +310,9 @@ def scan_due(now=None):
     return now >= cur + pd.Timedelta(seconds=int(os.environ.get('SCANNER_CANDLE_DELAY_S', '5')))
 
 
+_diag = {'t': 0.0}
+
+
 def background_loop():
     """Her 20 sn'de saat basini kontrol eder; saat basi gecince otomatik tarar (hata olursa 10 dk sonra tekrar)."""
     last_try = 0.0
@@ -306,7 +320,13 @@ def background_loop():
         try:
             if scan_due() and time.time() - last_try > 30:
                 last_try = time.time()
-                start_scan(aligned=True)
+                ok_s, msg_s = start_scan(aligned=True)
+                if not ok_s:                                   # baslatilamadi: nedeni hem loga hem panele yaz (10 dk'da bir)
+                    with _lock:
+                        if _state['status'] != 'SCANNING':
+                            _state['last_error'] = 'Otomatik tarama baslatilamadi: ' + msg_s
+                    if time.time() - _diag['t'] > 600:
+                        _diag['t'] = time.time(); print(f'SCAN-ST | otomatik tarama baslatilamadi: {msg_s}', flush=True)
             else:
                 with _lock:
                     errored = _state['status'] == 'READY' and _state['partial'] and _state['finished_at']
