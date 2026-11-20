@@ -120,7 +120,24 @@ def is_new_listing(symbol):
     return age is not None and age < MIN_LISTING_DAYS
 
 
+_UNI_CACHE = {}   # top_n -> (zaman, satirlar): Binance 418/429 verirse son basarili evren kullanilir
+
+
 def _universe_n(top_n):
+    try:
+        rows = _universe_n_live(top_n)
+        if rows:
+            _UNI_CACHE[top_n] = (time.time(), rows)
+        return rows
+    except Exception as e:
+        c = _UNI_CACHE.get(top_n)
+        if c and time.time() - c[0] < 24 * 3600:
+            print(f'SCAN-ST | evren alinamadi ({type(e).__name__}); onbellekteki liste kullaniliyor ({int((time.time() - c[0]) / 60)} dk once)', flush=True)
+            return c[1]
+        raise
+
+
+def _universe_n_live(top_n):
     info = blive.get_exchange_info() or {}
     ok = {s for s, i in info.items()
           if i.get('quoteAsset') == 'USDT' and i.get('contractType') == 'PERPETUAL' and i.get('status') == 'TRADING'}
@@ -265,7 +282,8 @@ def _run(asof, universe_name='LIQ100'):
     with _lock:
         st.update({'results': results, 'partial': partial, 'last_error': err,
                    'status': 'ERROR' if (err and not results) else 'READY',
-                   'finished_at': datetime.now(timezone.utc).isoformat(), 'asof': asof.isoformat(),
+                   'finished_at': datetime.now(timezone.utc).isoformat(),
+                   'asof': asof.isoformat() if not (err and not results) else st.get('asof'),   # basarisiz tarama saat sayilmaz: ban bitince tekrar denenir
                    'approx': approx, 'source': source})
     _last_finish_ts = time.time()
     n_l = sum(1 for r in results if r['signal'] == 'LONG'); n_s = sum(1 for r in results if r['signal'] == 'SHORT')
