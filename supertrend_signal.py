@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: yalnizca son 3 kapanmis mumdan birinde cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
+Supertrend 10 / 4.6 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: son 10 kapanmis mumdan birinde cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -144,10 +144,14 @@ CONFIRM_EXTRA_BARS = int(os.environ.get("ST_CONFIRM_EXTRA_BARS", "0"))
 SHORT_INTRABAR = os.environ.get("ST_SHORT_INTRABAR", "0").strip().lower() in ("1", "true", "on", "yes")
 # Mum-ici SHORT'ta mum kapanisinda donus teyit edilmediyse (fiyat cizgi ustune geri kapandiysa) hemen cik (1) / yalnizca kirmizi cizgi ustu kapanista cik (0, varsayilan)
 INTRABAR_FAKEOUT_EXIT = os.environ.get("ST_INTRABAR_FAKEOUT_EXIT", "0").strip().lower() in ("1", "true", "on", "yes")
-# Giris penceresi: cizgi kirilimi SON 3 kapanmis mumda olduysa (yas 0, 1, 2) giris yapilir. Eski ST_MAX_SIGNAL_AGE_BARS degiskeni artik OKUNMAZ; yalnizca ST_ENTRY_WINDOW_BARS.
-ENTRY_WINDOW_BARS = max(1, int(float(os.environ.get("ST_ENTRY_WINDOW_BARS", "3"))))
+# Giris penceresi: cizgi kirilimi SON 10 kapanmis mumda olduysa (yas 0..9) giris yapilir. Eski ST_MAX_SIGNAL_AGE_BARS degiskeni artik OKUNMAZ; yalnizca ST_ENTRY_WINDOW_BARS.
+ENTRY_WINDOW_BARS = max(1, int(float(os.environ.get("ST_ENTRY_WINDOW_BARS", "10"))))
 MAX_SIGNAL_AGE_BARS = CONFIRM_BARS + CONFIRM_EXTRA_BARS + ENTRY_WINDOW_BARS
 WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
+# GERI CEKILME GIRISI: fiyat kirilimdan sonra hizla uzaklasip (LATE_ENTRY) sonra kirilan cizgi seviyesine geri yaklastiysa ve cizgiyi ters yonde gecmediyse giris yapilir.
+PULLBACK_ENTRY = os.environ.get("ST_PULLBACK_ENTRY", "1").strip().lower() not in ("0", "false", "off", "no")
+PULLBACK_BAND_PCT = float(os.environ.get("ST_PULLBACK_BAND_PCT", "1.5"))        # kirilan cizgi seviyesine en fazla bu kadar uzaklikta (cizginin dogru tarafinda)
+PULLBACK_BOUNCE = os.environ.get("ST_PULLBACK_BOUNCE", "1").strip().lower() not in ("0", "false", "off", "no")   # son kapanmis mum da lehe yonde kapanmis olmali
 LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
@@ -413,8 +417,46 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
     move = (last_price - sc) / sc * 100.0
     move = move if sig["side"] == "LONG" else -move          # + = lehe, - = aleyhe
     if move > LATE_ENTRY_MAX_MOVE_PCT:
-        return False, "LATE_ENTRY"
+        ok_pb, why_pb = pullback_ok(sig, ind, last_price)
+        if not ok_pb:
+            return False, "LATE_ENTRY"
+        return True, "OK_PULLBACK"
     return True, "OK"
+
+
+def pullback_ok(sig, ind, last_price):
+    """Geri cekilme girisi (LATE_ENTRY istisnasi). Doner: (True/False, neden).
+    LONG icin: sinyal mumundan sonra kapanan HICBIR mum kirilan cizgi seviyesinin altinda kapanmamis, guncel fiyat bu seviyenin
+    ustunde ve en fazla PULLBACK_BAND_PCT uzakta, son kapanmis mum yukari (lehe) kapanmis. SHORT icin aynisinin tersi."""
+    if not PULLBACK_ENTRY or ind is None or sig.get("level") is None:
+        return False, "PULLBACK_OFF"
+    lvl = float(sig["level"])
+    side = sig["side"]
+    try:
+        t0 = pd.Timestamp(sig["signal_time"])
+        if ind.index.tz is not None and t0.tzinfo is None:
+            t0 = t0.tz_localize(ind.index.tz)
+        after = ind[ind.index > t0]
+    except Exception:
+        return False, "PULLBACK_TIME"
+    if len(after) == 0:
+        return False, "PULLBACK_NONE"                      # sinyal mumu hemen son mum: geri cekilme henuz olusmadi
+    c = after["close"].to_numpy(dtype=float)
+    if side == "LONG":
+        if (c <= lvl).any():
+            return False, "PULLBACK_BROKE_LEVEL"          # cizginin altinda kapanis oldu: yapi bozuldu
+        dist = (last_price - lvl) / lvl * 100.0
+        bounce = float(after["close"].iloc[-1]) >= float(after["open"].iloc[-1]) if "open" in after.columns else True
+    else:
+        if (c >= lvl).any():
+            return False, "PULLBACK_BROKE_LEVEL"
+        dist = (lvl - last_price) / lvl * 100.0
+        bounce = float(after["close"].iloc[-1]) <= float(after["open"].iloc[-1]) if "open" in after.columns else True
+    if not (0.0 < dist <= PULLBACK_BAND_PCT):
+        return False, "PULLBACK_NOT_NEAR"
+    if PULLBACK_BOUNCE and not bounce:
+        return False, "PULLBACK_NO_BOUNCE"
+    return True, "PULLBACK"
 
 
 def check_exit(pos, df, last_price):
