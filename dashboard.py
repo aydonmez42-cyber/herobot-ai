@@ -4015,6 +4015,7 @@ async function loadOwnChart(){
   _own.up=new Map((d.st_up||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
   _own.dn=new Map((d.st_down||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
   _own.flips=new Map((d.flips||[]).map(f=>[f.time,f.dir]));
+  _own.utb=new Set(d.ut_buy||[]); _own.uts=new Set(d.ut_sell||[]);
   _own.view={bars:Math.min(120,d.candles.length),end:d.candles.length}; _own.hover=null;
   msg.style.display='none'; cv.style.display='block';
   ownWire(cv); ownDraw();
@@ -4078,6 +4079,18 @@ function ownDraw(){
     if(dir==='UP'){ const y=Y(C[i].low)+10; g.moveTo(x,y-s); g.lineTo(x-s,y+s); g.lineTo(x+s,y+s); }
     else { const y=Y(C[i].high)-10; g.moveTo(x,y+s); g.lineTo(x-s,y-s); g.lineTo(x+s,y-s); }
     g.closePath(); g.fill();
+  }
+  g.font='bold 10px system-ui,sans-serif'; g.textAlign='center'; g.textBaseline='middle';
+  for(let i=i0;i<i1;i++){
+    const tm=C[i].time, isB=_own.utb&&_own.utb.has(tm), isS=_own.uts&&_own.uts.has(tm);
+    if(!isB&&!isS) continue;
+    const x=X(i), w=36, hh=16, y=isB?Y(C[i].low)+34:Y(C[i].high)-34, col=isB?'#00a86b':'#d6336c';
+    g.fillStyle=col; g.beginPath();
+    if(isB){ g.moveTo(x,y-hh/2-6); g.lineTo(x-4,y-hh/2); g.lineTo(x+4,y-hh/2); }
+    else { g.moveTo(x,y+hh/2+6); g.lineTo(x-4,y+hh/2); g.lineTo(x+4,y+hh/2); }
+    g.closePath(); g.fill();
+    g.fillRect(x-w/2,y-hh/2,w,hh);
+    g.fillStyle='#ffffff'; g.fillText(isB?'Buy':'Sell',x,y+0.5);
   }
   g.restore();
   const h=_own.hover;
@@ -10217,6 +10230,12 @@ def ta_chart_payload(tv, tf):
         elif dr[i] == -1 and dr[i - 1] == 1:
             flips.append({'time': times[i], 'dir': 'DOWN'})
     d['flips'] = flips
+    try:                                                     # UT Bot Alerts al/sat sinyalleri (robotun kullandigi ayni fonksiyon)
+        _ub, _us, _ = _sts.ut_bot(ind)
+        d['ut_buy'] = [times[i] for i in range(len(times)) if _ub[i]]
+        d['ut_sell'] = [times[i] for i in range(len(times)) if _us[i]]
+    except Exception:
+        d['ut_buy'], d['ut_sell'] = [], []
     events, state = _sts.run_state_machine(ind)
     d['st_events'] = [{'time': times[e['i']], 'type': e['type'], 'level': e['level']} for e in events[-12:]]
     d['st_state'] = {'direction': int(dr[-1]) if not _np.isnan(dr[-1]) else 0, 'line': float(line[-1]) if ok[-1] else None,
