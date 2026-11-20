@@ -5617,9 +5617,14 @@ function taRuler(p,slv){
 }
 async function taRefreshPos(){
   const box=document.getElementById('taPos'); const sym=taSymFromTv(TA.tv||'');
+  fetch('/api/ta/bot_status?tv='+encodeURIComponent(TA.tv||''),{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    const bb=document.getElementById('taBotBtn'); if(!bb||!j||bb.textContent==='Ekleniyor…') return;
+    if(j.in_bot){ bb.textContent='Robotta ✓'; bb.disabled=true; } else { bb.textContent='Robota Ekle'; bb.disabled=false; }
+  }).catch(()=>{});
   if(!sym){ box.style.display='none'; return; }
   let d; try{ d=await (await fetch('/api/watchlist',{cache:'no-store'})).json(); }catch(e){ return; }
   const it=(d.items||[]).find(x=>x.symbol===sym), p=it&&it.position;
+  { const bb=document.getElementById('taBotBtn'); if(bb&&it){ bb.textContent='Robotta ✓'; bb.disabled=true; } }
   if(!p){ box.style.display='none'; if(_own.marks&&_own.marks.length){ _own.marks=[]; ownDraw(); } return; }
   const qty=Number(p.qty_eth||0), ep=Number(p.entry_price||0), notional=qty*ep, pnl=Number(p.unrealized_pnl||0);
   const pct=notional?pnl/notional*100:0, cl=pnl>=0?'pos':'neg', base=sym.replace(/USDT$/,'');
@@ -10769,6 +10774,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(ta_chart_payload((_q.get('tv') or [''])[0], (_q.get('tf') or ['1h'])[0]))
             except Exception as _e:
                 self._send_json({'error': f'{type(_e).__name__}: {str(_e)[:140]}'}, status=502)
+            return
+        if path=='/api/ta/bot_status':
+            _q=parse_qs(urlparse(self.path).query)
+            _sym=ta_parse_market((_q.get('tv') or [''])[0])[0]
+            _st=read_state()
+            self._send_json({'in_bot': bool(_sym) and (_sym in (_st.get('watchlist') or {}) or _sym in (_st.get('positions') or {}))})
             return
         if path=='/api/ta/add_to_bot':
             if not self._current_user():
