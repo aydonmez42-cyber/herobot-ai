@@ -150,9 +150,9 @@ MAX_SIGNAL_AGE_BARS = CONFIRM_BARS + CONFIRM_EXTRA_BARS + ENTRY_WINDOW_BARS
 WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
 # GERI CEKILME GIRISI: fiyat kirilimdan sonra hizla uzaklasip (LATE_ENTRY) sonra kirilan cizgi seviyesine geri yaklastiysa ve cizgiyi ters yonde gecmediyse giris yapilir.
 PULLBACK_ENTRY = os.environ.get("ST_PULLBACK_ENTRY", "1").strip().lower() not in ("0", "false", "off", "no")
-PULLBACK_BAND_PCT = float(os.environ.get("ST_PULLBACK_BAND_PCT", "1.5"))        # kirilan cizgi seviyesine en fazla bu kadar uzaklikta (cizginin dogru tarafinda)
+PULLBACK_BAND_PCT = float(os.environ.get("ST_PULLBACK_BAND_PCT", "1"))        # kirilan cizgi seviyesine en fazla bu kadar uzaklikta (cizginin dogru tarafinda)
 PULLBACK_BOUNCE = os.environ.get("ST_PULLBACK_BOUNCE", "1").strip().lower() not in ("0", "false", "off", "no")   # son kapanmis mum da lehe yonde kapanmis olmali
-LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1.5"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
+LATE_ENTRY_MAX_MOVE_PCT = float(os.environ.get("ST_LATE_ENTRY_MAX_MOVE_PCT", "1"))  # sinyal kapanisindan beri en fazla bu kadar kosmus fiyata girilmez
 EMERGENCY_STOP_PCT = float(os.environ.get("ST_EMERGENCY_STOP_PCT", "15"))             # felaket freni: giristen % bu kadar ters hareket (0 = kapali). Normal stop = Supertrend mum kapanisi
 # Islem acilmayacak semboller (altin/gumus tokenlari: fiyat neredeyse hic oynamaz, sinyal anlamsiz)
 EXCLUDE_SYMBOLS = {x.strip().upper() for x in os.environ.get("ST_EXCLUDE_SYMBOLS", "PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT").split(",") if x.strip()}
