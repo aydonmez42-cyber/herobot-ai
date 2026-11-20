@@ -210,6 +210,7 @@ def _analyse(symbol, vol, chg, asof):
     price = float(df.iloc[-1]['close'])
     sig = sts.latest_entry_signal(ind)              # islem sinyali: SON kapanmis mumda cizgi kirilip mum kapandi (yas 0)
     lst = sts.state_entry_signal(ind)               # liste: cizgi ustu = LONG, alti = SHORT
+    conf = sts.confluence_signal(ind)               # Supertrend kirilimi + UT Bot ayni yonde (ayni mum ya da 1 mum arayla)
     ut = sts.ut_entry_signal(ind)                   # UT Bot ikinci sans sinyali (Supertrend trendiyle uyumlu, kapanmis mum)
     row = {
         'symbol': symbol, 'price': price, 'change_pct': chg, 'volume': vol,
@@ -219,6 +220,7 @@ def _analyse(symbol, vol, chg, asof):
         'atr': _wilder_atr(closed), 'candle_time': ind.index[last].isoformat(),
         'signal': None, 'signal_kind': None, 'signal_age': None, 'level': None, 'signal_close': None, 'entry': False,
         'ut_side': None, 'ut_age': None, 'ut_time': None, 'ut_close': None,
+        'conf_side': None,
     }
     if lst:                                         # her coin listelenir; yas = trendin basladigi mumdan beri gecen mum (0 = bu mumda kirildi)
         row.update({'signal': lst['side'], 'signal_kind': lst['kind'], 'signal_age': int(last - j), 'level': lst['level'], 'signal_st': lst['st'],
@@ -231,6 +233,10 @@ def _analyse(symbol, vol, chg, asof):
     if ut:
         row.update({'ut_side': ut['side'], 'ut_age': int(ut['age_bars']), 'ut_time': pd.Timestamp(ut['signal_time']).isoformat(),
                     'ut_close': ut['signal_close'], 'ut_st': ut['st']})
+    if conf:
+        row.update({'conf_side': conf['side'], 'conf_age': int(conf['age_bars']), 'conf_time': pd.Timestamp(conf['signal_time']).isoformat(),
+                    'conf_close': conf['signal_close'], 'conf_level': conf['level'], 'conf_st': conf['st'],
+                    'conf_st_time': pd.Timestamp(conf['st_time']).isoformat(), 'conf_ut_time': pd.Timestamp(conf['ut_time']).isoformat()})
     return row
 
 

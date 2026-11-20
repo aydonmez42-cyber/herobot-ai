@@ -1987,7 +1987,8 @@ def st_entry_message(pos):
     side = pos['side']
     kind = {'LONG': 'Supertrend yukarı kırıldı', 'SHORT': 'Supertrend aşağı kırıldı',
             'RE_LONG': 'Stop sonrası yeniden LONG', 'RE_SHORT': 'Stop sonrası yeniden SHORT',
-            'UT_LONG': 'UT Bot BUY (ikinci şans)', 'UT_SHORT': 'UT Bot SELL (ikinci şans)'}.get(pos.get('st_kind'), 'Supertrend sinyali')
+            'UT_LONG': 'UT Bot BUY (ikinci şans)', 'UT_SHORT': 'UT Bot SELL (ikinci şans)',
+            'CONF_LONG': 'Supertrend kırılımı + UT Bot BUY', 'CONF_SHORT': 'Supertrend kırılımı + UT Bot SELL'}.get(pos.get('st_kind'), 'Supertrend sinyali')
     base = pos['symbol'].replace('USDT', '')
     notional = pos['entry_price'] * pos['qty_eth']
     return (f"{'🟢' if side == 'LONG' else '🔴'} HEROBOT-AI — YENİ POZİSYON\n\n"
@@ -2106,7 +2107,11 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     state['equity'] -= pos['entry_fee']
     state.setdefault('watchlist_signals', {})[symbol] = {'price': px, 'final': side, 'updated_at': now.isoformat()}
     (state.get('st_rewatch') or {}).pop(symbol, None)
-    state.setdefault('ut_traded' if sig.get('ut') else 'st_traded', {})[symbol] = pos['signal_time']      # UT ikinci sans girisi Supertrend sinyalinin kaydini ezmez
+    if sig.get('conf'):                                                                  # birlesik giris: hem Supertrend donusu hem UT sinyali tuketilir
+        state.setdefault('st_traded', {})[symbol] = pd.Timestamp(sig['st_time']).isoformat()
+        state.setdefault('ut_traded', {})[symbol] = pd.Timestamp(sig['ut_time']).isoformat()
+    else:
+        state.setdefault('ut_traded' if sig.get('ut') else 'st_traded', {})[symbol] = pos['signal_time']      # UT ikinci sans girisi Supertrend sinyalinin kaydini ezmez
     save_state(state)
     send_message(st_entry_message(pos))
     print(f"ST ENTRY | {side} {symbol} | {sig.get('kind')}{' (mum-ici)' if sig.get('intrabar') else ''} | price={px:.6f} | seviye={level} | TP={pos['tp']:.6f} | "
@@ -2133,15 +2138,20 @@ def st_scan_and_trade(state, now):
         print('ST SCAN | sonuc cok eski, islem acilmadi', flush=True)
         save_state(state)
         return
-    rows = [r for r in snap.get('results', []) if (r.get('signal') in ('LONG', 'SHORT') and r.get('entry')) or r.get('ut_side')]     # Supertrend kirilimi (son 10 mum) VEYA UT Bot ikinci sans sinyali
+    rows = [r for r in snap.get('results', []) if (r.get('signal') in ('LONG', 'SHORT') and r.get('entry')) or r.get('ut_side') or r.get('conf_side')]     # Supertrend kirilimi (son 10 mum) VEYA UT Bot ikinci sans sinyali
     rows.sort(key=lambda r: -(r.get('volume') or 0))
-    print(f"ST SCAN | {sum(1 for r in rows if r.get('entry'))} supertrend sinyali, {sum(1 for r in rows if r.get('ut_side'))} UT Bot sinyali | asof={asof.isoformat()}", flush=True)
+    print(f"ST SCAN | {sum(1 for r in rows if r.get('entry'))} supertrend sinyali, {sum(1 for r in rows if r.get('ut_side'))} UT Bot sinyali, {sum(1 for r in rows if r.get('conf_side'))} birlesik (ST+UT) | asof={asof.isoformat()}", flush=True)
     for r in rows:
         symbol = r['symbol']
         try:
             if symbol in (state.get('positions') or {}):
                 continue
             attempts = []
+            if r.get('conf_side') and r.get('conf_time'):                  # Supertrend + UT Bot ayni yonde: once bu denenir
+                attempts.append(('CONF', {'side': r['conf_side'], 'kind': 'CONF_' + r['conf_side'], 'signal_time': r['conf_time'],
+                                          'signal_close': r['conf_close'], 'level': r.get('conf_level'), 'st': r.get('conf_st'),
+                                          'age_bars': r.get('conf_age'), 'conf': True,
+                                          'st_time': r.get('conf_st_time'), 'ut_time': r.get('conf_ut_time')}))
             if r.get('signal') in ('LONG', 'SHORT') and r.get('entry') and r.get('signal_time'):
                 attempts.append(('ST', {'side': r['signal'], 'kind': r.get('signal_kind'), 'signal_time': r['signal_time'],
                                         'signal_close': r['signal_close'], 'level': r.get('level'), 'st': r.get('signal_st'), 'age_bars': r.get('signal_age')}))
@@ -2151,7 +2161,10 @@ def st_scan_and_trade(state, now):
                                         'age_bars': r.get('ut_age'), 'ut': True}))
             df = None
             for src, sig in attempts:
-                if state.get('ut_traded' if src == 'UT' else 'st_traded', {}).get(symbol) == sig['signal_time']:
+                if src == 'CONF':
+                    if state.get('st_traded', {}).get(symbol) == sig.get('st_time') or state.get('ut_traded', {}).get(symbol) == sig.get('ut_time'):
+                        continue                  # bu Supertrend donusu / UT sinyaliyle zaten islem acildi
+                elif state.get('ut_traded' if src == 'UT' else 'st_traded', {}).get(symbol) == sig['signal_time']:
                     continue                      # bu sinyalle zaten islem acildi
                 if len(state.get('positions') or {}) >= ST_MAX_OPEN:
                     print(f'ST ENTRY | {symbol} atlandi: acik pozisyon siniri ({ST_MAX_OPEN})', flush=True)
@@ -2164,7 +2177,7 @@ def st_scan_and_trade(state, now):
                 if ok:
                     ok, why = st_extra_gate(state, symbol, sig, price)
                 if not ok:
-                    print(f"{'UT ENTRY' if src == 'UT' else 'ST ENTRY'} | {sig['side']} {symbol} atlandi: {why}", flush=True)
+                    print(f"{'UT ENTRY' if src == 'UT' else ('CONF ENTRY' if src == 'CONF' else 'ST ENTRY')} | {sig['side']} {symbol} atlandi: {why}", flush=True)
                     continue                      # Supertrend girisi reddedildiyse sirada UT Bot ikinci sansi var
                 st_open_position(state, symbol, sig, price, r.get('atr'), now)
                 break

@@ -378,6 +378,45 @@ def ut_entry_signal(df):
     return None
 
 
+# ---- Birlesik (konfluans) giris: Supertrend kirilimi + UT Bot sinyali ayni yonde, ayni mumda ya da birbirini 1 mum arayla izleyerek ----
+CONF_ENABLED = os.environ.get("ST_CONFLUENCE_ENABLED", "1").strip().lower() not in ("0", "false", "off", "no")
+CONF_WINDOW_BARS = max(1, int(float(os.environ.get("ST_CONFLUENCE_WINDOW_BARS", "2"))))   # iki olaydan SON olani son N kapanmis mumdan birinde olmali (yas 0..N-1)
+CONF_SKIP_LATE = os.environ.get("ST_CONFLUENCE_SKIP_LATE", "1").strip().lower() not in ("0", "false", "off", "no")   # konfluansta LATE_ENTRY kapisi atlanir
+
+
+def confluence_signal(df):
+    """Supertrend donusu (cizgi kirilimi) ile UT Bot Buy/Sell AYNI yonde ve en fazla 1 mum arayla (ayni mum, UT once ya da Supertrend once)
+    gerceklestiyse ve ikisinden sonra gelen olay son CONF_WINDOW_BARS kapanmis mumdan birindeyse LONG/SHORT doner.
+    Supertrend donusu sonradan geri donmus olmamali. Yalnizca kapanmis mumlar."""
+    if not (CONF_ENABLED and UT_ENABLED) or df is None or len(df) < max(UT_ATR_PERIOD, ST_PERIOD) + 5:
+        return None
+    df = df.iloc[-ST_WARMUP_BARS:]
+    st = st_calc(df, ST_PERIOD, ST_MULT)
+    d = st["supertrend_direction"].to_numpy()
+    line = st["supertrend"].to_numpy()
+    c = df["close"].to_numpy(dtype=float)
+    n = len(d)
+    if n < 3 or np.isnan(d[-1]) or np.isnan(line[-1]):
+        return None
+    buy, sell, _ = ut_bot(df)
+    for f in range(n - 1, max(0, n - 1 - CONF_WINDOW_BARS - 1), -1):
+        if np.isnan(d[f]) or np.isnan(d[f - 1]) or d[f] == d[f - 1] or d[f] != d[-1]:
+            continue                                          # f: Supertrend donus mumu; sonradan geri donmus olmamali
+        side = "LONG" if d[f] == 1 else "SHORT"
+        ut = buy if side == "LONG" else sell
+        for u in (f, f - 1, f + 1):                           # UT ayni mumda, bir mum once ya da bir mum sonra
+            if u < 0 or u > n - 1 or not ut[u]:
+                continue
+            later = max(f, u)
+            if n - 1 - later >= CONF_WINDOW_BARS:
+                continue
+            lvl = float(line[f - 1]) if not np.isnan(line[f - 1]) else None
+            return {"side": side, "kind": "CONF_" + side, "signal_time": df.index[later], "signal_close": float(c[later]),
+                    "level": lvl, "st": float(line[-1]), "st_signal": float(line[f]), "age_bars": n - 1 - later,
+                    "conf": True, "st_time": df.index[f], "ut_time": df.index[u]}
+    return None
+
+
 def latest_entry_signal(df, max_age_bars=None, min_age_bars=None):
     if ENTRY_MODE == "state":
         return state_entry_signal(df)
@@ -492,6 +531,8 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         sc = float(ind["close"].iloc[-1])           # onay beklenirken fiyat zaten kosmus olabilir: "gec giris" olcusu son kapanmis mumdan
     move = (last_price - sc) / sc * 100.0
     move = move if sig["side"] == "LONG" else -move          # + = lehe, - = aleyhe
+    if move > LATE_ENTRY_MAX_MOVE_PCT and sig.get("conf") and CONF_SKIP_LATE:
+        return True, "OK_CONFLUENCE"                  # Supertrend + UT Bot ayni yonde: guclu teyit, gec-giris kapisi atlanir
     if move > LATE_ENTRY_MAX_MOVE_PCT:
         ok_pb, why_pb = pullback_ok(sig, ind, last_price)
         if not ok_pb:
