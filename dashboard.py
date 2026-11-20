@@ -5388,6 +5388,7 @@ async function loadOwnChart(){
   _own.up=new Map((d.st_up||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
   _own.dn=new Map((d.st_down||[]).filter(p=>p.value!=null).map(p=>[p.time,p.value]));
   _own.flips=new Map((d.flips||[]).map(f=>[f.time,f.dir]));
+  _own.utb=new Set(d.ut_buy||[]); _own.uts=new Set(d.ut_sell||[]);
   _own.view={bars:Math.min(120,d.candles.length),end:d.candles.length}; _own.hover=null;
   msg.style.display='none'; cv.style.display='block';
   ownWire(cv); ownDraw();
@@ -5456,7 +5457,21 @@ function ownDraw(){
     else { const y=Y(C[i].high)-10; g.moveTo(x,y+s); g.lineTo(x-s,y-s); g.lineTo(x+s,y-s); }
     g.closePath(); g.fill();
   }
+  g.font='bold 10px system-ui,sans-serif'; g.textAlign='center'; g.textBaseline='middle';
+  for(let i=i0;i<i1;i++){
+    const tm=C[i].time, isB=_own.utb&&_own.utb.has(tm), isS=_own.uts&&_own.uts.has(tm);
+    if(!isB&&!isS) continue;
+    const x=X(i), w=36, hh=16, y=isB?Y(C[i].low)+30:Y(C[i].high)-30, col=isB?'#00a86b':'#d6336c';
+    g.fillStyle=col; g.beginPath();
+    if(isB){ g.moveTo(x,y-hh/2-6); g.lineTo(x-4,y-hh/2); g.lineTo(x+4,y-hh/2); }
+    else { g.moveTo(x,y+hh/2+6); g.lineTo(x-4,y+hh/2); g.lineTo(x+4,y+hh/2); }
+    g.closePath(); g.fill();
+    g.fillRect(x-w/2,y-hh/2,w,hh);
+    g.fillStyle='#ffffff'; g.fillText(isB?'Buy':'Sell',x,y+0.5);
+  }
   g.restore();
+  { const nb=_own.utb?_own.utb.size:0, ns=_own.uts?_own.uts.size:0, tx='UT Bot: '+nb+' Buy · '+ns+' Sell';
+    g.font='bold 10px system-ui,sans-serif'; g.textAlign='right'; g.textBaseline='top'; g.fillStyle='#9aa4af'; g.fillText(tx,plotW-6,padT+4); }
   const h=_own.hover;
   if(h&&h.x>=0&&h.x<=plotW){
     const i=Math.max(i0,Math.min(i1-1,start+Math.floor(h.x/step))), c=C[i];
