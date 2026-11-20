@@ -1,5 +1,5 @@
 """
-Supertrend taramasi - 1 SAATLIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.6, kaynak OHLC4; her coin cizginin ustundaysa LONG, altindaysa SHORT listelenir).
+Supertrend taramasi - 1 SAATLIK grafik, her SAAT BASI otomatik (Supertrend ATR 10, carpan 4.8, kaynak OHLC4; her coin cizginin ustundaysa LONG, altindaysa SHORT listelenir).
 
 Sinyal mantigi supertrend_signal.py icindedir (TradingView "ST Sinyal" Pine kodunun birebir karsiligi):
   LONG  = Supertrend'i yukari kirip ustunde mum kapatti (veya stop sonrasi yeniden giris),

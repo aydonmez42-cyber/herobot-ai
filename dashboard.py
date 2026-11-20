@@ -4084,7 +4084,7 @@ function ownDraw(){
   for(let i=i0;i<i1;i++){
     const tm=C[i].time, isB=_own.utb&&_own.utb.has(tm), isS=_own.uts&&_own.uts.has(tm);
     if(!isB&&!isS) continue;
-    const x=X(i), w=36, hh=16, y=isB?Y(C[i].low)+34:Y(C[i].high)-34, col=isB?'#00a86b':'#d6336c';
+    const x=X(i), w=36, hh=16, y=isB?Y(C[i].low)+30:Y(C[i].high)-30, col=isB?'#00a86b':'#d6336c';
     g.fillStyle=col; g.beginPath();
     if(isB){ g.moveTo(x,y-hh/2-6); g.lineTo(x-4,y-hh/2); g.lineTo(x+4,y-hh/2); }
     else { g.moveTo(x,y+hh/2+6); g.lineTo(x-4,y+hh/2); g.lineTo(x+4,y+hh/2); }
@@ -4093,6 +4093,8 @@ function ownDraw(){
     g.fillStyle='#ffffff'; g.fillText(isB?'Buy':'Sell',x,y+0.5);
   }
   g.restore();
+  { const nb=_own.utb?_own.utb.size:0, ns=_own.uts?_own.uts.size:0, tx='UT Bot: '+nb+' Buy · '+ns+' Sell';
+    g.font='bold 10px system-ui,sans-serif'; g.textAlign='right'; g.textBaseline='top'; g.fillStyle='#9aa4af'; g.fillText(tx,plotW-6,padT+4); }
   const h=_own.hover;
   if(h&&h.x>=0&&h.x<=plotW){
     const i=Math.max(i0,Math.min(i1-1,start+Math.floor(h.x/step))), c=C[i];
@@ -4411,8 +4413,8 @@ function renderSt(){
   }
   const lblTr='1 saatlik', lblEn='1h';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
-    'Her coin son kapanan 1 saatlik mumun Supertrend çizgisine göre listelenir: çizginin üzerindekiler LONG, altındakiler SHORT. Robot, son 10 mumda çizgiyi kırıp mumu kırılan tarafta kapatan coine pozisyon açar; fiyat kırılımdan sonra %1 oranından fazla uzaklaşmışsa, kırılan çizgi seviyesine %1 yakınına geri çekilip çizginin ters tarafına geçmezse ve lehe yönde kapanırsa girer. UT Bot (ATR 10, Key 4) ikinci şans: kırılım kaçırıldıysa veya reddedildiyse, Supertrend trendi ile uyumlu UT Bot Buy/Sell sinyali kapanan mumda girişi tetikler; trende ters sinyal yok sayılır. Diğerleri yalnızca listedir. Çıkış, mum çizginin ters tarafında kapanınca olur. Supertrend 10/4.6, kaynak OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
-    'Every coin is listed by the last closed 1h candle vs the Supertrend line: above = LONG, below = SHORT. The robot opens a position on a coin that broke the line and closed beyond it within the LAST 10 candles; if price ran more than 1% away it enters on a pullback to within 1% of the broken line level, without closing back across it and with a candle in the trade direction. UT Bot (ATR 10, Key 4) second chance: if the breakout was missed or rejected, a UT Bot Buy/Sell signal that agrees with the Supertrend trend triggers entry on candle close; signals against the trend are ignored. The rest are list-only. Exits when a candle closes on the other side of the line. Supertrend 10/4.6, source OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
+    'Her coin son kapanan 1 saatlik mumun Supertrend çizgisine göre listelenir: çizginin üzerindekiler LONG, altındakiler SHORT. Robot, son 10 mumda çizgiyi kırıp mumu kırılan tarafta kapatan coine pozisyon açar; fiyat kırılımdan sonra %1 oranından fazla uzaklaşmışsa, kırılan çizgi seviyesine %1 yakınına geri çekilip çizginin ters tarafına geçmezse ve lehe yönde kapanırsa girer. UT Bot (ATR 10, Key 4) ikinci şans: kırılım kaçırıldıysa veya reddedildiyse, Supertrend trendi ile uyumlu UT Bot Buy/Sell sinyali kapanan mumda girişi tetikler; trende ters sinyal yok sayılır. Diğerleri yalnızca listedir. Çıkış, mum çizginin ters tarafında kapanınca olur. Supertrend 10/4.8, kaynak OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
+    'Every coin is listed by the last closed 1h candle vs the Supertrend line: above = LONG, below = SHORT. The robot opens a position on a coin that broke the line and closed beyond it within the LAST 10 candles; if price ran more than 1% away it enters on a pullback to within 1% of the broken line level, without closing back across it and with a candle in the trade direction. UT Bot (ATR 10, Key 4) second chance: if the breakout was missed or rejected, a UT Bot Buy/Sell signal that agrees with the Supertrend trend triggers entry on candle close; signals against the trend are ignored. The rest are list-only. Exits when a candle closes on the other side of the line. Supertrend 10/4.8, source OHLC4, '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
   const iv='60';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
