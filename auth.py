@@ -490,6 +490,7 @@ def get_watchlist_settings():
     data = _read_json(WATCHLIST_SETTINGS_FILE, {})
     return {
         'position_usd': data.get('position_usd'),  # None => caller falls back to config default
+        'sizing_mode': data.get('sizing_mode') if data.get('sizing_mode') in ('fixed', 'dynamic') else 'dynamic',   # dynamic: risk bazli (varsayilan)
         'set_by': data.get('set_by'),
         'set_at': data.get('set_at'),
     }
@@ -505,6 +506,37 @@ def set_watchlist_position_usd(position_usd, by_username):
     with _lock:
         _write_json(WATCHLIST_SETTINGS_FILE, {
             'position_usd': position_usd,
+            'sizing_mode': get_watchlist_settings().get('sizing_mode') or 'dynamic',
+            'set_by': by_username,
+            'set_at': datetime.now(timezone.utc).isoformat(),
+        })
+    return True, None
+
+
+def set_watchlist_sizing(mode, position_usd, by_username):
+    """mode: 'fixed' (sabit USD) | 'dynamic' (risk bazli). Sabit modda gecerli bir USD tutari gerekir; dinamik modda
+    tutar bos birakilirsa onceki deger korunur (dinamik moddan sabite donuste kullanilir)."""
+    if mode not in ('fixed', 'dynamic'):
+        return False, 'Geçersiz mod.'
+    cur = get_watchlist_settings()
+    usd = cur.get('position_usd')
+    if mode == 'fixed' or str(position_usd or '').strip() != '':
+        try:
+            v = float(position_usd)
+        except (TypeError, ValueError):
+            if mode == 'fixed':
+                return False, 'Geçersiz sayı değeri.'
+            v = None
+        if v is not None:
+            if not (0 < v <= WATCHLIST_POSITION_USD_CAP):
+                if mode == 'fixed':
+                    return False, f'Pozisyon büyüklüğü 0 ile {WATCHLIST_POSITION_USD_CAP:,.0f} USD arasında olmalı.'
+            else:
+                usd = v
+    with _lock:
+        _write_json(WATCHLIST_SETTINGS_FILE, {
+            'position_usd': usd,
+            'sizing_mode': mode,
             'set_by': by_username,
             'set_at': datetime.now(timezone.utc).isoformat(),
         })

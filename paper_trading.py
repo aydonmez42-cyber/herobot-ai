@@ -429,6 +429,21 @@ def log_entry_context(symbol, side, price, now, f):
         print(f'ENTRY CONTEXT | ERROR | {symbol} | {type(e).__name__}: {e}', flush=True)
 
 
+def watchlist_sizing_mode():
+    """'dynamic' (risk bazli, varsayilan) | 'fixed' (sabit USD). Admin panelinden degistirilir."""
+    try:
+        return auth.get_watchlist_settings().get('sizing_mode') or 'dynamic'
+    except Exception:
+        return 'dynamic'
+
+
+def st_notional(state, open_notional, price, level):
+    """(nominal_usd, neden). Sabit modda panelde girilen tutar aynen kullanilir; dinamik modda risk bazli boyut."""
+    if watchlist_sizing_mode() == 'fixed':
+        return float(watchlist_position_usd()), None
+    return sts.position_notional(state.get('equity'), open_notional, price, level, watchlist_position_usd())
+
+
 def watchlist_position_usd():
     """The USD notional sized into each watchlist ('+ Ekle') paper trade.
     Admin-editable from /admin (persisted in auth.WATCHLIST_SETTINGS_FILE);
@@ -2069,7 +2084,7 @@ def st_extra_gate(state, symbol, sig, price):
             if n_counter >= sts.COUNTER_TREND_MAX:
                 return False, f'COUNTER_TREND_LIMIT({sts.REGIME_SYMBOL} {reg}, aleyhte {n_counter}/{sts.COUNTER_TREND_MAX})'
     lvl = sig.get('st') if sig.get('st') is not None else sig.get('level')
-    n, why = sts.position_notional(state.get('equity'), _st_open_notional(state), price, lvl, watchlist_position_usd())
+    n, why = st_notional(state, _st_open_notional(state), price, lvl)
     if n <= 0:
         return False, why or 'SIZE'
     return True, 'OK'
@@ -2083,7 +2098,7 @@ def st_open_position(state, symbol, sig, price_raw, atr_val, now):
     level = float(sig['level']) if sig.get('level') is not None else None
     if sts.ST_STOP_MODE == 'flip' and sig.get('st') is not None:
         level = float(sig['st'])          # stop = yeni olusan Supertrend cizgisi (her turda guncellenir)
-    _notional, _why = sts.position_notional(state.get('equity'), _st_open_notional(state), px, level, watchlist_position_usd())
+    _notional, _why = st_notional(state, _st_open_notional(state), px, level)
     if _notional <= 0:
         print(f'ST ENTRY | {symbol} atlandi: pozisyon boyutu/maruziyet siniri ({_why})', flush=True)
         return

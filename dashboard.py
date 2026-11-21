@@ -9780,9 +9780,17 @@ async function loadWatchlistSettings(){
   box.innerHTML=`
     <form onsubmit="return submitWatchlistPositionUsd(event)" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
       <div>
+        <label style="display:block;font-size:12px;margin-bottom:4px">Pozisyon büyüklüğü modu</label>
+        <select id="wlSizingMode" onchange="wlSizingToggle()" style="width:230px">
+          <option value="fixed"${d.sizing_mode==='fixed'?' selected':''}>Sabit tutar (USD)</option>
+          <option value="dynamic"${d.sizing_mode!=='fixed'?' selected':''}>Dinamik (risk bazlı)</option>
+        </select>
+      </div>
+      <div id="wlFixedBox">
         <label style="display:block;font-size:12px;margin-bottom:4px">Watchlist coin başına pozisyon (USD, maks ${d.cap.toLocaleString('tr-TR')})</label>
         <input type="number" step="1" min="1" max="${d.cap}" id="wlPositionUsd" value="${d.position_usd}" style="width:160px">
       </div>
+      <div id="wlDynNote" class="text-faint" style="font-size:12px;max-width:420px">Dinamik mod: her işlemde bakiyenin %${d.risk_pct} kadarı riske edilir; boyut stop mesafesine göre belirlenir (yakın stop = büyük, uzak stop = küçük pozisyon). Üst/alt sınırlar ve toplam maruziyet limiti geçerlidir.</div>
       <button class="btn" type="submit">Kaydet</button>
       <span style="align-self:center">${setNote}</span>
     </form>
@@ -9794,11 +9802,17 @@ async function loadWatchlistSettings(){
       <button class="btn" type="submit">Bakiyeyi Ayarla</button>
     </form>
   `;
+  wlSizingToggle();
+}
+function wlSizingToggle(){
+  const fx=document.getElementById('wlSizingMode').value==='fixed';
+  document.getElementById('wlFixedBox').style.display=fx?'':'none';
+  document.getElementById('wlDynNote').style.display=fx?'none':'';
 }
 async function submitWatchlistPositionUsd(ev){
   ev.preventDefault();
-  const position_usd=document.getElementById('wlPositionUsd').value;
-  const r=await fetch('/api/admin/watchlist-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({position_usd})});
+  const position_usd=document.getElementById('wlPositionUsd').value, sizing_mode=document.getElementById('wlSizingMode').value;
+  const r=await fetch('/api/admin/watchlist-settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({position_usd,sizing_mode})});
   const d=await r.json();
   if(!d.ok){ alert(d.error||'Kaydedilemedi.'); }
   loadWatchlistSettings();
@@ -10173,6 +10187,11 @@ def _fresh_price(symbol, sig, fallback):
         except Exception:
             pass
     return cp_raw if cp_raw is not None else fallback
+
+def _sts_mod():
+    import supertrend_signal as _m
+    return _m
+
 
 def watchlist_status():
     s = read_state()
@@ -10868,6 +10887,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({
                 'position_usd': float(ws.get('position_usd') or cfg.WATCHLIST_POSITION_USD),
                 'is_default': not ws.get('position_usd'),
+                'sizing_mode': ws.get('sizing_mode') or 'dynamic',
+                'risk_pct': float(getattr(_sts_mod(), 'RISK_PCT', 0) or 0),
                 'cap': auth.WATCHLIST_POSITION_USD_CAP,
                 'set_by': ws.get('set_by'),
                 'set_at': ws.get('set_at'),
@@ -11333,11 +11354,14 @@ class Handler(BaseHTTPRequestHandler):
             if not auth.is_admin(user):
                 self._send_json({'error': 'forbidden'}, status=403); return
             data=self._read_json_body()
-            ok, err = auth.set_watchlist_position_usd(data.get('position_usd'), user)
+            if data.get('sizing_mode'):
+                ok, err = auth.set_watchlist_sizing(data.get('sizing_mode'), data.get('position_usd'), user)
+            else:
+                ok, err = auth.set_watchlist_position_usd(data.get('position_usd'), user)
             if not ok:
                 self._send_json({'ok': False, 'error': err}, status=400); return
             ws = auth.get_watchlist_settings()
-            self._send_json({'ok': True, 'position_usd': float(ws.get('position_usd'))}); return
+            self._send_json({'ok': True, 'position_usd': float(ws.get('position_usd') or cfg.WATCHLIST_POSITION_USD), 'sizing_mode': ws.get('sizing_mode')}); return
 
         if path=='/api/account/delete-request':
             ok, err = record_deletion_request(user)
