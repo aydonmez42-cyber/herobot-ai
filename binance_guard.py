@@ -24,6 +24,7 @@ Ortam degiskenleri:
   BINANCE_MAX_REQ_PER_SEC     varsayilan 5   (piyasa verisi istek hizi)
   BINANCE_WEIGHT_SOFT_LIMIT   varsayilan 1500 (bu agirligin ustunde 4x yavaslar)
 """
+import json
 import os
 import threading
 import time
@@ -48,7 +49,31 @@ PUBLIC_DATA_PREFIXES = (
 )
 
 _lock = threading.Lock()
-_cooldown_until = 0.0
+# Bekleme bitis zamani diske yazilir: yeniden baslatma (deploy) sonrasi yeni surec banli IP'ye tekrar istek atip yasagi uzatmasin.
+_STATE_FILE = os.environ.get('BINANCE_GUARD_FILE') or os.path.join(os.environ.get('PAPER_DATA_DIR', '') or '.', 'binance_guard.json')
+MAX_PERSISTED_COOLDOWN = 3 * 24 * 3600
+
+
+def _load_cooldown():
+    try:
+        with open(_STATE_FILE) as fh:
+            until = float(json.load(fh).get('cooldown_until') or 0)
+        if time.time() < until <= time.time() + MAX_PERSISTED_COOLDOWN:
+            return until
+    except Exception:
+        pass
+    return 0.0
+
+
+def _save_cooldown(until):
+    try:
+        with open(_STATE_FILE, 'w') as fh:
+            json.dump({'cooldown_until': until}, fh)
+    except Exception:
+        pass
+
+
+_cooldown_until = _load_cooldown()
 _next_slot = 0.0
 _used_weight = 0
 _used_weight_at = 0.0
@@ -159,6 +184,7 @@ def _after(resp):
             with _lock:
                 if until > _cooldown_until:
                     _cooldown_until = until
+                    _save_cooldown(until)
                     # Used weight (X-MBX-USED-WEIGHT-1M) at the moment of the 429: if it is far
                     # below 2400 the IP's budget is being spent by someone else (shared IP).
                     wnote = f'{_used_weight}/dk' if (_used_weight and time.time() - _used_weight_at < 120) else 'bilinmiyor'
@@ -178,6 +204,8 @@ def install():
         public = _is_public_data(method, url, kwargs.get('params'))
         if public:
             _before_public()
+        elif in_cooldown() and str(method).upper() == 'GET' and _is_binance(url):
+            _check_cooldown()      # imzali okuma (bakiye/pozisyon/emir listesi) de banli IP'ye gonderilmez: her deneme yasagi uzatabilir. POST/DELETE (emir) serbest
         resp = original(self, method, url, *args, **kwargs)
         if _is_binance(url):
             _after(resp)
@@ -186,3 +214,5 @@ def install():
     requests.sessions.Session.request = guarded
     _installed = True
     print(f'BINANCE GUARD | aktif | max {MAX_REQ_PER_SEC}/sn, yumusak agirlik limiti {WEIGHT_SOFT_LIMIT}', flush=True)
+    if in_cooldown():
+        print(f'BINANCE GUARD | onceki bekleme suresi diskten yuklendi: {cooldown_remaining()} sn kaldi, o zamana kadar Binance okuma istegi gonderilmeyecek', flush=True)
