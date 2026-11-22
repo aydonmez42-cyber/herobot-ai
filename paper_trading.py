@@ -1414,7 +1414,7 @@ def exit_symbol_position(state, symbol, raw_price, reason, event_time, live_elig
     }
     log_trade(trade)
     print(f"WATCHLIST EXIT  | {side} {symbol} | reason={reason} | price={price:.6f} | net={net:.2f} | equity={state['equity']:.2f}", flush=True)
-    send_message(st_exit_message(trade) if reason in _ST_REASON else exit_message(trade))
+    send_message(st_exit_message(trade) if reason in _ST_REASON.values() else exit_message(trade))
     state['positions'].pop(symbol, None)
     if symbol in (state.get('watchlist') or {}):
         state['watchlist'][symbol]['traded'] = True      # the coin has a closed trade now (idle remove uses this)
@@ -1990,6 +1990,7 @@ def _usdt(x):
     return f'{float(x):,.2f} USDT'
 
 
+_EXIT_NOTES = {}     # sembol -> kapanis mesajina eklenecek ayrinti satiri
 _ST_REASON_TR = {'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)', 'ST_TP': 'Kâr al (TP)',
                  'ST_TRAIL_LOCK': 'Kâr kilidi', 'EMERGENCY_STOP': 'Acil stop',
                  'ST_REGIME_PROFIT': 'BTC trendi döndü: kâr alındı', 'ST_REGIME_CUT': 'BTC trendi döndü: ters yön sınırı (en çok zarardaki kapatıldı)'}
@@ -2040,7 +2041,8 @@ def st_exit_message(trade):
             f"Ücretler: {float(trade['fees']):,.2f} USDT\n"
             f"Çıkış nedeni: {_ST_REASON_TR.get(trade['reason'], trade['reason'])}\n"
             f"Süre: {dur}\n"
-            f"Bakiye: {_usdt(trade['equity_after'])}" + TG_DISCLAIMER)
+            + (f"Ayrıntı: {_EXIT_NOTES.pop(trade['symbol'], '')}\n" if _EXIT_NOTES.get(trade['symbol']) else "")
+            + f"Bakiye: {_usdt(trade['equity_after'])}" + TG_DISCLAIMER)
 
 
 def _st_is_crypto_pos(state, symbol):
@@ -2449,6 +2451,15 @@ def st_manage_positions(state, now):
             raw = sts.check_exit(p, ind, price)
             if raw:
                 exit_raw = p['tp'] if raw == 'TP' else price
+                if raw == 'TRAIL_LOCK' and p.get('exit_info'):
+                    _ei = p['exit_info']
+                    _lvl = p['entry_price'] * (1 + sign * float(_ei['floor']) / 100.0)
+                    _note = (f"Zirve kâr: %{float(_ei['peak']):.2f} · kilit seviyesi: %{float(_ei['floor']):.2f} ({_fmt_px(_lvl)}) · tetik anındaki fiyat: {_fmt_px(price)} (%{float(_ei['profit']):.2f})")
+                    if sts.LOCK_FILL == 'floor':
+                        exit_raw = _lvl                      # borsada durdurma emri gibi kilit seviyesinden dolum
+                        _note += ' · çıkış kilit seviyesinden hesaplandı'
+                    _EXIT_NOTES[symbol] = _note
+                    print(f'ST LOCK EXIT | {symbol} | {_note}', flush=True)
                 exit_symbol_position(state, symbol, exit_raw, _ST_REASON[raw], now, live_eligible=True)
                 if raw == 'ST_STOP':
                     state.setdefault('st_rewatch', {})[symbol] = {'side': p['side'], 'since': now.isoformat()}

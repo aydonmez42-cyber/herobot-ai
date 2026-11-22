@@ -576,6 +576,10 @@ def pullback_ok(sig, ind, last_price):
     return True, "PULLBACK"
 
 
+# Kilit cikisi dolum fiyati: 'floor' = kilit seviyesi (borsada durdurma emri gibi), 'market' = tetik anindaki fiyat
+LOCK_FILL = os.environ.get("ST_LOCK_FILL", "floor").strip().lower()
+
+
 def check_exit(pos, df, last_price):
     """Acik pozisyon icin cikis karari. pos: side, entry_price, entry_time, st_level.
     df: KAPANMIS 1 saatlik mumlar (en az giristen sonrasini icermeli). Doner: cikis nedeni veya None.
@@ -598,6 +602,7 @@ def check_exit(pos, df, last_price):
         return "TP"
     _fl = pos_floor(pos, peak)
     if _fl is not None and profit <= _fl:
+        pos["exit_info"] = {"peak": peak, "floor": _fl, "profit": profit}   # cikis kaydi/mesaji icin (kilit seviyesi, zirve, tetik anindaki kar)
         return "TRAIL_LOCK"
 
     st = st_calc(df, ST_PERIOD, ST_MULT)
