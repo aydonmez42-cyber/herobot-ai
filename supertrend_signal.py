@@ -52,7 +52,7 @@ def _parse_tiers(txt):
 
 # Basamakli kar kilidi: "zirve_kar:kilitli_kar" ciftleri (fiyat uzerinden %). Zirve kar ilk degere ulasinca
 # kar o seviyenin kilidine iner, kilit zirve buyudukce yukselir. Son basamagin ustunde kilit = zirve - (son_zirve - son_kilit).
-LOCK_TIERS = _parse_tiers(os.environ.get("ST_LOCK_TIERS", "1.5:1,2:1.5,3:2,4:3"))
+LOCK_TIERS = _parse_tiers(os.environ.get("ST_LOCK_TIERS", "2:1.5,3:2,4:3"))
 TRAIL_ARM_PCT = LOCK_TIERS[0][0]
 TRAIL_FLOOR_PCT = LOCK_TIERS[0][1]
 
