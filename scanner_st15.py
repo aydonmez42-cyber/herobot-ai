@@ -273,6 +273,10 @@ def _run(asof, universe_name='LIQ100'):
                 if getattr(e.response, 'status_code', None) in (418, 429):
                     partial, err = True, f'Binance istek siniri (HTTP {e.response.status_code}): tarama yarida durduruldu.'
                     break
+                n_fail += 1
+                if first_fail is None:
+                    first_fail = f'{sym}: HTTP {getattr(e.response, "status_code", "?")} {str(e)[:100]}'
+                    print(f'SCAN-ST | satir hatasi (ilk) {first_fail}', flush=True)
             except Exception as e:
                 n_fail += 1
                 if first_fail is None:
@@ -283,6 +287,8 @@ def _run(asof, universe_name='LIQ100'):
             time.sleep(pace)
     except Exception as e:
         err = f'{type(e).__name__}: {str(e)[:160]}'
+    if not results and not err and not partial:
+        err = f'Hic coin analiz edilemedi (denenen: {n_fail} hata, ilk hata: {first_fail}) - arayuz 15 dk verisi alamiyor olabilir'
     if n_fail and not err:
         err = f'{n_fail} coin analiz edilemedi (ilk hata: {first_fail})' if n_fail >= max(3, len(results)) else None
     with _lock:
