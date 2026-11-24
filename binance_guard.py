@@ -55,6 +55,12 @@ MAX_PERSISTED_COOLDOWN = 3 * 24 * 3600
 
 
 def _load_cooldown():
+    if os.environ.get('BINANCE_RESET_COOLDOWN', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+        try:
+            os.remove(_STATE_FILE)                    # IP degisti (sabit IP): eski IP icin kaydedilen bekleme gecersiz
+        except Exception:
+            pass
+        return 0.0
     try:
         with open(_STATE_FILE) as fh:
             until = float(json.load(fh).get('cooldown_until') or 0)
