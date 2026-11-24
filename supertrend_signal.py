@@ -145,7 +145,7 @@ SHORT_INTRABAR = os.environ.get("ST_SHORT_INTRABAR", "0").strip().lower() in ("1
 # Mum-ici SHORT'ta mum kapanisinda donus teyit edilmediyse (fiyat cizgi ustune geri kapandiysa) hemen cik (1) / yalnizca kirmizi cizgi ustu kapanista cik (0, varsayilan)
 INTRABAR_FAKEOUT_EXIT = os.environ.get("ST_INTRABAR_FAKEOUT_EXIT", "0").strip().lower() in ("1", "true", "on", "yes")
 # Giris penceresi: cizgi kirilimi SON 10 kapanmis mumda olduysa (yas 0..9) giris yapilir. Eski ST_MAX_SIGNAL_AGE_BARS degiskeni artik OKUNMAZ; yalnizca ST_ENTRY_WINDOW_BARS.
-ENTRY_WINDOW_BARS = max(1, int(float(os.environ.get("ST_ENTRY_WINDOW_BARS", "10"))))
+ENTRY_WINDOW_BARS = max(1, int(float(os.environ.get("ST_ENTRY_WINDOW_BARS", "4"))))     # 15 dk mum x 4 = son 1 saat (saat basi taramayla ayni aralik)
 MAX_SIGNAL_AGE_BARS = CONFIRM_BARS + CONFIRM_EXTRA_BARS + ENTRY_WINDOW_BARS
 WHIPSAW_BARS = int(os.environ.get("ST_WHIPSAW_BARS", "0"))   # eski 16 mumluk testere filtresi (onay kurali onun yerine gecti; 0 = kapali)
 # GERI CEKILME GIRISI: fiyat kirilimdan sonra hizla uzaklasip (LATE_ENTRY) sonra kirilan cizgi seviyesine geri yaklastiysa ve cizgiyi ters yonde gecmediyse giris yapilir.
@@ -306,7 +306,7 @@ def state_entry_signal(df):
 UT_ENABLED = os.environ.get("ST_UT_ENABLED", "1").strip().lower() not in ("0", "false", "off", "no")
 UT_ATR_PERIOD = int(float(os.environ.get("ST_UT_ATR_PERIOD", "10")))
 UT_KEY_VALUE = float(os.environ.get("ST_UT_KEY", "4"))
-UT_WINDOW_BARS = max(1, int(float(os.environ.get("ST_UT_WINDOW_BARS", "2"))))      # UT sinyali son N kapanmis mumdan birinde olduysa gecerli (yas 0..N-1)
+UT_WINDOW_BARS = max(1, int(float(os.environ.get("ST_UT_WINDOW_BARS", "4"))))      # UT sinyali son N kapanmis mumdan birinde olduysa gecerli (yas 0..N-1)
 
 
 def ut_bot(df, period=None, key=None):
@@ -377,7 +377,7 @@ def ut_entry_signal(df):
             k = n - 1
             while k >= 0 and not np.isnan(d[k]) and d[k] == d[-1]:
                 k -= 1
-            if k >= 0 and not np.isnan(line[k]) and (n - 1 - (k + 1)) < ENTRY_WINDOW_BARS:
+            if k >= 0 and not np.isnan(line[k]) and i == k + 1:     # UT sinyali Supertrend kirilim mumunun KENDISINDE geldiyse asiri uzama kontrolu; sonraki mumda gelirse yok
                 ext_level = float(line[k])
             return {"side": side, "kind": "UT_" + side, "signal_time": df.index[i], "signal_close": float(df["close"].iloc[i]),
                     "level": None, "st": ln, "st_signal": ln, "age_bars": age, "ut": True, "ext_level": ext_level}
@@ -386,7 +386,7 @@ def ut_entry_signal(df):
 
 # ---- Birlesik (konfluans) giris: Supertrend kirilimi + UT Bot sinyali ayni yonde, ayni mumda ya da birbirini 1 mum arayla izleyerek ----
 CONF_ENABLED = os.environ.get("ST_CONFLUENCE_ENABLED", "1").strip().lower() not in ("0", "false", "off", "no")
-CONF_WINDOW_BARS = max(1, int(float(os.environ.get("ST_CONFLUENCE_WINDOW_BARS", "2"))))   # iki olaydan SON olani son N kapanmis mumdan birinde olmali (yas 0..N-1)
+CONF_WINDOW_BARS = max(1, int(float(os.environ.get("ST_CONFLUENCE_WINDOW_BARS", "4"))))   # iki olaydan SON olani son N kapanmis mumdan birinde olmali (yas 0..N-1)
 CONF_SKIP_LATE = os.environ.get("ST_CONFLUENCE_SKIP_LATE", "1").strip().lower() not in ("0", "false", "off", "no")   # konfluansta LATE_ENTRY kapisi atlanir
 
 
@@ -414,8 +414,8 @@ def confluence_signal(df):
             if u < 0 or u > n - 1 or not ut[u]:
                 continue
             later = max(f, u)
-            if n - 1 - later >= CONF_WINDOW_BARS:
-                continue
+            if n - 1 - min(f, u) >= CONF_WINDOW_BARS:
+                continue                                          # iki olay da son CONF_WINDOW_BARS mum icinde olmali
             lvl = float(line[f - 1]) if not np.isnan(line[f - 1]) else None
             return {"side": side, "kind": "CONF_" + side, "signal_time": df.index[later], "signal_close": float(c[later]),
                     "level": lvl, "st": float(line[-1]), "st_signal": float(line[f]), "age_bars": n - 1 - later,
@@ -591,6 +591,7 @@ def pullback_ok(sig, ind, last_price):
     return True, "PULLBACK"
 
 
+UT_EXIT_ENABLED = os.environ.get("ST_UT_EXIT", "1").strip().lower() not in ("0", "false", "off", "no")   # ters yonlu UT Bot sinyalinde cik
 # Kilit cikisi dolum fiyati: 'floor' = kilit seviyesi (borsada durdurma emri gibi), 'market' = tetik anindaki fiyat
 LOCK_FILL = os.environ.get("ST_LOCK_FILL", "floor").strip().lower()
 
@@ -620,6 +621,13 @@ def check_exit(pos, df, last_price):
         pos["exit_info"] = {"peak": peak, "floor": _fl, "profit": profit}   # cikis kaydi/mesaji icin (kilit seviyesi, zirve, tetik anindaki kar)
         return "TRAIL_LOCK"
 
+    if UT_EXIT_ENABLED and UT_ENABLED and len(since) and len(df) >= max(UT_ATR_PERIOD, ST_PERIOD) + 5:
+        # Trend surerken (Supertrend ters yonde kapanmadan) giristen SONRA kapanan mumda ters yonlu UT Bot sinyali: pozisyonu kapat
+        _buy, _sell, _ = ut_bot(df)
+        _opp = _sell if side == "LONG" else _buy
+        _after = (df.index > pd.Timestamp(pos["entry_time"]))
+        if bool((_opp & _after).any()):
+            return "UT_EXIT"
     st = st_calc(df, ST_PERIOD, ST_MULT)
     close, direction = float(df["close"].iloc[-1]), int(st["supertrend_direction"].iloc[-1])
     level = pos.get("st_level")

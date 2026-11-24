@@ -25,8 +25,8 @@ from indicators import supertrend as _st_df
 
 PERIOD = sts.ST_PERIOD
 FACTOR = sts.ST_MULT
-INTERVAL = '1h'
-TIMEFRAMES = ('1h',)
+INTERVAL = (os.environ.get('ST_INTERVAL', '15m').strip() or '15m')    # sinyal mumu; tarama her saat basi (SCANNER_EVERY_MIN) son kapanmis mumlara bakar
+TIMEFRAMES = (INTERVAL,)
 TOP_N = int(os.environ.get('SCAN_ST_TOP_N', '100'))
 _EXCLUDE = {x.strip().upper() for x in os.environ.get('ST_EXCLUDE_SYMBOLS', 'PAXGUSDT,XAUTUSDT,XAUUSDT,XAGUSDT').split(',') if x.strip()}
 PACE_S = float(os.environ.get('SCAN_ST_PACE_S', '0.15'))

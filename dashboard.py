@@ -3857,10 +3857,10 @@ SCANNER_HTML = r'''<!doctype html>
   </div>
   <div id="stPane-crypto">
     <div id="stCard" style="padding:14px 16px 10px">
-      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">1 saat · her saat başı otomatik</b></div>
+      <div class="scanner-controls" style="margin-bottom:6px"><b style="font-size:12.5px;color:var(--text-dim)">15 dk mum · her saat başı otomatik</b></div>
       <div class="scanner-controls">
         <select id="stUni" autocomplete="off" onchange="stTfChange()"><option value="LIQ100" selected>En likit 100</option><option value="TOP10">En büyük 10</option><option value="VOL20">En hacimli 20</option><option value="ALL">Binance tümü (manuel)</option></select>
-        <select id="stTf" onchange="stTfChange()"><option value="1h">1 saat</option></select>
+        <select id="stTf" onchange="stTfChange()"><option value="15m">15 dk</option></select>
         <button class="btn" id="stBtn" onclick="stStart()">⏱ Şimdi tara</button>
         <select id="stFilter" autocomplete="off" onchange="renderSt()"><option value="ALL" selected>ALL</option><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
         <select id="stBars" onchange="renderSt()"><option value="1" selected>Son 1 mum</option></select>
@@ -4339,7 +4339,7 @@ stDiscRender(); setInterval(()=>{ let tr=true; try{ tr=(currentLang==='tr'); }ca
 // ---- Supertrend scan (crypto: 15m, hourly automatic) ----
 const stCaches={'1h|LIQ100':{results:[],status:'IDLE'}};
 let stCache=stCaches['1h|LIQ100'], stTimer=null;
-function stTfVal(){ return '1h'; }
+function stTfVal(){ return '15m'; }
 function stUniVal(){ return document.getElementById('stUni')?.value||'LIQ100'; }
 function stKey(){ return stTfVal()+'|'+stUniVal(); }
 function stSlot(key){ return stCaches[key] || (stCaches[key]={results:[],status:'IDLE'}); }
@@ -4411,7 +4411,7 @@ function renderSt(){
     else if(stCache.finished_at) st.innerHTML=T15('Son tarama: ','Last scan: ')+stFmtTR(stCache.finished_at)+' (TR) · '+stSideLinks(nL,nS,'stFilter');
     else st.textContent=T15('İlk saat başı taraması bekleniyor…','Waiting for the first hourly scan…');
   }
-  const lblTr='1 saatlik', lblEn='1h';
+  const lblTr='15 dakikalık', lblEn='15m';
   if(note) note.textContent=(stCache.last_error?('⚠ '+stCache.last_error+' '):'')+T15(
     'Bot, trend takibi yapar ve uyumlu indikatörlerle trend teyidi yaparak pozisyon açar. Kâr alma, zararı durdurma, kademeli kâr kilitleri ve dinamik zarar kesme ve kâr alma işlemlerini pozisyon başında kural seti olarak uygulamaya koyar. Tarama evreni: '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
     'The bot follows trends and opens positions after confirming the trend with compatible indicators. Take-profit, stop-loss, stepped profit locks and dynamic stop-loss and take-profit are applied as a rule set from the start of each position. Scan universe: '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));

@@ -267,7 +267,7 @@ _btc_cache = {'ts': 0.0, 'data': None}
 # cfg.CRYPTO_INTERVAL (default 1h; the mode is fixed in code below).
 # Things that are deliberately NOT tied to it: the entry-wait 4h check (still a real 4h
 # candle), the trend stop (TREND_SL_INTERVAL, default 4h), the BTC 1h/4h drop lock, stocks.
-CRYPTO_INTERVAL = '1h'    # altcoin taramasi, giris ve Supertrend stop: 1 saatlik KAPANMIS mumlar
+CRYPTO_INTERVAL = (os.environ.get('ST_INTERVAL', '15m').strip() or '15m')    # giris sinyali ve Supertrend stop: 15 dk KAPANMIS mumlar (tarama saat basi)
 BTC_REGIME_INTERVAL = (os.environ.get('BTC_REGIME_INTERVAL', '1h').strip() or '1h')   # yalnizca BTC yonu (rejim + yon degisimi korumasi) bu mumla izlenir
 _IV_FLOOR = {'15m': '15min', '30m': '30min', '1h': '1h', '2h': '2h', '4h': '4h'}
 CRYPTO_ENTRY_MIN_SCORE = int(getattr(cfg, 'CRYPTO_ENTRY_MIN_SCORE', 0) or 0)
@@ -1969,7 +1969,7 @@ def sync_bist_watchlist_signals(state, now):
 # =============================================================================
 ST_MAX_OPEN = int(_env_float('ST_MAX_OPEN_POSITIONS', 10))
 ST_SCAN_MAX_AGE_H = _env_float('ST_SCAN_MAX_AGE_H', 0.75)     # bundan eski tarama sonucu ile islem acilmaz (restart sonrasi)
-_ST_REASON = {'TP': 'ST_TP', 'TRAIL_LOCK': 'ST_TRAIL_LOCK', 'ST_STOP': 'ST_STOP', 'EMERGENCY_STOP': 'EMERGENCY_STOP',
+_ST_REASON = {'UT_EXIT': 'ST_UT_EXIT', 'TP': 'ST_TP', 'TRAIL_LOCK': 'ST_TRAIL_LOCK', 'ST_STOP': 'ST_STOP', 'EMERGENCY_STOP': 'EMERGENCY_STOP',
               'REGIME_PROFIT': 'ST_REGIME_PROFIT', 'REGIME_CUT': 'ST_REGIME_CUT'}
 
 
@@ -1991,7 +1991,7 @@ def _usdt(x):
 
 
 _EXIT_NOTES = {}     # sembol -> kapanis mesajina eklenecek ayrinti satiri
-_ST_REASON_TR = {'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)', 'ST_TP': 'Kâr al (TP)',
+_ST_REASON_TR = {'ST_UT_EXIT': 'UT Bot ters yönde sinyal verdi', 'ST_STOP': 'Supertrend stop (mum çizgiyi ters yönde kapattı)', 'ST_TP': 'Kâr al (TP)',
                  'ST_TRAIL_LOCK': 'Kâr kilidi', 'EMERGENCY_STOP': 'Acil stop',
                  'ST_REGIME_PROFIT': 'BTC trendi döndü: kâr alındı', 'ST_REGIME_CUT': 'BTC trendi döndü: ters yön sınırı (en çok zarardaki kapatıldı)'}
 
@@ -2232,7 +2232,7 @@ def st_intrabar_short_check(state, now):
     snap = scanner_st15.snapshot()
     if snap.get('status') != 'READY' or not snap.get('asof'):
         return
-    if pd.Timestamp(snap['asof']) != pd.Timestamp(now).floor(_IV_FLOOR.get(CRYPTO_INTERVAL, '1h')):
+    if pd.Timestamp(snap['asof']) != pd.Timestamp(now).floor(f'{SCAN_EVERY_MIN}min'):
         return                                            # tarama bu saatin mumuna ait degil: cizgiler guncel degil
     if len(state.get('positions') or {}) >= ST_MAX_OPEN:
         return
