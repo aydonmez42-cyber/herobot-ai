@@ -2175,7 +2175,7 @@ def st_scan_and_trade(state, now):
             if r.get('ut_side') and r.get('ut_time'):
                 attempts.append(('UT', {'side': r['ut_side'], 'kind': 'UT_' + r['ut_side'], 'signal_time': r['ut_time'],
                                         'signal_close': r['ut_close'], 'level': None, 'st': r.get('ut_st') or r.get('st'),
-                                        'age_bars': r.get('ut_age'), 'ut': True}))
+                                        'age_bars': r.get('ut_age'), 'ut': True, 'ext_level': r.get('ut_ext_level')}))
             df = None
             for src, sig in attempts:
                 if src == 'CONF':

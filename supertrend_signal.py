@@ -373,8 +373,14 @@ def ut_entry_signal(df):
             side = "SHORT"
         if side:
             ln = float(line[-1])
+            ext_level = None                                      # trend yeni basladiysa (son ENTRY_WINDOW_BARS mum): kirilan eski cizgi = asiri uzama olcusu referansi
+            k = n - 1
+            while k >= 0 and not np.isnan(d[k]) and d[k] == d[-1]:
+                k -= 1
+            if k >= 0 and not np.isnan(line[k]) and (n - 1 - (k + 1)) < ENTRY_WINDOW_BARS:
+                ext_level = float(line[k])
             return {"side": side, "kind": "UT_" + side, "signal_time": df.index[i], "signal_close": float(df["close"].iloc[i]),
-                    "level": None, "st": ln, "st_signal": ln, "age_bars": age, "ut": True}
+                    "level": None, "st": ln, "st_signal": ln, "age_bars": age, "ut": True, "ext_level": ext_level}
     return None
 
 
@@ -496,6 +502,10 @@ def intrabar_short_signal(df, forming_close_time=None):
             "level": float(line[-2]), "st": float(line[-1]), "age_bars": 0, "intrabar": True}
 
 
+# Kirilim mumunun kapanisi kirilan Supertrend cizgisinden bu orandan fazla uzaktaysa (asiri uzama) o sinyalle HIC girilmez (pullback girisi dahil). 0 = kapali
+MAX_BREAKOUT_EXT_PCT = float(os.environ.get("ST_MAX_BREAKOUT_EXT_PCT", "5"))
+
+
 def entry_allowed(sig, last_price, ind=None, symbol=None):
     """Tarama filtreleri. (ok, neden) doner. 24s degisim filtresi YOK (kaldirildi).
     ind verilirse (kapanmis mumlar) son mumun Supertrend'e gore konumu da sart."""
@@ -520,6 +530,11 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
             line = float(sig["st"])
         if line is not None and abs(last_price - line) / last_price * 100.0 > MAX_STOP_DIST_PCT:
             return False, "STOP_TOO_FAR"
+    _ref = sig.get("level") if sig.get("level") is not None else sig.get("ext_level")
+    if MAX_BREAKOUT_EXT_PCT > 0 and _ref and sig.get("signal_close"):
+        _sgn = 1.0 if sig["side"] == "LONG" else -1.0
+        if _sgn * (float(sig["signal_close"]) - float(_ref)) / float(_ref) * 100.0 > MAX_BREAKOUT_EXT_PCT:
+            return False, "OVEREXTENDED"        # kirilim mumu kirilan cizgiden cok uzakta kapandi: asiri uzamis hareket, duzeltmede girilmez
     lvl = sig.get("level")
     if lvl is not None:
         if sig["side"] == "LONG" and last_price <= lvl:

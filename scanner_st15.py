@@ -232,7 +232,7 @@ def _analyse(symbol, vol, chg, asof):
                     'signal_time': pd.Timestamp(sig['signal_time']).isoformat()})
     if ut:
         row.update({'ut_side': ut['side'], 'ut_age': int(ut['age_bars']), 'ut_time': pd.Timestamp(ut['signal_time']).isoformat(),
-                    'ut_close': ut['signal_close'], 'ut_st': ut['st']})
+                    'ut_close': ut['signal_close'], 'ut_st': ut['st'], 'ut_ext_level': ut.get('ext_level')})
     if conf:
         row.update({'conf_side': conf['side'], 'conf_age': int(conf['age_bars']), 'conf_time': pd.Timestamp(conf['signal_time']).isoformat(),
                     'conf_close': conf['signal_close'], 'conf_level': conf['level'], 'conf_st': conf['st'],
