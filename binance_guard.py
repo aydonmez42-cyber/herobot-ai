@@ -79,6 +79,7 @@ def _save_cooldown(until):
         pass
 
 
+_PROXY = (os.environ.get('BINANCE_PROXY') or '').strip()      # ornek: http://kullanici:sifre@SUNUCU_IP:3128 (bos = dogrudan baglan)
 _cooldown_until = _load_cooldown()
 _next_slot = 0.0
 _used_weight = 0
@@ -212,6 +213,8 @@ def install():
             _before_public()
         elif in_cooldown() and str(method).upper() == 'GET' and _is_binance(url):
             _check_cooldown()      # imzali okuma (bakiye/pozisyon/emir listesi) de banli IP'ye gonderilmez: her deneme yasagi uzatabilir. POST/DELETE (emir) serbest
+        if _PROXY and _is_binance(url) and not kwargs.get('proxies'):
+            kwargs['proxies'] = {'http': _PROXY, 'https': _PROXY}     # Binance istekleri sana ait sabit IP'li vekil sunucudan cikar
         resp = original(self, method, url, *args, **kwargs)
         if _is_binance(url):
             _after(resp)
@@ -219,6 +222,8 @@ def install():
 
     requests.sessions.Session.request = guarded
     _installed = True
+    if _PROXY:
+        print('BINANCE GUARD | vekil sunucu aktif (Binance istekleri vekil uzerinden gider)', flush=True)
     print(f'BINANCE GUARD | aktif | max {MAX_REQ_PER_SEC}/sn, yumusak agirlik limiti {WEIGHT_SOFT_LIMIT}', flush=True)
     if in_cooldown():
         print(f'BINANCE GUARD | onceki bekleme suresi diskten yuklendi: {cooldown_remaining()} sn kaldi, o zamana kadar Binance okuma istegi gonderilmeyecek', flush=True)
