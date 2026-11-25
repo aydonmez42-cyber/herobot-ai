@@ -306,7 +306,7 @@ def state_entry_signal(df):
 UT_ENABLED = os.environ.get("ST_UT_ENABLED", "1").strip().lower() not in ("0", "false", "off", "no")
 UT_ATR_PERIOD = int(float(os.environ.get("ST_UT_ATR_PERIOD", "10")))
 UT_KEY_VALUE = float(os.environ.get("ST_UT_KEY", "4"))
-UT_WINDOW_BARS = max(1, int(float(os.environ.get("ST_UT_WINDOW_BARS", "4"))))      # UT sinyali son N kapanmis mumdan birinde olduysa gecerli (yas 0..N-1)
+UT_WINDOW_BARS = max(1, int(float(os.environ.get("ST_UT_WINDOW_BARS", "1"))))      # tek basina UT sinyali (devam eden trendde): yalnizca SON kapanmis mumda gecerli (yas 0)
 
 
 def ut_bot(df, period=None, key=None):
