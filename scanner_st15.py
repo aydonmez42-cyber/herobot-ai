@@ -50,12 +50,39 @@ _lock = threading.Lock()
 _state = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None, 'progress': 0, 'total': 0,
           'last_error': None, 'partial': False, 'asof': None, 'interval': INTERVAL,
           'every_min': SCAN_EVERY_MIN}
+_LAST_FILE = os.path.join(os.environ.get('PAPER_DATA_DIR', '') or '.', 'scan_last_ok.json')
+
+
+def _save_last_ok(results, finished_at, asof):
+    try:
+        import json as _j
+        with open(_LAST_FILE, 'w') as fh:
+            _j.dump({'results': results, 'finished_at': finished_at, 'asof': str(asof)}, fh)
+    except Exception:
+        pass
+
+
+def _load_last_ok():
+    try:
+        import json as _j
+        with open(_LAST_FILE) as fh:
+            d = _j.load(fh)
+        if d.get('results'):
+            return d
+    except Exception:
+        pass
+    return None
+
+
 _last_finish_ts = 0.0
 _states = {'LIQ100': _state}                 # robotun okudugu durum = LIQ100 (degismeden kalir)
 for _u in UNIVERSES[1:]:
     _states[_u] = {'status': 'IDLE', 'results': [], 'started_at': None, 'finished_at': None, 'progress': 0, 'total': 0,
                    'last_error': None, 'partial': False, 'asof': None, 'interval': INTERVAL, 'every_min': SCAN_EVERY_MIN}
 _CG = {'t': 0.0, 'syms': None}
+_lk = _load_last_ok()
+if _lk:
+    _state.update({'results': _lk['results'], 'finished_at': _lk.get('finished_at'), 'stale_asof': _lk.get('asof')})   # yalniz gosterim: status IDLE oldugu icin robot bunu islemez
 
 
 def _u(universe):
@@ -291,12 +318,18 @@ def _run(asof, universe_name='LIQ100'):
         err = f'Hic coin analiz edilemedi (denenen: {n_fail} hata, ilk hata: {first_fail}) - arayuz 15 dk verisi alamiyor olabilir'
     if n_fail and not err:
         err = f'{n_fail} coin analiz edilemedi (ilk hata: {first_fail})' if n_fail >= max(3, len(results)) else None
+    fresh = list(results)
+    failed = bool(err and not fresh)
+    if not fresh:
+        results = list(st.get('results') or [])           # basarisiz taramada onceki sonuclari silme (yalniz gosterim)
     with _lock:
         st.update({'results': results, 'partial': partial, 'last_error': err,
-                   'status': 'ERROR' if (err and not results) else 'READY',
+                   'status': 'ERROR' if failed else 'READY',
                    'finished_at': datetime.now(timezone.utc).isoformat(),
-                   'asof': asof.isoformat() if not (err and not results) else st.get('asof'),   # basarisiz tarama saat sayilmaz: ban bitince tekrar denenir
+                   'asof': asof.isoformat() if not failed else st.get('asof'),   # basarisiz tarama saat sayilmaz: ban bitince tekrar denenir
                    'approx': approx, 'source': source})
+    if fresh and universe_name == 'LIQ100':
+        _save_last_ok(fresh, st.get('finished_at'), asof)
     _last_finish_ts = time.time()
     n_l = sum(1 for r in results if r['signal'] == 'LONG'); n_s = sum(1 for r in results if r['signal'] == 'SHORT')
     print(f'SCAN-ST-{INTERVAL.upper()} | {universe_name} | bitti | {len(results)} coin | sinyal: LONG={n_l} SHORT={n_s} | asof={asof} | partial={partial} | err={err}', flush=True)
