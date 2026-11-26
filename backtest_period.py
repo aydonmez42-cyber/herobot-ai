@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Herobot-AI | Yeni sistem (Supertrend 10 / 4.8, OHLC4, 1 saatlik mum) donem backtesti.
+Herobot-AI | Yeni sistem (Supertrend 10 / 4.7, OHLC4, 1 saatlik mum) donem backtesti.
 
 Robotun kendi motorunu kullanir (supertrend_signal.py): dinamik Supertrend stopu, kademeli kar kilidi, %15 acil stop,
 goreli hacim filtresi, stop mesafesi siniri. Proje klasorunde (backtest_tf.py, indicators.py, supertrend_signal.py yan yana) calistirin:

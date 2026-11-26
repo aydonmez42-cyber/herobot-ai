@@ -1,5 +1,5 @@
 """
-Supertrend 10 / 4.8 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: son 10 kapanmis mumdan birinde cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
+Supertrend 10 / 4.7 sinyal motoru (1 saatlik mum, kaynak OHLC4). Liste: cizgi ustu LONG, alti SHORT. Giris: son 10 kapanmis mumdan birinde cizgiyi yukari kirip ustunde kapatan LONG, asagi kirip altinda kapatan SHORT; cikis: mum kapanisinda cizgi tersine donunce + kademeli kar kilidi.
 
 Bu modul YALNIZCA karar verir (sinyal / cikis nedeni). Emir acmak/kapatmak paper_trading.py ve
 live_trading.py'nin isidir. Tum fonksiyonlar KAPANMIS mumlar uzerinde calisir: cagirmadan once
@@ -27,10 +27,10 @@ def st_calc(df, period, mult):
     return supertrend(df["high"], df["low"], df["close"], period, mult, src=src)
 
 ST_PERIOD = 10
-ST_MULT = float(os.environ.get("ST_MULT", "4.8"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
+ST_MULT = float(os.environ.get("ST_MULT", "4.7"))                       # altcoin (1 saatlik mum) taramasi ve islemleri
 # BTC yon/rejim Supertrend (1 saatlik mum, altcoin ayariyla ayni): rejim kapisi + yon degisimi korumasi bu ayarla calisir
 REGIME_ST_PERIOD = int(float(os.environ.get("ST_REGIME_PERIOD", "10")))
-REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.8"))
+REGIME_ST_MULT = float(os.environ.get("ST_REGIME_MULT", "4.7"))
 ST_STOP_MODE = os.environ.get("ST_STOP_MODE", "flip")      # "flip": stop = Supertrend'in kendi (dinamik) cizgisi | "level": kirilan eski seviye
 ST_WARMUP_BARS = 499                                         # durum makinesini kurmak icin gecmis mum sayisi
 

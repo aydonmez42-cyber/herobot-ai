@@ -4416,7 +4416,7 @@ function renderSt(){
     'Bot, trend takibi yapar ve uyumlu indikatörlerle trend teyidi yaparak pozisyon açar. Kâr alma, zararı durdurma, kademeli kâr kilitleri ve dinamik zarar kesme ve kâr alma işlemlerini pozisyon başında kural seti olarak uygulamaya koyar. Tarama evreni: '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Bu evrenin sonuçları görüntüleme ve manuel ekleme içindir; robot otomatik işlemi yalnızca en likit 100 coin taramasından açar.':'')+(stCache.approx?' ⚠ Piyasa değeri kaynağı alınamadı; kayıtlı liste kullanıldı.':''),
     'The bot follows trends and opens positions after confirming the trend with compatible indicators. Take-profit, stop-loss, stepped profit locks and dynamic stop-loss and take-profit are applied as a rule set from the start of each position. Scan universe: '+stUniText(stCache)+'.'+(stUniVal()!=='LIQ100'?' Results for this universe are for viewing and manual adding; the robot opens trades automatically only from the 100 most liquid coins scan.':'')+(stCache.approx?' ⚠ Market-cap source unavailable; a saved list was used.':''));
   const body=document.getElementById('stRows'); if(!body) return;
-  const iv='60';
+  const iv='15';
   const fl=x=>stFmtTR(x.signal_time||x.flip_time);
   body.innerHTML=rows.map(x=>`<tr class="row-clickable" onclick="openTvChart('BINANCE:${x.symbol}.P','${x.symbol} · ${tf.toUpperCase()}','${iv}')"><td><b>${x.symbol}</b></td><td class="num">${p15(x.price)}</td><td class="num ${Number(x.change_pct)>=0?'pos':'neg'}">${Number(x.change_pct||0).toFixed(2)}%</td><td class="num">${Number(x.volume||0).toLocaleString('en-US',{maximumFractionDigits:0})}</td><td class="num">${p15(x.st)}</td><td class="num ${Number(x.dist_pct)>=0?'pos':'neg'}">${x.dist_pct!=null?Number(x.dist_pct).toFixed(2):'—'}%</td><td>${fl(x)}${x.flip_bars>0?' · '+x.flip_bars+T15(' mum önce',' bars ago'):''}</td><td>${sigPill(x.signal)}${x.ut_side?` <span class="muted" title="UT Bot">· UT ${x.ut_side==='LONG'?'Buy':'Sell'}</span>`:''}${x.conf_side?` <span class="muted" title="Supertrend + UT Bot">· ST+UT</span>`:''}</td><td>${addCell(x.symbol,'crypto',x.signal)}</td></tr>`).join('')
     ||`<tr><td colspan="9" class="empty">${stCache.finished_at?T15('Bu filtrede coin yok.','No coins for this filter.'):'—'}</td></tr>`;
@@ -5329,7 +5329,7 @@ body.ta-nolock{overflow:hidden}
   <div class="panel-head ta-head3">
     <div class="ta-head-left"><h2>Teknik Grafik</h2>
       <select id="ownChartTf" onchange="loadOwnChart()">
-        <option value="15m">15 dk</option><option value="1h" selected>1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
+        <option value="15m" selected>15 dk</option><option value="1h">1 saat</option><option value="4h">4 saat</option><option value="1d">1 gün</option><option value="1w">1 hafta</option>
       </select></div>
     <div class="ta-head-mid">
       <a id="ownChartLabel" class="ta-tvlink" href="#" target="_blank" rel="noopener" title="TradingView'de aç">—</a>
@@ -5582,7 +5582,7 @@ function taOpen(tv,label,iv){
   TA.tv=tv; TA.market=taMarketFromTv(tv); _own.retried=false;
   document.getElementById('taMarket').value=TA.market;
   document.getElementById('taSymbol').value=taSymFromTv(tv);
-  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'1h':'1d');
+  const tf=iv?ownTfFromInterval(iv):(TA.market==='crypto'?'15m':'1d');
   document.getElementById('ownChartTf').value=tf;
   try{ history.replaceState(null,'','/analysis?tv='+encodeURIComponent(tv)+'&iv='+encodeURIComponent(iv||'')); }catch(e){}
   _own.tv=tv; _own.label=label||taSymFromTv(tv); _own.marks=[];
