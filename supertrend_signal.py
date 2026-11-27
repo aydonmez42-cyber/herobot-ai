@@ -504,6 +504,23 @@ def intrabar_short_signal(df, forming_close_time=None):
 
 # Kirilim mumunun kapanisi kirilan Supertrend cizgisinden bu orandan fazla uzaktaysa (asiri uzama) o sinyalle HIC girilmez (pullback girisi dahil). 0 = kapali
 MAX_BREAKOUT_EXT_PCT = float(os.environ.get("ST_MAX_BREAKOUT_EXT_PCT", "5"))
+# ATR bazli olcu (oncelikli): kirilim mumunun kapanisi kirilan cizgiden bu kadar ATR'den fazla uzaktaysa girilmez. Her coin kendi oynakligina gore olculur. 0 = kapali (yuzde olcusune doner)
+MAX_BREAKOUT_EXT_ATR = float(os.environ.get("ST_MAX_BREAKOUT_EXT_ATR", "2.0"))
+EXT_ATR_PERIOD = max(2, int(float(os.environ.get("ST_EXT_ATR_PERIOD", "14"))))
+
+
+def _atr_at(ind, t):
+    """Wilder ATR'nin sinyal mumundaki degeri (ind: kapanmis mumlar, index=kapanis zamani). Hesaplanamazsa None."""
+    try:
+        h, l, c = ind["high"].astype(float), ind["low"].astype(float), ind["close"].astype(float)
+        pc = c.shift(1)
+        tr = pd.concat([h - l, (h - pc).abs(), (l - pc).abs()], axis=1).max(axis=1)
+        atr = tr.ewm(alpha=1.0 / EXT_ATR_PERIOD, adjust=False).mean()
+        i = ind.index.get_loc(pd.Timestamp(t)) if t is not None else len(ind) - 1
+        v = float(atr.iloc[i])
+        return v if v == v and v > 0 else None
+    except Exception:
+        return None
 
 
 def entry_allowed(sig, last_price, ind=None, symbol=None):
@@ -531,7 +548,12 @@ def entry_allowed(sig, last_price, ind=None, symbol=None):
         if line is not None and abs(last_price - line) / last_price * 100.0 > MAX_STOP_DIST_PCT:
             return False, "STOP_TOO_FAR"
     _ref = sig.get("level") if sig.get("level") is not None else sig.get("ext_level")
-    if MAX_BREAKOUT_EXT_PCT > 0 and _ref and sig.get("signal_close"):
+    _atr_v = _atr_at(ind, sig.get("signal_time")) if (MAX_BREAKOUT_EXT_ATR > 0 and _ref and ind is not None and sig.get("signal_close")) else None
+    if _atr_v:
+        _sgn = 1.0 if sig["side"] == "LONG" else -1.0
+        if _sgn * (float(sig["signal_close"]) - float(_ref)) / _atr_v > MAX_BREAKOUT_EXT_ATR:
+            return False, "OVEREXTENDED"        # kirilim mumu kirilan cizgiden cok uzakta (ATR cinsinden) kapandi
+    elif MAX_BREAKOUT_EXT_PCT > 0 and _ref and sig.get("signal_close"):
         _sgn = 1.0 if sig["side"] == "LONG" else -1.0
         if _sgn * (float(sig["signal_close"]) - float(_ref)) / float(_ref) * 100.0 > MAX_BREAKOUT_EXT_PCT:
             return False, "OVEREXTENDED"        # kirilim mumu kirilan cizgiden cok uzakta kapandi: asiri uzamis hareket, duzeltmede girilmez
